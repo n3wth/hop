@@ -1,65 +1,55 @@
-import Image from "next/image";
+import type { SearchParams } from '@/lib/types'
+import { assembleSearch } from '@/lib/search'
+import AppShell from '@/components/AppShell'
+import Logo from '@/components/Logo'
+import Rail from '@/components/Rail'
+import SearchBar from '@/components/SearchBar'
+import VerdictRail from '@/components/VerdictRail'
+import ResultsList from '@/components/ResultsList'
+import PointsPanel from '@/components/PointsPanel'
 
-export default function Home() {
+const DEFAULT_PARAMS: SearchParams = {
+  from: 'SFO',
+  to: 'LAX',
+  depart: '2026-07-09',
+  return: '2026-07-12',
+  adults: 1,
+}
+
+export default async function Home() {
+  const result = await assembleSearch(DEFAULT_PARAMS)
+
+  const ways = result.options.length
+  const adults = result.params.adults
+  const subtitle = `${ways} ${ways === 1 ? 'way' : 'ways'} to fly · Jul 9–12 · ${adults} ${
+    adults === 1 ? 'adult' : 'adults'
+  }`
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <AppShell
+      logoCell={<Logo size={40} />}
+      topbar={<SearchBar />}
+      rail={<Rail />}
+    >
+      <div className="mx-auto max-w-[1180px] px-7 py-7">
+        <header className="mb-[22px]">
+          <h1 className="text-[26px] font-bold tracking-[-0.02em]">
+            San Francisco → Los Angeles
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+          <p className="mt-1 text-[13.5px] text-text2">{subtitle}</p>
+        </header>
+
+        <VerdictRail result={result} />
+
+        <div className="flex items-start gap-6">
+          <div className="min-w-0 flex-1">
+            <ResultsList result={result} />
+          </div>
+          <aside className="w-[320px] flex-shrink-0">
+            <PointsPanel balances={result.balances} />
+          </aside>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+      </div>
+    </AppShell>
+  )
 }

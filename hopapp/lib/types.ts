@@ -3,6 +3,8 @@
 
 export type OptionKind = 'cash' | 'award' | 'transfer'
 export type CppTier = 'green' | 'amber' | 'muted'
+// Explicit action intent, decided in lib/search.ts so the UI renders, not decides.
+export type OptionAction = 'book-points' | 'transfer' | 'book-cash' | 'pay-cash'
 
 export interface SearchParams {
   from: string // IATA, e.g. SFO
@@ -34,6 +36,7 @@ export interface FlightOption {
   cpp?: number // cents per point
   tier: CppTier
   youHave?: number // user's balance in the relevant program
+  action?: OptionAction // explicit action intent decided at assembly time
   // transfer
   transferFrom?: TransferSource[]
   bookingUrl: string
