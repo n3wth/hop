@@ -1,11 +1,16 @@
 // AwardWallet balances client. Fetches a connected user's loyalty accounts
 // and normalizes them to the shared Balance model. NEVER throws.
 //
-// FIELD-MAPPING ASSUMPTIONS (verify against live responses — see report):
-//   - GET /connectedUser/{userId} returns { accounts: Account[] }.
-//   - Each account has displayName/program name, `balance` (string|number,
-//     may contain commas), and a status/level (kind / balanceRaw / level).
-//   - Auth header is `Authorization: <apiKey>`.
+// VERIFIED against live responses (2026-06-28):
+//   - GET /api/export/v1/connectedUser/{userId} returns { accounts: Account[] }.
+//   - Auth header is `X-Authentication: <apiKey>` (NOT Authorization — that 403s
+//     with AUTHENTICATION_REQUIRED).
+//   - Each account: { code, displayName ("Alaska Airlines (Atmos Rewards)"),
+//     kind ("Airlines" | "Credit Cards" | "Hotels" | "Rentals" | "Shopping"),
+//     balance (string with commas, or "n/a"), balanceRaw (clean integer),
+//     properties: [{ name, value }] where elite status lives under varying keys
+//     ("Level", "Membership Level", "Membership Status", "Status"). }
+//   - There is no uniform top-level status/level field.
 
 import type { ApiResult, Balance } from '@/lib/types'
 import { env, hasEnv } from '@/lib/env'
@@ -13,15 +18,26 @@ import { env, hasEnv } from '@/lib/env'
 const AWARDWALLET_BASE = 'https://business.awardwallet.com/api/export/v1'
 const TIMEOUT_MS = 10_000
 
-// --- AwardWallet response shapes (partial; defensive) -----------------------
+// Account kinds that represent point/mile balances we care about. Rentals,
+// Shopping, Dining, etc. are excluded — they aren't redeemable travel currency.
+const POINTS_KINDS = new Set(['airlines', 'credit cards', 'hotels'])
+
+// Property names (lowercased) that carry an elite-status/level value.
+const STATUS_PROP_NAMES = ['level', 'membership level', 'membership status', 'status']
+
+// --- AwardWallet response shapes (verified; partial) ------------------------
+interface AwardWalletProperty {
+  name?: string
+  value?: string
+  code?: string
+}
 interface AwardWalletAccount {
+  code?: string
   displayName?: string
-  kind?: string // program/display name in some payloads
+  kind?: string
   balance?: string | number
   balanceRaw?: number
-  level?: string // elite status, e.g. "Silver"
-  status?: string
-  loginStatus?: string
+  properties?: AwardWalletProperty[]
 }
 interface AwardWalletUserResponse {
   accounts?: AwardWalletAccount[]
@@ -50,6 +66,8 @@ const CODE_OVERRIDES: Array<{ match: string; code: string }> = [
   { match: 'capital one', code: 'C1' },
   { match: 'marriott', code: 'MR' },
   { match: 'hilton', code: 'HH' },
+  { match: 'jetblue', code: 'B6' },
+  { match: 'trueblue', code: 'B6' },
 ]
 
 // Derive a 2-3 letter monogram from a program name.
@@ -82,13 +100,33 @@ function parseBalance(account: AwardWalletAccount): number {
   return 0
 }
 
+// Pull a best-effort elite status from the account's properties array. Status
+// is stored under varying property names ("Level", "Membership Level", etc.).
+function extractStatus(account: AwardWalletAccount): string | undefined {
+  const props = account.properties
+  if (!props) return undefined
+  for (const want of STATUS_PROP_NAMES) {
+    const hit = props.find((p) => (p.name ?? '').toLowerCase().trim() === want)
+    if (hit && hit.value && hit.value.trim() !== '') return hit.value.trim()
+  }
+  return undefined
+}
+
+// Is this account a redeemable points/miles balance (not a rental/shopping
+// loyalty card, and a positive balance)?
+export function isPointsAccount(account: AwardWalletAccount): boolean {
+  const kind = (account.kind ?? '').toLowerCase().trim()
+  if (kind && !POINTS_KINDS.has(kind)) return false
+  return parseBalance(account) > 0
+}
+
 export function normalizeAwardWalletAccount(account: AwardWalletAccount): Balance {
-  const program = account.displayName ?? account.kind ?? 'Unknown program'
+  const program = account.displayName ?? 'Unknown program'
   return {
     program,
     code: deriveCode(program),
     balance: parseBalance(account),
-    status: account.level ?? account.status,
+    status: extractStatus(account),
   }
 }
 
@@ -105,7 +143,7 @@ export async function getBalances(): Promise<ApiResult<Balance[]>> {
     const res = await fetch(`${AWARDWALLET_BASE}/connectedUser/${userId}`, {
       method: 'GET',
       headers: {
-        Authorization: env.awardWalletApiKey(),
+        'X-Authentication': env.awardWalletApiKey(),
         Accept: 'application/json',
       },
       signal: controller.signal,
@@ -117,7 +155,9 @@ export async function getBalances(): Promise<ApiResult<Balance[]>> {
 
     const json = (await res.json()) as AwardWalletUserResponse
     const accounts = json.accounts ?? []
-    const balances = accounts.map(normalizeAwardWalletAccount)
+    const balances = accounts
+      .filter(isPointsAccount)
+      .map(normalizeAwardWalletAccount)
     return { ok: true, data: balances }
   } catch (err) {
     const reason =

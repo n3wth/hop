@@ -25,6 +25,19 @@ export interface FlightOption {
   date: string // display, e.g. "Jul 9"
   durationMin?: number
   direct?: boolean
+  // richer flight detail for the pick / boarding-pass card
+  originCode?: string // "SFO"
+  destCode?: string // "LAX"
+  originCity?: string // "San Francisco"
+  destCity?: string // "Los Angeles"
+  departTime?: string // display, e.g. "7:05a"
+  arriveTime?: string // display, e.g. "8:37a"
+  stops?: number // 0 = nonstop
+  cabin?: string // "Economy", "Main", "First"
+  aircraft?: string // "Boeing 737-900"
+  flightNo?: string // "AS 1284"
+  operatedBy?: string // "Alaska / American"
+  fareBrand?: string // "Saver", "Main", award fare label
   // award economics
   miles?: number
   taxes?: number // cash taxes/fees paid on an award redemption, in dollars

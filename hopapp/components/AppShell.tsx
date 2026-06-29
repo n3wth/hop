@@ -1,39 +1,18 @@
 import type { ReactNode } from 'react'
+import TopNav, { type TopNavProps } from './TopNav'
 
-export interface AppShellProps {
-  logoCell: ReactNode
-  topbar: ReactNode
-  rail: ReactNode
+export interface AppShellProps extends TopNavProps {
   children: ReactNode
 }
 
-// CSS grid per v9: two columns (square | rest), two rows (square | rest).
-//   logo  | topbar
-//   rail  | stage(children)
-export default function AppShell({ logoCell, topbar, rail, children }: AppShellProps) {
+// Page shell: scroll-aware sticky TopNav (logo + search/account) over the
+// content. No fake-masthead theatrics — trip context is a page sub-header
+// rendered above the hero by the page itself.
+export default function AppShell({ children, ...nav }: AppShellProps) {
   return (
-    <div
-      className="grid h-screen"
-      style={{
-        gridTemplateColumns: 'var(--spacing-sq) 1fr',
-        gridTemplateRows: 'var(--spacing-sq) 1fr',
-      }}
-    >
-      {/* logo cell — top-left square: teal bunny on white surface, hairline right + bottom */}
-      <div className="col-start-1 row-start-1 flex h-sq w-sq items-center justify-center border-b border-r border-border bg-surface text-brand">
-        {logoCell}
-      </div>
-
-      {/* topbar — right of logo, square tall */}
-      <div className="col-start-2 row-start-1 flex h-sq items-stretch border-b border-border bg-surface">
-        {topbar}
-      </div>
-
-      {/* rail — below logo, square wide */}
-      <div className="col-start-1 row-start-2 border-r border-border">{rail}</div>
-
-      {/* stage — scrollable main */}
-      <main className="col-start-2 row-start-2 overflow-auto">{children}</main>
+    <div className="relative">
+      <TopNav {...nav} />
+      <div className="mx-auto max-w-[1440px] px-16 pb-24">{children}</div>
     </div>
   )
 }

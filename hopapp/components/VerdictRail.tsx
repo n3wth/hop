@@ -1,80 +1,241 @@
-import type { SearchResult } from '@/lib/types'
+import type { FlightOption, SearchResult } from '@/lib/types'
 import Icon from './Icon'
+import Logo from './Logo'
+import BrandIcon from './BrandIcon'
 
 export interface VerdictRailProps {
   result: SearchResult
 }
 
-const VERDICT_LABEL: Record<SearchResult['verdict'], string> = {
-  'use-points': 'Use points',
-  'pay-cash': 'Pay cash',
-  none: 'No clear winner',
+function fmt(n: number | undefined): string {
+  return n != null ? n.toLocaleString() : '—'
 }
 
-interface VStatProps {
+function milesUnit(pick: FlightOption | undefined): string {
+  if (!pick) return 'miles'
+  return pick.program?.toLowerCase().includes('southwest') ? 'points' : 'miles'
+}
+
+// Editorial verdict hero — the magazine cover. Teal plane: headline + factual
+// subline + stat strip on the left; bunny + boarding-pass pick card on the right.
+export default function VerdictRail({ result }: VerdictRailProps) {
+  const { pick, summary, verdict } = result
+  const usingPoints = verdict === 'use-points'
+  const unit = milesUnit(pick)
+
+  const save = summary.saveVsCash ?? 0
+  const cpp = summary.bestCpp
+  const miles = summary.bestMiles
+  const cash = summary.cheapestCash
+
+  const airlineShort = pick?.airline.split(' ')[0] ?? 'points'
+
+  return (
+    <section
+      className="mt-[26px] grid overflow-hidden rounded-[28px] text-[#eafaf7]"
+      style={{ gridTemplateColumns: '1fr 392px', background: 'var(--color-brand)' }}
+    >
+      {/* LEFT — the verdict */}
+      <div className="px-[52px] pb-[46px] pt-12">
+        <span className="mb-[26px] inline-flex items-center gap-[11px] border-b border-white/15 pb-4 text-[12px] font-semibold uppercase tracking-[0.22em] text-[#9fe0d6]">
+          <span className="h-[7px] w-[7px] rounded-full bg-[#5fe3c8]" />
+          Best value
+        </span>
+
+        <h1 className="font-display text-[64px] font-semibold leading-[0.98] tracking-[-0.025em] text-white">
+          {usingPoints ? (
+            <>
+              Use your <span className="text-[#ffe7b0]">{airlineShort}&nbsp;{unit}.</span>
+              <br />
+              Save <span className="text-[#6ff0d2]">${fmt(save)}</span> vs cash.
+            </>
+          ) : (
+            <>
+              Pay <span className="text-[#ffe7b0]">cash.</span>
+              <br />
+              Points don&apos;t pay off here.
+            </>
+          )}
+        </h1>
+
+        {usingPoints ? (
+          <p className="mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-[#c7ece5]">
+            <b className="font-semibold text-white">
+              {fmt(miles)} {unit}
+            </b>{' '}
+            at{' '}
+            <b className="font-semibold text-white">{cpp != null ? `${cpp.toFixed(1)}¢` : '—'} each</b>{' '}
+            — the best redemption across your {result.balances.length} programs. Cash is{' '}
+            <b className="font-semibold text-white">${fmt(cash)}</b>. You have the {unit}.
+          </p>
+        ) : (
+          <p className="mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-[#c7ece5]">
+            No redemption clears the bar on this route. Cash is{' '}
+            <b className="font-semibold text-white">${fmt(cash)}</b> — keep your points for a trip
+            where they stretch further.
+          </p>
+        )}
+
+        <div className="mt-[34px] flex items-center gap-4">
+          <a
+            href={pick?.bookingUrl ?? '#'}
+            className="inline-flex items-center gap-[10px] rounded-[14px] bg-white px-7 py-4 text-[16px] font-semibold text-[#073e3e] transition-colors hover:bg-[#fffdf6]"
+          >
+            <Icon name="check_circle" size={19} />
+            {usingPoints ? `Book with ${airlineShort} ${unit}` : 'Book cash'}
+          </a>
+          <a
+            href="#math"
+            className="rounded-[14px] border-[1.5px] border-[#bfe9e1]/40 px-[22px] py-[15px] text-[15px] font-medium text-[#bfe9e1] transition-colors hover:border-[#bfe9e1] hover:text-white"
+          >
+            See the math
+          </a>
+        </div>
+
+        <div className="mt-[42px] flex gap-10 border-t border-white/15 pt-[30px]">
+          <HStat label="You pay" value={fmt(miles)} unit={unit} />
+          <HStat label="Value" value={cpp != null ? `${cpp.toFixed(1)}¢` : '—'} unit={`/ ${unit.slice(0, -1)}`} />
+          <HStat label="Cash price" value={`$${fmt(cash)}`} />
+          <HStat label="You save" value={`$${fmt(save)}`} accent />
+        </div>
+      </div>
+
+      {/* RIGHT — bunny + boarding-pass pick */}
+      <aside
+        className="relative flex flex-col justify-between border-l border-dashed border-white/20"
+        style={{
+          background:
+            'radial-gradient(120% 120% at 85% 15%, rgba(255,255,255,.10), rgba(255,255,255,0) 55%), var(--color-brand-deep)',
+        }}
+      >
+        <div className="relative grid flex-1 place-items-center overflow-hidden pt-9">
+          <Logo size={172} carve="var(--color-brand-deep)" className="text-white" />
+        </div>
+
+        {pick ? <PickPass pick={pick} /> : null}
+      </aside>
+    </section>
+  )
+}
+
+function HStat({
+  label,
+  value,
+  unit,
+  accent,
+}: {
   label: string
   value: string
   unit?: string
-  tone?: 'good' | 'brand'
-}
-
-function VStat({ label, value, unit, tone }: VStatProps) {
-  const toneClass = tone === 'good' ? 'text-good' : tone === 'brand' ? 'text-brand' : undefined
+  accent?: boolean
+}) {
   return (
-    <div className="flex flex-col justify-center border-r border-hair px-6 py-3 last:border-r-0">
-      <div className="mb-[3px] text-[10px] font-bold uppercase tracking-[0.05em] text-text3">
+    <div>
+      <div className="mb-[6px] text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8fcabf]">
         {label}
       </div>
-      <div className={['text-[18px] font-bold tabular-nums tracking-[-0.02em]', toneClass].filter(Boolean).join(' ')}>
+      <div
+        className="font-display text-[27px] font-semibold tracking-[-0.01em] tabular-nums"
+        style={{ color: accent ? '#6ff0d2' : '#fff' }}
+      >
         {value}
-        {unit ? <small className="text-xs font-semibold text-text3"> {unit}</small> : null}
+        {unit ? <small className="text-[14px] font-medium text-[#9fe0d6]"> {unit}</small> : null}
       </div>
     </div>
   )
 }
 
-// Verdict strip per v9: brand block + hairline-divided stat cells.
-export default function VerdictRail({ result }: VerdictRailProps) {
-  const { summary, verdict } = result
+// Boarding-pass card for the pick — a real ticket: airline + flight no, the
+// itinerary as origin/time —✈ dur nonstop— dest/time, and a cabin/aircraft/fare
+// detail row. Notched ticket edge. Airline name appears once.
+function PickPass({ pick }: { pick: FlightOption }) {
+  const [routeFrom, routeTo] = pick.route.split('→').map((s) => s.trim())
+  const origin = pick.originCode ?? routeFrom
+  const dest = pick.destCode ?? routeTo
+  const dur =
+    pick.durationMin != null
+      ? `${Math.floor(pick.durationMin / 60)}h ${pick.durationMin % 60}m`
+      : ''
+  const stopLabel =
+    pick.stops === 0 || pick.direct
+      ? 'nonstop'
+      : pick.stops != null
+        ? `${pick.stops} stop${pick.stops > 1 ? 's' : ''}`
+        : ''
+
+  // Compact detail row: cabin · aircraft · fare brand (only present ones).
+  const details = [pick.cabin, pick.aircraft, pick.fareBrand].filter(Boolean)
 
   return (
-    <div className="mb-[22px] flex items-stretch overflow-hidden rounded-lg border border-border bg-surface">
-      <div className="flex flex-shrink-0 items-center gap-[13px] bg-brand px-[22px] py-4 text-white">
-        <div className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-white/[0.16]">
-          <Icon name="check_circle" size={22} />
-        </div>
-        <div>
-          <div className="text-[10px] font-bold uppercase tracking-[0.07em] opacity-85">
-            Our verdict
+    <div className="relative mx-[26px] mb-[26px] rounded-[18px] bg-paper text-text">
+      {/* header band: airline + flight no + Direct tag */}
+      <div className="flex items-center justify-between px-[22px] pb-[14px] pt-[18px]">
+        <div className="flex min-w-0 items-center gap-[11px]">
+          <BrandIcon code={pick.airlineCode} name={pick.airline} size={40} />
+          <div className="min-w-0">
+            <div className="truncate text-[15px] font-semibold leading-tight">{pick.airline}</div>
+            <div className="text-[11.5px] text-text3">
+              {pick.flightNo}
+              {pick.operatedBy ? ` · ${pick.operatedBy}` : ''}
+            </div>
           </div>
-          <div className="text-base font-bold tracking-[-0.01em]">{VERDICT_LABEL[verdict]}</div>
+        </div>
+        {stopLabel === 'nonstop' ? (
+          <span className="flex-shrink-0 rounded-lg bg-brand-light px-[10px] py-[5px] text-[11px] font-semibold uppercase tracking-[0.02em] text-brand">
+            Direct
+          </span>
+        ) : null}
+      </div>
+
+      {/* notched perforation */}
+      <div className="relative">
+        <span
+          className="absolute left-[-9px] top-1/2 h-[18px] w-[18px] -translate-y-1/2 rounded-full"
+          style={{ background: 'var(--color-brand-deep)' }}
+        />
+        <span
+          className="absolute right-[-9px] top-1/2 h-[18px] w-[18px] -translate-y-1/2 rounded-full"
+          style={{ background: 'var(--color-brand-deep)' }}
+        />
+        <div className="mx-[22px] border-t-[1.5px] border-dashed border-border" />
+      </div>
+
+      {/* itinerary */}
+      <div className="flex items-center justify-between gap-3 px-[22px] pb-[16px] pt-[16px]">
+        <div className="flex-shrink-0">
+          <div className="font-display text-[22px] font-semibold leading-none">{origin}</div>
+          {pick.departTime ? (
+            <div className="mt-[3px] text-[12px] text-text3">{pick.departTime}</div>
+          ) : null}
+        </div>
+
+        <div className="flex flex-1 flex-col items-center gap-[2px]">
+          <div className="flex w-full items-center gap-[6px] text-brand">
+            <span className="h-px flex-1 bg-border" />
+            <Icon name="flight" size={18} className="rotate-90" />
+            <span className="h-px flex-1 bg-border" />
+          </div>
+          <div className="text-[11px] text-text3">
+            {dur}
+            {dur && stopLabel ? ' · ' : ''}
+            {stopLabel}
+          </div>
+        </div>
+
+        <div className="flex-shrink-0 text-right">
+          <div className="font-display text-[22px] font-semibold leading-none">{dest}</div>
+          {pick.arriveTime ? (
+            <div className="mt-[3px] text-[12px] text-text3">{pick.arriveTime}</div>
+          ) : null}
         </div>
       </div>
 
-      <div className="flex flex-1">
-        <VStat
-          label="Cheapest cash"
-          value={summary.cheapestCash != null ? `$${summary.cheapestCash.toLocaleString()}` : '—'}
-          unit={summary.cheapestCash != null ? 'rt' : undefined}
-        />
-        <VStat
-          label="Best redemption"
-          value={summary.bestMiles != null ? summary.bestMiles.toLocaleString() : '—'}
-          unit={summary.bestMiles != null ? 'mi' : undefined}
-          tone="brand"
-        />
-        <VStat
-          label="Value"
-          value={summary.bestCpp != null ? `${summary.bestCpp.toFixed(1)}¢` : '—'}
-          unit={summary.bestCpp != null ? '/pt' : undefined}
-          tone="good"
-        />
-        <VStat
-          label="You save"
-          value={summary.saveVsCash != null ? `$${summary.saveVsCash.toLocaleString()}` : '—'}
-          tone="good"
-        />
-      </div>
+      {/* detail row: cabin · aircraft · fare */}
+      {details.length > 0 ? (
+        <div className="border-t border-border px-[22px] py-[11px] text-[11.5px] text-text2">
+          {details.join(' · ')}
+        </div>
+      ) : null}
     </div>
   )
 }

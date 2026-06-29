@@ -42,7 +42,9 @@ export async function assembleSearch(params: SearchParams): Promise<SearchResult
   let balances: Balance[] = []
   const degraded: string[] = []
 
-  if (process.env.MOCK) {
+  // MOCK is truthy only for "1"/"true"/"yes" — "0"/"false"/"" all mean live.
+  const useMock = /^(1|true|yes)$/i.test(process.env.MOCK ?? '')
+  if (useMock) {
     cashOptions = mockCash()
     awardOptions = mockAwards()
     balances = mockBalances()

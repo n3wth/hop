@@ -1,49 +1,84 @@
 @import "tailwindcss";
 
-/* hop design tokens — locked teal/mint Auro-inspired flat system (from docs/design/hop-v9.html) */
+/* hop design tokens — editorial direction (docs/design/CHOSEN-editorial.html).
+   Verdict hero, boarding-pass pick, value-ranked alternatives, dark wallet.
+   Bricolage Grotesque display + General Sans body. Flat: no shadows/gradients/glows. */
 @theme {
   --color-bg: #f3f1ec; /* warm cream canvas */
+  --color-cream-warm: #efece4;
   --color-surface: #ffffff;
+  --color-paper: #fbfaf6; /* warm off-white card surface */
   --color-sunk: #f7f5f0;
-  --color-text: #211f26;
-  --color-text2: #5e5a63;
-  --color-text3: #9b97a0;
 
-  --color-border: #e5e1d8;
+  --color-text: #14201f; /* ink */
+  --color-text2: #4a5a58; /* ink-soft */
+  --color-text3: #8a9794; /* ink-faint */
+
+  --color-border: #e2ddd2;
   --color-border-soft: #ece9e1;
   --color-hair: #efece5;
 
   --color-brand: #0d6e6e; /* primary teal */
   --color-brand-deep: #0a5757;
-  --color-brand-light: #e3f1ef;
+  --color-brand-ink: #073e3e;
+  --color-brand-light: #e3f1ef; /* mint */
+  --color-brand-mint-deep: #cfe6e2;
   --color-brand-tint: #eef7f4;
 
-  --color-good: #15803d; /* great CPP value */
-  --color-good-bg: #eaf6ee;
-  --color-ok: #b45309; /* ok CPP value */
-  --color-ok-bg: #fbf2e4;
+  --color-good: #0d6e6e; /* strong CPP value reads teal in editorial chips */
+  --color-good-bg: #e3f1ef;
+  --color-ok: #b8742a; /* amber — mid value */
+  --color-ok-bg: #f6ecd9;
+  --color-weak: #a8513a; /* rust — weak value */
+  --color-weak-bg: #f4e7e3;
 
-  --color-as: #0d2c54; /* airline monogram tiles */
+  --color-gold: #c98a3c;
+  --color-amber: #b8742a;
+
+  /* hero / wallet accents */
+  --color-hero-cream: #eafaf7;
+  --color-hero-line: rgba(255, 255, 255, 0.16);
+  --color-mint-bright: #6ff0d2;
+  --color-gold-soft: #ffe7b0;
+
+  /* airline brand colors (fallback tiles / accents) */
+  --color-as: #00385f;
   --color-wn: #304cb2;
-  --color-ua: #1a3a8f;
+  --color-ua: #1d3a6b;
+  --color-aa: #c8102e;
+  --color-ba: #2a5caa;
 
   --radius: 12px;
-  --radius-lg: 16px;
+  --radius-lg: 20px;
+  --radius-hero: 28px;
 
-  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: "Bricolage Grotesque", system-ui, -apple-system, sans-serif;
+  --font-sans: "General Sans", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 
-  --spacing-sq: 76px; /* app-shell square: logo cell = topbar height = rail width */
+  --spacing-sq: 76px;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
 html,
 body {
   background: var(--color-bg);
   color: var(--color-text);
-  -webkit-font-smoothing: antialiased;
+  font-family: var(--font-sans);
   font-size: 14px;
-  line-height: 1.45;
+  line-height: 1.5;
+  font-feature-settings: "ss01" on, "cv01" on;
+}
+
+/* Bricolage Grotesque utility for headline + wordmark type */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
 }

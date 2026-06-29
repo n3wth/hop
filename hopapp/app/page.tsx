@@ -1,12 +1,11 @@
 import type { SearchParams } from '@/lib/types'
 import { assembleSearch } from '@/lib/search'
 import AppShell from '@/components/AppShell'
-import Logo from '@/components/Logo'
-import Rail from '@/components/Rail'
-import SearchBar from '@/components/SearchBar'
+import RouteBar from '@/components/RouteBar'
 import VerdictRail from '@/components/VerdictRail'
 import ResultsList from '@/components/ResultsList'
 import PointsPanel from '@/components/PointsPanel'
+import SectionHead from '@/components/SectionHead'
 
 const DEFAULT_PARAMS: SearchParams = {
   from: 'SFO',
@@ -19,37 +18,40 @@ const DEFAULT_PARAMS: SearchParams = {
 export default async function Home() {
   const result = await assembleSearch(DEFAULT_PARAMS)
 
-  const ways = result.options.length
-  const adults = result.params.adults
-  const subtitle = `${ways} ${ways === 1 ? 'way' : 'ways'} to fly · Jul 9–12 · ${adults} ${
-    adults === 1 ? 'adult' : 'adults'
-  }`
-
   return (
     <AppShell
-      logoCell={<Logo size={40} />}
-      topbar={<SearchBar />}
-      rail={<Rail />}
+      from="San Francisco"
+      to="Los Angeles"
+      dates="Jul 9 – 12"
+      who="1 adult"
+      fromCode={result.params.from}
+      toCode={result.params.to}
     >
-      <div className="mx-auto max-w-[1180px] px-7 py-7">
-        <header className="mb-[22px]">
-          <h1 className="text-[26px] font-bold tracking-[-0.02em]">
-            San Francisco → Los Angeles
-          </h1>
-          <p className="mt-1 text-[13.5px] text-text2">{subtitle}</p>
-        </header>
+      {/* plain trip context — route + facts, not fake masthead metadata */}
+      <RouteBar result={result} />
 
-        <VerdictRail result={result} />
+      {/* the verdict hero */}
+      <VerdictRail result={result} />
 
-        <div className="flex items-start gap-6">
-          <div className="min-w-0 flex-1">
-            <ResultsList result={result} />
-          </div>
-          <aside className="w-[320px] flex-shrink-0">
-            <PointsPanel balances={result.balances} />
-          </aside>
-        </div>
+      {/* other ways to fly */}
+      <ResultsList result={result} />
+
+      {/* your points — the wallet stands alone; no restating heading */}
+      <div className="mt-14">
+        <PointsPanel balances={result.balances} pick={result.pick} />
       </div>
+
+      <footer className="mt-[46px] flex items-center justify-between text-[12px] tracking-[0.04em] text-text3">
+        <div>
+          hop compares <b className="font-semibold text-text2">cash, miles, and transfer partners</b>{' '}
+          in one search.
+        </div>
+        <div className="flex gap-[22px]">
+          <span>How we value points</span>
+          <span>Refresh balances</span>
+          <span>Price alert</span>
+        </div>
+      </footer>
     </AppShell>
   )
 }

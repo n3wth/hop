@@ -31,15 +31,18 @@ interface SeatsAeroRecord {
   // economy
   YAvailable?: boolean
   YMileageCost?: string | number
-  YTotalTaxes?: string | number // minor units (cents) per Partner API
+  YTotalTaxes?: string | number // VERIFIED: minor units (cents), e.g. 560 = $5.60
+  YAirlines?: string // VERIFIED: operating carrier IATA code(s), e.g. "UA"
   // premium econ
   WAvailable?: boolean
   WMileageCost?: string | number
   WTotalTaxes?: string | number
+  WAirlines?: string
   // business
   JAvailable?: boolean
   JMileageCost?: string | number
   JTotalTaxes?: string | number
+  JAirlines?: string
   TaxesCurrency?: string
 }
 interface SeatsAeroResponse {
@@ -47,6 +50,10 @@ interface SeatsAeroResponse {
 }
 
 // Map Seats.aero `Source` program slug -> display name + IATA-ish code.
+// Slugs observed live on SFO-LAX: aeroplan, alaska, american, azul, delta,
+// frontier, jetblue, qantas, smiles, united, velocity. The per-cabin
+// `*Airlines` field carries the true operating carrier code and is preferred
+// when present; this map supplies the program/display name + a code fallback.
 const PROGRAM_META: Record<string, { program: string; airline: string; code: string }> = {
   alaska: { program: 'Alaska Atmos Rewards', airline: 'Alaska Atmos', code: 'AS' },
   united: { program: 'United MileagePlus', airline: 'United', code: 'UA' },
@@ -60,6 +67,18 @@ const PROGRAM_META: Record<string, { program: string; airline: string; code: str
   emirates: { program: 'Emirates Skywards', airline: 'Emirates', code: 'EK' },
   etihad: { program: 'Etihad Guest', airline: 'Etihad', code: 'EY' },
   qantas: { program: 'Qantas Frequent Flyer', airline: 'Qantas', code: 'QF' },
+  azul: { program: 'Azul TudoAzul', airline: 'Azul', code: 'AD' },
+  frontier: { program: 'Frontier Miles', airline: 'Frontier', code: 'F9' },
+  smiles: { program: 'GOL Smiles', airline: 'GOL', code: 'G3' },
+}
+
+// Title-case an unmapped program slug for display, e.g. "azul" -> "Azul".
+function titleCase(slug: string): string {
+  return slug
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((w) => w[0].toUpperCase() + w.slice(1))
+    .join(' ')
 }
 
 function toNumber(value: string | number | undefined): number {
@@ -70,28 +89,55 @@ function toNumber(value: string | number | undefined): number {
 
 function programMeta(source?: string): { program: string; airline: string; code?: string } {
   const slug = (source ?? '').toLowerCase().trim()
-  return PROGRAM_META[slug] ?? { program: source ?? 'Award', airline: source ?? 'Award' }
+  if (PROGRAM_META[slug]) return PROGRAM_META[slug]
+  const display = slug ? titleCase(slug) : 'Award'
+  return { program: display, airline: display }
 }
 
-// Pick the cheapest AVAILABLE cabin, preferring economy. Taxes are minor units.
+// Parse an `*Airlines` field ("UA" or "AA, AS") into IATA codes.
+function parseAirlineCodes(value?: string): string[] {
+  return (value ?? '')
+    .split(',')
+    .map((c) => c.trim().toUpperCase())
+    .filter((c) => c.length >= 2)
+}
+
+// Resolve a single display code from the operating-airline list. Award space is
+// often sold on multiple carriers (e.g. Alaska award on "AA, AS"). Prefer the
+// program's OWN carrier when it's in the list — that's the cleanest brand match
+// for the monogram tile — otherwise fall back to the first listed carrier (a
+// genuine partner booking, e.g. JetBlue award flown on UA metal).
+function resolveAirlineCode(codes: string[], programCode?: string): string | undefined {
+  if (codes.length === 0) return undefined
+  if (programCode && codes.includes(programCode)) return programCode
+  return codes[0]
+}
+
+// Pick the cheapest AVAILABLE cabin, preferring economy. Returns mileage cost,
+// taxes (minor units / cents), and the operating carrier code list for that cabin.
 function pickCabin(
   rec: SeatsAeroRecord,
-): { miles: number; taxesMinor: number } | undefined {
-  const cabins: Array<{ available?: boolean; miles?: string | number; taxes?: string | number }> = [
-    { available: rec.YAvailable, miles: rec.YMileageCost, taxes: rec.YTotalTaxes },
-    { available: rec.WAvailable, miles: rec.WMileageCost, taxes: rec.WTotalTaxes },
-    { available: rec.JAvailable, miles: rec.JMileageCost, taxes: rec.JTotalTaxes },
+): { miles: number; taxesMinor: number; airlineCodes: string[] } | undefined {
+  const cabins: Array<{
+    available?: boolean
+    miles?: string | number
+    taxes?: string | number
+    airlines?: string
+  }> = [
+    { available: rec.YAvailable, miles: rec.YMileageCost, taxes: rec.YTotalTaxes, airlines: rec.YAirlines },
+    { available: rec.WAvailable, miles: rec.WMileageCost, taxes: rec.WTotalTaxes, airlines: rec.WAirlines },
+    { available: rec.JAvailable, miles: rec.JMileageCost, taxes: rec.JTotalTaxes, airlines: rec.JAirlines },
   ]
   for (const c of cabins) {
     const miles = toNumber(c.miles)
     if (c.available && miles > 0) {
-      return { miles, taxesMinor: toNumber(c.taxes) }
+      return { miles, taxesMinor: toNumber(c.taxes), airlineCodes: parseAirlineCodes(c.airlines) }
     }
   }
   // Fall back to any positive mileage cost even if availability flag absent.
   for (const c of cabins) {
     const miles = toNumber(c.miles)
-    if (miles > 0) return { miles, taxesMinor: toNumber(c.taxes) }
+    if (miles > 0) return { miles, taxesMinor: toNumber(c.taxes), airlineCodes: parseAirlineCodes(c.airlines) }
   }
   return undefined
 }
@@ -117,12 +163,15 @@ export function normalizeSeatsAeroRecord(
   const destination = rec.Route?.DestinationAirport ?? params.to
   // Partner API taxes are minor units (cents) -> dollars.
   const taxes = Math.round((cabin.taxesMinor / 100) * 100) / 100
+  // Prefer the program's own carrier when it operates this cabin; else the
+  // partner metal; else fall back to the slug-derived code.
+  const airlineCode = resolveAirlineCode(cabin.airlineCodes, meta.code) ?? meta.code
 
   return {
     id: rec.ID ?? `seatsaero-${index}`,
     kind: 'award',
     airline: meta.airline,
-    airlineCode: meta.code,
+    airlineCode,
     program: meta.program,
     route: `${origin} → ${destination}`,
     date: displayDate(rec.Date) || displayDate(params.depart),

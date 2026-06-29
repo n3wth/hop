@@ -1,168 +1,140 @@
 import type { CppTier, FlightOption } from '@/lib/types'
+import Icon from './Icon'
+import BrandIcon from './BrandIcon'
 
 export interface ResultRowProps {
   option: FlightOption
-  pick?: boolean
+  /** 1-based rank among the alternatives (the pick lives in the hero). */
+  rank?: number
+  /** Max cpp across the alternatives, to scale value bars relatively. */
+  maxCpp?: number
 }
 
-const TILE_BG: Record<string, string> = {
-  AS: 'bg-as',
-  WN: 'bg-wn',
-  UA: 'bg-ua',
+// Value chip color by tier — semantic, not all-teal.
+const CHIP: Record<CppTier, string> = {
+  green: 'bg-good-bg text-good',
+  amber: 'bg-ok-bg text-ok',
+  muted: 'bg-weak-bg text-weak',
+}
+const BAR: Record<CppTier, string> = {
+  green: 'var(--color-brand)',
+  amber: 'var(--color-amber)',
+  muted: 'var(--color-weak)',
 }
 
-const TIER_TEXT: Record<CppTier, string> = {
-  green: 'text-good',
-  amber: 'text-ok',
-  muted: 'text-text3',
+function rankLabel(option: FlightOption, rank?: number): string {
+  if (option.kind === 'cash') return 'Cash'
+  if (rank == null) return ''
+  const map: Record<number, string> = { 1: 'Runner-up', 2: '3rd', 3: '4th', 4: '5th' }
+  return map[rank] ?? `${rank + 1}th`
 }
 
-interface Metric {
-  label: string
-  value: string
-  className?: string
+// One plain assessment line — no first-person bunny theatrics (copy-spec).
+function assessment(option: FlightOption): string {
+  if (option.note) return option.note
+  if (option.kind === 'cash') return 'Cash fare — keep your points.'
+  if (option.tier === 'muted') return 'Skip it. Weak redemption here.'
+  return 'Workable redemption on this route.'
 }
 
-// Build the right-aligned metric columns from the option, matching v9 per kind.
-function buildMetrics(option: FlightOption): Metric[] {
-  const cppText =
-    option.cpp != null ? `${option.cpp.toFixed(1)}¢/pt` : undefined
-  const youHave =
-    option.youHave != null ? option.youHave.toLocaleString() : undefined
-
-  if (option.kind === 'cash') {
-    return [
-      { label: 'Price', value: option.cashPrice != null ? `$${option.cashPrice.toLocaleString()}` : '—' },
-      {
-        label: 'Type',
-        value: option.roundTrip ? 'RT' : 'OW',
-        className: 'text-text3 text-[13px] font-semibold',
-      },
-      {
-        label: 'Earn',
-        value: option.earn != null ? `~$${option.earn.toFixed(2)}` : '—',
-        className: 'text-brand text-[13px]',
-      },
-    ]
-  }
-
-  // award + transfer share the same Miles/Value/You-have layout
-  const milesLabel = option.kind === 'transfer' ? 'Miles' : option.program?.includes('Southwest') ? 'Points' : 'Miles'
-  return [
-    {
-      label: milesLabel,
-      value: option.miles != null ? option.miles.toLocaleString() : '—',
-      className: TIER_TEXT[option.tier],
-    },
-    {
-      label: 'Value',
-      value: cppText ?? '—',
-      className: TIER_TEXT[option.tier],
-    },
-    {
-      label: 'You have',
-      value: youHave ?? '—',
-      className: 'text-text3 font-semibold',
-    },
-  ]
-}
-
-interface ActionConfig {
-  text: string
-  variant: 'primary' | 'secondary' | 'ghost'
-}
-
-function buildAction(option: FlightOption, pick: boolean): ActionConfig {
-  // Honor the explicit action intent decided at assembly time (lib/search.ts).
+function actionLabel(option: FlightOption): string {
   switch (option.action) {
     case 'book-cash':
-      return { text: 'Book cash', variant: 'secondary' }
+      return 'Book cash'
     case 'pay-cash':
-      return { text: 'Pay cash instead →', variant: 'ghost' }
+      return 'Pay cash instead'
     case 'transfer':
-      return { text: 'Transfer', variant: 'secondary' }
+      return 'Transfer & book'
     case 'book-points':
-      return { text: 'Book points', variant: pick ? 'primary' : 'secondary' }
+      return 'Book with miles'
   }
-
-  // Fallback for options without an explicit action (defensive).
-  if (option.kind === 'cash') return { text: 'Book cash', variant: 'secondary' }
-  if (option.kind === 'transfer') return { text: 'Transfer', variant: 'secondary' }
-  if (option.tier === 'muted') return { text: 'Pay cash instead →', variant: 'ghost' }
-  return { text: 'Book points', variant: pick ? 'primary' : 'secondary' }
+  if (option.kind === 'cash') return 'Book cash'
+  if (option.kind === 'transfer') return 'Transfer & book'
+  return 'Book with miles'
 }
 
-const BTN_VARIANT: Record<ActionConfig['variant'], string> = {
-  primary: 'bg-brand text-white hover:bg-brand-deep',
-  secondary: 'bg-surface text-text border border-border hover:bg-sunk',
-  ghost: 'bg-transparent text-text3 hover:text-text2',
-}
+// Editorial alternative card. Ranked, with a value bar so the best deal reads
+// instantly, a semantic value chip, and one factual assessment line.
+export default function ResultRow({ option, rank, maxCpp }: ResultRowProps) {
+  const isCash = option.kind === 'cash'
+  const cpp = option.cpp
+  const cppText = cpp != null ? `${cpp.toFixed(1)}¢` : null
 
-export default function ResultRow({ option, pick = false }: ResultRowProps) {
-  const tileBg = (option.airlineCode && TILE_BG[option.airlineCode]) || 'bg-brand'
-  const monogram =
-    option.airlineCode ?? option.airline.slice(0, 2).toUpperCase()
-  const metrics = buildMetrics(option)
-  const action = buildAction(option, pick)
+  // Value bar: award/transfer scaled by cpp vs the strongest alternative; cash
+  // gets a fixed neutral baseline (it has no cpp).
+  const barPct = isCash
+    ? 40
+    : cpp != null && maxCpp
+      ? Math.max(10, Math.round((cpp / maxCpp) * 100))
+      : 0
+  const barColor = isCash ? 'var(--color-text2)' : BAR[option.tier]
+
+  const unit = option.program?.toLowerCase().includes('southwest') ? 'pts' : 'mi'
 
   return (
-    <div
-      className={[
-        'flex cursor-pointer items-center gap-[15px] border-b border-hair px-[18px] py-4 transition-colors last:border-b-0',
-        pick ? 'bg-brand-tint hover:bg-[#e6f3ef]' : 'hover:bg-sunk',
-      ].join(' ')}
+    <article
+      className="flex min-h-[268px] flex-col rounded-[20px] border-[1.5px] border-border bg-paper px-[22px] pb-[22px] pt-6 transition-colors hover:border-brand-mint-deep"
     >
-      <div
-        className={[
-          'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-xs font-bold tracking-[-0.02em] text-white',
-          tileBg,
-        ].join(' ')}
-      >
-        {monogram}
+      <div className="flex items-start justify-between">
+        <BrandIcon code={option.airlineCode} name={option.airline} size={46} />
+        <span className="font-display text-[14px] font-semibold text-text3">
+          {rankLabel(option, rank)}
+        </span>
       </div>
 
-      <div className="w-[248px] min-w-0 flex-shrink-0">
-        <div className="mb-0.5 flex items-center gap-2 text-[14.5px] font-bold tracking-[-0.01em]">
-          {option.airline}
-          {option.direct ? (
-            <span className="inline-flex rounded-full bg-good-bg px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.03em] text-good">
-              Direct
+      <div className="mt-[18px] font-display text-[19px] font-semibold leading-[1.1] text-text">
+        {option.airline}
+      </div>
+      <div className="mt-[5px] text-[12.5px] tracking-[0.02em] text-text3">
+        {option.direct ? 'Direct · ' : ''}
+        {option.route}
+        {option.durationMin != null
+          ? ` · ${Math.floor(option.durationMin / 60)}h ${option.durationMin % 60}m`
+          : ''}
+      </div>
+
+      <div className="mt-auto pt-[18px]">
+        <div className="font-display text-[30px] font-semibold leading-none tracking-[-0.01em] text-text">
+          {isCash
+            ? `$${option.cashPrice?.toLocaleString() ?? '—'}`
+            : option.miles?.toLocaleString() ?? '—'}
+          <small className="text-[14px] font-medium text-text3">
+            {isCash ? ' rt' : ` ${unit}`}
+          </small>
+        </div>
+
+        <div className="mt-[10px] flex items-center gap-2">
+          {cppText ? (
+            <span className={`rounded-[7px] px-[9px] py-1 text-[11.5px] font-semibold ${CHIP[option.tier]}`}>
+              {cppText} / pt
+            </span>
+          ) : option.earn != null ? (
+            <span className="rounded-[7px] bg-sunk px-[9px] py-1 text-[11.5px] font-semibold text-text2">
+              earns ~${option.earn.toFixed(2)}
             </span>
           ) : null}
         </div>
-        <div className="text-[12.5px] text-text2">
-          {option.date} · {option.route}
-          {option.durationMin != null
-            ? ` · ${Math.floor(option.durationMin / 60)}h ${option.durationMin % 60}m`
-            : ''}
+
+        {/* value bar — visual ranking */}
+        <div className="mt-[14px] h-[6px] overflow-hidden rounded-full bg-border">
+          <span
+            className="block h-full rounded-full"
+            style={{ width: `${barPct}%`, background: barColor }}
+          />
         </div>
-        {option.note ? <div className="mt-0.5 text-[11.5px] text-text3">{option.note}</div> : null}
       </div>
 
-      <div className="ml-auto flex flex-shrink-0 items-center">
-        {metrics.map((m) => (
-          <div key={m.label} className="w-20 text-right">
-            <div className="mb-[3px] text-[10px] font-bold uppercase tracking-[0.05em] text-text3">
-              {m.label}
-            </div>
-            <div className={['text-[15px] font-bold tabular-nums', m.className].filter(Boolean).join(' ')}>
-              {m.value}
-            </div>
-          </div>
-        ))}
-      </div>
+      <p className="mt-3 text-[12.5px] leading-[1.45] text-text2">{assessment(option)}</p>
 
-      <div className="ml-[18px] flex w-[132px] flex-shrink-0 justify-end">
+      <div className="mt-4">
         <a
           href={option.bookingUrl}
-          className={[
-            'inline-flex items-center gap-[5px] whitespace-nowrap rounded-[10px] px-4 py-[9px] text-[13px] font-semibold transition-colors',
-            BTN_VARIANT[action.variant],
-          ].join(' ')}
+          className="flex w-full items-center justify-center gap-[6px] rounded-[11px] border-[1.5px] border-text bg-transparent px-3 py-[11px] text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
         >
-          {action.text}
+          {actionLabel(option)}
+          <Icon name="swap_horiz" size={15} className="hidden" />
         </a>
       </div>
-    </div>
+    </article>
   )
 }

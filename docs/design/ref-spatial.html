@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>hop — SFO → LAX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Hanken+Grotesque:wght@400..700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --teal: #0d6e6e;
+    --teal-deep: #094f4f;
+    --teal-ink: #052e2e;
+    --mint: #e3f1ef;
+    --mint-soft: #eef6f4;
+    --cream: #f3f1ec;
+    --cream-deep: #ece9e1;
+    --ink: #142523;
+    --ink-soft: #4a5a57;
+    --gold: #c98a2b;
+    --rust: #b4541f;
+    --white: #ffffff;
+    --shadow-soft: 0 18px 50px -28px rgba(9,79,79,.4);
+    --shadow-hero: 0 40px 90px -40px rgba(9,79,79,.55);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Hanken Grotesque', system-ui, sans-serif;
+    background:
+      radial-gradient(1200px 700px at 82% -8%, #e9f3f0 0%, transparent 60%),
+      radial-gradient(900px 600px at 8% 110%, #eaf2ef 0%, transparent 55%),
+      var(--cream);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01em;
+  }
+
+  .display { font-family: 'Bricolage Grotesque', sans-serif; }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    padding: 26px 56px 0;
+    max-width: 1440px;
+    margin: 0 auto;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand .logo {
+    width: 46px; height: 46px;
+    color: var(--teal);
+    display: grid; place-items: center;
+  }
+  .brand .logo svg { width: 46px; height: 46px; display: block; }
+  .brand .word {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 700; font-size: 28px;
+    letter-spacing: -0.04em; color: var(--ink);
+  }
+
+  .route-pill {
+    margin-left: 6px;
+    display: flex; align-items: center; gap: 16px;
+    background: var(--white);
+    border: 1px solid rgba(13,110,110,.12);
+    border-radius: 999px;
+    padding: 10px 12px 10px 22px;
+    box-shadow: 0 8px 24px -18px rgba(9,79,79,.5);
+  }
+  .route-pill .seg { display: flex; flex-direction: column; line-height: 1.05; }
+  .route-pill .seg .lbl { font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em; color: var(--ink-soft); font-weight: 600; }
+  .route-pill .seg .val { font-size: 15px; font-weight: 600; color: var(--ink); }
+  .route-pill .arrow { color: var(--teal); display: grid; place-items: center; }
+  .route-pill .arrow svg { width: 20px; height: 20px; }
+  .route-pill .divider { width: 1px; height: 26px; background: rgba(13,110,110,.14); }
+  .route-pill .go {
+    width: 40px; height: 40px; border-radius: 999px;
+    background: var(--teal); color: #fff; border: none;
+    display: grid; place-items: center; cursor: pointer;
+  }
+  .route-pill .go svg { width: 19px; height: 19px; }
+
+  .topbar .spacer { flex: 1; }
+  .avatar {
+    width: 42px; height: 42px; border-radius: 999px;
+    background: linear-gradient(180deg, #0f7a7a, #0a5757);
+    color: #fff; display: grid; place-items: center;
+    font-weight: 700; font-size: 16px;
+    font-family: 'Bricolage Grotesque', sans-serif;
+  }
+
+  /* ---------- layout shell ---------- */
+  .stage {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 28px 56px 80px;
+    display: grid;
+    grid-template-columns: 1fr 312px;
+    gap: 34px;
+    align-items: start;
+  }
+
+  /* ---------- verdict header ---------- */
+  .verdict {
+    grid-column: 1 / -1;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 30px;
+    margin-bottom: 6px;
+  }
+  .verdict .lede { max-width: 640px; }
+  .verdict .kicker {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 600; letter-spacing: .04em;
+    color: var(--teal-deep);
+    background: var(--mint);
+    border-radius: 999px; padding: 6px 14px 6px 10px;
+    margin-bottom: 14px;
+  }
+  .verdict .kicker .dot { width: 7px; height: 7px; border-radius: 999px; background: var(--teal); box-shadow: 0 0 0 4px rgba(13,110,110,.16); }
+  .verdict h1 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 700;
+    font-size: 54px; line-height: .98;
+    letter-spacing: -0.035em;
+    color: var(--ink);
+  }
+  .verdict h1 em { font-style: normal; color: var(--teal); }
+  .verdict .sub { margin-top: 14px; font-size: 16px; color: var(--ink-soft); max-width: 520px; line-height: 1.45; }
+  .verdict .sub b { color: var(--ink); font-weight: 700; }
+
+  .savings-orb {
+    flex-shrink: 0;
+    position: relative;
+    width: 230px; height: 230px;
+    border-radius: 50%;
+    background:
+      radial-gradient(120px 120px at 35% 28%, #128585 0%, transparent 70%),
+      linear-gradient(155deg, #0e7575 0%, #094f4f 100%);
+    color: #fff;
+    display: grid; place-items: center; text-align: center;
+    box-shadow: var(--shadow-hero), inset 0 2px 0 rgba(255,255,255,.18);
+  }
+  .savings-orb::before {
+    content: ""; position: absolute; inset: 12px; border-radius: 50%;
+    border: 1.5px dashed rgba(255,255,255,.28);
+  }
+  .savings-orb .inner { position: relative; }
+  .savings-orb .cap { font-size: 11.5px; text-transform: uppercase; letter-spacing: .18em; opacity: .8; font-weight: 600; }
+  .savings-orb .amt { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 62px; line-height: 1; letter-spacing: -.04em; margin: 4px 0 2px; }
+  .savings-orb .vs { font-size: 12.5px; opacity: .82; }
+  .savings-orb .badge {
+    position: absolute; top: 4px; left: -14px;
+    background: var(--gold); color: #3a2607;
+    font-size: 11px; font-weight: 700; letter-spacing: .03em;
+    padding: 7px 13px; border-radius: 999px;
+    box-shadow: 0 10px 24px -10px rgba(201,138,43,.7);
+    transform: rotate(-7deg);
+  }
+
+  /* ---------- canvas of options ---------- */
+  .canvas { display: flex; flex-direction: column; gap: 20px; }
+
+  .tier-label {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 12px; font-weight: 600; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--ink-soft);
+    margin: 6px 2px -4px;
+  }
+  .tier-label .line { flex: 1; height: 1px; background: linear-gradient(90deg, rgba(13,110,110,.2), transparent); }
+
+  /* generic card */
+  .card {
+    position: relative;
+    background: var(--white);
+    border: 1px solid rgba(13,110,110,.1);
+    border-radius: 26px;
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+  }
+
+  /* HERO — biggest, most saturated, the winner */
+  .hero {
+    border: 1.5px solid rgba(13,110,110,.28);
+    box-shadow: var(--shadow-hero);
+    background:
+      radial-gradient(520px 280px at 88% -10%, #e7f4f1 0%, transparent 62%),
+      var(--white);
+  }
+  .hero .ribbon {
+    position: absolute; top: 26px; left: -1px;
+    background: var(--teal); color: #fff;
+    font-size: 12px; font-weight: 700; letter-spacing: .04em;
+    padding: 8px 18px 8px 26px;
+    border-radius: 0 999px 999px 0;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 12px 30px -16px rgba(9,79,79,.7);
+  }
+  .hero .ribbon svg { width: 16px; height: 16px; }
+  .hero .body { display: grid; grid-template-columns: 1.25fr .95fr; }
+  .hero .left { padding: 70px 38px 38px; }
+  .hero .airline {
+    display: flex; align-items: center; gap: 15px; margin-bottom: 22px;
+  }
+  .logo-chip {
+    display: grid; place-items: center; line-height: 1;
+    font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700;
+    color: #fff; overflow: hidden;
+  }
+  .hero .logo-chip {
+    width: 58px; height: 58px; border-radius: 17px;
+    font-size: 21px;
+    box-shadow: 0 12px 26px -14px rgba(0,0,0,.4);
+  }
+  .chip-as { background: linear-gradient(160deg,#1b2b6b,#0f1b4a); }
+  .chip-wn { background: linear-gradient(160deg,#2f5fd6,#1f3fa0); }
+  .chip-ua { background: linear-gradient(160deg,#37557d,#22364f); }
+  .hero .airline .name { font-family:'Bricolage Grotesque',sans-serif; font-weight: 700; font-size: 27px; letter-spacing: -.02em; color: var(--ink); line-height: 1; }
+  .hero .airline .meta { font-size: 13.5px; color: var(--ink-soft); margin-top: 5px; }
+  .tag-direct {
+    display: inline-flex; align-items:center; gap:5px;
+    font-size: 11px; font-weight: 700; letter-spacing: .06em;
+    color: var(--teal-deep); background: var(--mint);
+    padding: 4px 9px; border-radius: 7px; vertical-align: middle;
+  }
+  .hero .flight-line { display:flex; align-items:center; gap:14px; margin-bottom: 30px; }
+  .hero .flight-line .pt { text-align:center; }
+  .hero .flight-line .pt .code { font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:22px; letter-spacing:-.02em; }
+  .hero .flight-line .pt .time { font-size: 12.5px; color: var(--ink-soft); }
+  .hero .flight-line .path { flex:1; display:flex; align-items:center; gap:8px; color: var(--teal); }
+  .hero .flight-line .path .ln { flex:1; height:2px; background: repeating-linear-gradient(90deg, rgba(13,110,110,.35) 0 6px, transparent 6px 12px); }
+  .hero .flight-line .path .plane { display:grid; place-items:center; }
+  .hero .flight-line .path .plane svg { width:18px; height:18px; transform: rotate(45deg); }
+  .hero .flight-line .dur { font-size:12px; color: var(--ink-soft); white-space:nowrap; }
+
+  .hero .cta {
+    display:inline-flex; align-items:center; gap:10px;
+    background: var(--teal); color:#fff; border:none;
+    font-family:'Hanken Grotesque',sans-serif; font-weight: 700; font-size: 16px;
+    padding: 16px 26px; border-radius: 15px; cursor:pointer;
+    box-shadow: 0 18px 36px -16px rgba(9,79,79,.6);
+  }
+  .hero .cta svg { width:18px; height:18px; }
+  .hero .cta-note { font-size: 12.5px; color: var(--ink-soft); margin-top: 12px; }
+  .hero .cta-note b { color: var(--teal-deep); }
+
+  /* right value panel of hero — the CPP felt visually */
+  .hero .right {
+    background: linear-gradient(165deg, #0f7676 0%, #0a5252 100%);
+    color:#fff; padding: 40px 36px;
+    display:flex; flex-direction:column; justify-content:center; gap: 26px;
+    position: relative;
+  }
+  .hero .right::after {
+    content:""; position:absolute; left:0; top:18%; bottom:18%; width:1px;
+    background: linear-gradient(180deg, transparent, rgba(255,255,255,.25), transparent);
+  }
+  .cpp-meter { }
+  .cpp-meter .label { font-size: 11.5px; text-transform:uppercase; letter-spacing:.16em; opacity:.78; font-weight:600; margin-bottom: 6px; }
+  .cpp-meter .big { font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size: 58px; line-height:.9; letter-spacing:-.04em; }
+  .cpp-meter .big .u { font-size:24px; opacity:.8; font-weight:600; }
+  .cpp-meter .bar { margin-top:14px; height:9px; border-radius:999px; background: rgba(255,255,255,.18); overflow:hidden; }
+  .cpp-meter .bar > i { display:block; height:100%; border-radius:999px; background: linear-gradient(90deg,#ffd98a,#f4b13c); }
+  .cpp-meter .scale { display:flex; justify-content:space-between; font-size:10.5px; opacity:.65; margin-top:6px; }
+
+  .hero .cost-row { display:flex; gap: 28px; }
+  .hero .cost-row .c .k { font-size:11px; text-transform:uppercase; letter-spacing:.12em; opacity:.72; font-weight:600; }
+  .hero .cost-row .c .v { font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:27px; letter-spacing:-.02em; margin-top:3px; }
+  .hero .cost-row .c .v small { font-size:13px; opacity:.7; font-weight:600; }
+  .hero .have { font-size:12.5px; opacity:.85; display:flex; align-items:center; gap:7px; }
+  .hero .have .ok { color:#a9e7c4; display:grid; place-items:center; }
+  .hero .have .ok svg { width:16px; height:16px; }
+
+  /* MID tier — two side-by-side, medium weight */
+  .mid-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .mcard { padding: 26px 26px 22px; display:flex; flex-direction:column; }
+  .mcard .top { display:flex; align-items:center; gap:13px; margin-bottom:20px; }
+  .mcard .logo-chip { width:46px; height:46px; border-radius:13px; font-size:16px; }
+  .mcard .name { font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:20px; letter-spacing:-.02em; color:var(--ink); line-height:1; }
+  .mcard .name .meta { display:block; font-family:'Hanken Grotesque',sans-serif; font-weight:400; font-size:12.5px; color:var(--ink-soft); margin-top:5px; letter-spacing:0; }
+  .mcard .midband { display:flex; align-items:flex-end; justify-content:space-between; margin: 4px 0 18px; }
+  .mcard .price .pts { font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:30px; letter-spacing:-.03em; color:var(--ink); line-height:1; }
+  .mcard .price .pts small { font-size:13px; color:var(--ink-soft); font-weight:600; letter-spacing:0; }
+  .mcard .cpp-tag {
+    display:inline-flex; align-items:baseline; gap:3px;
+    font-family:'Bricolage Grotesque',sans-serif; font-weight:700;
+    font-size:22px; letter-spacing:-.03em;
+    padding:7px 13px; border-radius:12px;
+  }
+  .cpp-good { color: var(--teal-deep); background: var(--mint); }
+  .cpp-mid  { color: #8a6410; background: #f6ecd4; }
+  .cpp-tag small { font-size:11px; font-weight:600; opacity:.7; letter-spacing:0; }
+  .mcard .footer { display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding-top:16px; border-top:1px solid rgba(13,110,110,.1); }
+  .mcard .have2 { font-size:12px; color:var(--ink-soft); }
+  .mcard .have2 b { color:var(--ink); font-weight:700; }
+  .mcard .btn2 {
+    display:inline-flex; align-items:center; gap:7px;
+    font-family:'Hanken Grotesque',sans-serif; font-weight:700; font-size:13.5px;
+    color:var(--teal-deep); background:var(--white);
+    border:1.5px solid rgba(13,110,110,.25); border-radius:11px;
+    padding:9px 15px; cursor:pointer;
+  }
+  .mcard .btn2 svg { width:15px; height:15px; }
+
+  /* WEAK tier — receded: small, desaturated, lower contrast */
+  .weak-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .wcard {
+    background: rgba(255,255,255,.55);
+    border:1px solid rgba(13,110,110,.08);
+    border-radius:20px; box-shadow:none;
+    padding: 18px 20px;
+    display:flex; align-items:center; gap:15px;
+    opacity:.92;
+  }
+  .wcard .logo-chip { width:40px; height:40px; border-radius:11px; font-size:14px; filter: saturate(.6); opacity:.9; }
+  .wcard .info { flex:1; }
+  .wcard .info .nm { font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:16px; color:var(--ink-soft); letter-spacing:-.01em; }
+  .wcard .info .ds { font-size:11.5px; color:var(--ink-soft); opacity:.8; margin-top:2px; }
+  .wcard .nums { text-align:right; }
+  .wcard .nums .pts { font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:18px; color:var(--ink-soft); letter-spacing:-.02em; }
+  .wcard .nums .cpp { font-size:12px; font-weight:700; margin-top:2px; }
+  .cpp-weak { color: var(--rust); }
+  .wcard .nums .cpp.cash { color: var(--ink-soft); }
+  .wcard .go-mini {
+    width:34px; height:34px; border-radius:10px;
+    border:1px solid rgba(13,110,110,.18); background:#fff;
+    display:grid; place-items:center; cursor:pointer; color:var(--ink-soft);
+  }
+  .wcard .go-mini svg { width:15px; height:15px; }
+
+  /* ---------- right rail: bunny + fuel wallet ---------- */
+  .rail { position: sticky; top: 24px; display:flex; flex-direction:column; gap: 20px; }
+
+  .bunny-card {
+    background: linear-gradient(165deg, #0f7676, #0a5050);
+    border-radius: 26px; padding: 24px 24px 22px;
+    color:#fff; position:relative; overflow:hidden;
+    box-shadow: var(--shadow-soft);
+  }
+  .bunny-card .glyph {
+    position:absolute; right:-26px; bottom:-30px;
+    width: 168px; height:168px; color: rgba(255,255,255,.1);
+  }
+  .bunny-card .glyph svg { width:100%; height:100%; }
+  .bunny-card .hi { position:relative; }
+  .bunny-card .av {
+    width:46px; height:46px; border-radius:14px; background: rgba(255,255,255,.16);
+    display:grid; place-items:center; margin-bottom:14px; color:#fff;
+  }
+  .bunny-card .av svg { width:30px; height:30px; }
+  .bunny-card .say { font-family:'Bricolage Grotesque',sans-serif; font-weight:600; font-size:17.5px; line-height:1.25; letter-spacing:-.01em; }
+  .bunny-card .say em { font-style:normal; color:#ffd98a; }
+  .bunny-card .tip { position:relative; font-size:13px; opacity:.85; margin-top:10px; line-height:1.45; }
+
+  .wallet {
+    background: var(--white);
+    border:1px solid rgba(13,110,110,.1);
+    border-radius:26px; padding: 22px 22px 10px;
+    box-shadow: var(--shadow-soft);
+  }
+  .wallet .whead { display:flex; align-items:center; justify-content:space-between; margin-bottom: 4px; }
+  .wallet .whead .t { font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:18px; letter-spacing:-.02em; }
+  .wallet .whead .src { font-size:11px; color:var(--ink-soft); display:flex; align-items:center; gap:5px; }
+  .wallet .whead .src svg { width:13px; height:13px; }
+  .wallet .total {
+    display:flex; align-items:baseline; gap:8px; margin: 8px 0 4px;
+  }
+  .wallet .total .n { font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:38px; letter-spacing:-.04em; color:var(--ink); }
+  .wallet .total .u { font-size:13px; color:var(--ink-soft); font-weight:600; }
+  .wallet .totbar { height:10px; border-radius:999px; overflow:hidden; display:flex; gap:2px; margin:8px 0 18px; background:transparent; }
+  .wallet .totbar > span { height:100%; }
+  .seg-amex{background:#0f7676;} .seg-ba{background:#3a8d8d;} .seg-bilt{background:#6bb0a8;} .seg-chase{background:#94c7bf;} .seg-as{background:#c0ddd6;} .seg-wn{background:#dcebe7;}
+
+  .wallet .prog { display:flex; align-items:center; gap:12px; padding: 11px 0; border-top:1px solid rgba(13,110,110,.08); }
+  .wallet .prog:first-of-type { border-top:none; }
+  .wallet .prog .pchip {
+    width:34px; height:34px; border-radius:10px; flex-shrink:0;
+    display:grid; place-items:center; font-family:'Bricolage Grotesque',sans-serif;
+    font-weight:700; font-size:12.5px; color:#fff;
+  }
+  .wallet .prog .pinfo { flex:1; min-width:0; }
+  .wallet .prog .pinfo .pn { font-size:13.5px; font-weight:600; color:var(--ink); line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .wallet .prog .pinfo .pt2 { font-size:11px; color:var(--ink-soft); margin-top:1px; }
+  .wallet .prog .pamt { font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:15px; color:var(--ink); letter-spacing:-.02em; }
+  .wallet .prog.used { background: var(--mint-soft); margin:0 -10px; padding:11px 10px; border-radius:12px; border:none; }
+  .wallet .prog.used .usetag { font-size:10px; font-weight:700; color:var(--teal-deep); letter-spacing:.04em; }
+
+  .foot-note { text-align:center; font-size:11.5px; color:var(--ink-soft); opacity:.8; padding-top:4px; }
+</style>
+</head>
+<body>
+
+  <!-- ============ TOP BAR ============ -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">
+        <svg viewBox="0 0 462 466" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="hop">
+          <path d="M114.94 64.5434C104.821 56.6099 86.3047 43.1079 84.5152 28.9884C83.9387 24.2849 85.3897 19.5579 88.5057 15.9874C98.0727 4.82442 129.861 1.31189 144.397 0.403892C197.493 -2.91311 248.285 14.2634 288.095 49.6209C292.145 53.2169 295.835 57.9589 300.155 61.2459C330.145 54.0364 361.78 59.1229 388 75.3729C408.865 88.2219 430.325 110.803 436.145 135.243C440.805 154.807 436.15 173.613 425.6 190.362C416.285 205.154 409.68 210.084 396.58 220.279C412.91 219.125 440.33 217.804 452.445 229.932C472.86 250.372 457.82 273.907 432.835 276.822C440.055 283.097 444.425 288.017 445.335 298.012C446.95 315.807 433.43 327.057 416.715 327.457C401.59 327.822 388.275 320.682 373.275 319.947C357.96 319.332 346.145 323.742 330.4 323.632L329.855 324.057C321.705 330.467 315.365 337.707 306.1 344.422C270.1 370.482 238.675 378.582 196.01 383.552C182.256 401.832 162.842 414.202 140.019 417.532L139.617 417.587C138.213 420.992 136.41 424.047 134.559 427.327C122.695 448.322 101.175 472.562 74.3802 462.832C68.3222 460.637 64.5497 456.462 61.4282 450.947C59.1072 453.042 56.8876 454.967 54.3831 456.672C40.8536 465.877 19.0267 469.962 6.81915 456.367C6.20415 455.682 5.80718 455.237 5.40018 454.407L4.72766 453.952C-7.15934 435.572 5.72515 420.747 17.4727 407.107C30.3957 392.097 34.1267 370.772 43.3457 353.787C49.7807 341.932 60.4317 338.267 73.0882 339.027C72.0067 333.442 71.3147 328.992 70.6172 323.342C45.2777 320.802 26.4377 300.272 29.0097 274.482C30.1607 262.282 36.1087 251.042 45.5462 243.227C62.5112 229.382 80.5157 231.387 98.1232 242.297C113.151 226.947 127.967 218.116 148.534 211.463C155.414 209.281 162.431 207.557 169.539 206.302C187.334 203.074 219.725 200.223 230.275 184.495C225.71 169.113 222.645 158.259 224.96 141.844C207.068 144.006 189.592 151.622 172.215 156.324C129.224 167.955 81.5512 162.612 44.3242 137.37C35.6672 131.5 32.6287 118.332 39.8227 110.411C57.4742 90.9744 89.7692 71.7629 114.94 64.5434Z" fill="currentColor"/>
+          <path d="M172.219 87.8174C186.403 86.8864 207.939 90.1844 221.995 94.0299C228.13 95.7084 250.475 103.01 253.985 109.223C254.46 110.059 254.325 111.548 253.755 112.441C250.87 116.937 241.805 113.931 236.9 113.936C210.856 113.961 187.253 124.943 161.424 130.763C132.729 136.058 114.156 135.129 86.1362 125.278C83.5652 124.374 81.9127 123.448 80.7827 121.023C80.4287 115.374 89.7782 111.57 94.0407 109.092C118.777 94.7079 143.983 89.2264 172.219 87.8174Z" fill="#e3f1ef"/>
+          <path d="M324.055 112.259C338.845 111.373 354.4 117.703 361.805 132.011C364.465 137.154 357.55 140.035 352.745 138.718C346.495 137.007 339.57 136.164 333.19 138.195L332.53 138.413C329.39 139.997 324.415 143.087 320.765 140.663C318.43 139.114 319.48 135.599 321.03 133.756C325.675 128.22 333.615 126.904 340.415 126.226C332 121.66 328.05 123.038 319.235 121.201C317.475 120.834 316.035 119.752 315.165 118.113C314.76 113.269 320.655 112.669 324.055 112.259Z" fill="#e3f1ef"/>
+        </svg>
+      </span>
+      <span class="word">hop</span>
+    </div>
+
+    <div class="route-pill">
+      <div class="seg"><span class="lbl">From</span><span class="val">San Francisco</span></div>
+      <span class="arrow">
+        <svg viewBox="0 -960 960 960" fill="currentColor"><path d="M727-440H160q-17 0-28.5-11.5T120-480q0-17 11.5-28.5T160-520h567l-75-75q-11-11-11-27.5t11-28.5q12-12 28.5-12t28.5 12l143 143q6 6 8.5 13t2.5 15q0 8-2.5 15t-8.5 13L708-308q-12 12-28 11.5T652-309q-11-12-11.5-28t11.5-28l75-75Z"/></svg>
+      </span>
+      <div class="seg"><span class="lbl">To</span><span class="val">Los Angeles</span></div>
+      <span class="divider"></span>
+      <div class="seg"><span class="lbl">Dates</span><span class="val">Jul 9 – 12</span></div>
+      <span class="divider"></span>
+      <div class="seg"><span class="lbl">Who</span><span class="val">1 adult</span></div>
+      <button class="go">
+        <svg viewBox="0 -960 960 960" fill="currentColor"><path d="M380-320q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l224 224q11 11 11 28t-11 28q-11 11-28 11t-28-11L532-372q-30 24-69 38t-83 14Zm0-80q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"/></svg>
+      </button>
+    </div>
+
+    <div class="spacer"></div>
+    <div class="avatar">O</div>
+  </header>
+
+  <!-- ============ STAGE ============ -->
+  <main class="stage">
+
+    <!-- VERDICT -->
+    <section class="verdict">
+      <div class="lede">
+        <span class="kicker"><span class="dot"></span>The bunny crunched 5 ways to fly</span>
+        <h1>Pay with <em>points</em>,<br/>not dollars.</h1>
+        <p class="sub">Your <b>Alaska miles</b> stretch to <b>5.4¢ each</b> on this route — the single best redemption in your wallet right now. Booking cash would set fire to about a hundred bucks of value.</p>
+      </div>
+      <div class="savings-orb">
+        <span class="badge">▲ best deal</span>
+        <div class="inner">
+          <div class="cap">You save</div>
+          <div class="amt">$243</div>
+          <div class="vs">vs. $254 cash</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LEFT: CANVAS OF OPTIONS -->
+    <section class="canvas">
+
+      <!-- HERO CARD -->
+      <article class="card hero">
+        <span class="ribbon">
+          <svg viewBox="0 -960 960 960" fill="currentColor"><path d="m480-483-68 52q-6 5-12 .5t-4-11.5l26-84-70-56q-5-5-3-11.5t9-6.5h86l26-82q2-7 10-7t10 7l26 82h85q7 0 9.5 6.5T608-582l-71 56 26 84q2 7-4 11.5t-12-.5l-67-52Zm0 363L293-58q-20 7-36.5-5T240-95v-254q-38-42-59-96t-21-115q0-134 93-227t227-93q134 0 227 93t93 227q0 61-21 115t-59 96v254q0 20-16.5 32T667-58l-187-62Z"/></svg>
+          Bunny's pick
+        </span>
+        <div class="body">
+          <div class="left">
+            <div class="airline">
+              <div class="logo-chip chip-as">AS</div>
+              <div>
+                <div class="name">Alaska Atmos</div>
+                <div class="meta"><span class="tag-direct">DIRECT</span> &nbsp;Operated by Alaska / American</div>
+              </div>
+            </div>
+
+            <div class="flight-line">
+              <div class="pt"><div class="code">SFO</div><div class="time">9:05a</div></div>
+              <div class="path">
+                <span class="ln"></span>
+                <span class="plane"><svg viewBox="0 -960 960 960" fill="currentColor"><path d="M480-120 377-91q-14 4-25.5-4.5T340-118q0-12 3-19.5t8-11.5l69-51v-220l-291 86q-19 5-34-6t-15-31q0-15 5-25t14-15l321-189v-220q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v220l321 189q9 5 14 15t5 25q0 20-15 31t-34 6l-291-86v220l69 51q5 4 8 11.5t3 19.5q0 14-11.5 22.5T583-91l-103-29Z"/></svg></span>
+                <span class="ln"></span>
+              </div>
+              <div class="pt"><div class="code">LAX</div><div class="time">10:37a</div></div>
+              <div class="dur">1h 32m · nonstop</div>
+            </div>
+
+            <button class="cta">
+              Transfer &amp; book
+              <svg viewBox="0 -960 960 960" fill="currentColor"><path d="M647-440H160q-17 0-28.5-11.5T120-480q0-17 11.5-28.5T160-520h487L532-635q-12-12-11.5-28t11.5-28q12-12 28.5-12.5T589-692l183 184q6 6 8.5 13t2.5 15q0 8-2.5 15t-8.5 13L589-268q-12 12-28.5 11.5T532-269q-11-12-11.5-28t11.5-28l115-115Z"/></svg>
+            </button>
+            <div class="cta-note">You hold <b>42,766 mi</b> — that covers <b>9 of these flights</b>.</div>
+          </div>
+
+          <div class="right">
+            <div class="cpp-meter">
+              <div class="label">Value per point</div>
+              <div class="big">5.4<span class="u">¢</span></div>
+              <div class="bar"><i style="width:96%"></i></div>
+              <div class="scale"><span>weak · 1¢</span><span>elite · 5.6¢</span></div>
+            </div>
+            <div class="cost-row">
+              <div class="c"><div class="k">Miles</div><div class="v">4,500</div></div>
+              <div class="c"><div class="k">Cash equiv.</div><div class="v">$243 <small>saved</small></div></div>
+            </div>
+            <div class="have">
+              <span class="ok"><svg viewBox="0 -960 960 960" fill="currentColor"><path d="m424-408-86-86q-11-11-28-11t-28 11q-11 11-11 28t11 28l114 114q12 12 28 12t28-12l226-226q11-11 11-28t-11-28q-11-11-28-11t-28 11L424-408Zm56 328q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z"/></svg></span>
+              Enough points in your Alaska account — ready to fly.
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- MID TIER -->
+      <div class="tier-label">Solid alternatives <span class="line"></span></div>
+      <div class="mid-grid">
+
+        <article class="card mcard">
+          <div class="top">
+            <div class="logo-chip chip-wn">WN</div>
+            <div class="name">Southwest<span class="meta">Direct · points price varies</span></div>
+          </div>
+          <div class="midband">
+            <div class="price"><div class="pts">6,000 <small>pts</small></div></div>
+            <div class="cpp-tag cpp-good">4.1<small>¢/pt</small></div>
+          </div>
+          <div class="footer">
+            <div class="have2">You have <b>36,304</b></div>
+            <button class="btn2">Book points
+              <svg viewBox="0 -960 960 960" fill="currentColor"><path d="M647-440H160q-17 0-28.5-11.5T120-480q0-17 11.5-28.5T160-520h487L532-635q-12-12-11.5-28t11.5-28q12-12 28.5-12.5T589-692l183 184q6 6 8.5 13t2.5 15q0 8-2.5 15t-8.5 13L589-268q-12 12-28.5 11.5T532-269q-11-12-11.5-28t11.5-28l115-115Z"/></svg>
+            </button>
+          </div>
+        </article>
+
+        <article class="card mcard">
+          <div class="top">
+            <div class="logo-chip chip-ua">UA</div>
+            <div class="name">United · via Aeroplan<span class="meta">Direct · transfer Amex MR or Chase UR</span></div>
+          </div>
+          <div class="midband">
+            <div class="price"><div class="pts">10,000 <small>mi</small></div></div>
+            <div class="cpp-tag cpp-mid">2.5<small>¢/pt</small></div>
+          </div>
+          <div class="footer">
+            <div class="have2">Transferable <b>340,358</b></div>
+            <button class="btn2">Transfer
+              <svg viewBox="0 -960 960 960" fill="currentColor"><path d="m233-320 75 75q11 11 11 27.5T308-189q-12 12-28.5 12T251-189L108-332q-6-6-8.5-13T97-360q0-8 2.5-15t8.5-13l144-144q12-12 28-11.5t28 12.5q11 12 11.5 28T308-475l-75 75h247q17 0 28.5 11.5T520-360q0 17-11.5 28.5T480-320H233Zm494-240H480q-17 0-28.5-11.5T440-600q0-17 11.5-28.5T480-640h247l-75-75q-11-11-11-27.5t11-28.5q12-12 28.5-12t28.5 12l143 143q6 6 8.5 13t2.5 15q0 8-2.5 15t-8.5 13L708-428q-12 12-28 11.5T652-429q-11-12-11.5-28t11.5-28l75-75Z"/></svg>
+            </button>
+          </div>
+        </article>
+      </div>
+
+      <!-- WEAK TIER — receded -->
+      <div class="tier-label">Worth skipping here <span class="line"></span></div>
+      <div class="weak-grid">
+
+        <article class="wcard">
+          <div class="logo-chip chip-ua">UA</div>
+          <div class="info">
+            <div class="nm">United MileagePlus</div>
+            <div class="ds">Dynamic pricing · weak value</div>
+          </div>
+          <div class="nums">
+            <div class="pts">14,100 mi</div>
+            <div class="cpp cpp-weak">1.8¢/pt</div>
+          </div>
+          <button class="go-mini"><svg viewBox="0 -960 960 960" fill="currentColor"><path d="M504-480 348-636q-11-11-11-28t11-28q11-11 28-11t28 11l184 184q6 6 8.5 13t2.5 15q0 8-2.5 15t-8.5 13L404-268q-11 11-28 11t-28-11q-11-11-11-28t11-28l156-156Z"/></svg></button>
+        </article>
+
+        <article class="wcard">
+          <div class="logo-chip chip-ua">UA</div>
+          <div class="info">
+            <div class="nm">United · cash</div>
+            <div class="ds">Round trip · via Kiwi</div>
+          </div>
+          <div class="nums">
+            <div class="pts">$254</div>
+            <div class="cpp cpp cash">earn ~$7.62</div>
+          </div>
+          <button class="go-mini"><svg viewBox="0 -960 960 960" fill="currentColor"><path d="M504-480 348-636q-11-11-11-28t11-28q11-11 28-11t28 11l184 184q6 6 8.5 13t2.5 15q0 8-2.5 15t-8.5 13L404-268q-11 11-28 11t-28-11q-11-11-11-28t11-28l156-156Z"/></svg></button>
+        </article>
+      </div>
+    </section>
+
+    <!-- RIGHT RAIL -->
+    <aside class="rail">
+      <div class="bunny-card">
+        <div class="glyph">
+          <svg viewBox="0 0 462 466" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M114.94 64.5434C104.821 56.6099 86.3047 43.1079 84.5152 28.9884C83.9387 24.2849 85.3897 19.5579 88.5057 15.9874C98.0727 4.82442 129.861 1.31189 144.397 0.403892C197.493 -2.91311 248.285 14.2634 288.095 49.6209C292.145 53.2169 295.835 57.9589 300.155 61.2459C330.145 54.0364 361.78 59.1229 388 75.3729C408.865 88.2219 430.325 110.803 436.145 135.243C440.805 154.807 436.15 173.613 425.6 190.362C416.285 205.154 409.68 210.084 396.58 220.279C412.91 219.125 440.33 217.804 452.445 229.932C472.86 250.372 457.82 273.907 432.835 276.822C440.055 283.097 444.425 288.017 445.335 298.012C446.95 315.807 433.43 327.057 416.715 327.457C401.59 327.822 388.275 320.682 373.275 319.947C357.96 319.332 346.145 323.742 330.4 323.632L329.855 324.057C321.705 330.467 315.365 337.707 306.1 344.422C270.1 370.482 238.675 378.582 196.01 383.552C182.256 401.832 162.842 414.202 140.019 417.532L139.617 417.587C138.213 420.992 136.41 424.047 134.559 427.327C122.695 448.322 101.175 472.562 74.3802 462.832C68.3222 460.637 64.5497 456.462 61.4282 450.947C59.1072 453.042 56.8876 454.967 54.3831 456.672C40.8536 465.877 19.0267 469.962 6.81915 456.367C6.20415 455.682 5.80718 455.237 5.40018 454.407L4.72766 453.952C-7.15934 435.572 5.72515 420.747 17.4727 407.107C30.3957 392.097 34.1267 370.772 43.3457 353.787C49.7807 341.932 60.4317 338.267 73.0882 339.027C72.0067 333.442 71.3147 328.992 70.6172 323.342C45.2777 320.802 26.4377 300.272 29.0097 274.482C30.1607 262.282 36.1087 251.042 45.5462 243.227C62.5112 229.382 80.5157 231.387 98.1232 242.297C113.151 226.947 127.967 218.116 148.534 211.463C155.414 209.281 162.431 207.557 169.539 206.302C187.334 203.074 219.725 200.223 230.275 184.495C225.71 169.113 222.645 158.259 224.96 141.844C207.068 144.006 189.592 151.622 172.215 156.324C129.224 167.955 81.5512 162.612 44.3242 137.37C35.6672 131.5 32.6287 118.332 39.8227 110.411C57.4742 90.9744 89.7692 71.7629 114.94 64.5434Z" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="hi">
+          <div class="av">
+            <svg viewBox="0 0 462 466" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M114.94 64.5434C104.821 56.6099 86.3047 43.1079 84.5152 28.9884C83.9387 24.2849 85.3897 19.5579 88.5057 15.9874C98.0727 4.82442 129.861 1.31189 144.397 0.403892C197.493 -2.91311 248.285 14.2634 288.095 49.6209C292.145 53.2169 295.835 57.9589 300.155 61.2459C330.145 54.0364 361.78 59.1229 388 75.3729C408.865 88.2219 430.325 110.803 436.145 135.243C440.805 154.807 436.15 173.613 425.6 190.362C416.285 205.154 409.68 210.084 396.58 220.279C412.91 219.125 440.33 217.804 452.445 229.932C472.86 250.372 457.82 273.907 432.835 276.822C440.055 283.097 444.425 288.017 445.335 298.012C446.95 315.807 433.43 327.057 416.715 327.457C401.59 327.822 388.275 320.682 373.275 319.947C357.96 319.332 346.145 323.742 330.4 323.632L329.855 324.057C321.705 330.467 315.365 337.707 306.1 344.422C270.1 370.482 238.675 378.582 196.01 383.552C182.256 401.832 162.842 414.202 140.019 417.532L139.617 417.587C138.213 420.992 136.41 424.047 134.559 427.327C122.695 448.322 101.175 472.562 74.3802 462.832C68.3222 460.637 64.5497 456.462 61.4282 450.947C59.1072 453.042 56.8876 454.967 54.3831 456.672C40.8536 465.877 19.0267 469.962 6.81915 456.367C6.20415 455.682 5.80718 455.237 5.40018 454.407L4.72766 453.952C-7.15934 435.572 5.72515 420.747 17.4727 407.107C30.3957 392.097 34.1267 370.772 43.3457 353.787C49.7807 341.932 60.4317 338.267 73.0882 339.027C72.0067 333.442 71.3147 328.992 70.6172 323.342C45.2777 320.802 26.4377 300.272 29.0097 274.482C30.1607 262.282 36.1087 251.042 45.5462 243.227C62.5112 229.382 80.5157 231.387 98.1232 242.297C113.151 226.947 127.967 218.116 148.534 211.463C155.414 209.281 162.431 207.557 169.539 206.302C187.334 203.074 219.725 200.223 230.275 184.495C225.71 169.113 222.645 158.259 224.96 141.844C207.068 144.006 189.592 151.622 172.215 156.324C129.224 167.955 81.5512 162.612 44.3242 137.37C35.6672 131.5 32.6287 118.332 39.8227 110.411C57.4742 90.9744 89.7692 71.7629 114.94 64.5434Z" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="say">Hop to it — <em>Alaska</em> is the move. I'd hold your United miles for a rainy day.</div>
+          <div class="tip">This route burns just 4,500 of your 42,766 Alaska miles. Plenty left in the burrow.</div>
+        </div>
+      </div>
+
+      <div class="wallet">
+        <div class="whead">
+          <div class="t">Your fuel</div>
+          <div class="src">
+            <svg viewBox="0 -960 960 960" fill="currentColor"><path d="M856-390 570-104q-12 12-27 18t-30 6q-15 0-30-6t-27-18L103-457q-11-11-17-25.5T80-513v-287q0-33 23.5-56.5T160-880h287q16 0 31 6.5t26 17.5l352 353q12 12 17.5 27t5.5 30q0 15-5.5 29.5T856-390ZM260-640q25 0 42.5-17.5T320-700q0-25-17.5-42.5T260-760q-25 0-42.5 17.5T200-700q0 25 17.5 42.5T260-640Z"/></svg>
+            AwardWallet
+          </div>
+        </div>
+        <div class="total"><span class="n">618,314</span><span class="u">points · 6 programs</span></div>
+        <div class="totbar">
+          <span class="seg-amex" style="width:55%"></span>
+          <span class="seg-ba" style="width:16.6%"></span>
+          <span class="seg-bilt" style="width:8%"></span>
+          <span class="seg-chase" style="width:7.4%"></span>
+          <span class="seg-as" style="width:6.9%"></span>
+          <span class="seg-wn" style="width:5.9%"></span>
+        </div>
+
+        <div class="prog used">
+          <div class="pchip chip-as">AS</div>
+          <div class="pinfo"><div class="pn">Alaska Atmos <span class="usetag">· USING NOW</span></div><div class="pt2">Silver · 4,500 of 42,766</div></div>
+          <div class="pamt">42,766</div>
+        </div>
+        <div class="prog">
+          <div class="pchip" style="background:#0f7676">AX</div>
+          <div class="pinfo"><div class="pn">Amex Membership Rewards</div><div class="pt2">Transferable</div></div>
+          <div class="pamt">340,358</div>
+        </div>
+        <div class="prog">
+          <div class="pchip" style="background:#3a8d8d">BA</div>
+          <div class="pinfo"><div class="pn">British Airways Avios</div><div class="pt2">Bronze</div></div>
+          <div class="pamt">103,042</div>
+        </div>
+        <div class="prog">
+          <div class="pchip" style="background:#6bb0a8">BR</div>
+          <div class="pinfo"><div class="pn">Bilt Rewards</div><div class="pt2">Blue</div></div>
+          <div class="pamt">49,923</div>
+        </div>
+        <div class="prog">
+          <div class="pchip" style="background:#94c7bf">UR</div>
+          <div class="pinfo"><div class="pn">Chase Ultimate Rewards</div><div class="pt2">Transferable</div></div>
+          <div class="pamt">45,921</div>
+        </div>
+        <div class="prog">
+          <div class="pchip chip-wn">WN</div>
+          <div class="pinfo"><div class="pn">Southwest Rapid Rewards</div><div class="pt2">Ready</div></div>
+          <div class="pamt">36,304</div>
+        </div>
+        <div class="foot-note">Synced 4 min ago</div>
+      </div>
+    </aside>
+
+  </main>
+</body>
+</html>

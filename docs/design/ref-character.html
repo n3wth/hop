@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hop — character concept</title>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal:#0d6e6e;
+    --teal-deep:#0a5757;
+    --teal-ink:#073e3e;
+    --mint:#e3f1ef;
+    --mint-soft:#eef7f5;
+    --cream:#f3f1ec;
+    --cream-warm:#f7f4ee;
+    --paper:#fffdf9;
+    --ink:#1c2b29;
+    --ink-soft:#5b6a67;
+    --ink-faint:#8b9794;
+    --gold:#d99a2b;
+    --gold-soft:#f6ead2;
+    --coral:#d9684e;
+    --line:#e7e2d8;
+    --shadow:0 1px 2px rgba(28,43,41,.04);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  body{
+    font-family:'General Sans',system-ui,sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    line-height:1.5;
+    letter-spacing:-0.01em;
+  }
+  .page{max-width:1440px;margin:0 auto;padding:0 0 80px}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex;align-items:center;gap:28px;
+    padding:22px 56px;
+  }
+  .brand{display:flex;align-items:center;gap:11px}
+  .brand .logo{width:38px;height:38px;color:var(--teal);flex-shrink:0}
+  .brand .word{font-weight:600;font-size:21px;letter-spacing:-0.03em;color:var(--ink)}
+  .route-pill{
+    margin-left:8px;display:flex;align-items:center;gap:0;
+    background:var(--paper);border:1px solid var(--line);
+    border-radius:999px;padding:7px 8px;box-shadow:var(--shadow);
+  }
+  .route-pill .seg{display:flex;flex-direction:column;padding:3px 16px;border-radius:999px;cursor:pointer}
+  .route-pill .seg .k{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);font-weight:600}
+  .route-pill .seg .v{font-size:14px;font-weight:600;color:var(--ink);letter-spacing:-0.02em;margin-top:1px}
+  .route-pill .arrow{color:var(--teal);display:flex;align-items:center;padding:0 2px}
+  .route-pill .arrow svg{width:18px;height:18px}
+  .route-pill .go{
+    margin-left:6px;width:38px;height:38px;border-radius:999px;background:var(--teal);
+    display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;
+  }
+  .route-pill .go svg{width:18px;height:18px}
+  .topbar .spacer{flex:1}
+  .icon-btn{width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);cursor:pointer}
+  .icon-btn svg{width:21px;height:21px}
+  .avatar{width:40px;height:40px;border-radius:999px;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px}
+
+  /* ---------- layout ---------- */
+  .stage{display:grid;grid-template-columns:1fr 372px;gap:32px;padding:8px 56px 0}
+
+  /* ---------- the speech / hero ---------- */
+  .speech{
+    display:flex;gap:22px;align-items:flex-start;
+    margin-bottom:30px;
+  }
+  .bunny-pod{
+    flex-shrink:0;width:92px;height:92px;border-radius:26px;
+    background:linear-gradient(160deg,var(--mint) 0%,#d6ebe7 100%);
+    display:flex;align-items:center;justify-content:center;
+    position:relative;
+  }
+  .bunny-pod .logo{width:54px;height:54px;color:var(--teal)}
+  .bunny-pod .pulse{
+    position:absolute;bottom:-3px;right:-3px;width:26px;height:26px;border-radius:999px;
+    background:var(--gold);border:3px solid var(--cream);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .bunny-pod .pulse svg{width:13px;height:13px;color:#fff}
+
+  .bubble{
+    position:relative;flex:1;
+    background:var(--paper);border:1px solid var(--line);border-radius:24px;
+    border-top-left-radius:8px;
+    padding:26px 30px 24px;box-shadow:var(--shadow);
+  }
+  .bubble::before{
+    content:"";position:absolute;left:-9px;top:24px;width:18px;height:18px;
+    background:var(--paper);border-left:1px solid var(--line);border-bottom:1px solid var(--line);
+    transform:rotate(45deg);border-radius:0 0 0 4px;
+  }
+  .bubble .from{font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--teal);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+  .bubble .from .dot{width:6px;height:6px;border-radius:999px;background:var(--gold)}
+  .bubble .line{font-size:29px;line-height:1.28;font-weight:500;letter-spacing:-0.025em;color:var(--ink)}
+  .bubble .line .hl{color:var(--teal);font-weight:600}
+  .bubble .line .save{
+    color:var(--teal-ink);font-weight:600;background:var(--gold-soft);
+    padding:0 9px;border-radius:8px;white-space:nowrap;box-decoration-break:clone;-webkit-box-decoration-break:clone;
+  }
+  .bubble .sub{margin-top:14px;font-size:15px;color:var(--ink-soft);font-weight:400;line-height:1.5}
+  .bubble .sub b{color:var(--ink);font-weight:600}
+
+  /* ---------- the headline pick card ---------- */
+  .pick{
+    position:relative;
+    background:linear-gradient(165deg,var(--teal) 0%,var(--teal-deep) 100%);
+    border-radius:26px;padding:4px;margin:14px 0;
+    box-shadow:0 12px 30px -16px rgba(13,110,110,.55);
+  }
+  .pick-inner{
+    background:var(--teal);border-radius:23px;padding:26px 30px;
+    display:flex;align-items:center;gap:26px;color:#fff;position:relative;overflow:hidden;
+  }
+  .pick-inner::after{
+    content:"";position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:999px;
+    background:radial-gradient(circle,rgba(255,255,255,.10) 0%,transparent 70%);
+  }
+  .pick .badge{
+    position:absolute;top:0;left:30px;transform:translateY(-50%);
+    background:var(--gold);color:#3a2a06;font-size:11px;font-weight:700;letter-spacing:.05em;
+    text-transform:uppercase;padding:5px 12px;border-radius:999px;display:flex;align-items:center;gap:6px;
+  }
+  .pick .badge svg{width:13px;height:13px}
+  .pick .al{
+    width:60px;height:60px;border-radius:18px;background:rgba(255,255,255,.12);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:19px;flex-shrink:0;
+    border:1px solid rgba(255,255,255,.16);
+  }
+  .pick .body{flex:1;min-width:0}
+  .pick .body .name{font-size:21px;font-weight:600;letter-spacing:-0.02em;display:flex;align-items:center;gap:10px}
+  .pick .body .name .tag{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.15);padding:3px 8px;border-radius:6px}
+  .pick .body .meta{font-size:14px;color:rgba(255,255,255,.72);margin-top:5px;font-weight:400}
+  .pick .nums{display:flex;gap:30px;align-items:center;padding-right:6px}
+  .pick .nums .col{text-align:right}
+  .pick .nums .col .k{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.6);font-weight:600}
+  .pick .nums .col .val{font-size:22px;font-weight:600;letter-spacing:-0.02em;margin-top:2px}
+  .pick .nums .col .val.gold{color:#ffd98a}
+  .pick .cta{
+    background:#fff;color:var(--teal);font-weight:600;font-size:15px;
+    padding:13px 24px;border-radius:14px;border:none;cursor:pointer;white-space:nowrap;
+    display:flex;align-items:center;gap:8px;letter-spacing:-0.01em;
+  }
+  .pick .cta svg{width:17px;height:17px}
+
+  /* ---------- "or you could" rail ---------- */
+  .alts-head{
+    display:flex;align-items:baseline;gap:10px;margin:30px 2px 14px;
+  }
+  .alts-head .or{font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-0.02em}
+  .alts-head .note{font-size:14px;color:var(--ink-faint)}
+
+  .alt{
+    background:var(--paper);border:1px solid var(--line);border-radius:20px;
+    padding:18px 22px;display:flex;align-items:center;gap:20px;margin-bottom:11px;
+    box-shadow:var(--shadow);transition:border-color .15s;
+  }
+  .alt:hover{border-color:#d8d2c5}
+  .alt .al{
+    width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:15px;flex-shrink:0;color:#fff;
+  }
+  .alt .al.wn{background:#2e4bb8}
+  .alt .al.ua{background:#1a3668}
+  .alt .al.ua2{background:#3a567f}
+  .alt .al.cash{background:var(--ink);}
+  .alt .body{flex:1;min-width:0}
+  .alt .body .top{display:flex;align-items:center;gap:9px}
+  .alt .body .nm{font-size:16px;font-weight:600;letter-spacing:-0.02em;color:var(--ink)}
+  .alt .body .tag{font-size:9.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--teal);background:var(--mint);padding:3px 7px;border-radius:6px}
+  .alt .body .says{font-size:13.5px;color:var(--ink-soft);margin-top:4px;line-height:1.45}
+  .alt .body .says em{font-style:normal;color:var(--coral);font-weight:600}
+  .alt .body .says b{color:var(--teal);font-weight:600}
+  .alt .nums{display:flex;gap:26px;align-items:center}
+  .alt .nums .col{text-align:right}
+  .alt .nums .col .k{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);font-weight:600}
+  .alt .nums .col .val{font-size:16.5px;font-weight:600;letter-spacing:-0.02em;color:var(--ink);margin-top:2px}
+  .alt .nums .col .val.warn{color:var(--coral)}
+  .alt .nums .col .val.muted{color:var(--ink-faint);font-weight:500}
+  .alt .act{
+    background:var(--cream-warm);color:var(--ink);font-weight:600;font-size:13.5px;
+    padding:10px 18px;border-radius:12px;border:1px solid var(--line);cursor:pointer;white-space:nowrap;
+  }
+  .alt .act:hover{background:var(--mint-soft);border-color:var(--mint)}
+
+  /* value meter bar inside alt */
+  .meter{width:54px;flex-shrink:0}
+  .meter .track{height:6px;border-radius:999px;background:var(--line);overflow:hidden}
+  .meter .fill{height:100%;border-radius:999px;background:var(--teal)}
+  .meter .fill.mid{background:var(--gold)}
+  .meter .fill.low{background:var(--coral)}
+  .meter .lbl{font-size:9.5px;color:var(--ink-faint);margin-top:5px;text-align:center;font-weight:600;letter-spacing:.02em}
+
+  /* ---------- sidebar ---------- */
+  .side{display:flex;flex-direction:column;gap:16px;position:sticky;top:18px;align-self:start}
+
+  .wallet{
+    background:var(--paper);border:1px solid var(--line);border-radius:22px;
+    padding:22px;box-shadow:var(--shadow);
+  }
+  .wallet .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .wallet .head .t{font-size:15px;font-weight:600;letter-spacing:-0.02em}
+  .wallet .head .src{font-size:11px;color:var(--ink-faint);font-weight:500;display:flex;align-items:center;gap:5px}
+  .wallet .head .src .d{width:6px;height:6px;border-radius:999px;background:#3bb273}
+  .wallet .total{display:flex;align-items:baseline;gap:8px;margin:8px 0 4px}
+  .wallet .total .big{font-size:34px;font-weight:600;letter-spacing:-0.03em;color:var(--ink)}
+  .wallet .total .unit{font-size:13px;color:var(--ink-soft);font-weight:500}
+  .wallet .total .progs{font-size:12px;color:var(--ink-faint);margin-left:auto}
+  .wallet .saidline{
+    font-size:13px;color:var(--teal-ink);background:var(--mint-soft);
+    border-radius:12px;padding:10px 13px;margin:12px 0 16px;line-height:1.45;
+    display:flex;gap:9px;align-items:flex-start;
+  }
+  .wallet .saidline .b{flex-shrink:0;width:18px;height:18px;color:var(--teal)}
+  .wallet .saidline .b svg{width:18px;height:18px}
+  .prog{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--line)}
+  .prog .chip{
+    width:34px;height:34px;border-radius:10px;background:var(--cream-warm);
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+    color:var(--ink-soft);flex-shrink:0;letter-spacing:.02em;
+  }
+  .prog .chip.live{background:var(--mint);color:var(--teal)}
+  .prog .nm{flex:1;min-width:0}
+  .prog .nm .a{font-size:13.5px;font-weight:600;color:var(--ink);letter-spacing:-0.01em}
+  .prog .nm .b{font-size:11px;color:var(--ink-faint);margin-top:1px}
+  .prog .amt{font-size:14px;font-weight:600;color:var(--ink);letter-spacing:-0.01em}
+  .prog.userow .amt{color:var(--teal)}
+
+  .tip{
+    background:linear-gradient(160deg,var(--gold-soft) 0%,#fbf3e1 100%);
+    border:1px solid #efe0c1;border-radius:22px;padding:20px 22px;
+  }
+  .tip .h{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:#7a5410;letter-spacing:-0.01em;margin-bottom:8px}
+  .tip .h svg{width:17px;height:17px}
+  .tip .txt{font-size:13.5px;color:#6b4d14;line-height:1.5}
+  .tip .txt b{font-weight:600;color:#5a3f0e}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="brand">
+      <span class="logo"><svg viewBox="0 0 462 466" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M114.94 64.5434C104.821 56.6099 86.3047 43.1079 84.5152 28.9884C83.9387 24.2849 85.3897 19.5579 88.5057 15.9874C98.0727 4.82442 129.861 1.31189 144.397 0.403892C197.493 -2.91311 248.285 14.2634 288.095 49.6209C292.145 53.2169 295.835 57.9589 300.155 61.2459C330.145 54.0364 361.78 59.1229 388 75.3729C408.865 88.2219 430.325 110.803 436.145 135.243C440.805 154.807 436.15 173.613 425.6 190.362C416.285 205.154 409.68 210.084 396.58 220.279C412.91 219.125 440.33 217.804 452.445 229.932C472.86 250.372 457.82 273.907 432.835 276.822C440.055 283.097 444.425 288.017 445.335 298.012C446.95 315.807 433.43 327.057 416.715 327.457C401.59 327.822 388.275 320.682 373.275 319.947C357.96 319.332 346.145 323.742 330.4 323.632L329.855 324.057C321.705 330.467 315.365 337.707 306.1 344.422C270.1 370.482 238.675 378.582 196.01 383.552C182.256 401.832 162.842 414.202 140.019 417.532L139.617 417.587C138.213 420.992 136.41 424.047 134.559 427.327C122.695 448.322 101.175 472.562 74.3802 462.832C68.3222 460.637 64.5497 456.462 61.4282 450.947C59.1072 453.042 56.8876 454.967 54.3831 456.672C40.8536 465.877 19.0267 469.962 6.81915 456.367C6.20415 455.682 5.80718 455.237 5.40018 454.407L4.72766 453.952C-7.15934 435.572 5.72515 420.747 17.4727 407.107C30.3957 392.097 34.1267 370.772 43.3457 353.787C49.7807 341.932 60.4317 338.267 73.0882 339.027C72.0067 333.442 71.3147 328.992 70.6172 323.342C45.2777 320.802 26.4377 300.272 29.0097 274.482C30.1607 262.282 36.1087 251.042 45.5462 243.227C62.5112 229.382 80.5157 231.387 98.1232 242.297C113.151 226.947 127.967 218.116 148.534 211.463C155.414 209.281 162.431 207.557 169.539 206.302C187.334 203.074 219.725 200.223 230.275 184.495C225.71 169.113 222.645 158.259 224.96 141.844C207.068 144.006 189.592 151.622 172.215 156.324C129.224 167.955 81.5512 162.612 44.3242 137.37C35.6672 131.5 32.6287 118.332 39.8227 110.411C57.4742 90.9744 89.7692 71.7629 114.94 64.5434Z" fill="currentColor"/><path d="M240.565 140.031C245.605 139.531 249.92 139.573 253.49 135.311C255.69 132.681 254.585 129.411 251.755 127.939C244.21 124.017 233.875 125.934 225.785 126.875C207.394 129.013 190.54 135.973 172.966 141.096C160.346 144.209 146.969 147.536 133.922 148.01C107.47 148.969 80.7152 141.93 57.7747 128.822C42.9162 120.332 55.4082 114.68 64.1547 107.673C112.204 69.1774 180.268 60.6284 238.315 78.5549C251.24 82.5384 262.215 88.5294 274.505 93.9024C275.475 94.3279 276.48 94.1319 277.435 93.7639C279.26 90.7234 277.43 88.5314 275.605 86.0709C303.065 72.3699 329.73 68.0414 359.58 77.9174C382.335 85.4449 406.77 105.389 417.795 127.049C418.18 127.805 418.34 128.36 418.595 129.162C416.6 131.358 415.48 129.542 413.53 131.553C410.62 134.56 408.99 140.594 404.03 140.509C399.58 140.433 390.38 133.329 386.525 136.784C377.445 144.927 396.485 152.803 400.905 155.265C400.67 182.507 373.805 188.891 356.635 169.826L356.04 169.163C361.585 165.55 364.42 160.723 355.515 159.089C349.665 158.015 337.42 169.159 337.64 175.022C337.865 180.976 343.88 181.348 348.13 176.101C350.705 179.256 353.125 182.402 356.425 184.83C371.545 195.953 392.52 194.461 404.345 179.581L405.89 177.798C408.43 180.215 410.565 180.821 413.835 181.852C401.52 201.493 380.3 216.578 357.715 221.642C350.97 223.182 344.085 224.022 337.165 224.142C331.75 224.217 313.635 221.912 311.38 223.152C310.375 224.792 310.6 223.927 310.675 225.837C313.11 230.227 320.99 232.642 325.66 233.977C342.21 238.702 353.72 236.202 369.7 232.272C367.275 240.097 364.835 248.452 361.485 255.912L360.545 255.742C354.05 254.557 341.49 248.507 335.645 252.382C334.475 253.157 333.79 254.242 333.55 255.622C333.185 257.697 333.7 260.287 334.985 261.977C341.585 270.627 382.79 272.327 395.065 275.092C405.12 277.357 416.205 281.402 424.055 288.307C427.885 291.677 431.06 296.367 430.61 301.697C430.3 305.117 428.565 308.247 425.825 310.312C414.34 319.082 388.36 304.417 374.01 305.092C361.965 304.512 350.195 307.777 338.335 308.852C326.215 309.957 315.015 306.377 304.85 299.967C300.895 297.472 290.84 287.962 286.455 292.217C274.67 303.652 304.46 316.797 311.925 320.297C285.975 343.087 259.865 356.682 225.89 364.052C220.095 365.312 211.002 367.002 205.246 367.252C209.299 354.472 213.855 336.577 209.012 323.382C207.715 319.842 202.194 318.867 199.322 320.967C198.243 321.752 196.671 323.117 196.556 324.547C195.926 329.882 196.772 335.252 196.365 340.647C195.027 359.447 185.77 376.787 170.9 388.362C155.532 400.092 135.513 405.062 116.358 402.612C104.021 401.032 95.1826 396.407 84.5406 390.487C79.1666 396.362 77.6867 403.737 73.9982 410.417C65.9277 425.037 54.8022 442.217 38.4802 448.447C27.5667 452.612 17.7627 451.002 14.7132 438.777C17.0472 428.372 23.6672 422.997 30.0292 415.027C37.5697 405.577 42.1407 395.687 46.4622 384.587C50.3997 375.252 52.4012 362.892 60.5292 356.122C67.7407 350.117 86.0507 359.537 89.7917 349.277C91.2822 345.192 86.5632 330.827 85.8667 325.617C81.1032 292.167 95.7572 258.912 123.66 239.857C132.549 233.712 142.836 228.552 153.231 225.547C160.218 223.582 167.291 221.937 174.43 220.627C193.018 217.135 237.845 212.196 244.395 187.682C245.91 182.006 241.2 170.602 240.725 164.813C239.39 155.66 239.48 149.094 240.565 140.031Z" fill="#fff"/></svg></span>
+      <span class="word">hop</span>
+    </div>
+
+    <div class="route-pill">
+      <div class="seg"><span class="k">From</span><span class="v">San Francisco</span></div>
+      <span class="arrow"><svg viewBox="0 -960 960 960" fill="currentColor"><path d="m233-320 75 75q11 11 11 27.5T308-189q-12 12-28.5 12T251-189L108-332q-6-6-8.5-13T97-360q0-8 2.5-15t8.5-13l144-144q12-12 28-11.5t28 12.5q11 12 11.5 28T308-475l-75 75h247q17 0 28.5 11.5T520-360q0 17-11.5 28.5T480-320H233Zm494-240H480q-17 0-28.5-11.5T440-600q0-17 11.5-28.5T480-640h247l-75-75q-11-11-11-27.5t11-28.5q12-12 28.5-12t28.5 12l143 143q6 6 8.5 13t2.5 15q0 8-2.5 15t-8.5 13L708-428q-12 12-28 11.5T652-429q-11-12-11.5-28t11.5-28l75-75Z"/></svg></span>
+      <div class="seg"><span class="k">To</span><span class="v">Los Angeles</span></div>
+      <div class="seg"><span class="k">Dates</span><span class="v">Jul 9–12</span></div>
+      <div class="seg"><span class="k">Who</span><span class="v">1 adult</span></div>
+      <div class="go"><svg viewBox="0 -960 960 960" fill="currentColor"><path d="M380-320q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l224 224q11 11 11 28t-11 28q-11 11-28 11t-28-11L532-372q-30 24-69 38t-83 14Zm0-80q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"/></svg></div>
+    </div>
+
+    <div class="spacer"></div>
+    <div class="icon-btn"><svg viewBox="0 -960 960 960" fill="currentColor"><path d="M200-200q-17 0-28.5-11.5T160-240q0-17 11.5-28.5T200-280h40v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h40q17 0 28.5 11.5T800-240q0 17-11.5 28.5T760-200H200ZM480-80q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Z"/></svg></div>
+    <div class="avatar">O</div>
+  </div>
+
+  <!-- STAGE -->
+  <div class="stage">
+    <!-- MAIN COLUMN -->
+    <div class="main">
+
+      <!-- BUNNY SPEAKS -->
+      <div class="speech">
+        <div class="bunny-pod">
+          <span class="logo"><svg viewBox="0 0 462 466" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M114.94 64.5434C104.821 56.6099 86.3047 43.1079 84.5152 28.9884C83.9387 24.2849 85.3897 19.5579 88.5057 15.9874C98.0727 4.82442 129.861 1.31189 144.397 0.403892C197.493 -2.91311 248.285 14.2634 288.095 49.6209C292.145 53.2169 295.835 57.9589 300.155 61.2459C330.145 54.0364 361.78 59.1229 388 75.3729C408.865 88.2219 430.325 110.803 436.145 135.243C440.805 154.807 436.15 173.613 425.6 190.362C416.285 205.154 409.68 210.084 396.58 220.279C412.91 219.125 440.33 217.804 452.445 229.932C472.86 250.372 457.82 273.907 432.835 276.822C440.055 283.097 444.425 288.017 445.335 298.012C446.95 315.807 433.43 327.057 416.715 327.457C401.59 327.822 388.275 320.682 373.275 319.947C357.96 319.332 346.145 323.742 330.4 323.632L329.855 324.057C321.705 330.467 315.365 337.707 306.1 344.422C270.1 370.482 238.675 378.582 196.01 383.552C182.256 401.832 162.842 414.202 140.019 417.532L139.617 417.587C138.213 420.992 136.41 424.047 134.559 427.327C122.695 448.322 101.175 472.562 74.3802 462.832C68.3222 460.637 64.5497 456.462 61.4282 450.947C59.1072 453.042 56.8876 454.967 54.3831 456.672C40.8536 465.877 19.0267 469.962 6.81915 456.367C6.20415 455.682 5.80718 455.237 5.40018 454.407L4.72766 453.952C-7.15934 435.572 5.72515 420.747 17.4727 407.107C30.3957 392.097 34.1267 370.772 43.3457 353.787C49.7807 341.932 60.4317 338.267 73.0882 339.027C72.0067 333.442 71.3147 328.992 70.6172 323.342C45.2777 320.802 26.4377 300.272 29.0097 274.482C30.1607 262.282 36.1087 251.042 45.5462 243.227C62.5112 229.382 80.5157 231.387 98.1232 242.297C113.151 226.947 127.967 218.116 148.534 211.463C155.414 209.281 162.431 207.557 169.539 206.302C187.334 203.074 219.725 200.223 230.275 184.495C225.71 169.113 222.645 158.259 224.96 141.844C207.068 144.006 189.592 151.622 172.215 156.324C129.224 167.955 81.5512 162.612 44.3242 137.37C35.6672 131.5 32.6287 118.332 39.8227 110.411C57.4742 90.9744 89.7692 71.7629 114.94 64.5434Z" fill="currentColor"/><path d="M240.565 140.031C245.605 139.531 249.92 139.573 253.49 135.311C255.69 132.681 254.585 129.411 251.755 127.939C244.21 124.017 233.875 125.934 225.785 126.875C207.394 129.013 190.54 135.973 172.966 141.096C160.346 144.209 146.969 147.536 133.922 148.01C107.47 148.969 80.7152 141.93 57.7747 128.822C42.9162 120.332 55.4082 114.68 64.1547 107.673C112.204 69.1774 180.268 60.6284 238.315 78.5549C251.24 82.5384 262.215 88.5294 274.505 93.9024C275.475 94.3279 276.48 94.1319 277.435 93.7639C279.26 90.7234 277.43 88.5314 275.605 86.0709C303.065 72.3699 329.73 68.0414 359.58 77.9174C382.335 85.4449 406.77 105.389 417.795 127.049C418.18 127.805 418.34 128.36 418.595 129.162C416.6 131.358 415.48 129.542 413.53 131.553C410.62 134.56 408.99 140.594 404.03 140.509C399.58 140.433 390.38 133.329 386.525 136.784C377.445 144.927 396.485 152.803 400.905 155.265C400.67 182.507 373.805 188.891 356.635 169.826L356.04 169.163C361.585 165.55 364.42 160.723 355.515 159.089C349.665 158.015 337.42 169.159 337.64 175.022C337.865 180.976 343.88 181.348 348.13 176.101C350.705 179.256 353.125 182.402 356.425 184.83C371.545 195.953 392.52 194.461 404.345 179.581L405.89 177.798C408.43 180.215 410.565 180.821 413.835 181.852C401.52 201.493 380.3 216.578 357.715 221.642C350.97 223.182 344.085 224.022 337.165 224.142C331.75 224.217 313.635 221.912 311.38 223.152C310.375 224.792 310.6 223.927 310.675 225.837C313.11 230.227 320.99 232.642 325.66 233.977C342.21 238.702 353.72 236.202 369.7 232.272C367.275 240.097 364.835 248.452 361.485 255.912L360.545 255.742C354.05 254.557 341.49 248.507 335.645 252.382C334.475 253.157 333.79 254.242 333.55 255.622C333.185 257.697 333.7 260.287 334.985 261.977C341.585 270.627 382.79 272.327 395.065 275.092C405.12 277.357 416.205 281.402 424.055 288.307C427.885 291.677 431.06 296.367 430.61 301.697C430.3 305.117 428.565 308.247 425.825 310.312C414.34 319.082 388.36 304.417 374.01 305.092C361.965 304.512 350.195 307.777 338.335 308.852C326.215 309.957 315.015 306.377 304.85 299.967C300.895 297.472 290.84 287.962 286.455 292.217C274.67 303.652 304.46 316.797 311.925 320.297C285.975 343.087 259.865 356.682 225.89 364.052C220.095 365.312 211.002 367.002 205.246 367.252C209.299 354.472 213.855 336.577 209.012 323.382C207.715 319.842 202.194 318.867 199.322 320.967C198.243 321.752 196.671 323.117 196.556 324.547C195.926 329.882 196.772 335.252 196.365 340.647C195.027 359.447 185.77 376.787 170.9 388.362C155.532 400.092 135.513 405.062 116.358 402.612C104.021 401.032 95.1826 396.407 84.5406 390.487C79.1666 396.362 77.6867 403.737 73.9982 410.417C65.9277 425.037 54.8022 442.217 38.4802 448.447C27.5667 452.612 17.7627 451.002 14.7132 438.777C17.0472 428.372 23.6672 422.997 30.0292 415.027C37.5697 405.577 42.1407 395.687 46.4622 384.587C50.3997 375.252 52.4012 362.892 60.5292 356.122C67.7407 350.117 86.0507 359.537 89.7917 349.277C91.2822 345.192 86.5632 330.827 85.8667 325.617C81.1032 292.167 95.7572 258.912 123.66 239.857C132.549 233.712 142.836 228.552 153.231 225.547C160.218 223.582 167.291 221.937 174.43 220.627C193.018 217.135 237.845 212.196 244.395 187.682C245.91 182.006 241.2 170.602 240.725 164.813C239.39 155.66 239.48 149.094 240.565 140.031Z" fill="#fff"/></svg></span>
+          <span class="pulse"><svg viewBox="0 -960 960 960" fill="currentColor"><path d="m424-408-86-86q-11-11-28-11t-28 11q-11 11-11 28t11 28l114 114q12 12 28 12t28-12l226-226q11-11 11-28t-11-28q-11-11-28-11t-28 11L424-408Zm56 328q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Z"/></svg></span>
+        </div>
+        <div class="bubble">
+          <div class="from"><span class="dot"></span>Hop says</div>
+          <div class="line">Hey Oliver — book <span class="hl">Alaska with miles</span> on this one. You'll pocket <span class="save">$243</span> versus paying cash.</div>
+          <div class="sub">It's a <b>direct</b> hop, Jul 9 · 1h 32m, and at <b>5.4¢ per mile</b> it's the best value I found across all six of your programs. You've got the miles sitting right there.</div>
+        </div>
+      </div>
+
+      <!-- THE PICK -->
+      <div class="pick">
+        <div class="badge"><svg viewBox="0 -960 960 960" fill="currentColor"><path d="m480-483-68 52q-6 5-12 .5t-4-11.5l26-84-70-56q-5-5-3-11.5t9-6.5h86l26-82q2-7 10-7t10 7l26 82h85q7 0 9.5 6.5T608-582l-71 56 26 84q2 7-4 11.5t-12-.5l-67-52Zm0 363L293-58q-20 7-36.5-5T240-95v-254q-38-42-59-96t-21-115q0-134 93-227t227-93q134 0 227 93t93 227q0 61-21 115t-59 96v254q0 20-16.5 32T667-58l-187-62Z"/></svg>My pick for you</div>
+        <div class="pick-inner">
+          <div class="al">AS</div>
+          <div class="body">
+            <div class="name">Alaska Atmos <span class="tag">Direct</span></div>
+            <div class="meta">Jul 9 · SFO → LAX · 1h 32m · operated by Alaska / American</div>
+          </div>
+          <div class="nums">
+            <div class="col"><div class="k">Miles</div><div class="val">4,500</div></div>
+            <div class="col"><div class="k">Value</div><div class="val gold">5.4¢/pt</div></div>
+            <div class="col"><div class="k">You save</div><div class="val gold">$243</div></div>
+          </div>
+          <button class="cta">Book with miles <svg viewBox="0 -960 960 960" fill="currentColor"><path d="M647-440H160q-17 0-28.5-11.5T120-480q0-17 11.5-28.5T160-520h487L423-744q-12-12-11.5-28t11.5-28q12-12 28.5-12.5T480-801l292 292q6 6 8.5 13t2.5 15q0 8-2.5 15t-8.5 13L480-159q-12 12-28 11.5T423-160q-11-12-11.5-28t11.5-28l224-224Z"/></svg></button>
+        </div>
+      </div>
+
+      <!-- OR YOU COULD -->
+      <div class="alts-head">
+        <span class="or">Or you could…</span>
+        <span class="note">four other ways to fly this route — I ranked them so you don't have to</span>
+      </div>
+
+      <!-- Southwest -->
+      <div class="alt">
+        <div class="al wn">WN</div>
+        <div class="body">
+          <div class="top"><span class="nm">Southwest</span><span class="tag">Direct</span></div>
+          <div class="says">Also solid — <b>still good value</b> at 4.1¢, but you'd burn more points. Prices wobble, so check Southwest before you commit.</div>
+        </div>
+        <div class="meter"><div class="track"><div class="fill" style="width:76%"></div></div><div class="lbl">Good</div></div>
+        <div class="nums">
+          <div class="col"><div class="k">Points</div><div class="val">6,000</div></div>
+          <div class="col"><div class="k">Value</div><div class="val">4.1¢/pt</div></div>
+        </div>
+        <button class="act">Book points</button>
+      </div>
+
+      <!-- United Aeroplan -->
+      <div class="alt">
+        <div class="al ua">UA</div>
+        <div class="body">
+          <div class="top"><span class="nm">United</span><span class="tag">via Aeroplan</span></div>
+          <div class="says">Doable, but it means a <b>transfer from Amex or Chase</b> first — extra steps for middling value. Only if you're hoarding Alaska miles.</div>
+        </div>
+        <div class="meter"><div class="track"><div class="fill mid" style="width:46%"></div></div><div class="lbl">Okay</div></div>
+        <div class="nums">
+          <div class="col"><div class="k">Miles</div><div class="val">10,000</div></div>
+          <div class="col"><div class="k">Value</div><div class="val">2.5¢/pt</div></div>
+        </div>
+        <button class="act">Transfer</button>
+      </div>
+
+      <!-- United MileagePlus -->
+      <div class="alt">
+        <div class="al ua2">UA</div>
+        <div class="body">
+          <div class="top"><span class="nm">United MileagePlus</span><span class="tag">Direct</span></div>
+          <div class="says">Honestly? <em>I'd skip this one.</em> Dynamic pricing makes it weak value here — you'd be leaving money on the table at 1.8¢.</div>
+        </div>
+        <div class="meter"><div class="track"><div class="fill low" style="width:24%"></div></div><div class="lbl">Weak</div></div>
+        <div class="nums">
+          <div class="col"><div class="k">Miles</div><div class="val warn">14,100</div></div>
+          <div class="col"><div class="k">Value</div><div class="val warn">1.8¢/pt</div></div>
+        </div>
+        <button class="act">Transfer</button>
+      </div>
+
+      <!-- United Cash -->
+      <div class="alt">
+        <div class="al cash">$</div>
+        <div class="body">
+          <div class="top"><span class="nm">United</span><span class="tag">pay cash</span></div>
+          <div class="says">The plain-cash route — <b>$254 round trip</b> and you'd keep your miles. Fine, but the Alaska pick saves you $243, so… your call.</div>
+        </div>
+        <div class="meter"><div class="track"><div class="fill" style="width:14%;background:var(--ink-faint)"></div></div><div class="lbl">Cash</div></div>
+        <div class="nums">
+          <div class="col"><div class="k">Price</div><div class="val">$254</div></div>
+          <div class="col"><div class="k">Earn</div><div class="val muted">~$7.62</div></div>
+        </div>
+        <button class="act">Book cash</button>
+      </div>
+
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="side">
+      <div class="wallet">
+        <div class="head">
+          <span class="t">Your points</span>
+          <span class="src"><span class="d"></span>via AwardWallet</span>
+        </div>
+        <div class="total">
+          <span class="big">618,314</span>
+          <span class="unit">points</span>
+          <span class="progs">6 programs</span>
+        </div>
+        <div class="saidline">
+          <span class="b"><svg viewBox="0 -960 960 960" fill="currentColor"><path d="M480-80q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM360-200q-17 0-28.5-11.5T320-240q0-17 11.5-28.5T360-280h240q17 0 28.5 11.5T640-240q0 17-11.5 28.5T600-200H360Zm-30-120q-69-41-109.5-110T180-580q0-125 87.5-212.5T480-880q125 0 212.5 87.5T780-580q0 81-40.5 150T630-320H330Z"/></svg></span>
+          <span>This trip only touches <b>Alaska</b> — you'll still have 613,814 left after booking.</span>
+        </div>
+
+        <div class="prog userow">
+          <div class="chip live">AS</div>
+          <div class="nm"><div class="a">Alaska Atmos</div><div class="b">Silver · spending here</div></div>
+          <div class="amt">42,766</div>
+        </div>
+        <div class="prog">
+          <div class="chip">AX</div>
+          <div class="nm"><div class="a">Amex Membership</div><div class="b">Transferable</div></div>
+          <div class="amt">340,358</div>
+        </div>
+        <div class="prog">
+          <div class="chip">BA</div>
+          <div class="nm"><div class="a">British Airways Avios</div><div class="b">Bronze</div></div>
+          <div class="amt">103,042</div>
+        </div>
+        <div class="prog">
+          <div class="chip">BR</div>
+          <div class="nm"><div class="a">Bilt Rewards</div><div class="b">Blue</div></div>
+          <div class="amt">49,923</div>
+        </div>
+        <div class="prog">
+          <div class="chip">UR</div>
+          <div class="nm"><div class="a">Chase Ultimate</div><div class="b">Transferable</div></div>
+          <div class="amt">45,921</div>
+        </div>
+        <div class="prog">
+          <div class="chip">WN</div>
+          <div class="nm"><div class="a">Southwest Rapid</div><div class="b">Ready</div></div>
+          <div class="amt">36,304</div>
+        </div>
+      </div>
+
+      <div class="tip">
+        <div class="h"><svg viewBox="0 -960 960 960" fill="currentColor"><path d="M480-80q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM360-200q-17 0-28.5-11.5T320-240q0-17 11.5-28.5T360-280h240q17 0 28.5 11.5T640-240q0 17-11.5 28.5T600-200H360Zm-30-120q-69-41-109.5-110T180-580q0-125 87.5-212.5T480-880q125 0 212.5 87.5T780-580q0 81-40.5 150T630-320H330Z"/></svg>One quiet tip</div>
+        <div class="txt">Your <b>Amex points</b> transfer to Alaska at 1:1. If you ever run low on Alaska miles for a route like this, top up from there — same great value.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
