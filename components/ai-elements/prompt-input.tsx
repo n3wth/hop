@@ -1,20 +1,10 @@
 'use client'
 
-// AI Elements — PromptInput (themed for hop).
-// Adopts the official AI Elements composer structure and behavior — a form that
-// owns the input value, an auto-growing textarea where Enter submits and
-// Shift+Enter inserts a newline, and a submit control that reflects the chat
-// status (ready → send, streaming/submitted → stop, error → retry). Restyled to
-// hop's flat house style: a solid surface that gets a brand border on focus, a
-// solid brand send button with color-only hover. This is the persistent composer
-// that anchors the conversation.
-
 import type { ComponentProps, FormEvent, KeyboardEvent } from 'react'
 import { useRef } from 'react'
 import Icon from '../Icon'
 import { Loader } from './loader'
 
-// Mirrors the AI SDK ChatStatus union used by useChat().status.
 export type ChatStatus = 'submitted' | 'streaming' | 'ready' | 'error'
 
 export type PromptInputProps = Omit<ComponentProps<'form'>, 'onSubmit'> & {
@@ -25,7 +15,7 @@ export function PromptInput({ className = '', onSubmit, children, ...props }: Pr
   return (
     <form
       onSubmit={onSubmit}
-      className={`flex items-end gap-2 rounded-[16px] border-[1.5px] border-border bg-paper px-3 py-2 transition-colors focus-within:border-brand sm:gap-3 sm:px-3.5 ${className}`}
+      className={`flex items-end gap-2.5 rounded-[22px] border-2 border-border bg-paper px-3.5 py-2.5 transition-colors focus-within:border-brand ${className}`}
       {...props}
     >
       {children}
@@ -34,12 +24,9 @@ export function PromptInput({ className = '', onSubmit, children, ...props }: Pr
 }
 
 export type PromptInputTextareaProps = ComponentProps<'textarea'> & {
-  // Called when the user presses Enter (without Shift). The parent submits.
   onEnter?: () => void
 }
 
-// Auto-growing textarea. Enter submits; Shift+Enter is a newline. Caps growth so
-// the composer never dominates the viewport.
 export function PromptInputTextarea({
   className = '',
   onEnter,
@@ -75,7 +62,7 @@ export function PromptInputTextarea({
       }}
       onKeyDown={handleKeyDown}
       enterKeyHint="send"
-      className={`min-h-[24px] w-full flex-1 resize-none bg-transparent py-1.5 text-[16px] leading-[1.5] text-text outline-none placeholder:text-text3 ${className}`}
+      className={`min-h-[28px] w-full flex-1 resize-none bg-transparent py-1 text-[16px] leading-[1.55] text-text outline-none placeholder:text-text3 ${className}`}
       {...props}
     />
   )
@@ -86,8 +73,6 @@ export type PromptInputSubmitProps = ComponentProps<'button'> & {
   onStop?: () => void
 }
 
-// The composer's primary action. ready → "Ask hop" (send); streaming/submitted →
-// "Stop" (square); error → retry. Disabled-empty falls back to ready styling.
 export function PromptInputSubmit({
   status = 'ready',
   onStop,
@@ -103,10 +88,12 @@ export function PromptInputSubmit({
         type="button"
         onClick={onStop}
         aria-label="Stop"
-        className={`mb-0.5 flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand-deep px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-ink ${className}`}
+        className={`flex h-9 w-9 flex-shrink-0 items-center justify-center self-end rounded-full bg-brand-deep text-white transition-colors hover:bg-brand-ink ${className}`}
       >
-        <Loader size={15} />
-        <span className="hidden sm:inline">Stop</span>
+        {/* Stop: filled square */}
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor" aria-hidden>
+          <rect width="11" height="11" rx="2" />
+        </svg>
       </button>
     )
   }
@@ -117,11 +104,10 @@ export function PromptInputSubmit({
       type="submit"
       disabled={disabled}
       aria-label={isError ? 'Try again' : 'Ask hop'}
-      className={`mb-0.5 flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:bg-border disabled:text-text3 ${className}`}
+      className={`flex h-9 w-9 flex-shrink-0 items-center justify-center self-end rounded-full bg-brand text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:bg-border disabled:text-text3 ${className}`}
       {...props}
     >
-      <span className="hidden sm:inline">{isError ? 'Try again' : 'Ask hop'}</span>
-      <Icon name={isError ? 'info' : 'flight'} size={16} className={isError ? '' : 'rotate-90'} />
+      <Icon name={isError ? 'info' : 'flight'} size={17} className={isError ? '' : 'rotate-90'} />
     </button>
   )
 }

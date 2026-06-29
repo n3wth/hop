@@ -15,7 +15,7 @@ export type ResponseProps = ComponentProps<typeof Streamdown>
 export function Response({ className = '', ...props }: ResponseProps) {
   return (
     <Streamdown
-      className={`hop-md text-[15px] leading-[1.65] text-text sm:text-[16px] ${className}`}
+      className={`hop-md text-[15px] leading-[1.7] text-text sm:text-[16px] ${className}`}
       parseIncompleteMarkdown
       {...props}
     />
