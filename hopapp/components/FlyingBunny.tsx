@@ -21,18 +21,32 @@ export default function FlyingBunny({ size = 46, className, carve }: FlyingBunny
     if (!el) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
-    // One-time load leap: a single up-and-over hop that settles to rest.
-    // Transform-only CSS animation. We clear it once it ends (or as soon as the
-    // user scrolls) so the scroll-driven inline transform can take over cleanly.
-    let leaping = true
-    el.classList.add('hop-bunny-leap')
+    // One-time load leap — but only ONCE PER SESSION, not on every page nav
+    // (the bunny remounts on each navigation). sessionStorage gates it so it
+    // plays on first arrival, then stays calm as you move around the app.
+    let leaping = false
+    let alreadyLeapt = true
+    try {
+      alreadyLeapt = sessionStorage.getItem('hop-leapt') === '1'
+    } catch {
+      /* sessionStorage unavailable — skip the leap */
+    }
     const endLeap = () => {
       if (!leaping) return
       leaping = false
       el.classList.remove('hop-bunny-leap')
       el.style.transform = 'translate3d(0,0,0)'
     }
-    el.addEventListener('animationend', endLeap, { once: true })
+    if (!alreadyLeapt) {
+      leaping = true
+      el.classList.add('hop-bunny-leap')
+      el.addEventListener('animationend', endLeap, { once: true })
+      try {
+        sessionStorage.setItem('hop-leapt', '1')
+      } catch {
+        /* ignore */
+      }
+    }
 
     let lastY = window.scrollY
     let lastT = performance.now()

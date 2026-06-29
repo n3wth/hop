@@ -116,10 +116,24 @@ export default function TopNav({
             <LogoLockup />
           </div>
 
-          {/* Search lives in the header on results pages; the landing hides it
-              (hideSearch) because the hero owns the search there. */}
+          {/* Search lives in the header on results pages; pages that hide it
+              (landing, deals, ask, account — hero owns search there) get nav
+              links to the other main pages instead of a blank gap. */}
           {hideSearch ? (
-            <div className="flex-1" />
+            <>
+              <nav className="-ml-1 hidden items-center gap-1 md:flex">
+                <a href="/search" className="rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hover:text-text">
+                  Search
+                </a>
+                <a href="/deals" className="rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hover:text-text">
+                  Deals
+                </a>
+                <a href="/ask" className="rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hover:text-text">
+                  Ask hop
+                </a>
+              </nav>
+              <div className="flex-1" />
+            </>
           ) : (
             <>
               {/* MOBILE search — compact tap pill that opens the full editable search */}

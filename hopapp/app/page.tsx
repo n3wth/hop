@@ -1,6 +1,7 @@
 import { auth0 } from '@/lib/auth0'
 import { mockBalances } from '@/lib/mock'
 import { getBalances } from '@/lib/awardwallet'
+import { getPrefs } from '@/lib/prefs'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import Icon from '@/components/Icon'
@@ -58,6 +59,12 @@ export default async function Home() {
 
   const first = user?.name?.trim().split(' ')[0]
 
+  // Home airport (Supabase pref) seeds the default From + gates the set-home prompt.
+  const prefs = su?.sub ? await getPrefs(su.sub) : {}
+  const homeSeed: SearchState = prefs.homeAirport
+    ? { ...SEED, from: prefs.homeAirport }
+    : SEED
+
   // ── SIGNED IN — personalized dashboard ───────────────────────────────────
   if (user) {
     return (
@@ -67,7 +74,8 @@ export default async function Home() {
             first={first}
             programs={programs}
             totalPoints={totalPoints}
-            seed={SEED}
+            seed={homeSeed}
+            hasHomeAirport={!!prefs.homeAirport}
           />
         </div>
         <div className="mx-auto max-w-[1180px]">

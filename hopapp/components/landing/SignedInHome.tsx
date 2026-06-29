@@ -1,16 +1,9 @@
 import Icon from '@/components/Icon'
-import Logo from '@/components/Logo'
 import HeroSearch from '@/components/landing/HeroSearch'
 import DestinationGrid from '@/components/landing/DestinationGrid'
+import HomeAirportPrompt from '@/components/HomeAirportPrompt'
 import { affordableWith, topValue } from '@/lib/destinations'
 import type { SearchState } from '@/components/SearchBar'
-
-// n → "618K" / "1.2M" for the greeting line.
-function compactPoints(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
-  if (n >= 1_000) return `${Math.round(n / 1_000)}K`
-  return String(n)
-}
 
 // The personalized home for a signed-in member. NOT the marketing page — it
 // leads with a warm greeting and their synced state, then the single most
@@ -21,11 +14,13 @@ export default function SignedInHome({
   programs,
   totalPoints,
   seed,
+  hasHomeAirport = true,
 }: {
   first?: string
   programs: number
   totalPoints: number
   seed: SearchState
+  hasHomeAirport?: boolean
 }) {
   // Personalized to the member's real balance; best value first. If they're
   // light on points (or programs failed), fall back to the universally great
@@ -47,14 +42,13 @@ export default function SignedInHome({
           {first ? `Welcome back, ${first}.` : 'Welcome back.'}
         </h1>
         <p className="mt-3 max-w-[56ch] text-[16px] leading-[1.55] text-text2 sm:text-[18px]">
-          You&apos;re sitting on{' '}
-          <b className="font-semibold text-text">
-            {compactPoints(totalPoints)} points
-          </b>{' '}
-          across {programs} {programs === 1 ? 'program' : 'programs'}. Here&apos;s
-          where they can take you — and what each trip is really worth.
+          Here&apos;s where your points can take you — and what each trip is
+          really worth.
         </p>
       </section>
+
+      {/* ── SET HOME AIRPORT (only until they've set one) ────────────────── */}
+      {!hasHomeAirport ? <HomeAirportPrompt /> : null}
 
       {/* ── WHERE YOUR POINTS CAN TAKE YOU ───────────────────────────────── */}
       <section>
@@ -120,8 +114,8 @@ export default function SignedInHome({
             href="/ask"
             className="mt-6 inline-flex w-fit items-center gap-2 rounded-[14px] bg-white px-6 py-3.5 text-[15px] font-semibold text-[#073e3e] transition-colors hover:bg-[#fffdf6]"
           >
-            <Icon name="lightbulb" size={18} />
             Ask hop where to go
+            <span aria-hidden className="text-[16px] leading-none">→</span>
           </a>
         </aside>
       </section>
@@ -150,7 +144,6 @@ export default function SignedInHome({
             <Icon name="settings" size={18} />
             Manage programs
           </a>
-          <Logo size={40} className="hidden text-brand sm:block" />
         </div>
       </section>
     </div>
