@@ -20,6 +20,8 @@ export interface TopNavProps {
   user?: { initial: string; name?: string; email?: string; picture?: string } | null
   /** Total points across the user's programs — shown beside the avatar. */
   pointsTotal?: number
+  /** Hide the header search (e.g. on the landing page where the hero owns it). */
+  hideSearch?: boolean
 }
 
 // Crafted easing — decelerate, ~280ms. One curve drives the whole morph so the
@@ -57,6 +59,7 @@ export default function TopNav({
   adults = 1,
   user = null,
   pointsTotal,
+  hideSearch = false,
 }: TopNavProps) {
   const initial: SearchState = useMemo(
     () => ({ from: fromCode, to: toCode, depart, ret, adults, oneWay: !ret }),
@@ -113,25 +116,32 @@ export default function TopNav({
             <LogoLockup />
           </div>
 
-          {/* MOBILE search — a single compact tap pill that opens the full editable search */}
-          <button
-            type="button"
-            aria-label="Edit search"
-            onClick={() => setMobileOpen(true)}
-            className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-border bg-surface px-4 py-2.5 md:hidden"
-          >
-            <Icon name="search" size={16} className="flex-shrink-0 text-brand" />
-            <span className="truncate text-[13px] font-semibold text-text">
-              {fromCode} → {toCode}
-            </span>
-            <span className="ml-1 truncate text-[12px] text-text3">{dates}</span>
-          </button>
+          {/* Search lives in the header on results pages; the landing hides it
+              (hideSearch) because the hero owns the search there. */}
+          {hideSearch ? (
+            <div className="flex-1" />
+          ) : (
+            <>
+              {/* MOBILE search — compact tap pill that opens the full editable search */}
+              <button
+                type="button"
+                aria-label="Edit search"
+                onClick={() => setMobileOpen(true)}
+                className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-border bg-surface px-4 py-2.5 md:hidden"
+              >
+                <Icon name="search" size={16} className="flex-shrink-0 text-brand" />
+                <span className="truncate text-[13px] font-semibold text-text">
+                  {fromCode} → {toCode}
+                </span>
+                <span className="ml-1 truncate text-[12px] text-text3">{dates}</span>
+              </button>
 
-          {/* DESKTOP search — full editable form, STABLE on scroll so the
-              logo↔search gap never shifts and all fields stay visible. */}
-          <div className="hidden min-w-0 flex-shrink-0 md:flex">
-            <SearchForm initial={initial} variant="desktop" scrolled={c} />
-          </div>
+              {/* DESKTOP search — full editable form, stable on scroll */}
+              <div className="hidden min-w-0 flex-shrink-0 md:flex">
+                <SearchForm initial={initial} variant="desktop" scrolled={c} />
+              </div>
+            </>
+          )}
 
           {/* spacer pushes the account to the far right (desktop only) */}
           <div className="hidden flex-1 md:block" />

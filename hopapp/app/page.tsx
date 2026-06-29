@@ -3,7 +3,6 @@ import { mockBalances } from '@/lib/mock'
 import { getBalances } from '@/lib/awardwallet'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
-import FlyingBunny from '@/components/FlyingBunny'
 import Icon from '@/components/Icon'
 import type { SearchState } from '@/components/SearchBar'
 import HeroSearch from '@/components/landing/HeroSearch'
@@ -58,18 +57,11 @@ export default async function Home() {
       ret={SEED.ret}
       adults={SEED.adults}
       user={user}
+      hideSearch
     >
       <div className="mx-auto flex max-w-[1180px] flex-col gap-16 pt-6 sm:gap-20 sm:pt-12 lg:gap-24 lg:pt-16">
         {/* ── HERO ───────────────────────────────────────────────────────── */}
-        <section className="flex flex-col items-center text-center">
-          {/* the bunny, big, the brand in flight */}
-          <div
-            className="hop-rise mb-7 sm:mb-9"
-            style={{ ['--hop-delay' as string]: '0ms' }}
-          >
-            <FlyingBunny size={92} carve="var(--color-bg)" />
-          </div>
-
+        <section className="flex flex-col items-center pt-6 text-center sm:pt-10">
           <span
             className="hop-rise inline-flex items-center gap-2 rounded-full border border-border bg-paper px-4 py-1.5 text-[12px] font-semibold uppercase tracking-[0.16em] text-brand"
             style={{ ['--hop-delay' as string]: '40ms' }}
