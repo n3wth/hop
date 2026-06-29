@@ -1,14 +1,33 @@
 import { createClient } from '@supabase/supabase-js'
 
+// Postgres jsonb columns surface as this in generated Supabase types.
+type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+
 // Minimal schema for the tables hop owns. Enough to give the query builder real
 // row types (otherwise it infers `never`). Extend as we add tables.
 interface HopDatabase {
   public: {
     Tables: {
       hop_user_prefs: {
-        Row: { user_id: string; home_airport: string | null; updated_at: string | null }
-        Insert: { user_id: string; home_airport?: string | null; updated_at?: string | null }
-        Update: { home_airport?: string | null; updated_at?: string | null }
+        // travel_prefs: jsonb of the user's natural-language flight constraints
+        // (lib/prefs-model.TravelPrefs). See ALTER TABLE in lib/prefs.ts notes.
+        Row: {
+          user_id: string
+          home_airport: string | null
+          travel_prefs: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          user_id: string
+          home_airport?: string | null
+          travel_prefs?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          home_airport?: string | null
+          travel_prefs?: Json | null
+          updated_at?: string | null
+        }
         Relationships: []
       }
       hop_user_accounts: {
