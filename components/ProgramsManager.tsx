@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import type { Balance } from '@/lib/types'
 import type { ManualBalance } from '@/lib/accounts'
 import {
@@ -24,6 +24,30 @@ import Icon from './Icon'
 // lib/programs.ts by name+aliases and fills the canonical name; the server
 // canonicalizes + dedupes on save. router.refresh() re-runs the page so merged
 // balances land everywhere.
+
+// Two-step inline confirm for destructive actions — no modal (flat design). The
+// first click arms the button ("Confirm?"); a second click within the window
+// runs it. Auto-disarms after a few seconds so a stray arm doesn't linger.
+function useConfirm(timeoutMs = 4000) {
+  const [armed, setArmed] = useState(false)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current)
+    },
+    [],
+  )
+  function arm() {
+    setArmed(true)
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => setArmed(false), timeoutMs)
+  }
+  function disarm() {
+    if (timer.current) clearTimeout(timer.current)
+    setArmed(false)
+  }
+  return { armed, arm, disarm }
+}
 
 export default function ProgramsManager({
   manual,
@@ -89,15 +113,22 @@ function ProgramRow({ program, first }: { program: ManualBalance; first: boolean
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(program.program)
   const [balance, setBalance] = useState(String(program.balance))
-  const [pending, start] = useTransition()
+  // Per-row pending isolation: separate transitions so only the clicked button
+  // relabels (saving vs removing), never both at once.
+  const [saving, startSave] = useTransition()
+  const [removing, startRemove] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
+  const confirm = useConfirm()
 
   function save() {
     setError(null)
-    start(async () => {
+    startSave(async () => {
       const res = await editProgram(program.id, name, balance)
       if (res.ok) {
         setEditing(false)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
         router.refresh()
       } else {
         setError(res.error ?? 'Could not save')
@@ -107,7 +138,8 @@ function ProgramRow({ program, first }: { program: ManualBalance; first: boolean
 
   function remove() {
     setError(null)
-    start(async () => {
+    confirm.disarm()
+    startRemove(async () => {
       const res = await removeProgram(program.id)
       if (res.ok) router.refresh()
       else setError(res.error ?? 'Could not remove')
@@ -118,10 +150,16 @@ function ProgramRow({ program, first }: { program: ManualBalance; first: boolean
     return (
       <li className={`px-5 py-4 sm:px-6 ${first ? '' : 'border-t border-border'}`}>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <ProgramPicker value={name} onChange={setName} onEnterEmpty={save} disabled={pending} />
+          <ProgramPicker value={name} onChange={setName} onEnterEmpty={save} disabled={saving} />
           <input
             value={balance}
             onChange={(e) => setBalance(e.target.value.replace(/[^0-9,]/g, ''))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                save()
+              }
+            }}
             inputMode="numeric"
             aria-label="Balance"
             className="w-full rounded-[10px] border border-border bg-paper px-3 py-2 text-[14px] font-semibold tabular-nums text-text outline-none transition-colors focus:border-brand sm:w-[140px]"
@@ -130,10 +168,10 @@ function ProgramRow({ program, first }: { program: ManualBalance; first: boolean
             <button
               type="button"
               onClick={save}
-              disabled={pending}
+              disabled={saving}
               className="rounded-[10px] bg-brand px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:opacity-60"
             >
-              {pending ? 'Saving…' : 'Save'}
+              {saving ? 'Saving…' : 'Save'}
             </button>
             <button
               type="button"
@@ -143,14 +181,18 @@ function ProgramRow({ program, first }: { program: ManualBalance; first: boolean
                 setBalance(String(program.balance))
                 setError(null)
               }}
-              disabled={pending}
+              disabled={saving}
               className="rounded-[10px] px-3 py-2 text-[13px] font-semibold text-text3 transition-colors hover:text-text disabled:opacity-60"
             >
               Cancel
             </button>
           </div>
         </div>
-        {error ? <p className="mt-1.5 text-[12.5px] font-medium text-weak">{error}</p> : null}
+        {error ? (
+          <p role="alert" className="mt-1.5 text-[12.5px] font-medium text-weak">
+            {error}
+          </p>
+        ) : null}
       </li>
     )
   }
@@ -164,8 +206,17 @@ function ProgramRow({ program, first }: { program: ManualBalance; first: boolean
       <BrandIcon code={program.code} name={program.program} size={40} />
       <div className="min-w-0">
         <div className="truncate text-[14.5px] font-semibold text-text">{program.program}</div>
-        {program.status ? (
+        {saved ? (
+          <div role="status" className="mt-[2px] text-[12.5px] font-medium text-brand">
+            Saved
+          </div>
+        ) : program.status ? (
           <div className="mt-[2px] truncate text-[12.5px] text-text3">{program.status}</div>
+        ) : null}
+        {error ? (
+          <p role="alert" className="mt-1 text-[12px] font-medium text-weak">
+            {error}
+          </p>
         ) : null}
       </div>
       <div className="flex items-center gap-3 sm:gap-4">
@@ -176,21 +227,43 @@ function ProgramRow({ program, first }: { program: ManualBalance; first: boolean
           <button
             type="button"
             onClick={() => setEditing(true)}
-            disabled={pending}
+            disabled={removing}
             aria-label={`Edit ${program.program}`}
             className="rounded-[8px] px-2 py-1.5 text-[12.5px] font-semibold text-text3 transition-colors hover:text-brand disabled:opacity-60"
           >
             Edit
           </button>
-          <button
-            type="button"
-            onClick={remove}
-            disabled={pending}
-            aria-label={`Remove ${program.program}`}
-            className="rounded-[8px] px-2 py-1.5 text-[12.5px] font-semibold text-text3 transition-colors hover:text-weak disabled:opacity-60"
-          >
-            {pending ? 'Removing…' : 'Remove'}
-          </button>
+          {confirm.armed ? (
+            <>
+              <button
+                type="button"
+                onClick={remove}
+                disabled={removing}
+                aria-label={`Confirm remove ${program.program}`}
+                className="rounded-[8px] px-2 py-1.5 text-[12.5px] font-semibold text-weak transition-colors hover:text-weak disabled:opacity-60"
+              >
+                {removing ? 'Removing…' : 'Confirm?'}
+              </button>
+              <button
+                type="button"
+                onClick={confirm.disarm}
+                disabled={removing}
+                className="rounded-[8px] px-2 py-1.5 text-[12.5px] font-semibold text-text3 transition-colors hover:text-text disabled:opacity-60"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={confirm.arm}
+              disabled={removing}
+              aria-label={`Remove ${program.program}`}
+              className="rounded-[8px] px-2 py-1.5 text-[12.5px] font-semibold text-text3 transition-colors hover:text-weak disabled:opacity-60"
+            >
+              Remove
+            </button>
+          )}
         </span>
       </div>
     </li>
@@ -205,6 +278,8 @@ function AddProgramForm({ hasRows }: { hasRows: boolean }) {
   const [error, setError] = useState<string | null>(null)
   // Confirmation when the server folded this into an existing program (dedupe).
   const [note, setNote] = useState<string | null>(null)
+  // Brief acknowledgement that the add landed.
+  const [saved, setSaved] = useState(false)
 
   function add() {
     if (!program.trim()) {
@@ -217,12 +292,17 @@ function AddProgramForm({ hasRows }: { hasRows: boolean }) {
     }
     setError(null)
     setNote(null)
+    setSaved(false)
     start(async () => {
       const res = await addProgram(program, balance)
       if (res.ok) {
         setProgram('')
         setBalance('')
         setNote(res.note ?? null)
+        if (!res.note) {
+          setSaved(true)
+          setTimeout(() => setSaved(false), 2000)
+        }
         router.refresh()
       } else {
         setError(res.error ?? 'Could not add')
@@ -239,6 +319,7 @@ function AddProgramForm({ hasRows }: { hasRows: boolean }) {
             setProgram(next)
             if (error) setError(null)
             if (note) setNote(null)
+            if (saved) setSaved(false)
           }}
           onEnterEmpty={add}
           error={!!error}
@@ -250,6 +331,7 @@ function AddProgramForm({ hasRows }: { hasRows: boolean }) {
             setBalance(e.target.value.replace(/[^0-9,]/g, ''))
             if (error) setError(null)
             if (note) setNote(null)
+            if (saved) setSaved(false)
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
@@ -273,8 +355,21 @@ function AddProgramForm({ hasRows }: { hasRows: boolean }) {
           {!pending ? <Icon name="check_circle" size={16} /> : null}
         </button>
       </div>
-      {error ? <p className="mt-1.5 text-[12.5px] font-medium text-weak">{error}</p> : null}
-      {note ? <p className="mt-1.5 text-[12.5px] font-medium text-brand">{note}</p> : null}
+      {error ? (
+        <p role="alert" className="mt-1.5 text-[12.5px] font-medium text-weak">
+          {error}
+        </p>
+      ) : null}
+      {note ? (
+        <p role="status" className="mt-1.5 text-[12.5px] font-medium text-brand">
+          {note}
+        </p>
+      ) : null}
+      {saved && !note ? (
+        <p role="status" className="mt-1.5 text-[12.5px] font-medium text-brand">
+          Added
+        </p>
+      ) : null}
     </div>
   )
 }
@@ -294,12 +389,17 @@ function AwardWalletSection({
 }) {
   const router = useRouter()
   const [disconnecting, startDisconnect] = useTransition()
-  const [refreshing, startRefresh] = useTransition()
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Last time the user re-read balances in this session. router.refresh() returns
+  // void (no revalidation promise to await), so we don't fake a pending state —
+  // we just re-read and stamp when it happened.
+  const [syncedAt, setSyncedAt] = useState<Date | null>(null)
+  const confirm = useConfirm()
 
   function disconnect() {
     setError(null)
+    confirm.disarm()
     startDisconnect(async () => {
       const res = await disconnectAwardWallet()
       if (res.ok) router.refresh()
@@ -309,7 +409,8 @@ function AwardWalletSection({
 
   function refresh() {
     setError(null)
-    startRefresh(() => router.refresh())
+    router.refresh()
+    setSyncedAt(new Date())
   }
 
   if (connected) {
@@ -321,25 +422,52 @@ function AwardWalletSection({
             <span className="ml-2 font-normal text-text3">
               {balances.length} {balances.length === 1 ? 'program' : 'programs'} live
             </span>
+            {syncedAt ? (
+              <span className="ml-2 font-normal text-text3">
+                · refreshed{' '}
+                {syncedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+              </span>
+            ) : null}
           </span>
           <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={refresh}
-              disabled={refreshing || disconnecting}
+              disabled={disconnecting}
               className="inline-flex items-center gap-1.5 rounded-[10px] px-3 py-2 text-[13px] font-semibold text-brand transition-colors hover:bg-brand-light disabled:opacity-60"
             >
               <Icon name="schedule" size={16} />
-              {refreshing ? 'Refreshing…' : 'Refresh'}
+              Refresh
             </button>
-            <button
-              type="button"
-              onClick={disconnect}
-              disabled={refreshing || disconnecting}
-              className="rounded-[10px] px-3 py-2 text-[13px] font-semibold text-text3 transition-colors hover:text-text disabled:opacity-60"
-            >
-              {disconnecting ? 'Disconnecting…' : 'Disconnect'}
-            </button>
+            {confirm.armed ? (
+              <>
+                <button
+                  type="button"
+                  onClick={disconnect}
+                  disabled={disconnecting}
+                  className="rounded-[10px] px-3 py-2 text-[13px] font-semibold text-weak transition-colors disabled:opacity-60"
+                >
+                  {disconnecting ? 'Disconnecting…' : 'Confirm?'}
+                </button>
+                <button
+                  type="button"
+                  onClick={confirm.disarm}
+                  disabled={disconnecting}
+                  className="rounded-[10px] px-3 py-2 text-[13px] font-semibold text-text3 transition-colors hover:text-text disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={confirm.arm}
+                disabled={disconnecting}
+                className="rounded-[10px] px-3 py-2 text-[13px] font-semibold text-text3 transition-colors hover:text-text disabled:opacity-60"
+              >
+                Disconnect
+              </button>
+            )}
           </div>
         </div>
         {balances.length === 0 ? (
@@ -350,7 +478,10 @@ function AwardWalletSection({
           </p>
         ) : null}
         {error ? (
-          <p className="border-t border-border px-5 py-2.5 text-[12.5px] font-medium text-weak sm:px-6">
+          <p
+            role="alert"
+            className="border-t border-border px-5 py-2.5 text-[12.5px] font-medium text-weak sm:px-6"
+          >
             {error}
           </p>
         ) : null}
@@ -390,7 +521,11 @@ function AwardWalletSection({
         {showAdvanced ? 'Hide' : 'Advanced: paste a connected-user ID'}
       </button>
       {showAdvanced ? <AdvancedIdEntry /> : null}
-      {error ? <p className="mt-1.5 text-[12.5px] font-medium text-weak">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="mt-1.5 text-[12.5px] font-medium text-weak">
+          {error}
+        </p>
+      ) : null}
     </section>
   )
 }
@@ -437,7 +572,11 @@ function AdvancedIdEntry() {
       >
         {pending ? 'Connecting…' : 'Connect'}
       </button>
-      {error ? <p className="text-[12.5px] font-medium text-weak">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="text-[12.5px] font-medium text-weak">
+          {error}
+        </p>
+      ) : null}
     </div>
   )
 }

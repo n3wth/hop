@@ -1,15 +1,32 @@
 import { topValue, imageQuery } from '@/lib/destinations'
 import { destinationImages } from '@/lib/images'
 import { getUserBalances } from '@/lib/accounts'
+import { getPrefs } from '@/lib/prefs'
 import { auth0 } from '@/lib/auth0'
 import AppShell from '@/components/AppShell'
 import DealCard from '@/components/DealCard'
+import DegradedNote from '@/components/DegradedNote'
 import SiteFooter from '@/components/SiteFooter'
 import Icon from '@/components/Icon'
+import { pageMeta } from '@/lib/seo'
 
-export const metadata = {
-  title: 'Sweet spots · hop',
-  description: 'High-value award redemptions worth your miles right now.',
+// title is the bare child title — the root layout template appends '· hop'.
+export const metadata = pageMeta({
+  title: 'Sweet spots',
+  description: 'High-value award redemptions worth your miles right now, ranked by cents per point.',
+  path: '/deals',
+})
+
+// Fallback origin when no ?from= and no saved home airport.
+const DEFAULT_ORIGIN = 'SFO'
+
+// IATA codes are 3 letters. Normalize ?from= and reject anything else so the
+// seeded search links stay valid.
+function normalizeOrigin(raw: string | string[] | undefined): string | undefined {
+  const v = Array.isArray(raw) ? raw[0] : raw
+  if (!v) return undefined
+  const code = v.trim().toUpperCase()
+  return /^[A-Z]{3}$/.test(code) ? code : undefined
 }
 
 // Sensible defaults for the CTA seed: depart ~3 weeks out, return a week later.
@@ -24,11 +41,15 @@ function defaultDates(): { depart: string; ret: string } {
   return { depart: iso(depart), ret: iso(ret) }
 }
 
-const ORIGIN = 'SFO'
-
-export default async function DealsPage() {
+export default async function DealsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const deals = topValue(24)
   const { depart, ret } = defaultDates()
+  const params = await searchParams
+  const fromParam = normalizeOrigin(params.from)
 
   // Destination photography and the Auth0 session are independent — resolve
   // them concurrently. Photos are cached per query (day-long revalidate); null
@@ -47,13 +68,30 @@ export default async function DealsPage() {
       }
     : null
 
-  // Header points chip — only when signed in and balances resolve.
+  // Header points chip + origin seed. Balances and prefs each degrade on their
+  // own — a balances failure is surfaced (the figure goes stale), a prefs
+  // failure just falls back to the default origin. Neither throws the page.
   let pointsTotal: number | undefined
-  if (user) {
-    // Unified per-user balances (manual + AwardWallet) for the header chip.
-    const real = su?.sub ? await getUserBalances(su.sub) : []
-    if (real.length > 0) pointsTotal = real.reduce((s, b) => s + b.balance, 0)
+  let homeAirport: string | undefined
+  const degraded: string[] = []
+  if (user && su?.sub) {
+    try {
+      // Unified per-user balances (manual + AwardWallet) for the header chip.
+      const real = await getUserBalances(su.sub)
+      if (real.length > 0) pointsTotal = real.reduce((s, b) => s + b.balance, 0)
+    } catch {
+      degraded.push('balances')
+    }
+    try {
+      homeAirport = (await getPrefs(su.sub)).homeAirport
+    } catch {
+      // No saved origin → default. Not worth a degraded note.
+    }
   }
+
+  // Origin precedence: explicit ?from= → saved home airport → SFO.
+  const origin = fromParam ?? normalizeOrigin(homeAirport) ?? DEFAULT_ORIGIN
+  const hasDeals = deals.length > 0
 
   return (
     <AppShell user={user} pointsTotal={pointsTotal} hideSearch>
@@ -76,11 +114,13 @@ export default async function DealsPage() {
             </span>
             <span className="hidden sm:inline">·</span>
             <span>
-              from <b className="font-semibold text-text2">{ORIGIN}</b>
+              from <b className="font-semibold text-text2">{origin}</b>
             </span>
             <span className="hidden sm:inline">·</span>
             <span>best value first</span>
           </div>
+
+          <DegradedNote degraded={degraded} />
         </header>
 
         {/* agent on-ramp — these are great-value routes in the abstract; hop's
@@ -104,19 +144,29 @@ export default async function DealsPage() {
         </div>
 
         {/* the feed */}
-        <section className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
-          {deals.map((dest, i) => (
-            <DealCard
-              key={dest.code}
-              dest={dest}
-              rank={i}
-              fromCode={ORIGIN}
-              depart={depart}
-              ret={ret}
-              photo={photos[imageQuery(dest)]}
-            />
-          ))}
-        </section>
+        {hasDeals ? (
+          <section className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
+            {deals.map((dest, i) => (
+              <DealCard
+                key={dest.code}
+                dest={dest}
+                rank={i}
+                fromCode={origin}
+                depart={depart}
+                ret={ret}
+                photo={photos[imageQuery(dest)]}
+              />
+            ))}
+          </section>
+        ) : (
+          // Defensive: the dataset is static so this shouldn't happen, but never
+          // render a bare, dead grid if it ever does.
+          <div className="mt-9 rounded-[var(--radius-lg)] border border-border bg-surface px-6 py-12 text-center">
+            <p className="text-[15px] text-text2">
+              No sweet spots to show right now. Ask hop where your points can take you.
+            </p>
+          </div>
+        )}
 
         {/* Unsplash attribution (API terms) */}
         <p className="mt-8 text-[12px] text-text3">

@@ -3,13 +3,17 @@ import Icon from '@/components/Icon'
 import { topValue, imageQuery } from '@/lib/destinations'
 import { destinationImages } from '@/lib/images'
 
-// Sells the dream before the visitor has connected anything: the best-value
-// award redemptions hop can find right now. It's a teaser — points-rich travel
-// is the payoff, and these are the trips where miles stretch furthest. Flat
-// cards on cream, on-brand. Clicking any one drops you straight into a real
-// search for that city.
+// Sells the dream before the visitor has connected anything: high-value award
+// redemptions hop can find right now. It's a teaser — points-rich travel is the
+// payoff, and these are trips where points stretch furthest. Flat cards on cream,
+// on-brand. Clicking any one drops you straight into a real search for that city.
+//
+// The DestinationReel above already shows the top-value head, so the teaser pulls
+// a NON-overlapping slice (the next tier down) — different cities, so the two
+// surfaces don't mirror each other.
 export default async function InspirationTeaser() {
-  const picks = topValue(4)
+  // Skip the reel's leading tiles; show the next four best-value places.
+  const picks = topValue(8).slice(4, 8)
   const photos = await destinationImages(picks.map((d) => imageQuery(d)))
 
   return (
@@ -22,8 +26,8 @@ export default async function InspirationTeaser() {
           The trips where miles stretch furthest.
         </h2>
         <p className="mt-1 text-[15px] leading-[1.55] text-text2">
-          A taste of the redemptions hop loves — top value per point, the
-          program that books each one, and the dream on the other side.
+          Top value per point — the program that books each one, and the dream
+          on the other side.
         </p>
       </div>
 

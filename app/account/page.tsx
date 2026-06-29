@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { auth0 } from '@/lib/auth0'
 import { getUserAwId, getManualBalances } from '@/lib/accounts'
@@ -37,6 +38,12 @@ const GMAIL_NOTES: Record<string, { tone: 'ok' | 'warn'; text: string }> = {
   denied: { tone: 'warn', text: 'Gmail access was declined. Nothing was read.' },
   state: { tone: 'warn', text: 'That connect link expired. Try connecting again.' },
   error: { tone: 'warn', text: 'Couldn’t finish connecting Gmail. Try again.' },
+}
+
+// The account page is private, per-user, and behind auth — keep it out of the
+// index. (Crawlers redirect to login anyway, but say it plainly.)
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
 }
 
 // Account / profile page. Auth-gated — anonymous visitors go to login. Shows the
@@ -119,7 +126,7 @@ export default async function AccountPage({
   const gmailNote = gmailFlag ? GMAIL_NOTES[gmailFlag] : undefined
 
   return (
-    <AppShell user={user}>
+    <AppShell user={user} hideSearch>
       <div className="mx-auto max-w-[820px] pb-4 pt-8 sm:pt-12 xl:max-w-[1200px]">
         {/* profile hero — teal plane, matches the editorial system */}
         <section
@@ -161,15 +168,16 @@ export default async function AccountPage({
         </section>
 
         {/* in-page nav — the account is long once populated; anchor jumps give it
-            real IA so the power features (watches, what-if, trips, Claude) aren't
-            reachable only by scrolling past everything. Color-only hover. */}
+            real IA so the power features (watches, what-if, trips, developer
+            access) aren't reachable only by scrolling past everything.
+            Color-only hover. */}
         <nav className="mt-8 flex flex-wrap gap-2 border-b border-hair pb-5">
           {[
             { href: '#programs', label: 'Programs' },
             { href: '#trips', label: 'Trips' },
             { href: '#watches', label: 'Watches' },
             { href: '#whatif', label: 'What-if' },
-            { href: '#claude', label: 'Claude' },
+            { href: '#developers', label: 'Developers' },
           ].map((a) => (
             <a
               key={a.href}
@@ -292,7 +300,7 @@ export default async function AccountPage({
               What if…
             </h2>
             <p className="mt-1 text-[13.5px] text-text2">
-              Travel&apos;s first financial mirror — see what a different points stack would unlock.
+              See what a different points stack would unlock.
             </p>
           </div>
           <Counterfactual programs={programBalances} />
@@ -302,12 +310,15 @@ export default async function AccountPage({
             Power-user plumbing. Collapsed by default so the heavy config block
             doesn't dominate the page for the common visitor (color-only summary,
             no motion — flat-design safe). */}
-        <div className="mt-14 text-[11px] font-semibold uppercase tracking-[0.18em] text-text3">
+        <div
+          id="developers"
+          className="mt-14 scroll-mt-24 text-[11px] font-semibold uppercase tracking-[0.18em] text-text3"
+        >
           Developers
         </div>
 
-        {/* add to claude — MCP access tokens (collapsed) */}
-        <section id="claude" className="mt-6 scroll-mt-24">
+        {/* MCP access tokens (collapsed) */}
+        <section id="mcp" className="mt-6 scroll-mt-24">
           <details className="group/mcp rounded-[16px] border border-border bg-surface">
             <summary className="flex cursor-pointer list-none items-center gap-2.5 px-5 py-4 transition-colors hover:bg-sunk [&::-webkit-details-marker]:hidden">
               <div className="min-w-0 flex-1">

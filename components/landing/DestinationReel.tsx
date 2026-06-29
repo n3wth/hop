@@ -12,11 +12,23 @@ import { destinationImages, type DestImage } from '@/lib/images'
 // -50% for a seamless loop. We cap at 10 Unsplash queries (the best-value
 // places) to keep the image fetch cheap.
 
-function Tile({ d, photo }: { d: Destination; photo?: DestImage | null }) {
+function Tile({
+  d,
+  photo,
+  decorative = false,
+}: {
+  d: Destination
+  photo?: DestImage | null
+  /** The duplicated marquee copy: hidden from a11y + keyboard so the same city
+      isn't announced or tab-focusable twice. */
+  decorative?: boolean
+}) {
   const href = `/search?from=SFO&to=${encodeURIComponent(d.code)}&adults=1`
   return (
     <a
       href={href}
+      aria-hidden={decorative || undefined}
+      tabIndex={decorative ? -1 : undefined}
       className="group relative block h-[180px] w-[260px] flex-shrink-0 overflow-hidden rounded-[16px] border border-border sm:h-[210px] sm:w-[300px]"
       style={{ background: 'var(--color-brand-deep)' }}
     >
@@ -72,11 +84,17 @@ export default async function DestinationReel() {
   const picks = topValue(10)
   const photos = await destinationImages(picks.map((d) => imageQuery(d)))
 
-  // Two copies → seamless -50% loop. aria-hidden on the duplicate so screen
-  // readers and the link count aren't doubled.
+  // Two copies → seamless -50% loop. The duplicate row is aria-hidden and its
+  // anchors are tabIndex=-1 (decorative) so screen readers and the keyboard tab
+  // order don't see each city twice.
   const tiles = (dupe: boolean) =>
     picks.map((d) => (
-      <Tile key={`${dupe ? 'b' : 'a'}-${d.code}`} d={d} photo={photos[imageQuery(d)]} />
+      <Tile
+        key={`${dupe ? 'b' : 'a'}-${d.code}`}
+        d={d}
+        photo={photos[imageQuery(d)]}
+        decorative={dupe}
+      />
     ))
 
   return (
@@ -86,10 +104,12 @@ export default async function DestinationReel() {
       style={{ ['--hop-delay' as string]: '300ms' }}
     >
       <p className="mb-4 px-4 text-center text-[12px] font-semibold uppercase tracking-[0.18em] text-brand sm:px-8 lg:px-16">
-        {destinations.length} cities your miles already reach
+        {destinations.length} cities within reach on points
       </p>
+      {/* Pause the loop on hover/focus so a visitor can read a tile (and on touch,
+          where hover sticks). Reduced-motion users get a static row from the CSS. */}
       <div className="hop-marquee-mask overflow-hidden py-1">
-        <div className="hop-marquee-track gap-3 sm:gap-4">
+        <div className="hop-marquee-track gap-3 [animation-play-state:running] hover:[animation-play-state:paused] focus-within:[animation-play-state:paused] sm:gap-4">
           <div className="flex gap-3 pr-3 sm:gap-4 sm:pr-4">{tiles(false)}</div>
           <div className="flex gap-3 pr-3 sm:gap-4 sm:pr-4" aria-hidden>
             {tiles(true)}

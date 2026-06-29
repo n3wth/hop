@@ -1,6 +1,7 @@
 'use client' // Error boundaries must be Client Components
 
 import { useEffect } from 'react'
+import Link from 'next/link'
 import Logo from '@/components/Logo'
 import Icon from '@/components/Icon'
 
@@ -27,7 +28,9 @@ export default function Error({
   return (
     <div className="mx-auto flex min-h-[calc(100vh-76px)] max-w-[1440px] flex-col items-center justify-center px-16 text-center">
       <div className="hop-rise grid place-items-center" style={{ ['--hop-delay' as string]: '40ms' }}>
-        <Logo size={92} carve="var(--color-bg)" className="text-brand" />
+        <Link href="/" aria-label="hop — home" className="grid place-items-center">
+          <Logo size={92} carve="var(--color-bg)" className="text-brand" decorative />
+        </Link>
       </div>
 
       <h1
@@ -41,8 +44,7 @@ export default function Error({
         className="hop-rise mt-3 max-w-[44ch] text-[16px] leading-[1.55] text-text2"
         style={{ ['--hop-delay' as string]: '160ms' }}
       >
-        We couldn&apos;t pull your flights and points just now. It&apos;s usually a
-        passing hiccup with an airline or wallet source — give it another go.
+        Something broke on our end. It&apos;s usually temporary — give it another go.
       </p>
 
       <div className="hop-rise mt-8 flex items-center gap-3" style={{ ['--hop-delay' as string]: '220ms' }}>
@@ -54,6 +56,12 @@ export default function Error({
           <Icon name="swap_horiz" size={18} />
           Try again
         </button>
+        <Link
+          href="/"
+          className="inline-flex items-center rounded-[14px] border border-border bg-surface px-7 py-[15px] text-[15px] font-semibold text-text transition-colors hover:bg-sunk"
+        >
+          Go home
+        </Link>
       </div>
 
       {error.digest ? (

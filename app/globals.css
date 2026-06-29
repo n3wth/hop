@@ -45,6 +45,15 @@
   --color-mint-bright: #6ff0d2;
   --color-gold-soft: #ffe7b0;
 
+  /* on-teal / dark-wallet text tiers — one contract for copy painted on the
+     teal verdict hero and the dark wallet, so component lanes stop hardcoding
+     these hexes. Tuned to read on the teal hero / wallet ink. */
+  --color-hero-body: #c7ece5; /* body copy on teal hero */
+  --color-hero-label: #8fcabf; /* muted labels on teal */
+  --color-hero-eyebrow: #9fd4c8; /* eyebrows / kickers on teal */
+  --color-hero-white-hover: #fffdf6; /* hover-to-white on teal */
+  --color-wallet-active: #7be0c6; /* active mint in the dark wallet */
+
   /* airline brand colors (fallback tiles / accents) */
   --color-as: #00385f;
   --color-wn: #304cb2;
@@ -167,6 +176,23 @@ body {
   animation-delay: 240ms;
 }
 
+
+/* A gentle, continuous float — transform-only (no opacity), used for resting
+   decorative marks (e.g. the bunny idling). Calm, small amplitude; not bouncy.
+   Frozen flat under prefers-reduced-motion (reset block below). */
+@keyframes hop-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -6px, 0);
+  }
+}
+
+.hop-float {
+  animation: hop-float 4.5s var(--ease-premium) infinite;
+}
 
 /* Value bars grow from 0 to their target width once, on load. The target width
    is supplied inline as --hop-bar-w; the animation eases out to it. */
@@ -302,7 +328,8 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .hop-rise,
   .hop-bar,
-  .hop-bunny-leap {
+  .hop-bunny-leap,
+  .hop-float {
     animation: none;
     opacity: 1;
     width: var(--hop-bar-w, 0%);

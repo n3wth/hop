@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { auth0 } from '@/lib/auth0'
 import { getOrder } from '@/lib/duffel-orders'
@@ -5,6 +6,12 @@ import { getBookingByOrderId } from '@/lib/bookings'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import Icon from '@/components/Icon'
+
+// Private, per-user confirmation — keep it out of the index. (template adds "· hop".)
+export const metadata: Metadata = {
+  title: 'Booking confirmed',
+  robots: { index: false, follow: false },
+}
 
 // Booking confirmation — shows the PNR / booking reference, itinerary, total.
 // searchParams is a Promise in Next 16.
@@ -48,7 +55,8 @@ export default async function ConfirmationPage({
                 We couldn’t load that booking
               </div>
               <p className="mt-1 text-[14px] text-text2">
-                {res.reason}. Check your trips on your account page.
+                If you just booked, your confirmation is on the way by email. You can also find this
+                trip on your account page.
               </p>
               <a
                 href="/account"
@@ -113,7 +121,7 @@ function Confirmed({
           <h1 className="mt-5 font-display text-[28px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[34px]">
             You&apos;re booked
           </h1>
-          <p className="mt-2 text-[15px] text-[#c7ece5]">
+          <p className="mt-2 text-[15px] text-hero-body">
             {order.airline} · {order.route}
           </p>
 
@@ -177,7 +185,7 @@ function Confirmed({
 
       <div className="mt-6 flex flex-wrap gap-3">
         <a
-          href="/account"
+          href="/account#trips"
           className="inline-flex items-center gap-2 rounded-[12px] bg-brand px-5 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep"
         >
           View my trips

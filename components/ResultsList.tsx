@@ -14,34 +14,56 @@ export interface ResultsListProps {
 
 // "Other ways to fly" — the pick lives in the hero, so this ranks the remaining
 // options as value-weighted cards (best deal reads first via the value bars).
-// All cards share ONE expand state (collapsed on load) so they open/close in
-// sync and stay aligned. Surfaces degraded + empty states.
+// Each card owns its own expand state (collapsed on load); an expand/collapse-all
+// toolbar drives them together. Surfaces degraded + empty states.
 export default function ResultsList({ result }: ResultsListProps) {
   const { pick, options, degraded } = result
   const oneWay = !result.params.return
   const others = options.filter((o) => o.id !== pick?.id)
-  const [expanded, setExpanded] = useState(false)
+
+  // Per-card expand state — a Set of open option ids so cards open/close
+  // independently, while the toolbar can still drive them all at once.
+  const [openIds, setOpenIds] = useState<Set<string>>(() => new Set())
+
+  function toggleOne(id: string) {
+    setOpenIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   // Strongest cpp among the alternatives, to scale the value bars relatively.
   const maxCpp = others.reduce((m, o) => (o.cpp != null && o.cpp > m ? o.cpp : m), 0)
 
   const isEmpty = options.length === 0
   const hasCards = !isEmpty && others.length > 0
+  // "All expanded" reflects the toolbar's aria-expanded — true only when every
+  // card is open; toggling then collapses all, otherwise expands all.
+  const allOpen = hasCards && others.every((o) => openIds.has(o.id))
+
+  function toggleAll() {
+    setOpenIds(allOpen ? new Set() : new Set(others.map((o) => o.id)))
+  }
 
   return (
     <section>
       <div className="flex items-end justify-between">
-        <SectionHead title="Other ways to fly" note={undefined} />
+        {/* When there are no alternative cards, drop the "Other ways to fly"
+            heading — there are no other ways to show. */}
+        {hasCards ? <SectionHead title="Other ways to fly" note={undefined} /> : null}
         {hasCards ? (
           <button
             type="button"
-            onClick={() => setExpanded((v) => !v)}
+            onClick={toggleAll}
+            aria-expanded={allOpen}
             className="mb-[2px] flex flex-shrink-0 items-center gap-1.5 text-[13px] font-semibold text-text2 transition-colors hover:text-text"
           >
-            {expanded ? 'Collapse all' : 'Expand all'}
+            {allOpen ? 'Collapse all' : 'Expand all'}
             <span
               className="transition-transform duration-300 motion-reduce:transition-none"
-              style={{ transform: expanded ? 'rotate(180deg)' : 'none' }}
+              style={{ transform: allOpen ? 'rotate(180deg)' : 'none' }}
             >
               <Icon name="expand_more" size={16} />
             </span>
@@ -53,7 +75,11 @@ export default function ResultsList({ result }: ResultsListProps) {
 
       {isEmpty ? (
         <div className="mt-[18px]">
-          <EmptyState route={`${result.params.from} → ${result.params.to}`} />
+          <EmptyState
+            route={`${result.params.from} → ${result.params.to}`}
+            fromCode={result.params.from}
+            toCode={result.params.to}
+          />
         </div>
       ) : others.length === 0 ? (
         <p className="mt-[18px] text-[14px] leading-[1.55] text-text2">
@@ -68,8 +94,8 @@ export default function ResultsList({ result }: ResultsListProps) {
               rank={i + 1}
               maxCpp={maxCpp || undefined}
               index={i}
-              open={expanded}
-              onToggle={() => setExpanded((v) => !v)}
+              open={openIds.has(option.id)}
+              onToggle={() => toggleOne(option.id)}
               oneWay={oneWay}
             />
           ))}

@@ -22,7 +22,7 @@
 // photo as imagery, a single dark→ink scrim for legibility, solid white input,
 // hover = color only (no lift), motion is reduced-motion-safe via .hop-rise.
 
-import type { FormEvent } from 'react'
+import { useEffect, useRef, type FormEvent } from 'react'
 import Icon from './Icon'
 import { type ConciergeHeroCopy } from '@/lib/concierge-hero'
 
@@ -56,6 +56,9 @@ export interface ConciergeHeroProps {
   photos?: ConciergeHeroPhoto[]
   /** Signed-in unlocks the "what hop remembers" affordance (full density). */
   signedIn?: boolean
+  /** Signed in but no programs linked yet → show the "Add your programs" nudge
+   *  so the visitor knows answers will sharpen once balances are connected. */
+  needsPrograms?: boolean
 }
 
 export default function ConciergeHero({
@@ -69,10 +72,22 @@ export default function ConciergeHero({
   autoFocus = false,
   photos = [],
   signedIn = false,
+  needsPrograms = false,
 }: ConciergeHeroProps) {
   const full = density === 'full'
   const tiles = photos.slice(0, 6)
   const backdrop = tiles[0]
+
+  // autoFocus is gated to pointer:fine + wide viewports: on a phone, focusing the
+  // input on mount pops the keyboard and buries the hero. We focus imperatively
+  // after mount only when the device clearly has a hardware pointer and room.
+  const inputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (!autoFocus) return
+    if (typeof window === 'undefined' || !window.matchMedia) return
+    const ok = window.matchMedia('(pointer: fine) and (min-width: 768px)').matches
+    if (ok) inputRef.current?.focus()
+  }, [autoFocus])
 
   const panelMin = full
     ? 'min-h-[clamp(440px,72vh,680px)]'
@@ -97,8 +112,10 @@ export default function ConciergeHero({
         aria-hidden
         className="pointer-events-none absolute inset-0"
         style={{
+          // Stronger top stop so white eyebrow/heading clear WCAG AA even over a
+          // bright backdrop photo (the lightest tiles previously thinned the top).
           background:
-            'linear-gradient(to bottom, rgba(7,62,62,0.62) 0%, rgba(7,62,62,0.86) 55%, rgba(7,62,62,0.97) 100%)',
+            'linear-gradient(to bottom, rgba(7,62,62,0.80) 0%, rgba(7,62,62,0.90) 55%, rgba(7,62,62,0.97) 100%)',
         }}
       />
 
@@ -108,7 +125,7 @@ export default function ConciergeHero({
         }`}
       >
         <span
-          className="hop-rise inline-flex items-center gap-2 rounded-full bg-[#0a5757] px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6ff0d2]"
+          className="hop-rise inline-flex items-center gap-2 rounded-full bg-[#0a5757] px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-hero-eyebrow"
           style={{ ['--hop-delay' as string]: '40ms' }}
         >
           <Icon name="lightbulb" size={13} />
@@ -125,7 +142,7 @@ export default function ConciergeHero({
         </h1>
 
         <p
-          className="hop-rise mt-5 max-w-[52ch] text-pretty text-[15px] leading-[1.6] text-[#c7ece5] sm:text-[17px]"
+          className="hop-rise mt-5 max-w-[52ch] text-pretty text-[15px] leading-[1.6] text-hero-body sm:text-[17px]"
           style={{ ['--hop-delay' as string]: '140ms' }}
         >
           {copy.sub}
@@ -140,17 +157,18 @@ export default function ConciergeHero({
           <div className="flex items-center gap-2 rounded-[18px] bg-white px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5">
             <Icon name="lightbulb" size={20} className="flex-shrink-0 text-brand" />
             <input
+              ref={inputRef}
               type="text"
               value={value}
               onChange={(e) => onValueChange(e.target.value)}
               placeholder={copy.placeholder}
               aria-label="Tell hop where you want to go"
               enterKeyHint="go"
-              autoFocus={autoFocus}
               className="min-w-0 flex-1 bg-transparent py-1.5 text-[16px] text-text outline-none placeholder:text-text3"
             />
             <button
               type="submit"
+              aria-label="Ask hop"
               disabled={!value.trim() || submitDisabled}
               className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:bg-[#0a5757] disabled:text-[#5f9b97]"
             >
@@ -170,41 +188,52 @@ export default function ConciergeHero({
               key={p}
               type="button"
               onClick={() => onChip(p)}
-              className="rounded-full border border-[#2c6f6b] bg-[#0a5757] px-3.5 py-1.5 text-[13px] font-medium text-[#d8f1ec] transition-colors hover:border-[#6ff0d2] hover:text-white"
+              className="rounded-full border border-[#2c6f6b] bg-[#0a5757] px-3.5 py-1.5 text-[13px] font-medium text-hero-body transition-colors hover:border-wallet-active hover:text-hero-white-hover"
             >
               {p}
             </button>
           ))}
         </div>
 
-        {/* full density only: gets-to-know-you affordances */}
-        {full ? (
+        {/* full density only: gets-to-know-you affordances. Signed-out visitors
+            don't see the disabled "Connect Gmail — Soon" pill (a dead control is
+            noise before there's a relationship); they see nothing extra here. */}
+        {full && signedIn ? (
           <div
             className="hop-rise mt-4 flex flex-wrap items-center justify-center gap-2"
             style={{ ['--hop-delay' as string]: '300ms' }}
           >
+            {/* No programs yet → invite linking so answers price against real
+                balances. The primary onward action for a fresh signed-in user. */}
+            {needsPrograms ? (
+              <a
+                href="/account"
+                className="flex items-center gap-1.5 rounded-full border border-wallet-active bg-wallet-active/15 px-3.5 py-1.5 text-[12px] font-semibold text-hero-white-hover transition-colors hover:bg-wallet-active/25"
+              >
+                <Icon name="loyalty" size={14} className="flex-shrink-0" />
+                Add your programs
+              </a>
+            ) : null}
             <button
               type="button"
               disabled
               aria-disabled
               title="Coming soon — let hop learn from your past trips"
-              className="flex cursor-not-allowed items-center gap-1.5 rounded-full border border-[#2c6f6b] bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-[#9fd6cd]"
+              className="flex cursor-not-allowed items-center gap-1.5 rounded-full border border-[#2c6f6b] bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-hero-label"
             >
               <Icon name="loyalty" size={14} className="flex-shrink-0" />
               Connect Gmail to learn from past trips
-              <span className="rounded-full bg-[#0a5757] px-1.5 py-px text-[10px] uppercase tracking-wide text-[#d8f1ec]">
+              <span className="rounded-full bg-[#0a5757] px-1.5 py-px text-[10px] uppercase tracking-wide text-hero-body">
                 Soon
               </span>
             </button>
-            {signedIn ? (
-              <a
-                href="/account"
-                className="flex items-center gap-1.5 rounded-full border border-[#2c6f6b] bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-[#9fd6cd] transition-colors hover:border-[#6ff0d2] hover:text-white"
-              >
-                <Icon name="info" size={14} className="flex-shrink-0" />
-                What hop remembers
-              </a>
-            ) : null}
+            <a
+              href="/account"
+              className="flex items-center gap-1.5 rounded-full border border-[#2c6f6b] bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-hero-label transition-colors hover:border-wallet-active hover:text-hero-white-hover"
+            >
+              <Icon name="info" size={14} className="flex-shrink-0" />
+              What hop remembers
+            </a>
           </div>
         ) : null}
       </div>

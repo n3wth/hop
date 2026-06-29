@@ -14,15 +14,27 @@ import DestinationReel from '@/components/landing/DestinationReel'
 import SignedInHome from '@/components/landing/SignedInHome'
 import { conciergeBackdrop } from '@/lib/concierge-backdrop'
 
+// YYYY-MM-DD for `today + days`. Seed dates are computed RELATIVE to today so
+// the seeded hero search never goes stale onto an un-searchable past date.
+function isoOffset(days: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
 // A sensible default search to seed the hero form. Picking it pre-fills the
-// fields so the very first action — a real search — is one tap away.
-const SEED: SearchState = {
-  from: 'SFO',
-  to: 'JFK',
-  depart: '2026-07-09',
-  ret: '2026-07-12',
-  adults: 1,
-  oneWay: false,
+// fields so the very first action — a real search — is one tap away. Dates are
+// relative (depart ≈ today+10, return ≈ +3 after), computed per request so a
+// long-running server never serves a stale past date.
+function makeSeed(): SearchState {
+  return {
+    from: 'SFO',
+    to: 'JFK',
+    depart: isoOffset(10),
+    ret: isoOffset(13),
+    adults: 1,
+    oneWay: false,
+  }
 }
 
 // hop's home — auth-aware, two genuinely different experiences:
@@ -78,14 +90,15 @@ export default async function Home() {
   const heroBackdrop = heroBackdropRaw ?? undefined
 
   // Home airport (Supabase pref) seeds the default From + gates the set-home prompt.
+  const seed = makeSeed()
   const homeSeed: SearchState = prefs.homeAirport
-    ? { ...SEED, from: prefs.homeAirport }
-    : SEED
+    ? { ...seed, from: prefs.homeAirport }
+    : seed
 
   // ── SIGNED IN — personalized dashboard ───────────────────────────────────
   if (user) {
     return (
-      <AppShell user={user} pointsTotal={totalPoints} hideSearch>
+      <AppShell user={user} pointsTotal={programs > 0 ? totalPoints : undefined} hideSearch>
         <div className="mx-auto max-w-[1180px]">
           <SignedInHome
             first={first}

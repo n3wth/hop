@@ -70,24 +70,16 @@ export default async function SignedInHome({
         className="hop-rise grid grid-cols-1 items-center gap-8 lg:grid-cols-[1fr_360px] lg:gap-12"
         style={{ ['--hop-delay' as string]: '80ms' }}
       >
-        {/* A short, secondary welcome — the agent above already led. */}
+        {/* A short, secondary section header — the agent above already greeted
+            the member by name, so we don't repeat "Welcome back". */}
         <div>
-          {programs === 0 ? (
-            <a
-              href="/account"
-              className="inline-flex items-center gap-2 rounded-full border border-border bg-paper px-3.5 py-1.5 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-brand transition-colors hover:bg-sunk"
-            >
-              <Icon name="loyalty" size={13} />
-              Add your programs to get started
-            </a>
-          ) : null}
-          <h2 className={`font-display text-[28px] font-semibold leading-[1.04] tracking-[-0.02em] text-text sm:text-[36px] ${programs === 0 ? 'mt-4' : ''}`}>
-            {first ? `Welcome back, ${first}.` : 'Welcome back.'}
+          <h2 className="font-display text-[28px] font-semibold leading-[1.04] tracking-[-0.02em] text-text sm:text-[36px]">
+            {programs > 0 ? 'Your points, working.' : 'Get started.'}
           </h2>
           <p className="mt-3 max-w-[52ch] text-[15px] leading-[1.55] text-text2 sm:text-[17px]">
             {programs > 0
-              ? "Here's where your points can take you — and what each trip is really worth."
-              : 'Add your loyalty programs and hop will show you exactly where your points can take you — and whether to book with miles or cash.'}
+              ? 'What each balance is really worth — and whether to book with points or cash.'
+              : 'Add your loyalty programs and hop will show you what each balance is really worth — and whether to book with points or cash.'}
           </p>
         </div>
 
@@ -108,13 +100,13 @@ export default async function SignedInHome({
             <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-[14px] border border-hair bg-hair">
               <div className="bg-sunk p-3.5">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
-                  Within reach
+                  {personalized ? 'In reach' : 'Worth saving for'}
                 </p>
                 <p className="mt-1 font-display text-[22px] font-semibold leading-none text-text tabular-nums">
-                  {personalized ? affordable.length : 0}
+                  {personalized ? affordable.length : picks.length}
                 </p>
                 <p className="mt-1 text-[12px] leading-[1.4] text-text2">
-                  destinations
+                  {personalized ? 'trips to reach for' : 'dream trips'}
                 </p>
               </div>
               <div className="bg-sunk p-3.5">
@@ -122,10 +114,10 @@ export default async function SignedInHome({
                   Best value
                 </p>
                 <p className="mt-1 font-display text-[22px] font-semibold leading-none text-text tabular-nums">
-                  {topCpp !== undefined ? `${topCpp.toFixed(1)}¢` : '—'}
+                  {topCpp !== undefined ? `${topCpp.toFixed(1)}¢/pt` : '—'}
                 </p>
                 <p className="mt-1 truncate text-[12px] leading-[1.4] text-text2">
-                  {topPick ? `per mi · ${topPick.city}` : 'per mile'}
+                  {topPick ? topPick.city : 'per point'}
                 </p>
               </div>
             </div>
@@ -171,22 +163,22 @@ export default async function SignedInHome({
       {/* ── SET HOME AIRPORT (only until they've set one) ────────────────── */}
       {!hasHomeAirport ? <HomeAirportPrompt /> : null}
 
-      {/* ── WHERE YOUR POINTS CAN TAKE YOU ───────────────────────────────── */}
+      {/* ── TRIPS YOUR BALANCES CAN GET YOU TO ───────────────────────────── */}
       <section>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-col gap-2 sm:max-w-[54ch]">
             <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
-              Where your points can take you
+              Trips your balances can get you to
             </span>
             <h2 className="font-display text-[26px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[34px]">
               {personalized
-                ? 'Within reach right now.'
+                ? 'Within reach.'
                 : 'Dreams worth saving toward.'}
             </h2>
             <p className="mt-1 text-[15px] leading-[1.55] text-text2">
               {personalized
-                ? 'Every city here is bookable with the points you already hold — sorted by the value you get per mile.'
-                : 'A few more points and these open up. Sorted by the value you get per mile.'}
+                ? 'Where your balances can take you as you pool and transfer — sorted by value per point.'
+                : 'A few more points and these open up. Sorted by value per point.'}
             </p>
           </div>
           <a
@@ -237,14 +229,14 @@ export default async function SignedInHome({
             <h2 className="mt-4 font-display text-[24px] font-semibold leading-[1.08] tracking-[-0.02em] text-white sm:text-[28px]">
               Not sure where to go?
             </h2>
-            <p className="mt-2.5 text-[14.5px] leading-[1.55] text-[#c7ece5]">
+            <p className="mt-2.5 text-[14.5px] leading-[1.55] text-hero-body">
               Describe the trip in plain words — beach, big city, cheap flight,
-              business class — and hop finds where your miles win.
+              business class — and hop finds where points beat cash.
             </p>
           </div>
           <a
             href="/ask"
-            className="mt-6 inline-flex w-fit items-center gap-2 rounded-[14px] bg-white px-6 py-3.5 text-[15px] font-semibold text-[#073e3e] transition-colors hover:bg-[#fffdf6]"
+            className="mt-6 inline-flex w-fit items-center gap-2 rounded-[14px] bg-white px-6 py-3.5 text-[15px] font-semibold text-[#073e3e] transition-colors hover:bg-hero-white-hover"
           >
             Talk to hop
             <span aria-hidden className="text-[16px] leading-none">→</span>
@@ -260,11 +252,12 @@ export default async function SignedInHome({
           </span>
           <div>
             <h2 className="font-display text-[19px] font-semibold leading-[1.1] tracking-[-0.01em] text-text">
-              Manage your programs
+              {programs > 0 ? 'Manage your programs' : 'Add your programs'}
             </h2>
             <p className="mt-1 max-w-[48ch] text-[13.5px] leading-[1.5] text-text2">
-              {programs} {programs === 1 ? 'program' : 'programs'} connected.
-              Add a loyalty account or refresh your balances anytime.
+              {programs > 0
+                ? `${programs} ${programs === 1 ? 'program' : 'programs'} connected. Add a loyalty account or refresh your balances anytime.`
+                : 'Link a loyalty account anytime — hop fills in your real balances and the trips they reach.'}
             </p>
           </div>
         </div>
@@ -274,7 +267,7 @@ export default async function SignedInHome({
             className="inline-flex items-center gap-2 rounded-[14px] bg-brand px-6 py-3 text-[14.5px] font-semibold text-white transition-colors hover:bg-brand-deep"
           >
             <Icon name="settings" size={18} />
-            Manage programs
+            {programs > 0 ? 'Manage programs' : 'Add a program'}
           </a>
         </div>
       </section>

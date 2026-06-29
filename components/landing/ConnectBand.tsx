@@ -31,22 +31,22 @@ export default function ConnectBand({
                 <br />
                 Where to next?
               </h2>
-              <p className="mt-3 max-w-[40ch] text-[15px] leading-[1.55] text-[#c7ece5]">
+              <p className="mt-3 max-w-[40ch] text-[15px] leading-[1.55] text-hero-body">
                 Your balances are live. Run a search and your agent will show you
                 which way actually wins.
               </p>
             </>
           ) : (
             <>
-              <span className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#9fe0d6]">
-                Meet your agent
+              <span className="text-[12px] font-semibold uppercase tracking-[0.2em] text-hero-eyebrow">
+                One last thing
               </span>
               <h2 className="mt-3 font-display text-[28px] font-semibold leading-[1.06] tracking-[-0.02em] text-white sm:text-[36px]">
                 Connect your points.
                 <br />
                 Get your verdict.
               </h2>
-              <p className="mt-3 max-w-[42ch] text-[15px] leading-[1.55] text-[#c7ece5]">
+              <p className="mt-3 max-w-[42ch] text-[15px] leading-[1.55] text-hero-body">
                 Sign in and link your loyalty programs. Your agent reads your actual
                 balances and shows you the math — when miles beat cash and when they
                 don&apos;t.
@@ -66,15 +66,18 @@ export default function ConnectBand({
             </a>
           ) : (
             <>
+              {/* Two distinct doors, not the same URL twice: signup is primary,
+                  sign in is the quieter return path. Both carry returnTo so Auth0
+                  lands the visitor back home. */}
               <a
-                href="/auth/login"
-                className="inline-flex items-center gap-2 rounded-[14px] bg-white px-7 py-3.5 text-[15px] font-semibold text-[#073e3e] transition-colors hover:bg-[#fffdf6]"
+                href="/auth/login?screen_hint=signup&returnTo=%2F"
+                className="inline-flex items-center gap-2 rounded-[14px] bg-white px-7 py-3.5 text-[15px] font-semibold text-[#073e3e] transition-colors hover:bg-hero-white-hover"
               >
                 <Icon name="loyalty" size={18} />
                 Connect your points
               </a>
               <a
-                href="/auth/login"
+                href="/auth/login?returnTo=%2F"
                 className="inline-flex items-center rounded-[14px] border border-white/25 px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-[#0a5757]"
               >
                 Sign in

@@ -37,9 +37,15 @@ import type {
   CounterfactualBlock,
 } from '@/lib/a2ui'
 
-// A destination block links into a real hop search seeded to that city.
-function searchHref(code: string): string {
-  return `/search?to=${encodeURIComponent(code)}`
+// A destination block links into a real hop search seeded to that city — and,
+// when we know it, the visitor's home airport (`from`) so the search lands
+// fully-formed instead of falling back to the default origin. Dates aren't
+// carried on a2ui blocks, so /search clamps depart to today on arrival.
+function searchHref(code: string, from?: string): string {
+  const params = new URLSearchParams({ to: code })
+  const origin = from?.trim().toUpperCase()
+  if (origin) params.set('from', origin)
+  return `/search?${params.toString()}`
 }
 
 // Render a list of blocks. Each block is self-contained + on-brand. `hasBalances`
@@ -48,16 +54,25 @@ export function A2UIBlocks({
   blocks,
   onChip,
   hasBalances = false,
+  homeAirport,
 }: {
   blocks: A2UIBlock[]
   onChip?: (prompt: string) => void
   hasBalances?: boolean
+  /** The visitor's home airport — seeds `from` on every "See the search" link. */
+  homeAirport?: string
 }) {
   if (!blocks.length) return null
   return (
     <div className="flex flex-col gap-3">
       {blocks.map((b, i) => (
-        <A2UIBlockView key={`${b.type}-${i}`} block={b} onChip={onChip} hasBalances={hasBalances} />
+        <A2UIBlockView
+          key={`${b.type}-${i}`}
+          block={b}
+          onChip={onChip}
+          hasBalances={hasBalances}
+          homeAirport={homeAirport}
+        />
       ))}
     </div>
   )
@@ -68,16 +83,18 @@ export function A2UIBlockView({
   block,
   onChip,
   hasBalances = false,
+  homeAirport,
 }: {
   block: A2UIBlock
   onChip?: (prompt: string) => void
   hasBalances?: boolean
+  homeAirport?: string
 }) {
   switch (block.type) {
     case 'verdict_card':
-      return <VerdictCard b={block} hasBalances={hasBalances} />
+      return <VerdictCard b={block} hasBalances={hasBalances} homeAirport={homeAirport} />
     case 'compare':
-      return <Compare b={block} hasBalances={hasBalances} />
+      return <Compare b={block} hasBalances={hasBalances} homeAirport={homeAirport} />
     case 'timing':
       return <Timing b={block} />
     case 'weather':
@@ -91,7 +108,7 @@ export function A2UIBlockView({
     case 'connect_gmail':
       return <ConnectGmail b={block} />
     case 'counterfactual':
-      return <Counterfactual b={block} />
+      return <Counterfactual b={block} homeAirport={homeAirport} />
     default:
       // Never reached for a valid union member — defensive only.
       return null
@@ -115,7 +132,7 @@ function VerdictPill({ verdict, cpp }: { verdict: A2UIEconomics['verdict']; cpp?
     >
       {label}
       {verdict === 'points' && cpp != null ? (
-        <span className="tabular-nums">· {cpp.toFixed(1)}¢</span>
+        <span className="tabular-nums">· {cpp.toFixed(1)}¢/pt</span>
       ) : null}
     </span>
   )
@@ -180,7 +197,7 @@ function EconFacts({ econ, hasBalances }: { econ?: A2UIEconomics; hasBalances: b
     <div className="mt-3 border-t border-border pt-3">
       <div className="flex flex-wrap gap-x-5 gap-y-2.5">
         <Stat label={owns ? 'You pay' : 'Points'} value={points} />
-        {econ.cpp != null ? <Stat label="Value" value={`${econ.cpp.toFixed(1)}¢`} /> : null}
+        {econ.cpp != null ? <Stat label="Value" value={`${econ.cpp.toFixed(1)}¢/pt`} /> : null}
         <Stat label="Cash price" value={`$${Math.round(econ.cashUsd).toLocaleString('en-US')}`} />
         {econ.verdict === 'points' ? (
           <Stat label="You save" value={`$${Math.round(econ.cashUsd).toLocaleString('en-US')}`} accent />
@@ -206,12 +223,20 @@ function EconFacts({ econ, hasBalances }: { econ?: A2UIEconomics; hasBalances: b
 
 // ── verdict_card ─────────────────────────────────────────────────────────────
 
-function VerdictCard({ b, hasBalances }: { b: VerdictCardBlock; hasBalances: boolean }) {
+function VerdictCard({
+  b,
+  hasBalances,
+  homeAirport,
+}: {
+  b: VerdictCardBlock
+  hasBalances: boolean
+  homeAirport?: string
+}) {
   const econ = b.econ
   const city = econ?.city ?? b.code
   return (
     <a
-      href={searchHref(b.code)}
+      href={searchHref(b.code, homeAirport)}
       className="group flex flex-col rounded-[16px] border border-border bg-surface p-4 transition-colors hover:border-brand"
     >
       <div className="flex items-start justify-between gap-2">
@@ -261,7 +286,15 @@ function VerdictCard({ b, hasBalances }: { b: VerdictCardBlock; hasBalances: boo
 
 // ── compare ──────────────────────────────────────────────────────────────────
 
-function Compare({ b, hasBalances }: { b: CompareBlock; hasBalances: boolean }) {
+function Compare({
+  b,
+  hasBalances,
+  homeAirport,
+}: {
+  b: CompareBlock
+  hasBalances: boolean
+  homeAirport?: string
+}) {
   return (
     <div className="rounded-[16px] border border-border bg-surface p-4">
       <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
@@ -269,8 +302,8 @@ function Compare({ b, hasBalances }: { b: CompareBlock; hasBalances: boolean }) 
         Side by side
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <CompareSide side={b.left} hasBalances={hasBalances} />
-        <CompareSide side={b.right} hasBalances={hasBalances} />
+        <CompareSide side={b.left} hasBalances={hasBalances} homeAirport={homeAirport} />
+        <CompareSide side={b.right} hasBalances={hasBalances} homeAirport={homeAirport} />
       </div>
       {b.takeaway ? (
         <p className="mt-3 border-t border-border pt-3 text-[13px] leading-[1.5] text-text2">
@@ -281,12 +314,20 @@ function Compare({ b, hasBalances }: { b: CompareBlock; hasBalances: boolean }) 
   )
 }
 
-function CompareSide({ side, hasBalances }: { side: CompareBlock['left']; hasBalances: boolean }) {
+function CompareSide({
+  side,
+  hasBalances,
+  homeAirport,
+}: {
+  side: CompareBlock['left']
+  hasBalances: boolean
+  homeAirport?: string
+}) {
   const econ = side.econ
   const city = econ?.city ?? side.code
   return (
     <a
-      href={searchHref(side.code)}
+      href={searchHref(side.code, homeAirport)}
       className="group flex flex-col rounded-[12px] border border-border bg-paper p-3 transition-colors hover:border-brand"
     >
       <div className="flex items-center justify-between gap-2">
@@ -450,7 +491,7 @@ function ConnectGmail({ b }: { b: ConnectGmailBlock }) {
 // `result`, which the SERVER stamped by running hop's deterministic engine over
 // the user's real balances — never the model. Renders nothing useful if result is
 // absent (mutation didn't resolve to a known program).
-function Counterfactual({ b }: { b: CounterfactualBlock }) {
+function Counterfactual({ b, homeAirport }: { b: CounterfactualBlock; homeAirport?: string }) {
   const r = b.result
   if (!r) return null
   return (
@@ -475,7 +516,7 @@ function Counterfactual({ b }: { b: CounterfactualBlock }) {
           {r.unlocked.map((d) => (
             <a
               key={d.code}
-              href={searchHref(d.code)}
+              href={searchHref(d.code, homeAirport)}
               className="inline-flex items-center gap-1.5 rounded-full border border-border bg-paper px-2.5 py-1 text-[12px] font-medium text-text2 transition-colors hover:border-brand hover:text-brand"
             >
               <span
@@ -484,7 +525,7 @@ function Counterfactual({ b }: { b: CounterfactualBlock }) {
               />
               {d.city}
               {d.cpp != null ? (
-                <span className="tabular-nums text-text3">{d.cpp.toFixed(1)}¢</span>
+                <span className="tabular-nums text-text3">{d.cpp.toFixed(1)}¢/pt</span>
               ) : null}
             </a>
           ))}

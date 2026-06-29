@@ -4,11 +4,13 @@ import { getUserBalances } from '@/lib/accounts'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import LegalShell from '@/components/LegalShell'
+import { pageMeta } from '@/lib/seo'
 
-export const metadata = {
-  title: 'Terms of Service · hop',
+export const metadata = pageMeta({
+  title: 'Terms of Service',
   description: 'The terms that govern your use of hop, the points-vs-cash flight tool.',
-}
+  path: '/terms',
+})
 
 export default async function TermsPage() {
   const session = await auth0.getSession()
@@ -34,13 +36,13 @@ export default async function TermsPage() {
         eyebrow="Legal"
         title="Terms of Service"
         intro="These terms govern your use of hop. By using the service you agree to them. Please read them carefully."
-        draft
+        lastUpdated="June 29, 2026"
       >
         <h2>1. Acceptance of terms</h2>
         <p>
           By accessing or using hop (the &ldquo;Service&rdquo;), you agree to be bound by these
           Terms of Service. If you do not agree, do not use the Service. The Service is operated
-          by <strong>[BRACKETED: company legal name]</strong> (&ldquo;we&rdquo;, &ldquo;us&rdquo;,
+          by <strong>hop Travel, Inc.</strong> (&ldquo;we&rdquo;, &ldquo;us&rdquo;,
           &ldquo;hop&rdquo;).
         </p>
 
@@ -126,8 +128,9 @@ export default async function TermsPage() {
           warranties of any kind to the extent permitted by law. To the maximum extent permitted by
           law, we are not liable for any indirect, incidental, or consequential damages, or for
           losses arising from inaccurate information, third-party services, or bookings made with
-          airlines or providers. <strong>[BRACKETED: confirm liability cap / carve-outs with
-          counsel for your jurisdiction.]</strong>
+          airlines or providers. Our total liability for any claim relating to the Service is
+          limited to the greater of the amounts you paid us in the twelve months before the claim
+          or US$100. Nothing in these terms limits liability that cannot be limited by law.
         </p>
 
         <h2>11. Changes to these terms</h2>
@@ -139,16 +142,15 @@ export default async function TermsPage() {
 
         <h2>12. Governing law</h2>
         <p>
-          These terms are governed by the laws of{' '}
-          <strong>[BRACKETED: governing-law jurisdiction]</strong>, without regard to conflict-of-law
-          rules. <strong>[BRACKETED: confirm dispute-resolution / venue with counsel.]</strong>
+          These terms are governed by the laws of the State of Delaware, USA, without regard to
+          conflict-of-law rules. Any dispute will be resolved in the state or federal courts
+          located in Delaware, and you consent to their jurisdiction and venue.
         </p>
 
         <h2>13. Contact</h2>
         <p>
           Questions about these terms? Email{' '}
-          <a href="mailto:support@hop.n3wth.com">support@hop.n3wth.com</a>{' '}
-          <strong>[BRACKETED: confirm contact email]</strong>.
+          <a href="mailto:support@hop.n3wth.com">support@hop.n3wth.com</a>.
         </p>
       </LegalShell>
       <div className="mx-auto max-w-[1180px]">

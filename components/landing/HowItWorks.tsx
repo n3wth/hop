@@ -32,7 +32,7 @@ const STEPS: Step[] = [
   {
     icon: 'workspace_premium',
     source: 'The verdict',
-    title: 'Names the smarter book',
+    title: 'Names points or cash',
     body: 'hop computes the value of each redemption and names the one verdict: points or cash.',
   },
 ]

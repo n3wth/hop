@@ -2,6 +2,7 @@
 
 import { useId, useState } from 'react'
 import type { FlightOption } from '@/lib/types'
+import { formatValue } from '@/lib/cpp'
 import Icon from './Icon'
 
 export interface SeeTheMathProps {
@@ -70,7 +71,7 @@ export default function SeeTheMath({ pick, cheapestCash, threshold, unit }: SeeT
               <div className="my-[8px] border-t border-white/12" />
               <MathRow
                 label="= Value per point"
-                value={cpp != null ? `${cpp.toFixed(1)}¢ / ${unit.slice(0, -1)}` : '—'}
+                value={cpp != null ? formatValue(cpp) : '—'}
                 accent
                 strong
               />

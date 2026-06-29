@@ -1,5 +1,9 @@
 import { ImageResponse } from 'next/og'
-import { DEFAULT_TITLE, TAGLINE, TEAL, CREAM, INK } from '@/lib/seo'
+import { DEFAULT_TITLE, TEAL, CREAM, INK } from '@/lib/seo'
+
+// The card sub-line — the value prop, not a repeat of the headline/tagline.
+// States what hop actually decides, terse and plain.
+const OG_SUBLINE = 'Points or cash — the verdict on every flight'
 
 // Default social card for the whole site (1200×630). Flat, on-brand: cream
 // canvas, a teal panel carrying the real hop line-art bunny, and the headline +
@@ -92,7 +96,7 @@ export default function Image() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 36 }}>
             <div style={{ width: 56, height: 6, background: TEAL, borderRadius: 3 }} />
-            <div style={{ fontSize: 32, fontWeight: 500, color: TEAL }}>{TAGLINE}</div>
+            <div style={{ fontSize: 32, fontWeight: 500, color: TEAL }}>{OG_SUBLINE}</div>
           </div>
         </div>
       </div>

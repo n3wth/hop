@@ -4,11 +4,13 @@ import { getUserBalances } from '@/lib/accounts'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import LegalShell from '@/components/LegalShell'
+import { pageMeta } from '@/lib/seo'
 
-export const metadata = {
-  title: 'Support · hop',
+export const metadata = pageMeta({
+  title: 'Support',
   description: 'Help with adding points, cash-vs-miles, bookings, and your account.',
-}
+  path: '/support',
+})
 
 export default async function SupportPage() {
   const session = await auth0.getSession()
@@ -45,14 +47,17 @@ export default async function SupportPage() {
           your control — edit or remove them any time.
         </p>
 
-        <h3>How does hop decide cash vs. miles?</h3>
+        <h3 id="how-hop-decides">How does hop decide cash vs. miles?</h3>
         <p>
-          For each option hop computes <strong>cents per point</strong> (CPP): how much real value
-          each mile pulls in that redemption. Higher is better. When the value clears our
-          &ldquo;great&rdquo; threshold, points usually win; when it&rsquo;s low, cash is the
-          smarter buy. The full method is on{' '}
-          <Link href="/values">How we value points</Link>. The figures are informational, not
-          financial advice — always confirm with the airline before booking.
+          For each option hop computes <strong>cents per point</strong> (¢/pt): how much real value
+          each point pulls in that redemption. Higher is better. We back out taxes and fees, then
+          divide the cash price by the points required:{' '}
+          <strong>¢/pt = (cash − taxes) × 100 ÷ points</strong>. At or above{' '}
+          <strong>3.0&nbsp;¢/pt</strong> the value is strong; below{' '}
+          <strong>1.5&nbsp;¢/pt</strong> it&rsquo;s weak. When an option clears{' '}
+          <strong>2.5&nbsp;¢/pt</strong>, points usually win; when it&rsquo;s lower, cash is the
+          better buy. The figures are informational, not financial advice — always confirm with the
+          airline before booking.
         </p>
 
         <h3>Why does hop deep-link to the airline for award bookings?</h3>
@@ -105,9 +110,8 @@ export default async function SupportPage() {
         <h2>Contact us</h2>
         <p>
           Still stuck? Email{' '}
-          <a href="mailto:support@hop.n3wth.com">support@hop.n3wth.com</a>{' '}
-          <strong>[BRACKETED: confirm support email]</strong>. Include your account email and, for
-          booking issues, the booking reference — it helps us help you faster.
+          <a href="mailto:support@hop.n3wth.com">support@hop.n3wth.com</a>. Include your account
+          email and, for booking issues, the booking reference — it helps us help you faster.
         </p>
       </LegalShell>
       <div className="mx-auto max-w-[1180px]">

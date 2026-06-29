@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Icon from '@/components/Icon'
 import { disconnectGmailHistory, resyncGmailHistory } from '@/app/actions/accounts'
@@ -13,6 +13,29 @@ import type { PastTrip } from '@/lib/travel-history'
 // flow + parsing happen server-side; this only shows state + drives the flow.
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+// Two-step inline confirm for destructive actions — no modal (flat design). First
+// click arms ("Confirm?"), second click within the window runs it; auto-disarms.
+function useConfirm(timeoutMs = 4000) {
+  const [armed, setArmed] = useState(false)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current)
+    },
+    [],
+  )
+  function arm() {
+    setArmed(true)
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => setArmed(false), timeoutMs)
+  }
+  function disarm() {
+    if (timer.current) clearTimeout(timer.current)
+    setArmed(false)
+  }
+  return { armed, arm, disarm }
+}
 
 function monthLabel(m: string): string {
   const [y, mo] = m.split('-')
@@ -36,10 +59,12 @@ export default function GmailHistory({
   const [syncing, startSync] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
+  const confirm = useConfirm()
 
   function disconnect() {
     setError(null)
     setNote(null)
+    confirm.disarm()
     startDisconnect(async () => {
       const res = await disconnectGmailHistory()
       if (res.ok) router.refresh()
@@ -83,24 +108,51 @@ export default function GmailHistory({
               <Icon name="schedule" size={16} />
               {syncing ? 'Syncing…' : 'Sync'}
             </button>
-            <button
-              type="button"
-              onClick={disconnect}
-              disabled={syncing || disconnecting}
-              className="rounded-[10px] px-3 py-2 text-[13px] font-semibold text-text3 transition-colors hover:text-text disabled:opacity-60"
-            >
-              {disconnecting ? 'Disconnecting…' : 'Disconnect'}
-            </button>
+            {confirm.armed ? (
+              <>
+                <button
+                  type="button"
+                  onClick={disconnect}
+                  disabled={syncing || disconnecting}
+                  className="rounded-[10px] px-3 py-2 text-[13px] font-semibold text-weak transition-colors disabled:opacity-60"
+                >
+                  {disconnecting ? 'Disconnecting…' : 'Confirm — delete trips?'}
+                </button>
+                <button
+                  type="button"
+                  onClick={confirm.disarm}
+                  disabled={syncing || disconnecting}
+                  className="rounded-[10px] px-3 py-2 text-[13px] font-semibold text-text3 transition-colors hover:text-text disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={confirm.arm}
+                disabled={syncing || disconnecting}
+                className="rounded-[10px] px-3 py-2 text-[13px] font-semibold text-text3 transition-colors hover:text-text disabled:opacity-60"
+              >
+                Disconnect
+              </button>
+            )}
           </div>
         </div>
 
         {note ? (
-          <p className="border-t border-border px-5 py-2.5 text-[13px] text-brand-deep sm:px-6">
+          <p
+            role="status"
+            className="border-t border-border px-5 py-2.5 text-[13px] text-brand-deep sm:px-6"
+          >
             {note}
           </p>
         ) : null}
         {error ? (
-          <p className="border-t border-border px-5 py-2.5 text-[13px] text-text2 sm:px-6">
+          <p
+            role="alert"
+            className="border-t border-border px-5 py-2.5 text-[13px] text-weak sm:px-6"
+          >
             {error}
           </p>
         ) : null}

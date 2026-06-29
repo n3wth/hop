@@ -1,5 +1,6 @@
 import type { FlightOption, SearchResult } from '@/lib/types'
 import { POINTS_THRESHOLD_CPP } from '@/lib/search'
+import { formatValue } from '@/lib/cpp'
 import Icon from './Icon'
 import Logo from './Logo'
 import BrandIcon from './BrandIcon'
@@ -28,6 +29,19 @@ function milesUnit(pick: FlightOption | undefined): string {
   return pick.program?.toLowerCase().includes('southwest') ? 'points' : 'miles'
 }
 
+// Rebuild the canonical /search URL from the result's params so a cold visitor
+// who hits a points-winning verdict keeps their exact route through sign-in.
+function searchUrlFrom(params: SearchResult['params']): string {
+  const q = new URLSearchParams({
+    from: params.from,
+    to: params.to,
+    depart: params.depart,
+    adults: String(params.adults),
+  })
+  if (params.return) q.set('return', params.return)
+  return `/search?${q.toString()}`
+}
+
 // Editorial verdict hero — the magazine cover. Teal plane: headline + factual
 // subline + stat strip on the left; bunny + boarding-pass pick card on the right.
 export default function VerdictRail({ result, destPhoto, hasRealBalances = false }: VerdictRailProps) {
@@ -44,11 +58,14 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
   // verdict `pick` may still be a weak award row, so don't use pick.bookingUrl.
   // When points win but we can't claim ownership, the primary CTA routes to
   // sign-in instead of a book deep-link.
+  // When points win but we can't claim ownership, route the CTA to sign-in with
+  // a returnTo so the visitor lands back on this exact search after auth.
+  const returnTo = encodeURIComponent(searchUrlFrom(result.params))
   const ctaHref = !usingPoints
     ? (cashOption?.bookingUrl ?? pick?.bookingUrl ?? '#')
     : owns
       ? (pick?.bookingUrl ?? '#')
-      : '/auth/login'
+      : `/auth/login?returnTo=${returnTo}`
 
   const save = summary.saveVsCash ?? 0
   const cpp = summary.bestCpp
@@ -114,25 +131,25 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
         )}
 
         {usingPoints && owns ? (
-          <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-[#c7ece5]" style={{ ['--hop-delay' as string]: '140ms' }}>
+          <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-hero-body" style={{ ['--hop-delay' as string]: '140ms' }}>
             <b className="font-semibold text-white">
               {fmt(miles)} {unit}
             </b>{' '}
             at{' '}
-            <b className="font-semibold text-white">{cpp != null ? `${cpp.toFixed(1)}¢` : '—'} each</b>{' '}
+            <b className="font-semibold text-white">{cpp != null ? formatValue(cpp) : '—'}</b>{' '}
             — the best redemption across your {result.balances.length} programs. Cash is{' '}
             <b className="font-semibold text-white">${fmt(cash)}</b>. You have the {unit}.
           </p>
         ) : usingPoints ? (
-          <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-[#c7ece5]" style={{ ['--hop-delay' as string]: '140ms' }}>
+          <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-hero-body" style={{ ['--hop-delay' as string]: '140ms' }}>
             On this route, {airlineShort} {unit} are worth{' '}
-            <b className="font-semibold text-white">{cpp != null ? `${cpp.toFixed(1)}¢` : '—'} each</b>{' '}
+            <b className="font-semibold text-white">{cpp != null ? formatValue(cpp) : '—'}</b>{' '}
             — <b className="font-semibold text-white">{fmt(miles)} {unit}</b> instead of{' '}
             <b className="font-semibold text-white">${fmt(cash)}</b> cash. Sign in to check your
             balances and see if your {unit} cover it.
           </p>
         ) : (
-          <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-[#c7ece5]" style={{ ['--hop-delay' as string]: '140ms' }}>
+          <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-hero-body" style={{ ['--hop-delay' as string]: '140ms' }}>
             No redemption clears the bar on this route. Cash is{' '}
             <b className="font-semibold text-white">${fmt(cash)}</b> — keep your points for a trip
             where they stretch further.
@@ -164,7 +181,7 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
 
         <div className="hop-rise mt-8 flex flex-wrap gap-x-8 gap-y-5 border-t border-white/15 pt-7 sm:gap-10 lg:mt-[42px] lg:pt-[30px]" style={{ ['--hop-delay' as string]: '220ms' }}>
           <HStat label="You pay" value={fmt(miles)} unit={unit} />
-          <HStat label="Value" value={cpp != null ? `${cpp.toFixed(1)}¢` : '—'} unit={`/ ${unit.slice(0, -1)}`} />
+          <HStat label="Value" value={cpp != null ? formatValue(cpp) : '—'} />
           <HStat label="Cash price" value={`$${fmt(cash)}`} />
           <HStat label="You save" value={`$${fmt(save)}`} accent />
         </div>
@@ -238,7 +255,7 @@ function HStat({
 }) {
   return (
     <div>
-      <div className="mb-[6px] text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8fcabf]">
+      <div className="mb-[6px] text-[11px] font-semibold uppercase tracking-[0.16em] text-hero-label">
         {label}
       </div>
       <div

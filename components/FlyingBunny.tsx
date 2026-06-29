@@ -32,12 +32,19 @@ export default function FlyingBunny({ size = 46, className, carve }: FlyingBunny
     }
     if (alreadyLeapt) return
 
+    let done = false
     const endLeap = () => {
+      if (done) return
+      done = true
       el.classList.remove('hop-bunny-leap')
       el.style.transform = 'translate3d(0,0,0)'
     }
     el.classList.add('hop-bunny-leap')
     el.addEventListener('animationend', endLeap, { once: true })
+    // Fallback: if animationend never fires (interrupted, backgrounded tab, a
+    // browser that drops the event), clear the leap class anyway so the bunny
+    // doesn't get stuck mid-animation. 720ms anim + 240ms delay ≈ 960ms; pad it.
+    const fallback = setTimeout(endLeap, 1200)
     try {
       sessionStorage.setItem('hop-leapt', '1')
     } catch {
@@ -45,6 +52,7 @@ export default function FlyingBunny({ size = 46, className, carve }: FlyingBunny
     }
 
     return () => {
+      clearTimeout(fallback)
       el.removeEventListener('animationend', endLeap)
       el.classList.remove('hop-bunny-leap')
     }
