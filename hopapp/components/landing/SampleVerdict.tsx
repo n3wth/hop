@@ -1,12 +1,15 @@
 import Icon from '@/components/Icon'
 import Logo from '@/components/Logo'
+import { destinationImage } from '@/lib/images'
 
 // A taste of the output — a static sample verdict in the same teal language as
 // the real hero, so a first-time visitor sees exactly what hop hands back: not a
 // fare list, a decision. Hard-coded, labelled "Sample" so it never reads as live
-// data. Flat, solid, no translucency (the dark teal's white text is the one
-// allowed exception, matching VerdictRail).
-export default function SampleVerdict() {
+// data. The right panel shows the destination (New York, the sample's JFK) so it
+// mirrors the real verdict hero. Flat, solid, no translucency (the dark teal's
+// white text is the one allowed exception, matching VerdictRail).
+export default async function SampleVerdict() {
+  const photo = await destinationImage('New York City skyline travel landmark')
   return (
     <section
       className="grid grid-cols-1 overflow-hidden rounded-[20px] text-[#eafaf7] lg:grid-cols-[1fr_300px] lg:rounded-[28px]"
@@ -49,13 +52,33 @@ export default function SampleVerdict() {
         </div>
       </div>
 
-      {/* RIGHT — the bunny, the mark in its element */}
+      {/* RIGHT — the destination (New York), mirroring the real verdict hero.
+          Falls back to the bunny mark when no photo is available. */}
       <aside
         className="relative hidden place-items-center overflow-hidden border-l border-white/10 lg:grid"
         style={{ background: 'var(--color-brand-deep)' }}
       >
-        <Logo size={150} carve="var(--color-brand-deep)" className="text-white" />
-        <span className="absolute bottom-5 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6ec9bd]">
+        {photo ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photo.url}
+              alt={photo.alt}
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3"
+              style={{
+                background:
+                  'linear-gradient(to bottom, rgba(7,62,62,0) 0%, rgba(7,62,62,0.82) 100%)',
+              }}
+            />
+          </>
+        ) : (
+          <Logo size={150} carve="var(--color-brand-deep)" className="text-white" />
+        )}
+        <span className="absolute bottom-5 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.18em] text-white">
           <Icon name="check_circle" size={14} />
           the smarter book
         </span>

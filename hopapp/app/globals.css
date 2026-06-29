@@ -151,6 +151,22 @@ body {
   animation-delay: 240ms;
 }
 
+/* The mascot glows softly on hover — an intentional, explicitly-requested moment
+   of delight (the only sanctioned glow; the rest of the UI stays flat). A
+   drop-shadow hugs the bunny silhouette (not a box), tinted brand teal. */
+.hop-bunny-glow {
+  transition: filter 240ms var(--ease-premium);
+}
+.hop-bunny-glow:hover {
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--color-brand) 60%, transparent))
+    drop-shadow(0 0 22px color-mix(in srgb, var(--color-brand) 35%, transparent));
+}
+@media (prefers-reduced-motion: reduce) {
+  .hop-bunny-glow {
+    transition: none;
+  }
+}
+
 /* Value bars grow from 0 to their target width once, on load. The target width
    is supplied inline as --hop-bar-w; the animation eases out to it. */
 @keyframes hop-bar-grow {

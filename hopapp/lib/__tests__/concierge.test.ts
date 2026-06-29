@@ -64,10 +64,11 @@ describe('buildPrompt()', () => {
     expect(system).toContain(destinationsSummary())
   })
 
-  it('embeds points valuations for points-vs-cash reasoning', () => {
+  it('embeds points valuations (from lib/valuations.ts) for points-vs-cash reasoning', () => {
     const { system } = buildPrompt('points or cash?', context)
-    expect(system).toContain('Amex MR 2.0cpp')
-    expect(system).toContain('Alaska 1.8cpp')
+    // Now sourced from the canonical valuation table (full program names, 2dp).
+    expect(system).toContain('Amex Membership Rewards 2.00cpp')
+    expect(system).toContain('Alaska Mileage Plan 1.40cpp')
   })
 
   it('instructs the model to return JSON and never hallucinate prices', () => {

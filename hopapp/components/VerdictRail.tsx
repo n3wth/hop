@@ -220,7 +220,22 @@ function PickPass({ pick }: { pick: FlightOption }) {
   const details = [pick.cabin, pick.aircraft, pick.fareBrand].filter(Boolean)
 
   return (
-    <div className="relative mx-5 mb-6 mt-6 rounded-[18px] bg-paper text-text sm:mx-[26px] sm:mb-[26px] lg:mt-0">
+    <div
+      className="relative mx-5 mb-6 mt-6 rounded-[18px] bg-paper text-text sm:mx-[26px] sm:mb-[26px] lg:mt-0"
+      style={{
+        // True perforation: punch two semicircle notches out of the LEFT and
+        // RIGHT edges at the dashed line (~50% down) so whatever is behind the
+        // pass — the destination photo — shows through the holes. Radial-gradient
+        // masks subtract the circles; transparent inside the 9px radius, opaque
+        // (the pass) everywhere else.
+        WebkitMaskImage:
+          'radial-gradient(circle 9px at 0% 50%, transparent 9px, #000 10px), radial-gradient(circle 9px at 100% 50%, transparent 9px, #000 10px)',
+        maskImage:
+          'radial-gradient(circle 9px at 0% 50%, transparent 9px, #000 10px), radial-gradient(circle 9px at 100% 50%, transparent 9px, #000 10px)',
+        WebkitMaskComposite: 'source-in',
+        maskComposite: 'intersect',
+      }}
+    >
       {/* header band: airline + flight no + Direct tag */}
       <div className="flex items-center justify-between px-[22px] pb-[14px] pt-[18px]">
         <div className="flex min-w-0 items-center gap-[11px]">
@@ -240,18 +255,9 @@ function PickPass({ pick }: { pick: FlightOption }) {
         ) : null}
       </div>
 
-      {/* notched perforation */}
-      <div className="relative">
-        <span
-          className="absolute left-[-9px] top-1/2 h-[18px] w-[18px] -translate-y-1/2 rounded-full"
-          style={{ background: 'var(--color-brand-deep)' }}
-        />
-        <span
-          className="absolute right-[-9px] top-1/2 h-[18px] w-[18px] -translate-y-1/2 rounded-full"
-          style={{ background: 'var(--color-brand-deep)' }}
-        />
-        <div className="mx-[22px] border-t-[1.5px] border-dashed border-border" />
-      </div>
+      {/* dashed tear line between the notches (the notches themselves are masked
+          out of the card edges above, so the photo shows through them) */}
+      <div className="mx-[22px] border-t-[1.5px] border-dashed border-border" />
 
       {/* itinerary */}
       <div className="flex items-center justify-between gap-3 px-[22px] pb-[16px] pt-[16px]">

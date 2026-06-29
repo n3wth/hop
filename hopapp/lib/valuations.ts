@@ -69,8 +69,9 @@ export const GENERIC_BASELINE = 1.0
 
 // Sane clamp for ANY dynamically-sourced value (the AI refresh path). No real
 // loyalty currency sits outside this band; clamping makes a hallucinated 50cpp
-// or a 0cpp impossible to leak into the engine.
-export const MIN_CPP = 0.5
+// or a 0cpp impossible to leak into the engine. Floor is 0.3 because the worst
+// real currency (Hilton Honors ~0.35cpp) must still fit inside the band.
+export const MIN_CPP = 0.3
 export const MAX_CPP = 5.0
 
 // Source attribution for the baseline table (reported, surfaced in UI if needed).
@@ -253,11 +254,13 @@ async function callValuationModel(system: string, user: string): Promise<string 
         ...(authToken ? { headers: { 'anthropic-beta': 'oauth-2025-04-20' } } : {}),
       },
     )
-    return message.content
-      .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
-      .map((b) => b.text)
-      .join('')
-      .trim() || null
+    return (
+      message.content
+        .filter((b) => b.type === 'text')
+        .map((b) => (b as { text: string }).text)
+        .join('')
+        .trim() || null
+    )
   } catch {
     return null
   }

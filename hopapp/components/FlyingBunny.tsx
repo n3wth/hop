@@ -53,7 +53,7 @@ export default function FlyingBunny({ size = 46, className, carve }: FlyingBunny
   return (
     <span
       ref={ref}
-      className={className}
+      className={`hop-bunny-glow ${className ?? ''}`}
       style={{ display: 'inline-flex', willChange: 'transform', transformOrigin: 'center bottom' }}
     >
       <Logo size={size} carve={carve} className="text-brand" />

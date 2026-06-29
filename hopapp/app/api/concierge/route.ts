@@ -14,6 +14,7 @@ import {
   destinationByCode,
   type Destination,
 } from '@/lib/destinations'
+import { valuationsByName } from '@/lib/valuations'
 
 export const runtime = 'nodejs'
 
@@ -58,16 +59,6 @@ export interface ConciergeResponse {
   suggestions?: ConciergeSuggestion[]
 }
 
-// Points valuations (cents per point) the concierge reasons with.
-const VALUATIONS: Record<string, number> = {
-  'Amex MR': 2.0,
-  'Chase UR': 2.0,
-  Bilt: 2.0,
-  Alaska: 1.8,
-  BA: 1.5,
-  Southwest: 1.5,
-}
-
 const MODEL = 'claude-sonnet-4-6'
 
 // --- Prompt assembly (pure, unit-tested in lib/__tests__/concierge.test.ts) -
@@ -85,9 +76,12 @@ export function destinationsSummary(items: Destination[] = destinations): string
     .join('\n')
 }
 
+// Pulls baseline valuations from lib/valuations.ts (canonical program names ->
+// cpp), the single source of truth. No hardcoded numbers live here anymore, so
+// the concierge and the deterministic engine reason with the same figures.
 function valuationsSummary(): string {
-  return Object.entries(VALUATIONS)
-    .map(([prog, cpp]) => `${prog} ${cpp.toFixed(1)}cpp`)
+  return Object.entries(valuationsByName())
+    .map(([prog, cpp]) => `${prog} ${cpp.toFixed(2)}cpp`)
     .join(', ')
 }
 
