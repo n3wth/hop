@@ -21,6 +21,19 @@ export default function FlyingBunny({ size = 46, className, carve }: FlyingBunny
     if (!el) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
+    // One-time load leap: a single up-and-over hop that settles to rest.
+    // Transform-only CSS animation. We clear it once it ends (or as soon as the
+    // user scrolls) so the scroll-driven inline transform can take over cleanly.
+    let leaping = true
+    el.classList.add('hop-bunny-leap')
+    const endLeap = () => {
+      if (!leaping) return
+      leaping = false
+      el.classList.remove('hop-bunny-leap')
+      el.style.transform = 'translate3d(0,0,0)'
+    }
+    el.addEventListener('animationend', endLeap, { once: true })
+
     let lastY = window.scrollY
     let lastT = performance.now()
     let lift = 0 // current vertical offset (px, negative = up)
@@ -30,6 +43,8 @@ export default function FlyingBunny({ size = 46, className, carve }: FlyingBunny
     let idleSince = 0
 
     const onScroll = () => {
+      // If the load leap is still running, cut it short so scroll takes over.
+      if (leaping) endLeap()
       const now = performance.now()
       const dy = window.scrollY - lastY
       const dt = Math.max(now - lastT, 1)
@@ -68,6 +83,8 @@ export default function FlyingBunny({ size = 46, className, carve }: FlyingBunny
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => {
       window.removeEventListener('scroll', onScroll)
+      el.removeEventListener('animationend', endLeap)
+      el.classList.remove('hop-bunny-leap')
       if (raf) cancelAnimationFrame(raf)
     }
   }, [])

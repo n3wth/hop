@@ -1,8 +1,9 @@
 'use client'
 
-import { memo, useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import Icon from './Icon'
 import FlyingBunny from './FlyingBunny'
+import { SearchForm, type SearchState } from './SearchBar'
 
 export interface TopNavProps {
   from?: string
@@ -11,6 +12,9 @@ export interface TopNavProps {
   who?: string
   fromCode?: string
   toCode?: string
+  depart?: string
+  ret?: string
+  adults?: number
 }
 
 // Crafted easing — decelerate, ~280ms. One curve drives the whole morph so the
@@ -21,71 +25,27 @@ const DUR = '280ms'
 // Static logo lockup — memoized so scroll-state toggles never re-render the
 // (path-heavy) bunny SVG. Only the wrapper's transform animates.
 const LogoLockup = memo(function LogoLockup() {
-  return (
-    <>
-      <FlyingBunny size={46} carve="var(--color-bg)" />
-      {/* wordmark hidden on mobile — bunny alone saves space next to the search pill */}
-      <span className="hidden font-display text-[28px] font-bold tracking-[-0.04em] text-text sm:inline">
-        hop
-      </span>
-    </>
-  )
+  // Icon only — the bunny stands alone as the mark (wordmark removed for now).
+  return <FlyingBunny size={48} carve="var(--color-bg)" />
 })
 
-interface FieldProps {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  width: string
-  collapsed: boolean
-}
-
-// A search field that MORPHS: its label collapses to zero height on scroll and
-// the input narrows, so the whole row contracts rather than cross-fading.
-function Field({ label, value, onChange, width, collapsed }: FieldProps) {
-  return (
-    <label className="flex min-w-0 flex-col justify-center leading-[1.05]">
-      <span
-        className="overflow-hidden text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2"
-        style={{
-          maxHeight: collapsed ? 0 : 16,
-          opacity: collapsed ? 0 : 1,
-          transition: `max-height ${DUR} ${EASE}, opacity ${DUR} ${EASE}`,
-        }}
-      >
-        {label}
-      </span>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={`bg-transparent font-semibold text-text outline-none ${width}`}
-        style={{
-          fontSize: collapsed ? 14 : 15,
-          transition: `font-size ${DUR} ${EASE}`,
-        }}
-      />
-    </label>
-  )
-}
-
-// Scroll-aware top bar. The whole header SHRINKS in height on scroll (76→56px),
-// the logo scales down, and the search CONTRACTS in place (labels collapse,
-// "Dates/Who" hide) into a compact route+dates pill — one continuous morph, not
-// a cross-fade. Frosted backdrop + hairline appear only once scrolled. Degrades
-// to fully expanded with no JS.
+// Scroll-aware top bar. The header SHRINKS in height on scroll (76→56px) and the
+// logo scales down, but the search stays full size and fully editable. Frosted
+// backdrop + hairline appear only once scrolled. Degrades to expanded with no JS.
 export default function TopNav({
-  from = 'San Francisco',
-  to = 'Los Angeles',
-  dates = 'Jul 9 – 12',
-  who = '1 adult',
   fromCode = 'SFO',
   toCode = 'LAX',
+  dates = 'Jul 9 – 12',
+  depart = '2026-07-09',
+  ret = '2026-07-12',
+  adults = 1,
 }: TopNavProps) {
-  const [vFrom, setFrom] = useState(from)
-  const [vTo, setTo] = useState(to)
-  const [vDates, setDates] = useState(dates)
-  const [vWho, setWho] = useState(who)
+  const initial: SearchState = useMemo(
+    () => ({ from: fromCode, to: toCode, depart, ret, adults }),
+    [fromCode, toCode, depart, ret, adults],
+  )
 
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
 
@@ -113,9 +73,6 @@ export default function TopNav({
         style={{
           height: c ? 56 : 76,
           background: c ? 'color-mix(in srgb, var(--color-bg) 80%, transparent)' : 'transparent',
-          // Blur ONLY when scrolled — top-of-page has zero filter cost.
-          // Lighter radius/saturate than before; promote to its own compositor
-          // layer so the blur never repaints page content behind it on scroll.
           backdropFilter: c ? 'blur(10px) saturate(120%)' : 'none',
           WebkitBackdropFilter: c ? 'blur(10px) saturate(120%)' : 'none',
           borderBottom: c ? '1px solid var(--color-border)' : '1px solid transparent',
@@ -138,52 +95,24 @@ export default function TopNav({
             <LogoLockup />
           </div>
 
-          {/* MOBILE search — a single compact tap pill (full fields below md) */}
+          {/* MOBILE search — a single compact tap pill that opens the full editable search */}
           <button
             type="button"
             aria-label="Edit search"
+            onClick={() => setMobileOpen(true)}
             className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-border bg-surface px-4 py-2.5 md:hidden"
           >
             <Icon name="search" size={16} className="flex-shrink-0 text-brand" />
             <span className="truncate text-[13px] font-semibold text-text">
               {fromCode} → {toCode}
             </span>
-            <span className="ml-1 truncate text-[12px] text-text3">{vDates}</span>
+            <span className="ml-1 truncate text-[12px] text-text3">{dates}</span>
           </button>
 
-          {/* DESKTOP search — full form, STABLE on scroll so the logo↔search gap
-              never shifts and all fields (incl. Who) stay visible. */}
+          {/* DESKTOP search — full editable form, STABLE on scroll so the
+              logo↔search gap never shifts and all fields stay visible. */}
           <div className="hidden min-w-0 flex-shrink-0 md:flex">
-            <form
-              className="flex items-center rounded-full border border-border bg-surface"
-              style={{
-                gap: 16,
-                paddingLeft: 22,
-                paddingRight: 12,
-                paddingTop: 10,
-                paddingBottom: 10,
-              }}
-            >
-              <Field label="From" value={vFrom} onChange={setFrom} width="w-[112px]" collapsed={false} />
-              <span className="flex-shrink-0 text-brand">
-                <Icon name="swap_horiz" size={20} />
-              </span>
-              <Field label="To" value={vTo} onChange={setTo} width="w-[96px]" collapsed={false} />
-
-              <span className="h-[26px] w-px flex-shrink-0 bg-border" />
-              <Field label="Dates" value={vDates} onChange={setDates} width="w-[78px]" collapsed={false} />
-
-              <span className="h-[26px] w-px flex-shrink-0 bg-border" />
-              <Field label="Who" value={vWho} onChange={setWho} width="w-[60px]" collapsed={false} />
-
-              <button
-                type="submit"
-                aria-label="Search"
-                className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-brand text-white transition-colors hover:bg-brand-deep"
-              >
-                <Icon name="search" size={19} />
-              </button>
-            </form>
+            <SearchForm initial={initial} variant="desktop" />
           </div>
 
           {/* spacer pushes the account to the far right (desktop only) */}
@@ -200,6 +129,30 @@ export default function TopNav({
           </div>
         </div>
       </header>
+
+      {/* MOBILE expanded search — solid sheet (no translucency), opens from the pill */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-[70] flex flex-col bg-bg md:hidden">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <span className="font-display text-[17px] font-bold text-text">Edit search</span>
+            <button
+              type="button"
+              aria-label="Close search"
+              onClick={() => setMobileOpen(false)}
+              className="grid h-9 w-9 place-items-center rounded-full text-text2 hover:bg-sunk"
+            >
+              <span className="text-[22px] leading-none">×</span>
+            </button>
+          </div>
+          <div className="flex-1 overflow-auto p-4">
+            <SearchForm
+              initial={initial}
+              variant="mobile"
+              onSubmitted={() => setMobileOpen(false)}
+            />
+          </div>
+        </div>
+      )}
     </>
   )
 }

@@ -44,28 +44,42 @@ export default function VerdictRail({ result }: VerdictRailProps) {
           Best value
         </span>
 
-        <h1 className="hop-rise font-display text-[34px] font-semibold leading-[1.02] tracking-[-0.025em] text-white sm:text-[48px] sm:leading-[1.0] lg:text-[64px] lg:leading-[0.98]" style={{ ['--hop-delay' as string]: '60ms' }}>
-          {usingPoints ? (
-            <>
-              Use your <span className="text-[#ffe7b0]">{airlineShort}&nbsp;{unit}.</span>
-              <br />
-              Save{' '}
+        {usingPoints ? (
+          <>
+            <h1
+              className="hop-rise font-display text-[27px] font-semibold leading-[1.05] tracking-[-0.02em] text-white sm:text-[34px] lg:text-[40px]"
+              style={{ ['--hop-delay' as string]: '60ms' }}
+            >
+              Use your <span className="text-[#ffe7b0]">{airlineShort}&nbsp;{unit}</span> and save
+            </h1>
+
+            {/* The hero moment — the dollar value, oversized and confident. The
+                count-up lands here. Tight tracking, tabular for a clean tick. */}
+            <div
+              className="hop-rise mt-[10px] flex items-baseline gap-3 sm:mt-3"
+              style={{ ['--hop-delay' as string]: '110ms' }}
+            >
               <CountUp
-                className="text-[#6ff0d2] tabular-nums"
+                className="font-display text-[68px] font-semibold leading-[0.9] tracking-[-0.04em] text-[#6ff0d2] tabular-nums sm:text-[96px] lg:text-[128px]"
                 value={save}
                 format="usd"
                 delayMs={420}
-              />{' '}
-              vs cash.
-            </>
-          ) : (
-            <>
-              Pay <span className="text-[#ffe7b0]">cash.</span>
-              <br />
-              Points don&apos;t pay off here.
-            </>
-          )}
-        </h1>
+              />
+              <span className="font-display text-[20px] font-semibold leading-tight tracking-[-0.01em] text-[#9fe0d6] sm:text-[24px]">
+                vs&nbsp;cash
+              </span>
+            </div>
+          </>
+        ) : (
+          <h1
+            className="hop-rise font-display text-[34px] font-semibold leading-[1.02] tracking-[-0.025em] text-white sm:text-[48px] sm:leading-[1.0] lg:text-[64px] lg:leading-[0.98]"
+            style={{ ['--hop-delay' as string]: '60ms' }}
+          >
+            Pay <span className="text-[#ffe7b0]">cash.</span>
+            <br />
+            Points don&apos;t pay off here.
+          </h1>
+        )}
 
         {usingPoints ? (
           <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-[#c7ece5]" style={{ ['--hop-delay' as string]: '140ms' }}>
@@ -115,10 +129,7 @@ export default function VerdictRail({ result }: VerdictRailProps) {
       {/* RIGHT — bunny + boarding-pass pick */}
       <aside
         className="relative flex flex-col justify-between border-t border-dashed border-white/20 lg:border-l lg:border-t-0"
-        style={{
-          background:
-            'radial-gradient(120% 120% at 85% 15%, rgba(255,255,255,.10), rgba(255,255,255,0) 55%), var(--color-brand-deep)',
-        }}
+        style={{ background: 'var(--color-brand-deep)' }}
       >
         {/* big bunny illustration — desktop only (redundant with header on mobile) */}
         <div className="relative hidden flex-1 place-items-center overflow-hidden pt-9 lg:grid">

@@ -52,6 +52,9 @@
   --radius-lg: 20px;
   --radius-hero: 28px;
 
+  /* Premium easing — single source of truth for everything we animate. */
+  --ease-premium: cubic-bezier(0.2, 0, 0, 1);
+
   --font-display: var(--font-bricolage), "Bricolage Grotesque", system-ui, sans-serif;
   --font-sans: "General Sans", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-wordmark-stack: var(--font-wordmark), "Fraunces", Georgia, serif;
@@ -76,6 +79,17 @@ body {
   font-size: 14px;
   line-height: 1.5;
   font-feature-settings: "ss01" on, "cv01" on;
+}
+
+/* Paper grain — a whisper-subtle tiled fractal-noise texture baked onto the
+   cream canvas for premium tactility. It is a BACKGROUND texture, not a
+   translucent UI surface: the solid cream sits underneath, fully opaque. The
+   noise tile itself is ~3.5% black grain over the cream. Fixed so it reads as
+   the paper of the page rather than scrolling content. */
+body {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-attachment: fixed;
 }
 
 /* Bricolage Grotesque utility for headline type */
@@ -106,13 +120,35 @@ body {
 }
 
 .hop-rise {
-  animation: hop-rise-in 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: hop-rise-in 460ms var(--ease-premium) both;
   animation-delay: var(--hop-delay, 0ms);
 }
 
 /* Bunny motion is scroll-driven (see FlyingBunny) — it lifts with scroll
    momentum like gravity, then springs back to rest when scrolling stops.
-   Transform-only, no opacity. Not a continuous loop. */
+   Transform-only, no opacity. Not a continuous loop.
+
+   ON LOAD it also does a single tasteful leap that settles: up-and-over once,
+   then rests. Transform-only, ~720ms, runs once. Reduced-motion disables it. */
+@keyframes hop-bunny-leap {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  38% {
+    transform: translate3d(0, -7px, 0) rotate(-3deg);
+  }
+  68% {
+    transform: translate3d(0, 1px, 0) rotate(1.5deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+}
+
+.hop-bunny-leap {
+  animation: hop-bunny-leap 720ms var(--ease-premium) both;
+  animation-delay: 240ms;
+}
 
 /* Value bars grow from 0 to their target width once, on load. The target width
    is supplied inline as --hop-bar-w; the animation eases out to it. */
@@ -127,7 +163,7 @@ body {
 
 .hop-bar {
   width: var(--hop-bar-w, 0%);
-  animation: hop-bar-grow 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: hop-bar-grow 720ms var(--ease-premium) both;
   animation-delay: var(--hop-delay, 120ms);
 }
 
@@ -136,7 +172,7 @@ body {
 .hop-collapse {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: grid-template-rows 360ms var(--ease-premium);
 }
 .hop-collapse > * {
   overflow: hidden;
@@ -175,7 +211,8 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .hop-rise,
-  .hop-bar {
+  .hop-bar,
+  .hop-bunny-leap {
     animation: none;
     opacity: 1;
     width: var(--hop-bar-w, 0%);
