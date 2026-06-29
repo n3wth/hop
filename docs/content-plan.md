@@ -2,6 +2,15 @@
 
 A practical content strategy for hop's expansion from points-vs-cash optimizer into a travel companion (inspiration, deals feed, AI concierge, destination guides). Researched June 2026 against current award-travel sources. Numbers are flagged where dynamic pricing or recent devaluations make them approximate — treat the sweet-spots table as seed reference data, not guarantees, and verify live before any user-facing "book this" claim.
 
+Use this document as strategy and seed-data guidance, not as a real-time pricing source.
+
+Quick navigation:
+- Section 1: content-type prioritization
+- Section 2: sweet-spots seed table
+- Section 3: destination card/guide schema direction
+- Section 4: SEO and discovery strategy
+- Section 5: concierge seed prompts
+
 ---
 
 ## 1. Content types, prioritized by impact vs effort

@@ -1,5 +1,12 @@
 # hop — UI copy spec (de-slopped, useful-first)
 
+Use this as the canonical voice and UI-string guide for product surfaces.
+
+Scope:
+- Applies to product UI copy in app surfaces and core component labels.
+- Does not override legal copy requirements in policy/support pages.
+- If this file conflicts with shipping behavior, update this file in the same change.
+
 Voice: terse, confident, plain. No marketing language, no "value on the table" / "war chest" /
 "set fire to" clichés, no emoji, no over-cute bunny chatter. State the answer and the number.
 One light personality touch max per region. Every string must help the user decide or act.

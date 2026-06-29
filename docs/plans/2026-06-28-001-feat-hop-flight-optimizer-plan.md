@@ -7,6 +7,9 @@ date: 2026-06-28
 
 # feat: hop — flight points-vs-cash optimizer web app
 
+This plan is a detailed implementation artifact from initial build planning.
+Use it as historical context and decision rationale; validate assumptions against current code before executing any unit verbatim.
+
 ## Overview
 
 `hop` is a flight search engine that compares cash fares against points/miles redemptions across
