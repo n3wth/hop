@@ -25,7 +25,7 @@ export default function Error({
   const retry = unstable_retry ?? reset ?? (() => {})
 
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-[1440px] flex-col items-center justify-center px-16 text-center">
+    <div className="mx-auto flex min-h-[calc(100vh-76px)] max-w-[1440px] flex-col items-center justify-center px-16 text-center">
       <div className="hop-rise grid place-items-center" style={{ ['--hop-delay' as string]: '40ms' }}>
         <Logo size={92} carve="var(--color-bg)" className="text-brand" />
       </div>

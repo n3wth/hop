@@ -2,15 +2,29 @@
 
 import { useEffect, useRef, useState } from 'react'
 
+// Format is a STRING, not a function — functions can't cross the
+// Server→Client component boundary in Next. Formatting happens here.
+export type CountUpFormat = 'plain' | 'usd' | 'cpp'
+
 export interface CountUpProps {
   /** Final value to count to. */
   value: number
-  /** Render the number (and any prefix/suffix) — receives the live value. */
-  format?: (n: number) => string
+  /** How to render the live number. */
+  format?: CountUpFormat
+  prefix?: string
+  suffix?: string
   durationMs?: number
   delayMs?: number
   className?: string
   style?: React.CSSProperties
+}
+
+function render(n: number, format: CountUpFormat, prefix?: string, suffix?: string): string {
+  let body: string
+  if (format === 'usd') body = `$${Math.round(n).toLocaleString()}`
+  else if (format === 'cpp') body = `${(Math.round(n * 10) / 10).toFixed(1)}¢`
+  else body = Math.round(n).toLocaleString()
+  return `${prefix ?? ''}${body}${suffix ?? ''}`
 }
 
 const prefersReducedMotion = () =>
@@ -21,7 +35,9 @@ const prefersReducedMotion = () =>
 // (renders the final value immediately). Tabular-friendly — the caller styles it.
 export default function CountUp({
   value,
-  format = (n) => Math.round(n).toLocaleString(),
+  format = 'plain',
+  prefix,
+  suffix,
   durationMs = 900,
   delayMs = 120,
   className,
@@ -63,7 +79,7 @@ export default function CountUp({
 
   return (
     <span className={className} style={style}>
-      {format(display)}
+      {render(display, format, prefix, suffix)}
     </span>
   )
 }

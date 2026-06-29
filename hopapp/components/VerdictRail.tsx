@@ -54,7 +54,7 @@ export default function VerdictRail({ result }: VerdictRailProps) {
               <CountUp
                 className="text-[#6ff0d2] tabular-nums"
                 value={save}
-                format={(n) => `$${Math.round(n).toLocaleString()}`}
+                format="usd"
                 delayMs={420}
               />{' '}
               vs cash.
@@ -69,7 +69,7 @@ export default function VerdictRail({ result }: VerdictRailProps) {
         </h1>
 
         {usingPoints ? (
-          <p className="mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-[#c7ece5]">
+          <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-[#c7ece5]" style={{ ['--hop-delay' as string]: '140ms' }}>
             <b className="font-semibold text-white">
               {fmt(miles)} {unit}
             </b>{' '}
@@ -79,14 +79,14 @@ export default function VerdictRail({ result }: VerdictRailProps) {
             <b className="font-semibold text-white">${fmt(cash)}</b>. You have the {unit}.
           </p>
         ) : (
-          <p className="mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-[#c7ece5]">
+          <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-[#c7ece5]" style={{ ['--hop-delay' as string]: '140ms' }}>
             No redemption clears the bar on this route. Cash is{' '}
             <b className="font-semibold text-white">${fmt(cash)}</b> — keep your points for a trip
             where they stretch further.
           </p>
         )}
 
-        <div className="mt-[34px] flex items-center gap-4">
+        <div className="mt-[34px] flex flex-wrap items-center gap-4">
           <a
             href={pick?.bookingUrl ?? '#'}
             className="inline-flex items-center gap-[10px] rounded-[14px] bg-white px-7 py-4 text-[16px] font-semibold text-[#073e3e] transition-colors hover:bg-[#fffdf6]"
@@ -94,15 +94,19 @@ export default function VerdictRail({ result }: VerdictRailProps) {
             <Icon name="check_circle" size={19} />
             {usingPoints ? `Book with ${airlineShort} ${unit}` : 'Book cash'}
           </a>
-          <a
-            href="#math"
-            className="rounded-[14px] border-[1.5px] border-[#bfe9e1]/40 px-[22px] py-[15px] text-[15px] font-medium text-[#bfe9e1] transition-colors hover:border-[#bfe9e1] hover:text-white"
-          >
-            See the math
-          </a>
         </div>
 
-        <div className="mt-[42px] flex gap-10 border-t border-white/15 pt-[30px]">
+        {/* See the math — transparency panel, expands full-width below the CTAs */}
+        {pick ? (
+          <SeeTheMath
+            pick={pick}
+            cheapestCash={cash}
+            threshold={POINTS_THRESHOLD_CPP}
+            unit={unit}
+          />
+        ) : null}
+
+        <div className="hop-rise mt-[42px] flex gap-10 border-t border-white/15 pt-[30px]" style={{ ['--hop-delay' as string]: '220ms' }}>
           <HStat label="You pay" value={fmt(miles)} unit={unit} />
           <HStat label="Value" value={cpp != null ? `${cpp.toFixed(1)}¢` : '—'} unit={`/ ${unit.slice(0, -1)}`} />
           <HStat label="Cash price" value={`$${fmt(cash)}`} />
@@ -119,7 +123,9 @@ export default function VerdictRail({ result }: VerdictRailProps) {
         }}
       >
         <div className="relative grid flex-1 place-items-center overflow-hidden pt-9">
-          <Logo size={172} carve="var(--color-brand-deep)" className="text-white" />
+          <span className="hop-float">
+            <Logo size={172} carve="var(--color-brand-deep)" className="text-white" />
+          </span>
         </div>
 
         {pick ? <PickPass pick={pick} /> : null}
