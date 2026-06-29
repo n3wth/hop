@@ -115,6 +115,9 @@ export function shortDetail(detail: string): string {
     .trim()
 }
 
+// When there is detail content, renders as a collapsible <details>.
+// When there is none, renders as a plain non-interactive row so the expand
+// affordance isn't a dead control.
 export function ToolActivity({
   step,
   children,
@@ -127,15 +130,39 @@ export function ToolActivity({
   const hasDetail = !!step.detail || !!children
   const suffix = step.detail ? shortDetail(step.detail) : ''
   const title = suffix ? `${toolTitle(step, hasBalances)} · ${suffix}` : toolTitle(step, hasBalances)
+  const icon = toolIcon(step)
+  const running = step.state === 'input-streaming' || step.state === 'input-available'
+  const errored = step.state === 'output-error'
+
+  if (!hasDetail) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-text3">
+        <Icon
+          name={icon}
+          size={13}
+          className={running ? 'text-brand hop-pulse' : errored ? 'text-[#9a6a2e]' : 'text-text3'}
+        />
+        <span className="flex-1 truncate text-[12px] font-medium leading-none">{title}</span>
+        <span className="ml-auto inline-flex shrink-0 items-center">
+          {running ? (
+            <Loader size={11} className="text-brand" />
+          ) : errored ? (
+            <Icon name="error" size={12} className="text-[#9a6a2e]" />
+          ) : (
+            <Icon name="check_circle" size={12} className="text-brand/50" />
+          )}
+        </span>
+      </div>
+    )
+  }
+
   return (
     <Tool>
-      <ToolHeader title={title} icon={toolIcon(step)} state={step.state} />
-      {hasDetail ? (
-        <ToolContent>
-          {step.detail ? <p>{step.detail}</p> : null}
-          {children}
-        </ToolContent>
-      ) : null}
+      <ToolHeader title={title} icon={icon} state={step.state} />
+      <ToolContent>
+        {step.detail ? <p>{step.detail}</p> : null}
+        {children}
+      </ToolContent>
     </Tool>
   )
 }

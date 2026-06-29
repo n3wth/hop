@@ -238,35 +238,32 @@ export default function Concierge({
   }, [])
 
   if (!hasThread) {
-    // Empty state: the warm guided hero, centered in the full-height stage so it
-    // reads as an immersive front door rather than a panel pinned to the top.
+    // Empty state: full-bleed hero fills the 100dvh stage edge-to-edge.
+    // The transparent sticky nav floats over the top naturally.
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto py-6">
-        <div className="hop-rise w-full" style={{ ['--hop-delay' as string]: '40ms' }}>
-          <Landing
-            input={input}
-            setInput={setInput}
-            onSubmit={onSubmit}
-            onStarter={send}
-            status={status}
-            photos={photos}
-            galleryCodes={galleryCodes}
-            totalPoints={totalPoints}
-            signedIn={signedIn}
-          />
-        </div>
+      <div
+        className="hop-rise flex min-h-0 flex-1 flex-col"
+        style={{ ['--hop-delay' as string]: '40ms' }}
+      >
+        <Landing
+          input={input}
+          setInput={setInput}
+          onSubmit={onSubmit}
+          onStarter={send}
+          status={status}
+          photos={photos}
+          galleryCodes={galleryCodes}
+          totalPoints={totalPoints}
+          signedIn={signedIn}
+        />
       </div>
     )
   }
 
-  // Thread state: the conversation IS the surface. The stage is a full-height
-  // flex column — a slim identity rail on top, the message area as the SINGLE
-  // natural scroll region (no nested card, no double scrollbar), and the composer
-  // pinned to the viewport floor. Prose is centered at a readable measure; the
-  // scroll region itself spans full width so the top-fade and scroll affordance
-  // read as part of the app, not a widget.
+  // Thread state: the conversation IS the surface. Re-apply horizontal padding
+  // (AppShell uses noPadX for the ask page so the landing hero is full-bleed).
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col px-4 sm:px-8 lg:px-16">
       {/* Screen-reader live status: announces "thinking" and the settled answer
           once. Visually hidden; sighted users read the streamed text directly. */}
       <div role="status" aria-live="polite" className="sr-only">
@@ -417,18 +414,23 @@ function Turn({
     )
   }
 
-  // Partition the parts by kind, preserving each kind's own internal order, then
-  // render tools → text → a2ui. Display order is decoupled from arrival order.
-  const tools: { key: string; step: { tool: string; state: ToolState; detail?: string } }[] = []
-  const texts: { key: string; text: string }[] = []
+  // Render parts in stream arrival order (text and tool calls interleaved as they
+  // came), with a2ui blocks always appended at the end. This lets tool calls
+  // appear under the text that prompted them rather than being hoisted to the top.
+  type InlinePart =
+    | { kind: 'text'; key: string; text: string }
+    | { kind: 'tool'; key: string; step: { tool: string; state: ToolState; detail?: string } }
+
+  const inline: InlinePart[] = []
   const a2ui: { key: string; blocks: A2UIBlock[] }[] = []
 
   message.parts.forEach((part, i) => {
     if (part.type === 'text') {
-      if (part.text) texts.push({ key: `t${i}`, text: part.text })
+      if (part.text) inline.push({ kind: 'text', key: `t${i}`, text: part.text })
     } else if (part.type === 'data-tool') {
       const frame = part.data
-      tools.push({
+      inline.push({
+        kind: 'tool',
         key: part.id ?? `tool${i}`,
         step: { tool: frame.tool, state: frame.state as ToolState, detail: frame.detail },
       })
@@ -442,22 +444,16 @@ function Turn({
     <Message from="assistant">
       <AssistantByline />
       <MessageContent>
-        {/* 1 — tool activity FIRST: the agent reasoning as it works. A compact
-            inline rail, not a card-on-card dump. */}
-        {tools.length ? (
-          <div className="hop-tool-rail flex flex-col gap-1.5">
-            {tools.map((t) => (
-              <ToolActivity key={t.key} step={t.step} hasBalances={hasBalances} />
-            ))}
-          </div>
-        ) : null}
+        {/* Parts in stream order — text and tool calls interleaved chronologically */}
+        {inline.map((p) =>
+          p.kind === 'text' ? (
+            <Response key={p.key}>{p.text}</Response>
+          ) : (
+            <ToolActivity key={p.key} step={p.step} hasBalances={hasBalances} />
+          ),
+        )}
 
-        {/* 2 — the streamed answer the tools informed */}
-        {texts.map((t) => (
-          <Response key={t.key}>{t.text}</Response>
-        ))}
-
-        {/* 3 — a2ui blocks (cards / choices), appended below the prose */}
+        {/* a2ui blocks (cards / choices) always appended below the prose */}
         {a2ui.map((a) => (
           <div key={a.key} className="mt-1">
             <A2UIBlocks
