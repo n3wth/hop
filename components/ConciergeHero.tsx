@@ -89,13 +89,15 @@ export default function ConciergeHero({
     if (ok) inputRef.current?.focus()
   }, [autoFocus])
 
-  const panelMin = full
-    ? 'min-h-[clamp(440px,72vh,680px)]'
-    : '' // teaser sizes to its content
+  // Full density fills the parent (100dvh hop-ask-stage) with no rounding.
+  // Teaser sizes to content with the standard hero radius.
+  const panelClass = full
+    ? 'flex-1'
+    : 'rounded-[var(--radius-hero)]'
 
   return (
     <div
-      className={`relative flex flex-col overflow-hidden rounded-[var(--radius-hero)] ${panelMin}`}
+      className={`relative flex flex-col overflow-hidden ${panelClass}`}
       style={{ background: 'var(--color-brand-ink)' }}
     >
       {/* full-bleed photo as imagery (allowed), under a single legibility scrim */}
@@ -119,9 +121,13 @@ export default function ConciergeHero({
         }}
       />
 
+      {/* Content: centered in the available space above the gallery.
+          Full density: top padding clears the transparent sticky nav. */}
       <div
         className={`relative flex flex-1 flex-col items-center px-5 text-center sm:px-10 ${
-          full ? 'justify-center py-12' : 'py-12 sm:py-16'
+          full
+            ? 'justify-center pb-6 pt-[calc(var(--hop-nav)+2rem)]'
+            : 'py-12 sm:py-16'
         }`}
       >
         <span
@@ -239,16 +245,20 @@ export default function ConciergeHero({
         ) : null}
       </div>
 
-      {/* full density only: mood gallery — sets the tone at the base of the panel */}
+      {/* full density only: mood gallery — fixed-height strip at the base so the
+          whole hero fits in one viewport with nothing to scroll. */}
       {full && tiles.length > 0 ? (
         <div
           className="hop-rise relative grid grid-cols-3 gap-px bg-[#0a4f4f] sm:grid-cols-6"
-          style={{ ['--hop-delay' as string]: '300ms' }}
+          style={{
+            ['--hop-delay' as string]: '300ms',
+            height: 'clamp(130px, 22vh, 190px)',
+          }}
         >
           {tiles.map((t, i) => (
             <div
               key={t.city + i}
-              className={`relative aspect-[4/3] overflow-hidden ${i >= 3 ? 'hidden sm:block' : ''}`}
+              className={`relative overflow-hidden ${i >= 3 ? 'hidden sm:block' : ''}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={t.thumb} alt={t.alt} loading="lazy" className="h-full w-full object-cover" />

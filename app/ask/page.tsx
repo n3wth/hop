@@ -107,7 +107,7 @@ export default async function AskPage({
   // scroll region, pinned composer). No marketing footer competes with the chat —
   // the surface is the product. Concierge owns the per-state layout internally.
   return (
-    <AppShell user={user} pointsTotal={totalPoints} hideSearch>
+    <AppShell user={user} pointsTotal={totalPoints} hideSearch noPadX>
       <div className="hop-ask-stage flex flex-col">
         <Concierge
           totalPoints={totalPoints}

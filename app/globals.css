@@ -422,10 +422,11 @@ body {
   --hop-nav: 76px;
 }
 
-/* Full-height stage that sits flush under the nav. Cancels AppShell's pb-24 so
-   the composer lands exactly at the viewport floor with no trailing gap. */
+/* Full-viewport stage — the hero panel fills the screen, with the transparent
+   sticky nav floating over the top. Cancels AppShell's pb-24 so there's no
+   trailing gap below the stage. */
 .hop-ask-stage {
-  height: calc(100dvh - var(--hop-nav));
+  height: 100dvh;
   margin-bottom: -6rem; /* neutralizes AppShell's pb-24 (96px) */
 }
 
