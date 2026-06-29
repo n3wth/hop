@@ -202,7 +202,9 @@ body {
 .hop-marquee-track {
   display: flex;
   width: max-content;
-  animation: hop-marquee var(--hop-marquee-dur, 60s) linear infinite;
+  /* Slow, calm drift — barely-moving rather than a restless scroll. Pauses on
+     hover/focus so you can actually look at a tile. */
+  animation: hop-marquee var(--hop-marquee-dur, 140s) linear infinite;
   will-change: transform;
 }
 .hop-marquee-track:hover,

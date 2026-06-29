@@ -44,7 +44,7 @@ export default function HowItWorks() {
         <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
           How hop works
         </span>
-        <h2 className="max-w-[26ch] text-balance font-display text-[26px] font-semibold leading-[1.12] tracking-[-0.02em] text-text sm:text-[34px]">
+        <h2 className="max-w-[26ch] text-balance font-display text-[32px] font-bold leading-[1.08] tracking-[-0.025em] text-text sm:text-[44px] lg:text-[52px]">
           One search reads your points, the market, and the math.
         </h2>
       </div>
