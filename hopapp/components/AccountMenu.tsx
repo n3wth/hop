@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Icon from './Icon'
 
 export interface AccountUser {
   initial: string
@@ -38,20 +39,28 @@ export default function AccountMenu({ user }: { user: AccountUser }) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Account menu"
-        className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-brand font-display text-[15px] font-bold text-white transition-colors hover:bg-brand-deep sm:h-[42px] sm:w-[42px] sm:text-[16px]"
+        className="flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-surface py-1 pl-1 pr-2 transition-colors hover:bg-sunk"
       >
-        {user.picture && imgOk ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={user.picture}
-            alt=""
-            className="h-full w-full object-cover"
-            referrerPolicy="no-referrer"
-            onError={() => setImgOk(false)}
-          />
-        ) : (
-          user.initial
-        )}
+        <span className="grid h-8 w-8 place-items-center overflow-hidden rounded-full bg-brand font-display text-[14px] font-bold text-white sm:h-9 sm:w-9 sm:text-[15px]">
+          {user.picture && imgOk ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={user.picture}
+              alt=""
+              className="h-full w-full object-cover"
+              referrerPolicy="no-referrer"
+              onError={() => setImgOk(false)}
+            />
+          ) : (
+            user.initial
+          )}
+        </span>
+        <span
+          className="text-text3 transition-transform duration-200"
+          style={{ transform: open ? 'rotate(180deg)' : 'none' }}
+        >
+          <Icon name="expand_more" size={18} />
+        </span>
       </button>
 
       {open ? (
