@@ -129,35 +129,43 @@ export default function VerdictRail({ result, destPhoto }: VerdictRailProps) {
         </div>
       </div>
 
-      {/* RIGHT — bunny + boarding-pass pick */}
+      {/* RIGHT — destination photo filling the panel, boarding-pass pick over it */}
       <aside
-        className="relative flex flex-col justify-between border-t border-dashed border-white/20 lg:border-l lg:border-t-0"
+        className="relative flex flex-col justify-between overflow-hidden border-t border-dashed border-white/20 lg:border-l lg:border-t-0"
         style={{ background: 'var(--color-brand-deep)' }}
       >
-        {/* destination photo — the place you're heading, behind the pass. Falls
-            back to the bunny mark when no photo is available. Desktop only. */}
-        <div className="relative hidden flex-1 place-items-center overflow-hidden lg:grid">
-          {destPhoto ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={destPhoto.url} alt={destPhoto.alt} className="absolute inset-0 h-full w-full object-cover" />
-              <div
-                aria-hidden
-                className="absolute inset-0"
-                style={{
-                  background:
-                    'linear-gradient(to bottom, rgba(7,62,62,0.30) 0%, rgba(7,62,62,0.66) 100%)',
-                }}
-              />
-            </>
-          ) : (
-            <div className="grid place-items-center pt-9">
-              <Logo size={172} carve="var(--color-brand-deep)" className="text-white" />
-            </div>
-          )}
-        </div>
+        {/* destination photo — the place you're heading — fills the WHOLE panel,
+            including behind the pass. A scrim sits ONLY at the bottom (under the
+            pass) for legibility; the open upper area stays vivid, not faded.
+            Falls back to the bunny mark when no photo is available. */}
+        {destPhoto ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={destPhoto.url}
+              alt={destPhoto.alt}
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2"
+              style={{
+                background:
+                  'linear-gradient(to bottom, rgba(7,62,62,0) 0%, rgba(7,62,62,0.55) 55%, rgba(7,62,62,0.85) 100%)',
+              }}
+            />
+          </>
+        ) : (
+          <div className="hidden flex-1 place-items-center pt-9 lg:grid">
+            <Logo size={172} carve="var(--color-brand-deep)" className="text-white" />
+          </div>
+        )}
 
-        {pick ? <PickPass pick={pick} /> : null}
+        {pick ? (
+          <div className="relative z-10 mt-auto">
+            <PickPass pick={pick} />
+          </div>
+        ) : null}
       </aside>
     </section>
   )

@@ -116,9 +116,17 @@ export default async function Search({
   const result = await assembleSearch(params, userBalances)
 
   // Destination photo for the verdict hero — the place you're heading, behind
-  // the boarding pass (replaces the redundant bunny). Cached; null → bunny.
+  // the boarding pass (replaces the redundant bunny). Query the CITY skyline/
+  // landscape, never the airport code (which surfaces terminals, not beauty).
+  // Cached; null → bunny.
+  // Only query when we have a real city name — if cityForCode falls back to the
+  // raw IATA code (unmapped airport), skip the photo so we never search "JFK"
+  // and get a terminal. Bunny fallback covers it.
   const destCity = cityForCode(params.to)
-  const destPhoto = await destinationImage(`${destCity} ${params.to} cityscape`)
+  const destPhoto =
+    destCity && destCity !== params.to
+      ? await destinationImage(`${destCity} skyline travel landmark`)
+      : null
 
   const who =
     params.adults === 1 ? '1 adult' : `${params.adults} adults`
