@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd hopapp && npm install && npm run build",
+  "outputDirectory": "hopapp/.next",
+  "installCommand": "cd hopapp && npm install"
+}

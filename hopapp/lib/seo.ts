@@ -7,7 +7,7 @@
 // for preview deploys; otherwise fall back to prod.
 
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'https://hop.n3wth.com'
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'https://hop.flights'
 
 export const SITE_NAME = 'hop'
 
