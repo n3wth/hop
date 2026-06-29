@@ -4,9 +4,8 @@ import { getPrefs } from '@/lib/prefs'
 import { getUserBalances } from '@/lib/accounts'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
-import Icon from '@/components/Icon'
 import type { SearchState } from '@/components/SearchBar'
-import HeroSearch from '@/components/landing/HeroSearch'
+import AgentComposer from '@/components/landing/AgentComposer'
 import SampleVerdict from '@/components/landing/SampleVerdict'
 import HowItWorks from '@/components/landing/HowItWorks'
 import ConnectBand from '@/components/landing/ConnectBand'
@@ -27,9 +26,11 @@ const SEED: SearchState = {
 
 // hop's home — auth-aware, two genuinely different experiences:
 //
-// SIGNED OUT → the marketing front door. Editorial hero + centered search,
-//   a sample verdict, a teaser of inspiration to sell the dream, how-it-works,
-//   and a connect-your-points CTA.
+// SIGNED OUT → the marketing front door. The AGENT leads the hero (a
+//   conversational composer that, on submit, opens the agent / sign-in), with
+//   the points-vs-cash verdict kept just below as the proof. Destination reel,
+//   inspiration teaser, how-it-works, and a connect-your-points CTA follow.
+//   Search stays reachable as a secondary fast-path.
 //
 // SIGNED IN → a personalized dashboard (NOT the marketing page). Greets by name,
 //   surfaces where their actual points can take them, then search, concierge,
@@ -94,54 +95,18 @@ export default async function Home() {
   return (
     <AppShell user={null} hideSearch>
       <div className="mx-auto flex max-w-[1180px] flex-col gap-16 pt-4 sm:gap-20 sm:pt-6 lg:gap-24 lg:pt-8">
-        {/* ── HERO ───────────────────────────────────────────────────────── */}
-        {/* Sits naturally toward the top: a capped min-height keeps it generous on
-            tall screens without floating in dead space on short/wide ones, where
-            the destination reel should crest into view below the search. */}
-        <section className="flex min-h-[clamp(0px,52vh,560px)] flex-col items-center justify-center pt-6 text-center sm:pt-10">
-          <span
-            className="hop-rise inline-flex items-center gap-2 rounded-full border border-border bg-paper px-4 py-1.5 text-[12px] font-semibold uppercase tracking-[0.16em] text-brand"
-            style={{ ['--hop-delay' as string]: '40ms' }}
-          >
-            <Icon name="loyalty" size={14} />
-            Cash vs points, settled
-          </span>
+        {/* ── HERO — the agent is the front door ──────────────────────────── */}
+        {/* Lead with the conversational promise: a composer that opens the agent
+            (routing through sign-in when they act). The verdict below is the proof. */}
+        <section className="pt-2 sm:pt-4">
+          <AgentComposer variant="out" />
 
-          <h1
-            className="hop-rise mt-6 max-w-[20ch] text-balance font-display text-[40px] font-semibold leading-[1.0] tracking-[-0.03em] text-text sm:text-[60px] lg:text-[78px]"
-            style={{ ['--hop-delay' as string]: '90ms' }}
-          >
-            One search. The smarter way to book.
-          </h1>
-
-          <p
-            className="hop-rise mt-6 max-w-[50ch] text-pretty text-[16px] leading-[1.6] text-text2 sm:text-[18px]"
-            style={{ ['--hop-delay' as string]: '140ms' }}
-          >
-            hop reads your real point balances, checks award space and cash for
-            the same flight, and gives you the verdict — not a fare list. Miles
-            or money, hop tells you which one actually wins.
-          </p>
-
-          {/* the search — front and center, the obvious primary action */}
-          <div
-            className="hop-rise mt-9 flex w-full justify-center sm:mt-11"
-            style={{ ['--hop-delay' as string]: '190ms' }}
-          >
-            <div className="flex w-full max-w-[560px] justify-center md:w-auto md:max-w-none">
-              <HeroSearch initial={SEED} />
-            </div>
-          </div>
-
-          <p
-            className="hop-rise mt-4 text-[13px] text-text3"
-            style={{ ['--hop-delay' as string]: '230ms' }}
-          >
-            Try{' '}
-            <span className="font-semibold text-text2">
-              San Francisco → New York
-            </span>{' '}
-            — it&apos;s ready to go.
+          {/* search stays reachable — demoted to a secondary fast-path */}
+          <p className="hop-rise mt-5 text-center text-[13.5px] text-text2" style={{ ['--hop-delay' as string]: '300ms' }}>
+            Know exactly where you&apos;re going?{' '}
+            <a href="/search" className="font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline">
+              Search a specific route
+            </a>
           </p>
         </section>
 

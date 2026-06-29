@@ -1,6 +1,7 @@
 import Icon from '@/components/Icon'
 import HeroSearch from '@/components/landing/HeroSearch'
 import DestinationGrid from '@/components/landing/DestinationGrid'
+import AgentComposer from '@/components/landing/AgentComposer'
 import HomeAirportPrompt from '@/components/HomeAirportPrompt'
 import {
   affordableWith,
@@ -11,10 +12,11 @@ import {
 import { destinationImages } from '@/lib/images'
 import type { SearchState } from '@/components/SearchBar'
 
-// The personalized home for a signed-in member. NOT the marketing page — it
-// leads with a warm greeting and their synced state, then the single most
-// useful, aspirational module: where their actual points can take them right
-// now. Search, concierge, and program management follow. Flat, warm, on-brand.
+// The personalized home for a signed-in member. NOT the marketing page — the
+// AGENT is the front door: it leads with a prominent "talk to hop" composer that
+// opens the conversation in /ask. Below that, the member's synced points, then
+// the aspirational destinations grid, then search as a secondary fast-path and
+// program management. Flat, warm, on-brand.
 export default async function SignedInHome({
   first,
   programs,
@@ -42,15 +44,23 @@ export default async function SignedInHome({
   const topCpp = topPick ? computeCpp(topPick) : undefined
 
   return (
-    <div className="flex flex-col gap-14 pt-4 sm:gap-16 sm:pt-8 lg:gap-20">
-      {/* ── GREETING + SUMMARY ───────────────────────────────────────────── */}
+    <div className="flex flex-col gap-14 pt-4 sm:gap-16 sm:pt-6 lg:gap-20">
+      {/* ── THE AGENT — the front door ───────────────────────────────────── */}
+      {/* Talking to hop is the primary action: a prominent greeting + composer
+          that opens the conversation in /ask. Everything else is secondary. */}
       <section
-        className="hop-rise grid grid-cols-1 items-center gap-8 lg:grid-cols-[1fr_360px] lg:gap-12"
+        className="hop-rise"
         style={{ ['--hop-delay' as string]: '40ms' }}
       >
-        {/* Greeting — no "Balances synced" chip when connected; the points summary
-            panel on the right already shows the total + program count. The empty
-            state keeps a CTA chip since there's nothing else prompting them. */}
+        <AgentComposer variant="in" first={first} totalPoints={programs > 0 ? totalPoints : undefined} />
+      </section>
+
+      {/* ── YOUR POINTS — compact synced state ───────────────────────────── */}
+      <section
+        className="hop-rise grid grid-cols-1 items-center gap-8 lg:grid-cols-[1fr_360px] lg:gap-12"
+        style={{ ['--hop-delay' as string]: '80ms' }}
+      >
+        {/* A short, secondary welcome — the agent above already led. */}
         <div>
           {programs === 0 ? (
             <a
@@ -61,17 +71,17 @@ export default async function SignedInHome({
               Add your programs to get started
             </a>
           ) : null}
-          <h1 className={`font-display text-[36px] font-semibold leading-[1.02] tracking-[-0.03em] text-text sm:text-[52px] lg:text-[60px] ${programs === 0 ? 'mt-4' : ''}`}>
+          <h2 className={`font-display text-[28px] font-semibold leading-[1.04] tracking-[-0.02em] text-text sm:text-[36px] ${programs === 0 ? 'mt-4' : ''}`}>
             {first ? `Welcome back, ${first}.` : 'Welcome back.'}
-          </h1>
-          <p className="mt-3 max-w-[52ch] text-[16px] leading-[1.55] text-text2 sm:text-[18px]">
+          </h2>
+          <p className="mt-3 max-w-[52ch] text-[15px] leading-[1.55] text-text2 sm:text-[17px]">
             {programs > 0
               ? "Here's where your points can take you — and what each trip is really worth."
               : 'Add your loyalty programs and hop will show you exactly where your points can take you — and whether to book with miles or cash.'}
           </p>
         </div>
 
-        {/* Summary panel — balances the hero and anchors the right column.
+        {/* Summary panel — anchors the right column.
             Flat: a bordered paper card with a sunk stat row, no shadow/lift. */}
         {programs > 0 ? (
           <aside className="flex flex-col rounded-[20px] border border-border bg-paper p-6 lg:rounded-[24px]">
@@ -176,12 +186,14 @@ export default async function SignedInHome({
         </div>
       </section>
 
-      {/* ── RUN A SEARCH + CONCIERGE ─────────────────────────────────────── */}
+      {/* ── RUN A SEARCH — secondary fast-path ───────────────────────────── */}
+      {/* The agent above is the primary way in; search is the precise fast-path
+          for members who already know the exact route they want. */}
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_360px]">
         {/* Run a real search */}
         <div className="flex flex-col rounded-[20px] border border-border bg-paper p-6 sm:p-8 lg:rounded-[24px]">
           <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
-            Got a trip in mind?
+            Already know the route?
           </span>
           <h2 className="mt-2 font-display text-[24px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[30px]">
             Run a search. Get the verdict.
@@ -195,7 +207,7 @@ export default async function SignedInHome({
           </div>
         </div>
 
-        {/* Ask hop / concierge */}
+        {/* Back to the agent — a lighter nudge, not a competing concierge card. */}
         <aside
           className="flex flex-col justify-between overflow-hidden rounded-[20px] p-6 text-[#eafaf7] sm:p-8 lg:rounded-[24px]"
           style={{ background: 'var(--color-brand)' }}
@@ -203,21 +215,21 @@ export default async function SignedInHome({
           <div>
             <span className="inline-flex items-center gap-2 rounded-full bg-[#0a5757] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#6ff0d2]">
               <Icon name="lightbulb" size={13} />
-              Concierge
+              Or just ask
             </span>
             <h2 className="mt-4 font-display text-[24px] font-semibold leading-[1.08] tracking-[-0.02em] text-white sm:text-[28px]">
               Not sure where to go?
             </h2>
             <p className="mt-2.5 text-[14.5px] leading-[1.55] text-[#c7ece5]">
-              Tell hop your vibe and budget in points — beach, big city, cheap
-              flight, business class — and it&apos;ll find where your miles win.
+              Describe the trip in plain words — beach, big city, cheap flight,
+              business class — and hop finds where your miles win.
             </p>
           </div>
           <a
             href="/ask"
             className="mt-6 inline-flex w-fit items-center gap-2 rounded-[14px] bg-white px-6 py-3.5 text-[15px] font-semibold text-[#073e3e] transition-colors hover:bg-[#fffdf6]"
           >
-            Ask hop where to go
+            Talk to hop
             <span aria-hidden className="text-[16px] leading-none">→</span>
           </a>
         </aside>

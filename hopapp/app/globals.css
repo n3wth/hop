@@ -274,6 +274,31 @@ body {
   animation: hop-shimmer 1.6s ease-in-out infinite;
 }
 
+/* Concierge tool/loader spin — AI Elements' Loader, themed. A quiet, continuous
+   rotation while a tool runs. Frozen flat under prefers-reduced-motion. */
+@keyframes hop-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.hop-spin {
+  animation: hop-spin 900ms linear infinite;
+}
+
+/* A soft pulse for the active tool dot — color/opacity only, no movement. */
+@keyframes hop-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+.hop-pulse {
+  animation: hop-pulse 1.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hop-rise,
   .hop-bar,
@@ -290,6 +315,10 @@ body {
   }
   /* Reel freezes to a calm, static row — no horizontal drift. */
   .hop-marquee-track {
+    animation: none;
+  }
+  .hop-spin,
+  .hop-pulse {
     animation: none;
   }
 }

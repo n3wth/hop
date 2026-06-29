@@ -5,6 +5,7 @@ import {
   parseConciergeJson,
   blocksFromText,
   stripA2UIFence,
+  sanitizeProse,
   type ConciergeContext,
 } from '@/app/api/concierge/route'
 import { destinations, destinationByCode } from '@/lib/destinations'
@@ -170,5 +171,45 @@ describe('stripA2UIFence() — clean prose for the user + persisted thread', () 
   it('does not strip a non-a2ui code fence', () => {
     const text = 'Here is code:\n```js\nconst x = 1\n```'
     expect(stripA2UIFence(text)).toBe(text)
+  })
+
+  it('strips an a2ui fence even when text follows it (not only at EOF)', () => {
+    // The server appends the sentinel + envelope AFTER the fence, so the fence is
+    // not at the end of the string — it must still be removed.
+    const text =
+      'Go to Tokyo.\n```json\n{"blocks":[{"type":"connect_gmail"}]}\n```\ntrailing note'
+    expect(stripA2UIFence(text)).toBe('Go to Tokyo.')
+  })
+
+  it('removes the LAST a2ui fence when more than one is present', () => {
+    const text =
+      'Intro.\n```json\n{"blocks":[{"type":"connect_gmail"}]}\n```\nmore\n' +
+      '```json\n{"blocks":[{"type":"prompt_chips","chips":["a"]}]}\n```'
+    expect(stripA2UIFence(text)).toBe(
+      'Intro.\n```json\n{"blocks":[{"type":"connect_gmail"}]}\n```\nmore',
+    )
+  })
+
+  it('suppresses an UNCLOSED fence so a partial spec never shows as a code dump', () => {
+    const text = 'Go to Tokyo.\n```json\n{"blocks":[{"type":"connect_gmail"'
+    expect(stripA2UIFence(text)).toBe('Go to Tokyo.')
+  })
+})
+
+describe('sanitizeProse() — keeps load-bearing figures from being struck out', () => {
+  it('rewrites a leading tilde before a number/$ to "about " (avoids GFM strikethrough)', () => {
+    expect(sanitizeProse('~22,500 miles or ~$340 cash, ~40k points')).toBe(
+      'about 22,500 miles or about $340 cash, about 40k points',
+    )
+  })
+
+  it('leaves a tilde not followed by a digit/$ untouched', () => {
+    expect(sanitizeProse('roughly ~ten days')).toBe('roughly ~ten days')
+  })
+
+  it('is total/safe on empty + non-strings', () => {
+    expect(sanitizeProse('')).toBe('')
+    // @ts-expect-error — defensive: non-string input
+    expect(sanitizeProse(undefined)).toBe('')
   })
 })

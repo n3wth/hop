@@ -1,52 +1,49 @@
 'use client'
 
-import { useRef, useState } from 'react'
-import { Streamdown } from 'streamdown'
+// hop's CONVERSATIONAL travel concierge, built on the Vercel AI toolkit.
+//
+// The thread is driven by the AI SDK useChat() hook through a custom
+// ConciergeTransport (lib/concierge-transport.ts) that speaks to the EXISTING
+// /api/concierge endpoint — so we get real streaming, multi-turn context
+// (the full messages[] is sent each turn), status/stop, and persistence without
+// touching the backend. The UI is composed from themed AI Elements
+// (Conversation, Message, Response, PromptInput, Tool, Suggestion, Loader) so it
+// behaves like a first-class chat surface but wears hop's flat house style.
+//
+// Turn anatomy: USER bubbles (right) + ASSISTANT turns (hop byline → streaming
+// markdown via <Response> → tool-activity cards via <Tool> as the agent searches/
+// prices/checks weather → server-validated a2ui blocks rendered INSIDE the turn).
+// A warm guided LANDING (greeting, starters, mood gallery) precedes the first
+// message; a persistent composer + follow-up Suggestion chips carry deliberation.
+
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useChat } from '@ai-sdk/react'
 import Icon from './Icon'
 import FlyingBunny from './FlyingBunny'
 import { A2UIBlocks } from './concierge/A2UIBlock'
-import { parseA2UI, type A2UIBlock } from '@/lib/a2ui'
-
-// Mirrors A2UI_SENTINEL in app/api/concierge/route.ts — the marker that splits
-// the streamed prose from the trailing, server-validated block envelope.
-const A2UI_SENTINEL = ' A2UI '
-
-// Split a streamed chunk into the visible prose and any (possibly partial)
-// trailing a2ui envelope JSON. Pure. The prose is everything before the FIRST
-// sentinel; the envelope is whatever follows it.
-function splitA2UI(raw: string): { prose: string; envelope: string } {
-  const i = raw.indexOf(A2UI_SENTINEL)
-  if (i === -1) return { prose: raw, envelope: '' }
-  return { prose: raw.slice(0, i), envelope: raw.slice(i + A2UI_SENTINEL.length) }
-}
-
-// --- API contract (mirrors app/api/concierge/route.ts) ----------------------
-
-interface Suggestion {
-  code: string
-  city: string
-  reason: string
-  // Verdict facts computed server-side (see /api/concierge enrichSuggestions).
-  milesNeeded?: number
-  cashUsd?: number
-  cpp?: number
-  bestProgram?: string
-  youHave?: number
-  affordable?: boolean
-  verdict?: 'points' | 'cash' | 'save'
-}
-
-interface ConciergeResponse {
-  answer: string
-  suggestions?: Suggestion[]
-  // Server-validated, engine-reconciled generative-UI blocks (a2ui). Rendered by
-  // components/concierge/A2UIBlock. Economics inside come from hop's engine.
-  blocks?: A2UIBlock[]
-}
+import {
+  ConciergeTransport,
+  type HopUIMessage,
+  type ConciergeRequestContext,
+} from '@/lib/concierge-transport'
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from './ai-elements/conversation'
+import { Message, MessageContent, AssistantByline } from './ai-elements/message'
+import { Response } from './ai-elements/response'
+import {
+  PromptInput,
+  PromptInputTextarea,
+  PromptInputSubmit,
+} from './ai-elements/prompt-input'
+import { ToolActivity, type ToolState } from './ai-elements/tool'
+import { Suggestions, Suggestion } from './ai-elements/suggestion'
+import { Loader } from './ai-elements/loader'
 
 // A lightweight, serializable photo record passed from the server page so the
-// client can render real imagery without exposing the Unsplash key. Keyed by
-// destination IATA code.
+// client can render real imagery without exposing the Unsplash key.
 export interface ConciergePhoto {
   thumb: string
   alt: string
@@ -60,21 +57,30 @@ export interface ConciergeProgram {
   balance: number
 }
 
-export interface ConciergeProps {
-  /** Total usable points across the user's programs — grounds the answer when signed in. */
-  totalPoints?: number
-  /** Per-program balances — lets the concierge reason about specific currencies. */
-  programs?: ConciergeProgram[]
-  /** The user's home airport (IATA) — where realistic trips depart from. */
-  homeAirport?: string
-  /** code → photo, for the mood gallery + suggestion cards. */
-  photos?: Record<string, ConciergePhoto>
-  /** Codes to feature in the landing mood gallery, best-value first. */
-  galleryCodes?: string[]
+// A persisted thread turn ({role, content}) handed down from the server so a
+// signed-in user resumes where they left off.
+export interface ConciergeInitialMessage {
+  role: 'user' | 'assistant'
+  content: string
 }
 
-// Starter prompts — the obvious first taps. Each seeds the input and submits.
-const PROMPTS = [
+export interface ConciergeProps {
+  totalPoints?: number
+  programs?: ConciergeProgram[]
+  homeAirport?: string
+  photos?: Record<string, ConciergePhoto>
+  galleryCodes?: string[]
+  /** Whether the visitor is signed in — gates server persistence + start-over. */
+  signedIn?: boolean
+  /** The user's persisted thread (signed-in), hydrated into the conversation. */
+  initialMessages?: ConciergeInitialMessage[]
+  /** When set, the concierge auto-sends this on mount — used when the home
+   *  composer deep-links into /ask?q=… so the conversation starts immediately. */
+  initialQuery?: string
+}
+
+// Starter prompts — the obvious first taps on the landing.
+const STARTERS = [
   'Somewhere warm for a long weekend',
   'Best use of my Amex points',
   'Cheapest way to Tokyo',
@@ -82,231 +88,322 @@ const PROMPTS = [
   'Off the beaten path',
 ] as const
 
-// A destination suggestion links into a real hop search seeded to that city.
-function searchHref(code: string): string {
-  return `/search?to=${encodeURIComponent(code)}`
+// Follow-up chips that keep the deliberation going — composer stays primary.
+const FOLLOW_UPS = ['Compare these', 'Cheaper', 'Best weather', "When's cheapest"] as const
+
+let initialIdSeq = 0
+
+// Turn the persisted {role,content} thread into seeded UIMessages so useChat
+// hydrates the conversation on load.
+function toInitialMessages(initial: ConciergeInitialMessage[] | undefined): HopUIMessage[] {
+  if (!initial?.length) return []
+  return initial.map((m) => ({
+    id: `seed-${initialIdSeq++}`,
+    role: m.role,
+    parts: [{ type: 'text' as const, text: m.content }],
+  }))
 }
 
-// Parse the trailing envelope JSON into validated blocks. The envelope may be
-// PARTIAL mid-stream (the JSON not yet fully arrived) — JSON.parse throws then,
-// so we swallow it and wait for more. Once complete, parseA2UI re-validates the
-// closed union client-side too (defense in depth; the server already validated +
-// reconciled economics). Never throws.
-function blocksFromEnvelope(envelope: string): A2UIBlock[] | undefined {
-  const s = envelope.trim()
-  if (!s) return undefined
-  try {
-    return parseA2UI(JSON.parse(s))
-  } catch {
-    return undefined // partial JSON — keep prior blocks until it completes
-  }
-}
-
-// hop's concierge. LANDING state is an immersive, app-like front door: a warm
-// focal prompt, a prominent central input, evocative chips, and a backdrop of
-// real destination photography to set the mood. After an ask, the dark panel
-// gives way to a clean answer with photo-led suggestion cards. Flat + solid: the
-// dark-teal surface and image scrims are the only allowed depth; no hover-lift.
 export default function Concierge({
   totalPoints,
   programs,
   homeAirport,
   photos = {},
   galleryCodes = [],
+  signedIn = false,
+  initialMessages,
+  initialQuery,
 }: ConciergeProps) {
-  const [question, setQuestion] = useState('')
-  const [asked, setAsked] = useState('')
-  const [result, setResult] = useState<ConciergeResponse | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
-  // MULTI-TURN memory (client side). Prior turns of this conversation, sent to
-  // /api/concierge so the agent answers in context. For signed-in users the
-  // server also merges its PERSISTED thread; for signed-out users this ref is
-  // the only memory (session-only). Held in a ref so it survives re-renders
-  // without re-triggering the stream.
-  const threadRef = useRef<Array<{ role: 'user' | 'assistant'; content: string }>>([])
+  const [input, setInput] = useState('')
 
-  // Before the first ask we show the immersive landing; once asked, we switch
-  // to the results view (a compact ask bar + the answer).
-  const hasAsked = loading || error || result !== null
+  // Context is read fresh on each send so balances/airport are always current.
+  // The ref is kept in sync via an effect (never mutated during render); the
+  // transport reads ctxRef.current lazily at send-time, so it always sees latest.
+  const ctxRef = useRef<ConciergeRequestContext | undefined>({ totalPoints, programs, homeAirport })
+  useEffect(() => {
+    ctxRef.current = { totalPoints, programs, homeAirport }
+  }, [totalPoints, programs, homeAirport])
+  // Stable accessor the transport calls lazily at send-time — reads the ref then,
+  // never during render, so it always sees the latest context. The lint rule
+  // can't see that the closure defers the read past render (the access only
+  // happens inside ConciergeTransport.sendMessages), hence the scoped disable.
+  const getContext = useCallback(() => ctxRef.current, [])
+  // eslint-disable-next-line react-hooks/refs
+  const transport = useMemo(() => new ConciergeTransport(getContext), [getContext])
 
-  async function ask(q: string) {
-    const trimmed = q.trim()
-    if (!trimmed || loading) return
-    setAsked(trimmed)
-    setLoading(true)
-    setError(false)
-    setResult(null)
-    try {
-      const res = await fetch('/api/concierge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: trimmed,
-          // Prior turns so the agent has context (multi-turn memory).
-          messages: threadRef.current.length ? threadRef.current : undefined,
-          context:
-            totalPoints != null || homeAirport || programs?.length
-              ? { totalPoints, programs, homeAirport }
-              : undefined,
-        }),
-      })
+  const seeded = useMemo(() => toInitialMessages(initialMessages), [initialMessages])
 
-      // The endpoint streams the answer as plain text (agentic + tool-using;
-      // rich suggestion cards land in a later stage). Read it incrementally so
-      // the answer types out live; fall back to a one-shot read if no stream.
-      const reader = res.body?.getReader()
-      // The full stream is `prose + A2UI_SENTINEL + {"blocks":[...]}`. We type out
-      // the prose live and, once the envelope arrives, render validated blocks.
-      let proseAnswer = ''
-      if (reader) {
-        const decoder = new TextDecoder()
-        let raw = ''
-        setLoading(false) // first delta replaces the "thinking" state
-        for (;;) {
-          const { value, done } = await reader.read()
-          if (done) break
-          raw += decoder.decode(value, { stream: true })
-          const { prose, envelope } = splitA2UI(raw)
-          proseAnswer = prose
-          // Keep prior blocks while the envelope JSON is still partial.
-          setResult((prev) => ({
-            answer: prose,
-            blocks: blocksFromEnvelope(envelope) ?? prev?.blocks,
-          }))
-        }
-        raw += decoder.decode()
-        const { prose, envelope } = splitA2UI(raw)
-        proseAnswer = prose
-        setResult((prev) => ({
-          answer: prose,
-          blocks: blocksFromEnvelope(envelope) ?? prev?.blocks,
-        }))
-      } else {
-        const raw = await res.text()
-        const { prose, envelope } = splitA2UI(raw)
-        proseAnswer = prose
-        setResult({ answer: prose, blocks: blocksFromEnvelope(envelope) })
-        setLoading(false)
-      }
-      // Record this turn so the next ask carries context (multi-turn memory). Only
-      // the prose is threaded — the block spec is presentation, not conversation.
-      threadRef.current = [
-        ...threadRef.current,
-        { role: 'user', content: trimmed },
-        { role: 'assistant', content: proseAnswer },
-      ]
-    } catch {
-      setError(true)
-      setLoading(false)
+  const { messages, sendMessage, status, stop, setMessages, error } = useChat<HopUIMessage>({
+    transport,
+    messages: seeded,
+  })
+
+  const busy = status === 'submitted' || status === 'streaming'
+  const hasThread = messages.length > 0
+
+  const send = useCallback(
+    (text: string) => {
+      const t = text.trim()
+      if (!t || busy) return
+      setInput('')
+      void sendMessage({ text: t })
+    },
+    [busy, sendMessage],
+  )
+
+  const onSubmit = useCallback(
+    (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault()
+      send(input)
+    },
+    [input, send],
+  )
+
+  // Quiet "start over" — clears the live thread and (signed-in) the server one.
+  const startOver = useCallback(() => {
+    setMessages([])
+    setInput('')
+    if (signedIn) {
+      void fetch('/api/conversation', { method: 'DELETE' }).catch(() => {})
     }
-  }
+  }, [setMessages, signedIn])
 
-  function onSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    void ask(question)
-  }
+  // Auto-ask once when handed an initialQuery (e.g. the home composer deep-linked
+  // into /ask?q=…). Guarded so it fires a single time, never on re-render, and
+  // never when a persisted thread was already hydrated (don't re-ask a resume).
+  const autoAskedRef = useRef(false)
+  useEffect(() => {
+    if (autoAskedRef.current) return
+    const q = initialQuery?.trim()
+    if (!q || seeded.length) return
+    autoAskedRef.current = true
+    void sendMessage({ text: q })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  function onChip(prompt: string) {
-    setQuestion(prompt)
-    void ask(prompt)
-  }
-
-  function reset() {
-    setResult(null)
-    setError(false)
-    setAsked('')
-    setQuestion('')
-    // Start a fresh conversation: drop the client thread (signed-in users still
-    // have their persisted thread, surfaced on next load via the server merge).
-    threadRef.current = []
-    inputRef.current?.focus()
-  }
-
-  if (!hasAsked) {
+  if (!hasThread) {
     return (
       <Landing
-        question={question}
-        setQuestion={setQuestion}
+        input={input}
+        setInput={setInput}
         onSubmit={onSubmit}
-        onChip={onChip}
-        inputRef={inputRef}
+        onStarter={send}
+        status={status}
         photos={photos}
         galleryCodes={galleryCodes}
         totalPoints={totalPoints}
+        signedIn={signedIn}
       />
     )
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* compact ask bar (back to mood when cleared) */}
-      <form onSubmit={onSubmit} className="flex flex-col gap-3">
-        <div className="flex items-center gap-2 rounded-[16px] border-[1.5px] border-border bg-surface px-3 py-2 focus-within:border-brand sm:gap-3 sm:px-4 sm:py-2.5">
-          <Icon name="lightbulb" size={20} className="flex-shrink-0 text-brand" />
-          <input
-            ref={inputRef}
-            type="text"
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder="Ask hop where to go…"
-            aria-label="Ask hop where to go"
-            enterKeyHint="search"
-            className="min-w-0 flex-1 bg-transparent py-1.5 text-[16px] text-text outline-none placeholder:text-text3"
-          />
+    <div className="flex h-[clamp(520px,76vh,820px)] flex-col gap-3">
+      {/* thread header: identity + start over + what-hop-remembers */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <FlyingBunny size={26} carve="var(--color-bg)" />
+          <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-brand">
+            hop concierge
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {signedIn ? (
+            <a
+              href="/account"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-paper px-3 py-1.5 text-[12px] font-medium text-text2 transition-colors hover:border-brand hover:text-brand"
+              title="See and edit what hop remembers about you"
+            >
+              <Icon name="loyalty" size={13} />
+              What hop remembers
+            </a>
+          ) : null}
           <button
-            type="submit"
-            disabled={loading || !question.trim()}
-            className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:bg-border disabled:text-text3"
+            type="button"
+            onClick={startOver}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-paper px-3 py-1.5 text-[12px] font-medium text-text2 transition-colors hover:border-brand hover:text-brand"
           >
-            <span className="hidden sm:inline">Ask hop</span>
-            <Icon name="flight" size={16} className="rotate-90" />
+            <Icon name="lightbulb" size={13} />
+            Start over
           </button>
         </div>
-      </form>
+      </div>
 
-      {loading ? (
-        <Thinking question={asked} />
-      ) : error ? (
-        <ErrorNote onRetry={() => void ask(asked)} />
-      ) : result ? (
-        <Answer
-          question={asked}
-          result={result}
-          photos={photos}
-          onReset={reset}
-          onChip={(p) => void ask(p)}
+      {/* the conversation — auto-scrolls, scroll-up to read history */}
+      <Conversation className="min-h-0 rounded-[20px] border border-border bg-bg px-3 py-4 sm:px-5">
+        <ConversationContent>
+          {messages.map((m) => (
+            <Turn key={m.id} message={m} onChip={send} />
+          ))}
+          {/* a fresh assistant turn that hasn't streamed text yet → thinking */}
+          {busy && needsThinking(messages) ? <ThinkingTurn /> : null}
+          {error ? <ErrorTurn onRetry={() => send(lastUserText(messages))} /> : null}
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
+
+      {/* follow-up chips — deliberation shortcuts; composer stays primary */}
+      <Suggestions>
+        {FOLLOW_UPS.map((f) => (
+          <Suggestion key={f} suggestion={f} onClick={send} />
+        ))}
+      </Suggestions>
+
+      {/* persistent composer */}
+      <PromptInput onSubmit={onSubmit}>
+        <Icon name="lightbulb" size={20} className="mb-1.5 flex-shrink-0 text-brand" />
+        <PromptInputTextarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onEnter={() => send(input)}
+          placeholder="Reply, or ask something new…"
+          aria-label="Message hop"
         />
-      ) : null}
+        <PromptInputSubmit status={status} onStop={stop} disabled={!input.trim()} />
+      </PromptInput>
     </div>
   )
 }
 
-// ── Immersive landing ────────────────────────────────────────────────────────
-// Dark-teal focal panel: a real photography backdrop (scrimmed for legibility),
-// the headline prompt, the central input, and evocative chips. Designed to fill
-// the viewport on desktop so /ask feels like opening a travel app.
+// --- One conversation turn ---------------------------------------------------
+
+// Render a single message. USER → a brand-tint bubble. ASSISTANT → hop byline,
+// then its parts IN ORDER: streamed markdown (<Response>), tool-activity cards
+// (<Tool>), and server-validated a2ui blocks rendered inside the turn.
+function Turn({ message, onChip }: { message: HopUIMessage; onChip: (p: string) => void }) {
+  if (message.role === 'user') {
+    const text = textOf(message)
+    return (
+      <Message from="user">
+        <MessageContent>
+          <span className="leading-[1.5]">{text}</span>
+        </MessageContent>
+      </Message>
+    )
+  }
+
+  return (
+    <Message from="assistant">
+      <AssistantByline />
+      <MessageContent>
+        {message.parts.map((part, i) => {
+          if (part.type === 'text') {
+            return part.text ? <Response key={i}>{part.text}</Response> : null
+          }
+          if (part.type === 'data-tool') {
+            const frame = part.data
+            return (
+              <ToolActivity
+                key={part.id ?? i}
+                step={{ tool: frame.tool, state: frame.state as ToolState, detail: frame.detail }}
+              />
+            )
+          }
+          if (part.type === 'data-a2ui') {
+            const blocks = part.data?.blocks ?? []
+            return blocks.length ? (
+              <div key={part.id ?? i} className="mt-1">
+                <A2UIBlocks blocks={blocks} onChip={onChip} />
+              </div>
+            ) : null
+          }
+          return null
+        })}
+      </MessageContent>
+    </Message>
+  )
+}
+
+// Does the latest message still need a "thinking" placeholder? True when the
+// last turn is the user's (assistant hasn't started) — so the dots show up
+// promptly before the first token or tool frame arrives.
+function needsThinking(messages: HopUIMessage[]): boolean {
+  const last = messages[messages.length - 1]
+  return !!last && last.role === 'user'
+}
+
+function textOf(m: HopUIMessage): string {
+  return m.parts
+    .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+    .map((p) => p.text)
+    .join('')
+}
+
+function lastUserText(messages: HopUIMessage[]): string {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === 'user') return textOf(messages[i])
+  }
+  return ''
+}
+
+// Pre-token thinking state inside an assistant turn — the flying bunny + a quiet
+// "dreaming up ideas" line with the brand Loader. Flat; motion is the Loader
+// only (reduced-motion-safe).
+function ThinkingTurn() {
+  return (
+    <Message from="assistant">
+      <AssistantByline />
+      <MessageContent>
+        <div className="flex items-center gap-2.5 text-text3">
+          <Loader size={15} className="text-brand" />
+          <span className="text-[14px]">hop is dreaming up some ideas…</span>
+        </div>
+      </MessageContent>
+    </Message>
+  )
+}
+
+function ErrorTurn({ onRetry }: { onRetry: () => void }) {
+  return (
+    <Message from="assistant">
+      <AssistantByline />
+      <MessageContent>
+        <div className="flex flex-col items-start gap-2.5 rounded-[14px] border border-border bg-paper p-4">
+          <p className="text-[14px] leading-[1.6] text-text2">
+            hop couldn&apos;t reach its travel brain just then. Give it another go.
+          </p>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="rounded-full border border-border bg-surface px-3.5 py-1.5 text-[13px] font-semibold text-text transition-colors hover:border-brand hover:text-brand"
+          >
+            Try again
+          </button>
+        </div>
+      </MessageContent>
+    </Message>
+  )
+}
+
+// --- Warm guided landing -----------------------------------------------------
+// The immersive front door: a real-photography backdrop (scrimmed), the headline
+// prompt, the central composer, evocative starters, the Gmail learn-from-trips
+// seam, and a mood gallery. First message replaces this with the conversation.
 function Landing({
-  question,
-  setQuestion,
+  input,
+  setInput,
   onSubmit,
-  onChip,
-  inputRef,
+  onStarter,
+  status,
   photos,
   galleryCodes,
   totalPoints,
+  signedIn,
 }: {
-  question: string
-  setQuestion: (v: string) => void
-  onSubmit: (e: React.FormEvent) => void
-  onChip: (p: string) => void
-  inputRef: React.RefObject<HTMLInputElement | null>
+  input: string
+  setInput: (v: string) => void
+  onSubmit: (e: FormEvent<HTMLFormElement>) => void
+  onStarter: (p: string) => void
+  status: 'submitted' | 'streaming' | 'ready' | 'error'
   photos: Record<string, ConciergePhoto>
   galleryCodes: string[]
   totalPoints?: number
+  signedIn: boolean
 }) {
-  const tiles = galleryCodes.map((c) => photos[c]).filter(Boolean).slice(0, 6) as ConciergePhoto[]
+  const tiles = galleryCodes
+    .map((c) => photos[c])
+    .filter(Boolean)
+    .slice(0, 6) as ConciergePhoto[]
   const backdrop = tiles[0]
 
   return (
@@ -314,7 +411,6 @@ function Landing({
       className="relative flex min-h-[clamp(440px,72vh,680px)] flex-col overflow-hidden rounded-[var(--radius-hero)]"
       style={{ background: 'var(--color-brand-ink)' }}
     >
-      {/* photography backdrop + scrim (image overlay, not a UI surface) */}
       {backdrop ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -333,7 +429,6 @@ function Landing({
         }}
       />
 
-      {/* content */}
       <div className="relative flex flex-1 flex-col items-center justify-center px-5 py-12 text-center sm:px-10">
         <span
           className="hop-rise inline-flex items-center gap-2 rounded-full bg-[#0a5757] px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6ff0d2]"
@@ -355,11 +450,11 @@ function Landing({
           style={{ ['--hop-delay' as string]: '140ms' }}
         >
           {totalPoints
-            ? `Tell hop a vibe, a budget, or a city you can't stop thinking about. With ~${totalPoints.toLocaleString('en-US')} points, hop finds where they win.`
-            : "Tell hop a vibe, a budget, or a city you can't stop thinking about — hop reads the points world and finds where it's worth going."}
+            ? `Tell hop a vibe, a budget, or a city you can't stop thinking about. With ~${totalPoints.toLocaleString('en-US')} points, hop finds where they win — then talks it through with you.`
+            : "Tell hop a vibe, a budget, or a city you can't stop thinking about — hop reads the points world and talks the trade-offs through with you."}
         </p>
 
-        {/* central input — prominent, the obvious action */}
+        {/* central composer — prominent, the obvious action */}
         <form
           onSubmit={onSubmit}
           className="hop-rise mt-8 w-full max-w-[560px]"
@@ -368,19 +463,18 @@ function Landing({
           <div className="flex items-center gap-2 rounded-[18px] bg-white px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5">
             <Icon name="lightbulb" size={20} className="flex-shrink-0 text-brand" />
             <input
-              ref={inputRef}
               type="text"
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
               placeholder="somewhere warm, ~40k points…"
               aria-label="Ask hop where to go"
-              enterKeyHint="search"
+              enterKeyHint="send"
               autoFocus
               className="min-w-0 flex-1 bg-transparent py-1.5 text-[16px] text-text outline-none placeholder:text-text3"
             />
             <button
               type="submit"
-              disabled={!question.trim()}
+              disabled={!input.trim() || status !== 'ready'}
               className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:bg-border disabled:text-text3"
             >
               <span className="hidden sm:inline">Ask hop</span>
@@ -389,16 +483,16 @@ function Landing({
           </div>
         </form>
 
-        {/* evocative prompt chips */}
+        {/* evocative starters */}
         <div
           className="hop-rise mt-5 flex flex-wrap justify-center gap-2"
           style={{ ['--hop-delay' as string]: '240ms' }}
         >
-          {PROMPTS.map((p) => (
+          {STARTERS.map((p) => (
             <button
               key={p}
               type="button"
-              onClick={() => onChip(p)}
+              onClick={() => onStarter(p)}
               className="rounded-full border border-[#2c6f6b] bg-[#0a5757] px-3.5 py-1.5 text-[13px] font-medium text-[#d8f1ec] transition-colors hover:border-[#6ff0d2] hover:text-white"
             >
               {p}
@@ -406,11 +500,9 @@ function Landing({
           ))}
         </div>
 
-        {/* Gmail travel-history seam (placeholder). Connecting Gmail will let hop
-            learn from past trips; the parsing seam is stubbed (lib/travel-history.ts)
-            so this is a disabled "coming soon" affordance for now. */}
+        {/* gets-to-know-you affordances: Gmail seam + what-hop-remembers */}
         <div
-          className="hop-rise mt-4 flex justify-center"
+          className="hop-rise mt-4 flex flex-wrap items-center justify-center gap-2"
           style={{ ['--hop-delay' as string]: '300ms' }}
         >
           <button
@@ -426,10 +518,19 @@ function Landing({
               Soon
             </span>
           </button>
+          {signedIn ? (
+            <a
+              href="/account"
+              className="flex items-center gap-1.5 rounded-full border border-[#2c6f6b] bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-[#9fd6cd] transition-colors hover:border-[#6ff0d2] hover:text-white"
+            >
+              <Icon name="info" size={14} className="flex-shrink-0" />
+              What hop remembers
+            </a>
+          ) : null}
         </div>
       </div>
 
-      {/* inspiring thumbnail strip — sets the mood at the base of the panel */}
+      {/* mood gallery — sets the tone at the base of the panel */}
       {tiles.length > 0 ? (
         <div
           className="hop-rise relative grid grid-cols-3 gap-px bg-[#0a4f4f] sm:grid-cols-6"
@@ -450,256 +551,16 @@ function Landing({
                 }}
               />
               <div className="absolute inset-x-0 bottom-0 flex items-center gap-1.5 p-2">
-                <span className={`fi fi-${t.countryCode} h-[10px] w-[14px] flex-shrink-0 rounded-[1px]`} aria-hidden />
+                <span
+                  className={`fi fi-${t.countryCode} h-[10px] w-[14px] flex-shrink-0 rounded-[1px]`}
+                  aria-hidden
+                />
                 <span className="truncate text-[11px] font-semibold text-white">{t.city}</span>
               </div>
             </div>
           ))}
         </div>
       ) : null}
-    </div>
-  )
-}
-
-// Solid typing skeleton — no translucency. Shimmer bars stand in for the answer
-// taking shape, with the question echoed so the wait feels grounded.
-function Thinking({ question }: { question: string }) {
-  return (
-    <div aria-busy="true" aria-label="hop is thinking" className="flex flex-col gap-4">
-      {question ? <AskedLine question={question} /> : null}
-      <div className="rounded-[20px] border border-border bg-paper p-6">
-        <div className="mb-5 flex items-center gap-2.5">
-          <span className="hop-bunny-leap inline-flex">
-            <FlyingBunny size={32} carve="var(--color-paper)" />
-          </span>
-          <span className="text-[14px] font-medium text-text3">
-            hop is dreaming up some ideas…
-          </span>
-        </div>
-        <div className="space-y-2.5">
-          <span className="hop-skeleton block h-[14px] w-[92%] rounded-[6px]" />
-          <span className="hop-skeleton block h-[14px] w-[80%] rounded-[6px]" />
-          <span className="hop-skeleton block h-[14px] w-[64%] rounded-[6px]" />
-        </div>
-        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="overflow-hidden rounded-[14px] border border-border bg-surface">
-              <span className="hop-skeleton block aspect-[16/10] w-full" />
-              <div className="p-3">
-                <span className="hop-skeleton mb-2 block h-[13px] w-[70%] rounded-[5px]" />
-                <span className="hop-skeleton block h-[11px] w-[90%] rounded-[5px]" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// The echoed question — a small "you asked" line above the answer.
-function AskedLine({ question }: { question: string }) {
-  return (
-    <div className="flex items-start gap-2.5">
-      <span className="mt-0.5 flex-shrink-0 text-[12px] font-semibold uppercase tracking-[0.12em] text-text3">
-        You
-      </span>
-      <p className="text-[15px] font-medium leading-[1.5] text-text">{question}</p>
-    </div>
-  )
-}
-
-// The answer + photo-led suggestion cards.
-function Answer({
-  question,
-  result,
-  photos,
-  onReset,
-  onChip,
-}: {
-  question: string
-  result: ConciergeResponse
-  photos: Record<string, ConciergePhoto>
-  onReset: () => void
-  onChip: (p: string) => void
-}) {
-  const suggestions = result.suggestions ?? []
-  const blocks = result.blocks ?? []
-  return (
-    <div className="flex flex-col gap-4">
-      {question ? <AskedLine question={question} /> : null}
-
-      <div className="hop-rise rounded-[20px] border border-border bg-paper p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <FlyingBunny size={32} carve="var(--color-paper)" />
-            <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-brand">
-              hop
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={onReset}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-[12px] font-semibold text-text2 transition-colors hover:border-brand hover:text-brand"
-          >
-            <Icon name="lightbulb" size={13} />
-            New ask
-          </button>
-        </div>
-
-        <Streamdown
-          className="hop-md text-[16px] leading-[1.65] text-text"
-          parseIncompleteMarkdown
-        >
-          {result.answer}
-        </Streamdown>
-
-        {/* AGENT-TO-UI: server-validated, engine-reconciled generative blocks.
-            What makes the answer feel tailored — verdict cards, comparisons,
-            timing, weather, cited notes, follow-up chips, profile confirms. */}
-        {blocks.length > 0 && (
-          <div className="mt-5">
-            <A2UIBlocks blocks={blocks} onChip={onChip} />
-          </div>
-        )}
-
-        {suggestions.length > 0 && (
-          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {suggestions.map((s) => (
-              <SuggestionCard key={s.code + s.city} s={s} photo={photos[s.code]} />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// One destination card — a real photo header with city + flag, then the reason.
-// Links into a real hop search seeded to that city. Flat, solid; hover scales the
-// image inside its clipped frame and tints the border (no card lift).
-function SuggestionCard({ s, photo }: { s: Suggestion; photo?: ConciergePhoto }) {
-  return (
-    <a
-      href={searchHref(s.code)}
-      className="group flex flex-col overflow-hidden rounded-[14px] border border-border bg-surface transition-colors hover:border-brand"
-    >
-      <div
-        className="relative aspect-[16/10] w-full overflow-hidden"
-        style={{ background: 'var(--color-brand-deep)' }}
-      >
-        {photo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={photo.thumb}
-            alt={photo.alt}
-            loading="lazy"
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div aria-hidden className="h-full w-full" style={{ background: 'var(--color-brand-deep)' }} />
-        )}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background: 'linear-gradient(to top, rgba(7,62,62,0.78) 0%, rgba(7,62,62,0) 58%)',
-          }}
-        />
-        {/* verdict badge — the one-glance call, top-right on the photo */}
-        {s.verdict ? <VerdictBadge verdict={s.verdict} cpp={s.cpp} /> : null}
-
-        <div className="absolute inset-x-0 bottom-0 flex items-end gap-1.5 p-2.5">
-          {photo ? (
-            <span className={`fi fi-${photo.countryCode} mb-0.5 h-[11px] w-[15px] flex-shrink-0 rounded-[2px]`} aria-hidden />
-          ) : null}
-          <span className="truncate font-display text-[16px] font-semibold leading-tight text-white">
-            {s.city}
-          </span>
-          <span className="ml-auto rounded-full bg-white/90 px-1.5 py-0.5 font-display text-[10px] font-semibold uppercase tracking-[0.08em] text-brand">
-            {s.code}
-          </span>
-        </div>
-      </div>
-
-      <div className="flex flex-1 flex-col p-3.5">
-        <span className="text-[13px] leading-[1.5] text-text2">{s.reason}</span>
-
-        {/* verdict facts — computed server-side, never hallucinated */}
-        {s.milesNeeded != null ? (
-          <dl className="mt-3 flex flex-col gap-1.5 border-t border-border pt-3 text-[12px]">
-            <div className="flex items-baseline justify-between">
-              <dt className="text-text3">Points</dt>
-              <dd className="font-display font-semibold tabular-nums text-text">
-                {Math.round(s.milesNeeded / 1000)}k
-                {s.bestProgram ? <span className="ml-1 font-sans font-normal text-text3">{s.bestProgram}</span> : null}
-              </dd>
-            </div>
-            {s.youHave != null ? (
-              <div className="flex items-baseline justify-between">
-                <dt className="text-text3">You have</dt>
-                <dd className={`font-display font-semibold tabular-nums ${s.affordable ? 'text-brand' : 'text-text2'}`}>
-                  {s.youHave.toLocaleString('en-US')}
-                  {s.affordable ? <span className="ml-1 font-sans font-normal text-brand">enough</span> : null}
-                </dd>
-              </div>
-            ) : null}
-            {s.cpp != null ? (
-              <div className="flex items-baseline justify-between">
-                <dt className="text-text3">Value</dt>
-                <dd className="font-display font-semibold tabular-nums text-text">{s.cpp.toFixed(1)}¢/pt</dd>
-              </div>
-            ) : null}
-          </dl>
-        ) : null}
-
-        <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand">
-          See the search
-          <Icon name="swap_horiz" size={14} />
-        </span>
-      </div>
-    </a>
-  )
-}
-
-// The one-glance verdict — points (good value), cash (book cash), or save
-// (worth saving toward). Flat solid pill on the photo. No emoji.
-function VerdictBadge({
-  verdict,
-  cpp,
-}: {
-  verdict: 'points' | 'cash' | 'save'
-  cpp?: number
-}) {
-  const label =
-    verdict === 'points' ? 'Use points' : verdict === 'cash' ? 'Pay cash' : 'Save toward'
-  const bg =
-    verdict === 'points' ? '#0d6e6e' : verdict === 'cash' ? '#5a5750' : '#9a6a2e'
-  return (
-    <span
-      className="absolute right-2.5 top-2.5 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white"
-      style={{ background: bg }}
-    >
-      {label}
-      {verdict === 'points' && cpp != null ? <span className="tabular-nums">· {cpp.toFixed(1)}¢</span> : null}
-    </span>
-  )
-}
-
-// Network failure — friendly, with a retry. Solid surface.
-function ErrorNote({ onRetry }: { onRetry: () => void }) {
-  return (
-    <div className="flex flex-col items-start gap-3 rounded-[20px] border border-border bg-paper p-6">
-      <p className="text-[15px] leading-[1.6] text-text2">
-        hop couldn&apos;t reach its travel brain just then. Give it another go.
-      </p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="rounded-full border border-border bg-surface px-4 py-2 text-[14px] font-semibold text-text transition-colors hover:border-brand hover:text-brand"
-      >
-        Try again
-      </button>
     </div>
   )
 }

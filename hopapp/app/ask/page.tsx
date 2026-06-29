@@ -4,9 +4,10 @@ import { getUserBalances } from '@/lib/accounts'
 import { getPrefs } from '@/lib/prefs'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
-import Concierge, { type ConciergePhoto } from '@/components/Concierge'
+import Concierge, { type ConciergePhoto, type ConciergeInitialMessage } from '@/components/Concierge'
 import { destinations, topValue, imageQuery } from '@/lib/destinations'
 import { destinationImages } from '@/lib/images'
+import { getConversation } from '@/lib/conversations'
 
 // /ask — hop's AI concierge. An immersive, app-like front door for "where should
 // I go with my points?". The Concierge panel owns the hero state (a warm focal
@@ -14,7 +15,18 @@ import { destinationImages } from '@/lib/images'
 // photography). Auth-aware: when signed in we ground the answer in the user's
 // real total points (live AwardWallet, mock fixtures otherwise). The page never
 // crashes if balances can't load — the concierge simply answers untethered.
-export default async function AskPage() {
+export default async function AskPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  // A home composer can deep-link here with ?q=… to start the conversation
+  // immediately. searchParams is a Promise in Next 16.
+  const sp = await searchParams
+  const rawQ = sp.q
+  const initialQuery =
+    typeof rawQ === 'string' ? rawQ : Array.isArray(rawQ) ? rawQ[0] : undefined
+
   const session = await auth0.getSession()
   const su = session?.user
   const user = su
@@ -43,6 +55,19 @@ export default async function AskPage() {
     programs = balances.map((b) => ({ program: b.program, balance: b.balance }))
     const prefs = su?.sub ? await getPrefs(su.sub) : {}
     homeAirport = prefs.homeAirport
+  }
+
+  // Resume the signed-in user's persisted concierge thread so /ask picks up
+  // where they left off (with a quiet "start over" in the UI). Signed-out users
+  // get an empty thread (session-only memory). Never crashes the page.
+  let initialMessages: ConciergeInitialMessage[] = []
+  if (su?.sub) {
+    const persisted = await getConversation(su.sub)
+    initialMessages = persisted
+      .filter((m): m is { role: 'user' | 'assistant'; content: string } =>
+        m.role === 'user' || m.role === 'assistant',
+      )
+      .map((m) => ({ role: m.role, content: m.content }))
   }
 
   // Destination photography for the mood gallery + suggestion cards. Fetched
@@ -74,6 +99,9 @@ export default async function AskPage() {
             homeAirport={homeAirport}
             photos={photos}
             galleryCodes={galleryCodes}
+            signedIn={!!user}
+            initialMessages={initialMessages}
+            initialQuery={initialQuery}
           />
         </div>
 

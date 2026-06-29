@@ -67,6 +67,10 @@ export default function TopNav({
   )
 
   const [mobileOpen, setMobileOpen] = useState(false)
+  // Mobile menu sheet for hideSearch pages (landing, ask, deals, account), where
+  // the desktop nav + account block are hidden below their breakpoints. Closed on
+  // resize to md / Escape (same guard as the search sheet) so it never strands.
+  const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
 
@@ -130,6 +134,27 @@ export default function TopNav({
     }
   }, [mobileOpen])
 
+  // Same stranding guard as the search sheet: close the menu on resize to md (its
+  // trigger is md:hidden) and on Escape, so it can never sit invisibly over the nav.
+  useEffect(() => {
+    if (!menuOpen) return
+    const mq = window.matchMedia('(min-width: 768px)')
+    const close = () => setMenuOpen(false)
+    if (mq.matches) {
+      close()
+      return
+    }
+    mq.addEventListener('change', close)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      mq.removeEventListener('change', close)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [menuOpen])
+
   const c = scrolled // collapsed
 
   return (
@@ -175,6 +200,20 @@ export default function TopNav({
                 </a>
               </nav>
               <div className="flex-1" />
+              {/* MOBILE affordance — on hideSearch pages the nav links (md:flex)
+                  and the account block (sm:flex) are both hidden below their
+                  breakpoints, leaving the header with nothing actionable on a
+                  phone. This hamburger (visible <md) opens the menu sheet so Sign
+                  in / nav are always reachable at 390px. */}
+              <button
+                type="button"
+                aria-label="Open menu"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen(true)}
+                className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full border border-border bg-surface text-text2 transition-colors hover:bg-sunk md:hidden"
+              >
+                <Icon name="menu" size={20} />
+              </button>
             </>
           ) : (
             <>
@@ -260,6 +299,51 @@ export default function TopNav({
               variant="mobile"
               onSubmitted={() => setMobileOpen(false)}
             />
+          </div>
+        </div>
+      )}
+
+      {/* MOBILE menu — solid sheet for hideSearch pages, so Sign in + nav are
+          always reachable at 390px (the desktop nav/account are hidden below md/sm). */}
+      {menuOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu"
+          className="fixed inset-0 z-[70] flex flex-col bg-bg md:hidden"
+        >
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <span className="font-display text-[17px] font-semibold text-text">Menu</span>
+            <button
+              type="button"
+              aria-label="Close menu"
+              onClick={() => setMenuOpen(false)}
+              className="grid h-9 w-9 place-items-center rounded-full text-text2 hover:bg-sunk"
+            >
+              <span className="text-[22px] leading-none">×</span>
+            </button>
+          </div>
+          <nav className="flex flex-col gap-1 p-4">
+            <a href="/search" onClick={() => setMenuOpen(false)} className="rounded-[12px] px-4 py-3 text-[16px] font-semibold text-text transition-colors hover:bg-sunk">
+              Search
+            </a>
+            <a href="/deals" onClick={() => setMenuOpen(false)} className="rounded-[12px] px-4 py-3 text-[16px] font-semibold text-text transition-colors hover:bg-sunk">
+              Deals
+            </a>
+            <a href="/ask" onClick={() => setMenuOpen(false)} className="rounded-[12px] px-4 py-3 text-[16px] font-semibold text-text transition-colors hover:bg-sunk">
+              Ask
+            </a>
+          </nav>
+          <div className="mt-auto border-t border-border p-4">
+            {user ? (
+              <a href="/account" onClick={() => setMenuOpen(false)} className="flex items-center justify-center rounded-full border border-border bg-surface px-5 py-3 text-[15px] font-semibold text-text transition-colors hover:bg-sunk">
+                Your account
+              </a>
+            ) : (
+              <a href="/auth/login" className="flex items-center justify-center rounded-full bg-brand px-5 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep">
+                Sign in
+              </a>
+            )}
           </div>
         </div>
       )}

@@ -11,16 +11,16 @@ export const SITE_URL =
 
 export const SITE_NAME = 'hop'
 
-// Strong, on-brand default. Confident, terse — matches "One search. The smarter
-// way to book." No emoji, no marketing slop.
-export const DEFAULT_TITLE = 'hop — points vs cash, settled'
+// Strong, on-brand default. Confident, terse — your personal travel agent.
+// No emoji, no marketing slop.
+export const DEFAULT_TITLE = 'hop — your personal travel agent'
 
 // ~150 chars. What hop actually does, in plain language.
 export const DEFAULT_DESCRIPTION =
-  'hop reads your real points balances, compares award vs cash for the same flight, and gives you the verdict — plus where your miles can actually take you.'
+  'Your personal travel agent that knows your points, reads real award availability and cash fares, and gives you the verdict on what actually wins.'
 
 // One line for the social card.
-export const TAGLINE = 'One search. The smarter way to book.'
+export const TAGLINE = 'Your personal travel agent'
 
 // Brand palette.
 export const TEAL = '#0d6e6e'

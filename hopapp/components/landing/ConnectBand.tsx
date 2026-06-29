@@ -32,23 +32,23 @@ export default function ConnectBand({
                 Where to next?
               </h2>
               <p className="mt-3 max-w-[40ch] text-[15px] leading-[1.55] text-[#c7ece5]">
-                Your balances are live. Run a search and hop will tell you the
-                smarter way to book it.
+                Your balances are live. Run a search and your agent will show you
+                which way actually wins.
               </p>
             </>
           ) : (
             <>
               <span className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#9fe0d6]">
-                Get the real answer
+                Meet your agent
               </span>
               <h2 className="mt-3 font-display text-[28px] font-semibold leading-[1.06] tracking-[-0.02em] text-white sm:text-[36px]">
                 Connect your points.
                 <br />
-                See your verdict.
+                Get your verdict.
               </h2>
               <p className="mt-3 max-w-[42ch] text-[15px] leading-[1.55] text-[#c7ece5]">
-                Sign in and link your loyalty programs. hop reads your actual
-                balances and tells you when miles beat cash — and when they
+                Sign in and link your loyalty programs. Your agent reads your actual
+                balances and shows you the math — when miles beat cash and when they
                 don&apos;t.
               </p>
             </>

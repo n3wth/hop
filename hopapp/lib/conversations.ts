@@ -21,9 +21,12 @@
 import { supabaseAdmin } from '@/utils/supabase/admin'
 
 // A single chat turn. MINIMAL by design — role + content only, matching the
-// Stage-1 streamText message shape. 'system' is allowed for completeness but the
-// concierge builds its own system prompt; persisted threads are user/assistant.
-export type ConversationRole = 'system' | 'user' | 'assistant'
+// Stage-1 streamText message shape. ONLY user/assistant are allowed: the
+// concierge builds its OWN system prompt server-side, so a client- or DB-supplied
+// 'system' turn could only ever be a prompt-injection vector (it would sit beside
+// buildAgenticSystem with conflicting authority and, once persisted, poison every
+// future turn). sanitizeMessages therefore drops system turns entirely.
+export type ConversationRole = 'user' | 'assistant'
 
 export interface ConversationMessage {
   role: ConversationRole
@@ -47,7 +50,9 @@ export function sanitizeMessages(raw: unknown): ConversationMessage[] {
     const r = m as Record<string, unknown>
     const role = r.role
     const content = r.content
-    if (role !== 'system' && role !== 'user' && role !== 'assistant') continue
+    // Only user/assistant survive. A 'system' role (or anything else) is dropped
+    // so the server-built system prompt is the SOLE source of instructions.
+    if (role !== 'user' && role !== 'assistant') continue
     if (typeof content !== 'string') continue
     const trimmed = content.trim()
     if (!trimmed) continue
