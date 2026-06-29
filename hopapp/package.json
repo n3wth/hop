@@ -20,6 +20,7 @@
     "@posthog/next": "^0.7.0",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
+    "@vercel/analytics": "^2.0.1",
     "ai": "^7.0.4",
     "flag-icons": "^7.5.0",
     "mcp-handler": "^1.1.0",

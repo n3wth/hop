@@ -8,6 +8,7 @@ import {
   DEFAULT_DESCRIPTION,
   TEAL,
 } from '@/lib/seo'
+import { Analytics } from '@vercel/analytics/next'
 import { PostHogClientProvider } from '@/components/PostHogProvider'
 import { PostHogPageView } from '@/components/PostHogPageView'
 import './globals.css'
@@ -103,7 +104,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${bricolage.variable} ${fraunces.variable} ${geistSans.variable}`}>
-      <head />
+      <head>
+        {/* Body/UI: General Sans (Fontshare — not on Google/next-font). */}
+        <link rel="preconnect" href="https://api.fontshare.com" />
+        <link
+          href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body className="font-sans">
         <PostHogClientProvider>
           <Suspense fallback={null}>
