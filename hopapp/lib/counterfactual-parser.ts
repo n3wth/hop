@@ -13,9 +13,7 @@
 
 import { canonicalizeProgram } from '@/lib/programs'
 import type { Mutation } from '@/lib/counterfactual'
-
-// Mirrors the gateway model selection in app/api/concierge + lib/prefs-parser.
-const GATEWAY_MODEL = process.env.AI_GATEWAY_MODEL || 'anthropic/claude-sonnet-4-6'
+import { callGateway, GATEWAY_MODEL } from '@/lib/ai-gateway'
 
 const SYSTEM = [
   'You translate a traveler\'s "what if I had a different points portfolio?" question into a strict JSON mutation.',
@@ -139,59 +137,19 @@ export function parseMutationFallback(text: string): Mutation | null {
   return null
 }
 
-// --- JSON extraction (defensive) ---------------------------------------------
-
-function parseJson(raw: string): unknown {
-  const unfenced = raw
-    .trim()
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```$/, '')
-    .trim()
-  const start = unfenced.indexOf('{')
-  const end = unfenced.lastIndexOf('}')
-  if (start === -1 || end === -1 || end <= start) return {}
-  try {
-    return JSON.parse(unfenced.slice(start, end + 1))
-  } catch {
-    return {}
-  }
-}
-
-// --- Gateway call (OpenAI-compatible, via the AI Gateway) ---------------------
+// --- Gateway call (via the shared AI Gateway client) --------------------------
 
 // Ask the gateway to translate the text into a mutation. Returns a VALIDATED
 // Mutation or null when there's no key / the call fails / it doesn't validate.
 // NEVER throws.
-async function callGateway(text: string): Promise<Mutation | null> {
-  const key = process.env.AI_GATEWAY_API_KEY
-  if (!key) return null
-  try {
-    const res = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${key}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: GATEWAY_MODEL,
-        max_tokens: 200,
-        messages: [
-          { role: 'system', content: SYSTEM },
-          { role: 'user', content: text },
-        ],
-      }),
-      signal: AbortSignal.timeout(15_000),
-    })
-    if (!res.ok) return null
-    const json = (await res.json()) as {
-      choices?: Array<{ message?: { content?: string } }>
-    }
-    const content = json.choices?.[0]?.message?.content
-    if (!content) return null
-    return validateMutation(parseJson(content))
-  } catch {
-    return null
-  }
+function aiMutation(text: string): Promise<Mutation | null> {
+  return callGateway({
+    system: SYSTEM,
+    user: text,
+    model: GATEWAY_MODEL,
+    maxTokens: 200,
+    validate: validateMutation,
+  })
 }
 
 // Translate freeform "what if" text into a validated Mutation, or null when the
@@ -205,5 +163,5 @@ export async function parseMutation(text: string): Promise<Mutation | null> {
   const fallback = parseMutationFallback(input)
   if (fallback) return fallback
 
-  return callGateway(input)
+  return aiMutation(input)
 }

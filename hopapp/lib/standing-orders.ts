@@ -1,5 +1,5 @@
 import type { SearchParams } from '@/lib/types'
-import { supabaseAdmin } from '@/utils/supabase/admin'
+import { withDb } from '@/lib/supabase-helpers'
 import {
   validateDraft,
   type StandingOrder,
@@ -74,9 +74,7 @@ function rowToOrder(row: OrderRow): StandingOrder | null {
 
 // This user's watches, newest first. Empty on any failure.
 export async function listStandingOrders(userId: string): Promise<StandingOrder[]> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return []
+  return withDb<StandingOrder[]>([], async (db) => {
     const { data, error } = await db
       .from(TABLE)
       .select(
@@ -88,9 +86,7 @@ export async function listStandingOrders(userId: string): Promise<StandingOrder[
     return (data as OrderRow[])
       .map(rowToOrder)
       .filter((o): o is StandingOrder => o !== null)
-  } catch {
-    return []
-  }
+  })
 }
 
 // ALL active watches across users — the cron's input. Scoped to active only so a
@@ -98,9 +94,7 @@ export async function listStandingOrders(userId: string): Promise<StandingOrder[
 export async function listActiveStandingOrders(): Promise<
   Array<StandingOrder & { userId: string }>
 > {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return []
+  return withDb<Array<StandingOrder & { userId: string }>>([], async (db) => {
     const { data, error } = await db
       .from(TABLE)
       .select(
@@ -115,9 +109,7 @@ export async function listActiveStandingOrders(): Promise<
       if (order) out.push({ ...order, userId: row.user_id })
     }
     return out
-  } catch {
-    return []
-  }
+  })
 }
 
 // Create a watch from a validated draft. Re-clamps defensively. Enforces a
@@ -126,9 +118,7 @@ export async function createStandingOrder(
   userId: string,
   draft: StandingOrderDraft,
 ): Promise<string | null> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return null
+  return withDb<string | null>(null, async (db) => {
     const clean = validateDraft(draft)
     if (!clean) return null
 
@@ -154,9 +144,7 @@ export async function createStandingOrder(
       .maybeSingle()
     if (error || !data) return null
     return (data.id as string) ?? null
-  } catch {
-    return null
-  }
+  })
 }
 
 // Pause/resume a watch the user owns. Scoped by id AND user_id.
@@ -165,30 +153,22 @@ export async function setStandingOrderActive(
   id: string,
   active: boolean,
 ): Promise<boolean> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return false
+  return withDb(false, async (db) => {
     const { error } = await db
       .from(TABLE)
       .update({ active })
       .eq('id', id)
       .eq('user_id', userId)
     return !error
-  } catch {
-    return false
-  }
+  })
 }
 
 // Remove a watch the user owns. Scoped by id AND user_id.
 export async function deleteStandingOrder(userId: string, id: string): Promise<boolean> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return false
+  return withDb(false, async (db) => {
     const { error } = await db.from(TABLE).delete().eq('id', id).eq('user_id', userId)
     return !error
-  } catch {
-    return false
-  }
+  })
 }
 
 // Record the offer we just alerted on (dedupe). Called by the cron ONLY after a
@@ -198,18 +178,14 @@ export async function recordNotifiedOffer(
   id: string,
   fingerprint: string,
 ): Promise<boolean> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return false
+  return withDb(false, async (db) => {
     const { error } = await db
       .from(TABLE)
       .update({ last_notified_offer: fingerprint })
       .eq('id', id)
       .eq('user_id', userId)
     return !error
-  } catch {
-    return false
-  }
+  })
 }
 
 // Convenience for the cron summary / tests — re-export the param shape callers use.

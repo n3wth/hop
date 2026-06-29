@@ -29,6 +29,7 @@ import { valuationsByName } from '@/lib/valuations'
 import { effectiveBalanceFor } from '@/lib/transfers'
 import { POINTS_THRESHOLD_CPP } from '@/lib/search'
 import { buildConciergeTools } from '@/lib/concierge-tools'
+import { GATEWAY_MODEL } from '@/lib/ai-gateway'
 import type { Balance } from '@/lib/types'
 import { auth0 } from '@/lib/auth0'
 import {
@@ -38,7 +39,7 @@ import {
   type ConversationMessage,
 } from '@/lib/conversations'
 import { getProfile } from '@/lib/travel-profile'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimit, clientIp } from '@/lib/rate-limit'
 import { profileSummary, type TravelProfile } from '@/lib/travel-profile-model'
 import { getTravelHistory, travelHistorySummary, type TravelHistory } from '@/lib/travel-history'
 import {
@@ -161,14 +162,6 @@ export function sanitizeProse(text: string): string {
 // unbounded gateway/open-meteo cost. Allow a small burst, then a steady trickle.
 const CONCIERGE_RATE = { capacity: 8, refillPerSec: 0.2 } // 8 burst, ~12/min sustained
 
-// Best-effort client IP from common proxy headers (Vercel/Cloud). Falls back to a
-// shared bucket when nothing is present (still caps anonymous abuse per node).
-function clientIp(request: Request): string {
-  const xff = request.headers.get('x-forwarded-for')
-  if (xff) return xff.split(',')[0]!.trim()
-  return request.headers.get('x-real-ip')?.trim() || 'unknown'
-}
-
 export const runtime = 'nodejs'
 
 // --- Request / response contract -------------------------------------------
@@ -221,10 +214,6 @@ export interface ConciergeResponse {
   answer: string
   suggestions?: ConciergeSuggestion[]
 }
-
-// Gateway model. Default is Claude via the AI Gateway (paid credits, verified
-// working incl. tool-calling). Override with AI_GATEWAY_MODEL.
-const GATEWAY_MODEL = process.env.AI_GATEWAY_MODEL || 'anthropic/claude-sonnet-4-6'
 
 // --- Prompt assembly (pure, unit-tested in lib/__tests__/concierge.test.ts) -
 

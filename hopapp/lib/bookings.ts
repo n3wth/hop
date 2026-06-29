@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '@/utils/supabase/admin'
+import { withDb } from '@/lib/supabase-helpers'
 import type { Booking, CheckoutOffer, OrderResult } from '@/lib/types'
 
 // Booking persistence in Supabase via the service-role client (server-only).
@@ -31,9 +31,7 @@ export async function saveBooking(
   order: OrderResult,
   offer: CheckoutOffer,
 ): Promise<string | null> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return null
+  return withDb<string | null>(null, async (db) => {
     const snapshot: OfferSnapshot = {
       route: order.route || offer.route,
       airline: order.airline || offer.airline,
@@ -54,9 +52,7 @@ export async function saveBooking(
       .maybeSingle()
     if (error || !data) return null
     return data.id as string
-  } catch {
-    return null
-  }
+  })
 }
 
 // Ownership check for the confirmation page: returns the user's booking row for
@@ -67,9 +63,7 @@ export async function getBookingByOrderId(
   userId: string,
   orderId: string,
 ): Promise<Booking | null> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return null
+  return withDb<Booking | null>(null, async (db) => {
     const { data, error } = await db
       .from(TABLE)
       .select(
@@ -92,40 +86,5 @@ export async function getBookingByOrderId(
       airline: snap.airline,
       date: snap.date,
     }
-  } catch {
-    return null
-  }
-}
-
-// All bookings for a user, newest first — rendered under "Trips" on /account.
-export async function getBookings(userId: string): Promise<Booking[]> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return []
-    const { data, error } = await db
-      .from(TABLE)
-      .select(
-        'id, duffel_order_id, booking_reference, offer_snapshot, total_amount, total_currency, status, created_at',
-      )
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-    if (error || !data) return []
-    return data.map((row) => {
-      const snap = (row.offer_snapshot ?? {}) as OfferSnapshot
-      return {
-        id: row.id as string,
-        duffelOrderId: (row.duffel_order_id as string) ?? undefined,
-        bookingReference: (row.booking_reference as string) ?? undefined,
-        totalAmount: (row.total_amount as string) ?? undefined,
-        totalCurrency: (row.total_currency as string) ?? undefined,
-        status: (row.status as string) ?? undefined,
-        createdAt: (row.created_at as string) ?? undefined,
-        route: snap.route,
-        airline: snap.airline,
-        date: snap.date,
-      }
-    })
-  } catch {
-    return []
-  }
+  })
 }

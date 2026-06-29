@@ -12,7 +12,7 @@
 // RLS already protects hop_user_prefs (service-role bypasses it; we scope in
 // code). No new policy is needed for the added column.
 
-import { supabaseAdmin } from '@/utils/supabase/admin'
+import { withDb } from '@/lib/supabase-helpers'
 import {
   validateProfile,
   mergeProfile,
@@ -26,9 +26,7 @@ const TABLE = 'hop_user_prefs'
 // row can never feed unknown fields into the prompt. Returns {} when there's no
 // row, no client, or any error.
 export async function getProfile(userId: string): Promise<TravelProfile> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return {}
+  return withDb<TravelProfile>({}, async (db) => {
     const { data, error } = await db
       .from(TABLE)
       .select('travel_profile')
@@ -36,17 +34,13 @@ export async function getProfile(userId: string): Promise<TravelProfile> {
       .maybeSingle()
     if (error || !data) return {}
     return validateProfile(data.travel_profile)
-  } catch {
-    return {}
-  }
+  })
 }
 
 // Overwrite the profile wholesale (validated/clamped first). Passing {} clears
 // it. Used by the "edit / clear" affordance. Returns false on any failure.
 export async function setProfile(userId: string, profile: TravelProfile): Promise<boolean> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return false
+  return withDb(false, async (db) => {
     const clean = validateProfile(profile)
     const { error } = await db.from(TABLE).upsert(
       {
@@ -57,9 +51,7 @@ export async function setProfile(userId: string, profile: TravelProfile): Promis
       { onConflict: 'user_id' },
     )
     return !error
-  } catch {
-    return false
-  }
+  })
 }
 
 // Merge a PATCH of new facts onto the stored profile (scalars overwrite, lists

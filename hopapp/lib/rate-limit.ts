@@ -65,3 +65,12 @@ export function _resetRateLimitForTest() {
   buckets.clear()
   lastSweep = 0
 }
+
+// Best-effort client IP from common proxy headers (Vercel/Cloud), used to key the
+// limiter per-caller. Falls back to a shared 'unknown' bucket when nothing is
+// present (still caps anonymous abuse per node). Pure + total.
+export function clientIp(request: Request): string {
+  const xff = request.headers.get('x-forwarded-for')
+  if (xff) return xff.split(',')[0]!.trim()
+  return request.headers.get('x-real-ip')?.trim() || 'unknown'
+}

@@ -10,8 +10,10 @@ import {
   parseTravelPrefsFallback,
   type TravelPrefs,
 } from '@/lib/prefs-model'
+import { callGateway } from '@/lib/ai-gateway'
 
-// Mirrors the gateway model selection in app/api/concierge/route.ts.
+// Parsers use a cheaper translator than the streaming concierge; override with
+// AI_GATEWAY_MODEL (shared default lives in lib/ai-gateway).
 const GATEWAY_MODEL = process.env.AI_GATEWAY_MODEL || 'deepseek/deepseek-v3'
 
 const SYSTEM = [
@@ -29,57 +31,17 @@ const SYSTEM = [
   '- If nothing is expressed, return {}.',
 ].join('\n')
 
-// Extract + parse a JSON object from raw model text (defensive: strips fences,
-// slices to the outermost braces). Returns {} on any failure.
-function parseJson(raw: string): unknown {
-  const unfenced = raw
-    .trim()
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```$/, '')
-    .trim()
-  const start = unfenced.indexOf('{')
-  const end = unfenced.lastIndexOf('}')
-  if (start === -1 || end === -1 || end <= start) return {}
-  try {
-    return JSON.parse(unfenced.slice(start, end + 1))
-  } catch {
-    return {}
-  }
-}
-
-// Call the Vercel AI Gateway (OpenAI-compatible). Returns validated prefs or
-// null when no key / the call fails. NEVER throws.
-async function callGateway(text: string): Promise<TravelPrefs | null> {
-  const key = process.env.AI_GATEWAY_API_KEY
-  if (!key) return null
-  try {
-    const res = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${key}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: GATEWAY_MODEL,
-        max_tokens: 256,
-        messages: [
-          { role: 'system', content: SYSTEM },
-          { role: 'user', content: text },
-        ],
-      }),
-      signal: AbortSignal.timeout(15_000),
-    })
-    if (!res.ok) return null
-    const json = (await res.json()) as {
-      choices?: Array<{ message?: { content?: string } }>
-    }
-    const content = json.choices?.[0]?.message?.content
-    if (!content) return null
-    // CLAMP: only known fields, validated to enum/type, survive.
-    return validatePrefs(parseJson(content))
-  } catch {
-    return null
-  }
+// Call the Vercel AI Gateway to translate the text into prefs. Returns validated
+// prefs or null when no key / the call fails. CLAMP: validatePrefs keeps only
+// known fields, validated to enum/type. NEVER throws.
+function aiPrefs(text: string): Promise<TravelPrefs | null> {
+  return callGateway({
+    system: SYSTEM,
+    user: text,
+    model: GATEWAY_MODEL,
+    maxTokens: 256,
+    validate: validatePrefs,
+  })
 }
 
 // Translate freeform text into TravelPrefs.
@@ -93,7 +55,7 @@ export async function parseTravelPrefs(text: string): Promise<TravelPrefs> {
   if (!input) return {}
 
   const fallback = parseTravelPrefsFallback(input)
-  const ai = await callGateway(input)
+  const ai = await aiPrefs(input)
   if (!ai) return fallback
 
   // Merge: AI fills gaps the regex missed; regex overrides on conflict.

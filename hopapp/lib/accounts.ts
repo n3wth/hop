@@ -1,7 +1,7 @@
 import type { Balance } from '@/lib/types'
 import { deriveCode, getBalances } from '@/lib/awardwallet'
 import { canonicalizeProgram } from '@/lib/programs'
-import { supabaseAdmin } from '@/utils/supabase/admin'
+import { withDb } from '@/lib/supabase-helpers'
 
 // Per-user balance sources persisted in Supabase via the service-role client
 // (server-only). Identity is Auth0, so we scope every query by user_id in code.
@@ -24,9 +24,7 @@ export interface ManualBalance extends Balance {
 
 // The AwardWallet connected-user id this user linked, or null if not connected.
 export async function getUserAwId(userId: string): Promise<string | null> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return null
+  return withDb<string | null>(null, async (db) => {
     const { data, error } = await db
       .from(TABLE)
       .select('aw_user_id')
@@ -34,15 +32,11 @@ export async function getUserAwId(userId: string): Promise<string | null> {
       .maybeSingle()
     if (error || !data) return null
     return (data.aw_user_id as string) ?? null
-  } catch {
-    return null
-  }
+  })
 }
 
 export async function setUserAwId(userId: string, awUserId: string): Promise<boolean> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return false
+  return withDb(false, async (db) => {
     const now = new Date().toISOString()
     const { error } = await db.from(TABLE).upsert(
       {
@@ -54,29 +48,21 @@ export async function setUserAwId(userId: string, awUserId: string): Promise<boo
       { onConflict: 'user_id' },
     )
     return !error
-  } catch {
-    return false
-  }
+  })
 }
 
 export async function clearUserAwId(userId: string): Promise<boolean> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return false
+  return withDb(false, async (db) => {
     const { error } = await db.from(TABLE).delete().eq('user_id', userId)
     return !error
-  } catch {
-    return false
-  }
+  })
 }
 
 // --- Manual balances (primary path) ----------------------------------------
 
 // This user's hand-entered programs, newest-updated first. Empty on any failure.
 export async function getManualBalances(userId: string): Promise<ManualBalance[]> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return []
+  return withDb<ManualBalance[]>([], async (db) => {
     const { data, error } = await db
       .from(MANUAL_TABLE)
       .select('id, program, code, balance, kind, updated_at')
@@ -91,9 +77,7 @@ export async function getManualBalances(userId: string): Promise<ManualBalance[]
       balance: Number(r.balance ?? 0),
       status: (r.kind as string | null) ?? undefined,
     }))
-  } catch {
-    return []
-  }
+  })
 }
 
 // Find an existing manual program that resolves to the SAME canonical identity
@@ -123,9 +107,7 @@ export async function addManualBalance(
   balance: number,
   kind?: string,
 ): Promise<string | null> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return null
+  return withDb<string | null>(null, async (db) => {
     const { data, error } = await db
       .from(MANUAL_TABLE)
       .insert({
@@ -140,9 +122,7 @@ export async function addManualBalance(
       .maybeSingle()
     if (error || !data) return null
     return (data.id as string) ?? null
-  } catch {
-    return null
-  }
+  })
 }
 
 // Update a program the user owns. Scoped by BOTH id and user_id so one user can
@@ -152,9 +132,7 @@ export async function updateManualBalance(
   id: string,
   fields: { program?: string; balance?: number; kind?: string },
 ): Promise<boolean> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return false
+  return withDb(false, async (db) => {
     const patch: { program?: string; code?: string; balance?: number; kind?: string; updated_at: string } = {
       updated_at: new Date().toISOString(),
     }
@@ -170,25 +148,19 @@ export async function updateManualBalance(
       .eq('id', id)
       .eq('user_id', userId)
     return !error
-  } catch {
-    return false
-  }
+  })
 }
 
 // Remove a program the user owns. Scoped by id AND user_id.
 export async function removeManualBalance(userId: string, id: string): Promise<boolean> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return false
+  return withDb(false, async (db) => {
     const { error } = await db
       .from(MANUAL_TABLE)
       .delete()
       .eq('id', id)
       .eq('user_id', userId)
     return !error
-  } catch {
-    return false
-  }
+  })
 }
 
 // --- Unified resolution -----------------------------------------------------

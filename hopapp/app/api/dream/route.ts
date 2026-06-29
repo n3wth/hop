@@ -14,12 +14,10 @@ import { streamText, gateway } from 'ai'
 import { ledgerDream } from '@/lib/ledger-dream'
 import { resolveDreamSession } from '@/lib/dream-server'
 import { buildDreamPrompt, templatedBlurb } from '@/lib/dream-narration'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimit, clientIp } from '@/lib/rate-limit'
+import { GATEWAY_MODEL } from '@/lib/ai-gateway'
 
 export const runtime = 'nodejs'
-
-// Same gateway model as the concierge — Claude via the AI Gateway.
-const GATEWAY_MODEL = process.env.AI_GATEWAY_MODEL || 'anthropic/claude-sonnet-4-6'
 
 // A small, steady budget: the card narrates once per render + on "Dream me
 // another". Allow a short burst, then a trickle, so a spammed button can't run up
@@ -29,12 +27,6 @@ const DREAM_RATE = { capacity: 6, refillPerSec: 0.2 }
 export interface DreamRequest {
   // Which corner of the portfolio to dream ("Dream me another" increments it).
   index?: number
-}
-
-function clientIp(request: Request): string {
-  const xff = request.headers.get('x-forwarded-for')
-  if (xff) return xff.split(',')[0]!.trim()
-  return request.headers.get('x-real-ip')?.trim() || 'unknown'
 }
 
 // Serve a string as a one-shot text stream (the fallback path), matching the

@@ -7,7 +7,7 @@
 // PRIVACY: we persist ONLY the parsed PastTrip[] + derived favoriteRegions + the
 // refresh token needed to re-read on demand. We never write raw email bodies.
 
-import { supabaseAdmin } from '@/utils/supabase/admin'
+import { withDb } from '@/lib/supabase-helpers'
 import {
   listConfirmationMessageIds,
   getMessage,
@@ -28,9 +28,7 @@ export async function connectGmail(
   refreshToken: string,
   email: string | null,
 ): Promise<boolean> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return false
+  return withDb(false, async (db) => {
     const now = new Date().toISOString()
     const { error } = await db.from(TABLE).upsert(
       {
@@ -47,17 +45,13 @@ export async function connectGmail(
     // Initial sync — best effort; don't fail the connect if it errors.
     await syncTravelHistory(userId).catch(() => {})
     return true
-  } catch {
-    return false
-  }
+  })
 }
 
 // Disconnect: revoke the token upstream (best effort) and DELETE the row, which
 // removes the stored trips + refresh token. Returns true if the row is gone.
 export async function disconnectGmail(userId: string): Promise<boolean> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return false
+  return withDb(false, async (db) => {
     const { data } = await db
       .from(TABLE)
       .select('google_refresh_token')
@@ -67,37 +61,32 @@ export async function disconnectGmail(userId: string): Promise<boolean> {
     if (token) await revokeToken(token)
     const { error } = await db.from(TABLE).delete().eq('user_id', userId)
     return !error
-  } catch {
-    return false
-  }
+  })
 }
 
 // Whether this user has a connected Gmail row (for the /account UI state).
 export async function isGmailConnected(
   userId: string,
 ): Promise<{ connected: boolean; email: string | null }> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return { connected: false, email: null }
-    const { data, error } = await db
-      .from(TABLE)
-      .select('connected, google_email')
-      .eq('user_id', userId)
-      .maybeSingle()
-    if (error || !data || !data.connected) return { connected: false, email: null }
-    return { connected: true, email: (data.google_email as string | null) ?? null }
-  } catch {
-    return { connected: false, email: null }
-  }
+  return withDb<{ connected: boolean; email: string | null }>(
+    { connected: false, email: null },
+    async (db) => {
+      const { data, error } = await db
+        .from(TABLE)
+        .select('connected, google_email')
+        .eq('user_id', userId)
+        .maybeSingle()
+      if (error || !data || !data.connected) return { connected: false, email: null }
+      return { connected: true, email: (data.google_email as string | null) ?? null }
+    },
+  )
 }
 
 // Read the user's confirmation emails and store the normalized trips. Uses the
 // stored refresh token to mint an access token, runs the tight query, parses,
 // and writes ONLY the trip facts. Returns the count stored, or 0 on any failure.
 export async function syncTravelHistory(userId: string): Promise<number> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return 0
+  return withDb(0, async (db) => {
     const { data, error } = await db
       .from(TABLE)
       .select('google_refresh_token')
@@ -132,7 +121,5 @@ export async function syncTravelHistory(userId: string): Promise<number> {
       .eq('user_id', userId)
     if (writeErr) return 0
     return trips.length
-  } catch {
-    return 0
-  }
+  })
 }

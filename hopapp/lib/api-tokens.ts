@@ -9,7 +9,7 @@
 // degrades gracefully and never throws to a route handler.
 
 import { createHash, randomBytes } from 'node:crypto'
-import { supabaseAdmin } from '@/utils/supabase/admin'
+import { withDb } from '@/lib/supabase-helpers'
 
 // Plaintext tokens are prefixed so they're recognizable in logs / config and so
 // a quick shape check can reject obvious garbage before a DB round-trip.
@@ -58,9 +58,7 @@ export async function mintToken(
   userId: string,
   name?: string,
 ): Promise<{ token: string; info: ApiTokenInfo } | null> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return null
+  return withDb<{ token: string; info: ApiTokenInfo } | null>(null, async (db) => {
     const token = generateToken()
     const now = new Date().toISOString()
     const { data, error } = await db
@@ -85,16 +83,12 @@ export async function mintToken(
         lastUsedAt: data.last_used_at,
       },
     }
-  } catch {
-    return null
-  }
+  })
 }
 
 // List a user's active tokens (no secrets). Scoped by user_id in code.
 export async function listTokens(userId: string): Promise<ApiTokenInfo[]> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return []
+  return withDb<ApiTokenInfo[]>([], async (db) => {
     const { data, error } = await db
       .from(TABLE)
       .select('id, name, last_four, created_at, last_used_at')
@@ -108,36 +102,28 @@ export async function listTokens(userId: string): Promise<ApiTokenInfo[]> {
       createdAt: r.created_at,
       lastUsedAt: r.last_used_at,
     }))
-  } catch {
-    return []
-  }
+  })
 }
 
 // Revoke (hard-delete) a token by id, scoped to its owner so a user can only
 // revoke their OWN tokens. Returns whether a row was removed.
 export async function revokeToken(userId: string, tokenId: string): Promise<boolean> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return false
+  return withDb(false, async (db) => {
     const { error, count } = await db
       .from(TABLE)
       .delete({ count: 'exact' })
       .eq('user_id', userId)
       .eq('id', tokenId)
     return !error && (count ?? 0) > 0
-  } catch {
-    return false
-  }
+  })
 }
 
 // Resolve a PLAINTEXT bearer token to its owner's Auth0 sub, or null if unknown.
 // This is the MCP server's auth primitive: hash the presented token, look up the
 // row, return the user_id. Best-effort updates last_used_at for the UI.
 export async function userIdForToken(plaintext: string): Promise<string | null> {
-  try {
-    if (!looksLikeToken(plaintext)) return null
-    const db = supabaseAdmin()
-    if (!db) return null
+  if (!looksLikeToken(plaintext)) return null
+  return withDb<string | null>(null, async (db) => {
     const hash = hashToken(plaintext)
     const { data, error } = await db
       .from(TABLE)
@@ -152,7 +138,5 @@ export async function userIdForToken(plaintext: string): Promise<string | null> 
       .eq('id', data.id)
       .then(() => undefined)
     return data.user_id
-  } catch {
-    return null
-  }
+  })
 }

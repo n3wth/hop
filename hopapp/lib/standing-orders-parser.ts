@@ -11,8 +11,10 @@ import {
   parseStandingOrderFallback,
   type StandingOrderDraft,
 } from '@/lib/standing-orders-model'
+import { callGateway } from '@/lib/ai-gateway'
 
-// Mirrors the gateway model selection used by lib/prefs-parser.ts.
+// Parsers use a cheaper translator than the streaming concierge; override with
+// AI_GATEWAY_MODEL (shared default lives in lib/ai-gateway).
 const GATEWAY_MODEL = process.env.AI_GATEWAY_MODEL || 'deepseek/deepseek-v3'
 
 // `today` is injected so the model resolves relative dates ("late March") to a
@@ -44,61 +46,22 @@ function systemPrompt(today: string, homeAirport?: string): string {
   ].join('\n')
 }
 
-// Extract a JSON object from raw model text (strips fences, slices to outer
-// braces). Returns {} on any failure. Mirrors lib/prefs-parser.parseJson.
-function parseJson(raw: string): unknown {
-  const unfenced = raw
-    .trim()
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```$/, '')
-    .trim()
-  const start = unfenced.indexOf('{')
-  const end = unfenced.lastIndexOf('}')
-  if (start === -1 || end === -1 || end <= start) return {}
-  try {
-    return JSON.parse(unfenced.slice(start, end + 1))
-  } catch {
-    return {}
-  }
-}
-
-// Call the Vercel AI Gateway (OpenAI-compatible). Returns a validated draft or
-// null when no key / the call fails / the result has no usable route. NEVER throws.
-async function callGateway(
+// Call the Vercel AI Gateway to translate the text into a draft. Returns a
+// validated draft or null when no key / the call fails / the result has no usable
+// route. CLAMP: validateDraft keeps only known fields, floors cpp to 2.5, and
+// validates the route. NEVER throws.
+function aiDraft(
   text: string,
   today: string,
   homeAirport?: string,
 ): Promise<StandingOrderDraft | null> {
-  const key = process.env.AI_GATEWAY_API_KEY
-  if (!key) return null
-  try {
-    const res = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${key}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: GATEWAY_MODEL,
-        max_tokens: 512,
-        messages: [
-          { role: 'system', content: systemPrompt(today, homeAirport) },
-          { role: 'user', content: text },
-        ],
-      }),
-      signal: AbortSignal.timeout(15_000),
-    })
-    if (!res.ok) return null
-    const json = (await res.json()) as {
-      choices?: Array<{ message?: { content?: string } }>
-    }
-    const content = json.choices?.[0]?.message?.content
-    if (!content) return null
-    // CLAMP: only known fields survive; cpp floored to 2.5; route validated.
-    return validateDraft(parseJson(content))
-  } catch {
-    return null
-  }
+  return callGateway({
+    system: systemPrompt(today, homeAirport),
+    user: text,
+    model: GATEWAY_MODEL,
+    maxTokens: 512,
+    validate: validateDraft,
+  })
 }
 
 // Translate a plain-English watch into a StandingOrderDraft.
@@ -119,7 +82,7 @@ export async function parseStandingOrder(
   const home = opts?.homeAirport
 
   const fallback = parseStandingOrderFallback(input, home)
-  const ai = await callGateway(input, today, home)
+  const ai = await aiDraft(input, today, home)
 
   if (!ai && !fallback) return null
   if (!ai) return fallback

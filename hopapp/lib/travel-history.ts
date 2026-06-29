@@ -16,7 +16,7 @@
 // confirmation mail, we persist only trip facts, and the user can disconnect +
 // delete everything from /account. Everything is scoped to the Auth0 sub.
 
-import { supabaseAdmin } from '@/utils/supabase/admin'
+import { withDb } from '@/lib/supabase-helpers'
 import { isGmailHistoryEnabled } from '@/lib/env'
 
 // One past trip the user has taken. Kept minimal + serializable.
@@ -145,9 +145,7 @@ export function validateTrips(raw: unknown): PastTrip[] {
 export async function getTravelHistory(userId: string): Promise<TravelHistory> {
   // Seam gated off, or no userId → not connected.
   if (!isGmailHistoryEnabled() || !userId) return EMPTY_TRAVEL_HISTORY
-  try {
-    const db = supabaseAdmin()
-    if (!db) return EMPTY_TRAVEL_HISTORY
+  return withDb(EMPTY_TRAVEL_HISTORY, async (db) => {
     const { data, error } = await db
       .from(TABLE)
       .select('connected, trips')
@@ -177,9 +175,7 @@ export async function getTravelHistory(userId: string): Promise<TravelHistory> {
       patterns,
       note: `Gmail connected — learning from ${trips.length} past trip${trips.length === 1 ? '' : 's'}.`,
     }
-  } catch {
-    return EMPTY_TRAVEL_HISTORY
-  }
+  })
 }
 
 // Render a travel history as a compact, prompt-ready summary. Returns '' when

@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '@/utils/supabase/admin'
+import { withDb } from '@/lib/supabase-helpers'
 import type { FlightOption, SearchParams } from '@/lib/types'
 
 // jsonb columns type as this union in the generated Supabase types. A FlightOption
@@ -84,9 +84,7 @@ export async function recordAlert(args: {
   cpp: number
   fingerprint: string
 }): Promise<string | null> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return null
+  return withDb<string | null>(null, async (db) => {
     const route = args.pick.route || `${args.params.from} → ${args.params.to}`
     const { data, error } = await db
       .from(TABLE)
@@ -104,16 +102,12 @@ export async function recordAlert(args: {
       .maybeSingle()
     if (error || !data) return null
     return (data.id as string) ?? null
-  } catch {
-    return null
-  }
+  })
 }
 
 // This user's alerts, newest first. Empty on any failure.
 export async function listAlerts(userId: string, limit = 20): Promise<StandingOrderAlert[]> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return []
+  return withDb<StandingOrderAlert[]>([], async (db) => {
     const { data, error } = await db
       .from(TABLE)
       .select(
@@ -124,16 +118,12 @@ export async function listAlerts(userId: string, limit = 20): Promise<StandingOr
       .limit(limit)
     if (error || !data) return []
     return (data as AlertRow[]).map(rowToAlert)
-  } catch {
-    return []
-  }
+  })
 }
 
 // Count of unseen alerts — drives a badge on /account. 0 on any failure.
 export async function countUnseenAlerts(userId: string): Promise<number> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return 0
+  return withDb(0, async (db) => {
     const { count, error } = await db
       .from(TABLE)
       .select('id', { count: 'exact', head: true })
@@ -141,39 +131,17 @@ export async function countUnseenAlerts(userId: string): Promise<number> {
       .eq('seen', false)
     if (error || typeof count !== 'number') return 0
     return count
-  } catch {
-    return 0
-  }
-}
-
-// Mark an alert seen (user viewed it). Scoped by id AND user_id.
-export async function markAlertSeen(userId: string, id: string): Promise<boolean> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return false
-    const { error } = await db
-      .from(TABLE)
-      .update({ seen: true })
-      .eq('id', id)
-      .eq('user_id', userId)
-    return !error
-  } catch {
-    return false
-  }
+  })
 }
 
 // Mark ALL of a user's alerts seen — called when they open the alerts surface.
 export async function markAllAlertsSeen(userId: string): Promise<boolean> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return false
+  return withDb(false, async (db) => {
     const { error } = await db
       .from(TABLE)
       .update({ seen: true })
       .eq('user_id', userId)
       .eq('seen', false)
     return !error
-  } catch {
-    return false
-  }
+  })
 }

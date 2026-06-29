@@ -18,7 +18,7 @@
 //   ALTER TABLE public.hop_conversations ENABLE ROW LEVEL SECURITY;
 //   -- service-role bypasses RLS; no anon/auth policy (we scope in code).
 
-import { supabaseAdmin } from '@/utils/supabase/admin'
+import { withDb } from '@/lib/supabase-helpers'
 
 // A single chat turn. MINIMAL by design — role + content only, matching the
 // Stage-1 streamText message shape. ONLY user/assistant are allowed: the
@@ -64,9 +64,7 @@ export function sanitizeMessages(raw: unknown): ConversationMessage[] {
 // Load the user's persisted thread. Returns [] when there's no row, no client,
 // or any error — the concierge then starts fresh.
 export async function getConversation(userId: string): Promise<ConversationMessage[]> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return []
+  return withDb<ConversationMessage[]>([], async (db) => {
     const { data, error } = await db
       .from(TABLE)
       .select('messages')
@@ -74,9 +72,7 @@ export async function getConversation(userId: string): Promise<ConversationMessa
       .maybeSingle()
     if (error || !data) return []
     return sanitizeMessages(data.messages)
-  } catch {
-    return []
-  }
+  })
 }
 
 // Persist the user's thread (sanitized/capped first). Latest wins (upsert on
@@ -85,9 +81,7 @@ export async function saveConversation(
   userId: string,
   messages: ConversationMessage[],
 ): Promise<boolean> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return false
+  return withDb(false, async (db) => {
     const clean = sanitizeMessages(messages)
     const { error } = await db.from(TABLE).upsert(
       {
@@ -101,20 +95,14 @@ export async function saveConversation(
       { onConflict: 'user_id' },
     )
     return !error
-  } catch {
-    return false
-  }
+  })
 }
 
 // Clear the user's thread (user-initiated "start over"). Returns false on any
 // failure — never throws.
 export async function clearConversation(userId: string): Promise<boolean> {
-  try {
-    const db = supabaseAdmin()
-    if (!db) return false
+  return withDb(false, async (db) => {
     const { error } = await db.from(TABLE).delete().eq('user_id', userId)
     return !error
-  } catch {
-    return false
-  }
+  })
 }
