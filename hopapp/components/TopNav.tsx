@@ -163,7 +163,7 @@ export default function TopNav({
               links to the other main pages instead of a blank gap. */}
           {hideSearch ? (
             <>
-              <nav className="-ml-1 hidden items-center gap-1 md:flex">
+              <nav className="-ml-4 hidden items-center gap-1 md:flex sm:-ml-5 lg:-ml-7">
                 <a href="/search" className="rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hover:text-text">
                   Search
                 </a>
