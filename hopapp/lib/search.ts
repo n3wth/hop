@@ -114,7 +114,17 @@ export async function assembleSearch(
   const checkoutEnabled = /^(1|true|yes)$/i.test(process.env.HOP_ENABLE_CHECKOUT ?? '')
   const cashBookUrl = (o: FlightOption): string => {
     if (checkoutEnabled && typeof o.id === 'string' && o.id.startsWith('off_')) {
-      return `/book?offer=${encodeURIComponent(o.id)}`
+      // Carry the route too: Duffel offers expire within minutes, so /book may
+      // need to re-create a fresh offer request rather than rely on this id.
+      const p = new URLSearchParams({ offer: o.id })
+      const from = o.originCode ?? params.from
+      const to = o.destCode ?? params.to
+      if (from) p.set('from', from)
+      if (to) p.set('to', to)
+      if (params.depart) p.set('depart', params.depart)
+      if (params.return) p.set('return', params.return)
+      p.set('adults', String(Math.max(1, params.adults || 1)))
+      return `/book?${p.toString()}`
     }
     return o.bookingUrl || cashUrl
   }

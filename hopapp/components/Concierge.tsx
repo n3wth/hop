@@ -10,6 +10,14 @@ interface Suggestion {
   code: string
   city: string
   reason: string
+  // Verdict facts computed server-side (see /api/concierge enrichSuggestions).
+  milesNeeded?: number
+  cashUsd?: number
+  cpp?: number
+  bestProgram?: string
+  youHave?: number
+  affordable?: boolean
+  verdict?: 'points' | 'cash' | 'save'
 }
 
 interface ConciergeResponse {
@@ -468,6 +476,9 @@ function SuggestionCard({ s, photo }: { s: Suggestion; photo?: ConciergePhoto })
             background: 'linear-gradient(to top, rgba(7,62,62,0.78) 0%, rgba(7,62,62,0) 58%)',
           }}
         />
+        {/* verdict badge — the one-glance call, top-right on the photo */}
+        {s.verdict ? <VerdictBadge verdict={s.verdict} cpp={s.cpp} /> : null}
+
         <div className="absolute inset-x-0 bottom-0 flex items-end gap-1.5 p-2.5">
           {photo ? (
             <span className={`fi fi-${photo.countryCode} mb-0.5 h-[11px] w-[15px] flex-shrink-0 rounded-[2px]`} aria-hidden />
@@ -483,12 +494,65 @@ function SuggestionCard({ s, photo }: { s: Suggestion; photo?: ConciergePhoto })
 
       <div className="flex flex-1 flex-col p-3.5">
         <span className="text-[13px] leading-[1.5] text-text2">{s.reason}</span>
+
+        {/* verdict facts — computed server-side, never hallucinated */}
+        {s.milesNeeded != null ? (
+          <dl className="mt-3 flex flex-col gap-1.5 border-t border-border pt-3 text-[12px]">
+            <div className="flex items-baseline justify-between">
+              <dt className="text-text3">Points</dt>
+              <dd className="font-display font-semibold tabular-nums text-text">
+                {Math.round(s.milesNeeded / 1000)}k
+                {s.bestProgram ? <span className="ml-1 font-sans font-normal text-text3">{s.bestProgram}</span> : null}
+              </dd>
+            </div>
+            {s.youHave != null ? (
+              <div className="flex items-baseline justify-between">
+                <dt className="text-text3">You have</dt>
+                <dd className={`font-display font-semibold tabular-nums ${s.affordable ? 'text-brand' : 'text-text2'}`}>
+                  {s.youHave.toLocaleString('en-US')}
+                  {s.affordable ? <span className="ml-1 font-sans font-normal text-brand">enough</span> : null}
+                </dd>
+              </div>
+            ) : null}
+            {s.cpp != null ? (
+              <div className="flex items-baseline justify-between">
+                <dt className="text-text3">Value</dt>
+                <dd className="font-display font-semibold tabular-nums text-text">{s.cpp.toFixed(1)}¢/pt</dd>
+              </div>
+            ) : null}
+          </dl>
+        ) : null}
+
         <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand">
           See the search
           <Icon name="swap_horiz" size={14} />
         </span>
       </div>
     </a>
+  )
+}
+
+// The one-glance verdict — points (good value), cash (book cash), or save
+// (worth saving toward). Flat solid pill on the photo. No emoji.
+function VerdictBadge({
+  verdict,
+  cpp,
+}: {
+  verdict: 'points' | 'cash' | 'save'
+  cpp?: number
+}) {
+  const label =
+    verdict === 'points' ? 'Use points' : verdict === 'cash' ? 'Pay cash' : 'Save toward'
+  const bg =
+    verdict === 'points' ? '#0d6e6e' : verdict === 'cash' ? '#5a5750' : '#9a6a2e'
+  return (
+    <span
+      className="absolute right-2.5 top-2.5 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white"
+      style={{ background: bg }}
+    >
+      {label}
+      {verdict === 'points' && cpp != null ? <span className="tabular-nums">· {cpp.toFixed(1)}¢</span> : null}
+    </span>
   )
 }
 

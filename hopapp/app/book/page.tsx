@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { auth0 } from '@/lib/auth0'
 import { isCheckoutEnabled } from '@/lib/env'
-import { getCheckoutOffer } from '@/lib/duffel-orders'
+import { getCheckoutOffer, freshOfferForRoute } from '@/lib/duffel-orders'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import Icon, { type IconName } from '@/components/Icon'
@@ -27,7 +27,16 @@ export default async function BookPage({
   }
 
   const q = await searchParams
-  const offerId = Array.isArray(q.offer) ? q.offer[0] : q.offer
+  const str = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)
+  const offerId = str(q.offer)
+  const route = {
+    from: str(q.from),
+    to: str(q.to),
+    depart: str(q.depart),
+    return: str(q.return),
+    adults: q.adults ? parseInt(str(q.adults) ?? '1', 10) : 1,
+  }
+  const hasRoute = !!(route.from && route.to && route.depart)
 
   return (
     <AppShell user={user} hideSearch>
@@ -46,7 +55,11 @@ export default async function BookPage({
             cta={{ href: '/search', label: 'Find a flight' }}
           />
         ) : (
-          <OfferGate offerId={offerId} email={su.email ?? undefined} />
+          <OfferGate
+            offerId={offerId}
+            route={hasRoute ? (route as { from: string; to: string; depart: string; return?: string; adults?: number }) : undefined}
+            email={su.email ?? undefined}
+          />
         )}
         <SiteFooter />
       </div>
@@ -54,16 +67,30 @@ export default async function BookPage({
   )
 }
 
-// Re-fetch the offer server-side (fresh price) before showing the form. An
-// expired/invalid offer degrades to a re-search prompt — Duffel offers expire.
-async function OfferGate({ offerId, email }: { offerId: string; email?: string }) {
-  const res = await getCheckoutOffer(offerId)
+// Re-fetch the offer server-side (fresh price) before showing the form. Duffel
+// offers expire within minutes, so the id from the results page is usually dead
+// by checkout — when it is, we transparently create a FRESH offer for the same
+// route so the user can still book, instead of bouncing them back to search.
+async function OfferGate({
+  offerId,
+  route,
+  email,
+}: {
+  offerId: string
+  route?: { from: string; to: string; depart: string; return?: string; adults?: number }
+  email?: string
+}) {
+  let res = await getCheckoutOffer(offerId)
+  // Stale/expired id → rebuild a live offer from the route (if we have it).
+  if (!res.ok && route) {
+    res = await freshOfferForRoute(route)
+  }
   if (!res.ok) {
     return (
       <Notice
         icon="schedule"
-        title="This fare expired"
-        body={`${res.reason}. Fares move fast — run the search again to grab a fresh price.`}
+        title="This fare just moved"
+        body={`${res.reason}. Run the search again to grab a fresh price.`}
         cta={{ href: '/search', label: 'Search again' }}
       />
     )

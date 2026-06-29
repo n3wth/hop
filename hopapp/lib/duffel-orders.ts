@@ -147,6 +147,49 @@ export async function getCheckoutOffer(offerId: string): Promise<ApiResult<Check
   }
 }
 
+export interface FreshOfferRoute {
+  from: string
+  to: string
+  depart: string
+  return?: string
+  adults?: number
+}
+
+// Create a FRESH offer for a route by running a new offer request. Duffel offers
+// expire within minutes, so the offer id carried from the search page is usually
+// dead by checkout. This rebuilds a live offer so the user can actually book.
+// Returns the cheapest current offer for the route. NEVER throws.
+export async function freshOfferForRoute(route: FreshOfferRoute): Promise<ApiResult<CheckoutOffer>> {
+  const client = duffel()
+  if (!client) return { ok: false, reason: 'Checkout is not configured' }
+  const adults = Math.max(1, route.adults || 1)
+  const slices: Array<{ origin: string; destination: string; departure_date: string }> = [
+    { origin: route.from, destination: route.to, departure_date: route.depart },
+  ]
+  if (route.return) {
+    slices.push({ origin: route.to, destination: route.from, departure_date: route.return })
+  }
+  try {
+    // The SDK's slice type demands arrival_time/departure_time, but they're
+    // optional in the API (and we don't constrain times). Cast to the create arg.
+    const res = await client.offerRequests.create({
+      slices,
+      passengers: Array.from({ length: adults }, () => ({ type: 'adult' as const })),
+      cabin_class: 'economy',
+      return_offers: true,
+    } as unknown as Parameters<typeof client.offerRequests.create>[0])
+    const offers = ((res.data as unknown as { offers?: RawOffer[] })?.offers ?? []).filter(
+      (o) => o?.id,
+    )
+    if (!offers.length) return { ok: false, reason: 'No live fares for this route right now' }
+    // Cheapest current offer.
+    offers.sort((a, b) => parseFloat(a.total_amount) - parseFloat(b.total_amount))
+    return { ok: true, data: toCheckoutOffer(offers[0]) }
+  } catch (err) {
+    return { ok: false, reason: reasonFrom(err) }
+  }
+}
+
 // A component client key authenticates the Duffel card form / 3DS session on the
 // client. Scoped to nothing (or a user) — the card binds to the offer at the
 // component level. Never expose the Duffel token client-side; this key is safe.

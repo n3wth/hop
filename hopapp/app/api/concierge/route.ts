@@ -11,6 +11,7 @@ import {
   destinations,
   affordableWith,
   computeCpp,
+  destinationByCode,
   type Destination,
 } from '@/lib/destinations'
 
@@ -39,6 +40,17 @@ export interface ConciergeSuggestion {
   code: string
   city: string
   reason: string
+  // ── Verdict facts (computed SERVER-SIDE from the destinations dataset + the
+  // user's real balances — never written by the model, so they never lie). The
+  // AI picks the destination + writes `reason`; hop fills in the hard numbers
+  // that turn a suggestion into a bookable decision.
+  milesNeeded?: number // typical one-way award miles
+  cashUsd?: number // typical one-way cash
+  cpp?: number // cents per point at this redemption
+  bestProgram?: string // program that books it well
+  youHave?: number // user's balance in that program (if known)
+  affordable?: boolean // can the user book it with points they hold now?
+  verdict?: 'points' | 'cash' | 'save' // the one-glance call
 }
 
 export interface ConciergeResponse {
@@ -248,6 +260,56 @@ export function parseConciergeJson(raw: string): ConciergeResponse {
   return { answer: unfenced || raw }
 }
 
+// Enrich the AI's picks with VERDICT FACTS computed server-side from the
+// destinations dataset + the user's real balances. The model chose the city and
+// wrote the reason; hop fills in the numbers — so a card never shows a figure the
+// model invented. Loosely matches the suggestion's bestProgram to a balance the
+// user holds (tolerant substring/code match) to decide affordability + verdict.
+function enrichSuggestions(
+  suggestions: ConciergeSuggestion[],
+  context?: ConciergeContext,
+): ConciergeSuggestion[] {
+  const programs = context?.programs ?? []
+  // Tolerant: does the user hold a program that books this destination? Returns
+  // the held balance, or undefined if we can't confidently match.
+  const heldFor = (bestProgram: string): number | undefined => {
+    const target = bestProgram.toLowerCase()
+    let best: number | undefined
+    for (const p of programs) {
+      const name = p.program.toLowerCase()
+      // match either direction on a meaningful token (program names vary in form)
+      const token = target.split(/[\s/]+/).find((t) => t.length >= 4 && name.includes(t))
+      if (token || name.includes(target) || target.includes(name)) {
+        best = Math.max(best ?? 0, p.balance)
+      }
+    }
+    return best
+  }
+
+  return suggestions.map((s) => {
+    const d = destinationByCode(s.code)
+    if (!d) return s
+    const milesNeeded = d.typicalAwardMiles
+    const cashUsd = d.typicalCashUSD
+    const cpp = computeCpp(d)
+    const youHave = heldFor(d.bestProgram)
+    const affordable = youHave != null ? youHave >= milesNeeded : undefined
+    // Verdict: strong CPP → points; weak CPP → cash; can't afford yet → save.
+    const verdict: ConciergeSuggestion['verdict'] =
+      affordable === false ? 'save' : cpp != null && cpp >= 1.5 ? 'points' : 'cash'
+    return {
+      ...s,
+      milesNeeded,
+      cashUsd,
+      cpp,
+      bestProgram: d.bestProgram,
+      youHave,
+      affordable,
+      verdict,
+    }
+  })
+}
+
 // A graceful, on-brand fallback when we can't reach the model at all.
 function fallbackAnswer(question: string, context?: ConciergeContext): ConciergeResponse {
   const total = context?.totalPoints
@@ -302,13 +364,18 @@ export async function POST(request: Request): Promise<Response> {
 
   const { system, user } = buildPrompt(question, context)
 
+  // Attach server-computed verdict facts to whatever suggestions a response
+  // carries, so every card the user sees is grounded in real numbers.
+  const withVerdicts = (r: ConciergeResponse): ConciergeResponse =>
+    r.suggestions?.length ? { ...r, suggestions: enrichSuggestions(r.suggestions, context) } : r
+
   try {
     const text = await callConcierge(system, user)
     if (!text) {
-      return Response.json(fallbackAnswer(question, context), { status: 200 })
+      return Response.json(withVerdicts(fallbackAnswer(question, context)), { status: 200 })
     }
-    return Response.json(parseConciergeJson(text), { status: 200 })
+    return Response.json(withVerdicts(parseConciergeJson(text)), { status: 200 })
   } catch {
-    return Response.json(fallbackAnswer(question, context), { status: 200 })
+    return Response.json(withVerdicts(fallbackAnswer(question, context)), { status: 200 })
   }
 }
