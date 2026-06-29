@@ -91,7 +91,7 @@ export default async function Home() {
             className="hop-rise mt-9 flex w-full justify-center sm:mt-11"
             style={{ ['--hop-delay' as string]: '190ms' }}
           >
-            <div className="w-full max-w-[560px] md:max-w-none">
+            <div className="flex w-full max-w-[560px] justify-center md:w-auto md:max-w-none">
               <HeroSearch initial={SEED} />
             </div>
           </div>
