@@ -96,17 +96,16 @@ body {
   background-attachment: fixed;
 }
 
-/* Global keyboard focus indicator (WCAG 2.4.7). Flat: outline only, no glow.
-   The app applies outline-none broadly, so this restores a consistent visible
-   ring for keyboard users across every interactive control. Mouse/touch focus
-   (:focus without :focus-visible) stays quiet. */
+/* Global keyboard focus indicator (WCAG 2.4.7). Uses box-shadow instead of
+   outline so the ring follows border-radius on rounded elements. Subtle:
+   a single 1.5px brand ring with no offset — visible but not shouting. */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: 2px;
-  border-radius: inherit;
+  outline: none;
+  box-shadow: 0 0 0 1.5px var(--color-brand);
 }
 :focus:not(:focus-visible) {
   outline: none;
+  box-shadow: none;
 }
 
 /* Bricolage Grotesque utility for headline type */

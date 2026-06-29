@@ -724,14 +724,6 @@ export function SearchForm({
         excludeCode={s.to}
         inputClassName="w-[112px] bg-transparent text-[15px] font-semibold text-text outline-none"
       />
-      <button
-        type="button"
-        aria-label="Swap origin and destination"
-        onClick={swapFromTo}
-        className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full text-brand transition-colors hover:bg-sunk"
-      >
-        <Icon name="swap_horiz" size={20} />
-      </button>
       <AirportField
         label="To"
         code={s.to}
