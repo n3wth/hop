@@ -150,7 +150,49 @@ export async function assembleSearch(params: SearchParams): Promise<SearchResult
     }
   })
 
-  const options = rankOptions([...awards, ...cash])
+  // Collapse the raw API dump to ONE best option per program/airline, then cap.
+  // Live sources return hundreds of near-duplicate offers (every fare/time);
+  // a useful tool shows the best of each, not the firehose.
+  const bestPer = <T extends FlightOption>(
+    items: T[],
+    keyOf: (o: T) => string,
+    better: (a: T, b: T) => T,
+  ): T[] => {
+    const m = new Map<string, T>()
+    for (const o of items) {
+      const k = keyOf(o)
+      const cur = m.get(k)
+      m.set(k, cur ? better(cur, o) : o)
+    }
+    return [...m.values()]
+  }
+
+  // Award: best CPP per loyalty program (fall back to fewest miles when cpp ties/missing).
+  const bestAwards = bestPer(
+    awards,
+    (o) => o.program ?? o.airline,
+    (a, b) => {
+      const ca = a.cpp ?? -1
+      const cb = b.cpp ?? -1
+      if (cb !== ca) return cb > ca ? b : a
+      return (b.miles ?? Infinity) < (a.miles ?? Infinity) ? b : a
+    },
+  )
+  // Cash: cheapest per airline.
+  const bestCash = bestPer(
+    cash,
+    (o) => o.airline,
+    (a, b) => ((b.cashPrice ?? Infinity) < (a.cashPrice ?? Infinity) ? b : a),
+  )
+
+  const MAX_AWARDS = 6 // top award/transfer redemptions by value
+  const MAX_CASH = 2 // cheapest cash baselines
+  const trimmedAwards = rankOptions(bestAwards).slice(0, MAX_AWARDS)
+  const trimmedCash = bestCash
+    .sort((a, b) => (a.cashPrice ?? Infinity) - (b.cashPrice ?? Infinity))
+    .slice(0, MAX_CASH)
+
+  const options = rankOptions([...trimmedAwards, ...trimmedCash])
 
   // pick = best redemption (highest cpp award/transfer); else cheapest cash.
   const bestAward = options.find(isAward)

@@ -1,46 +1,75 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import Icon from './Icon'
 import Logo from './Logo'
 
 export interface TopNavProps {
-  /** Display defaults for the search fields / collapsed pill. */
   from?: string
   to?: string
   dates?: string
   who?: string
-  /** IATA codes for the compact collapsed pill. */
   fromCode?: string
   toCode?: string
 }
+
+// Crafted easing — decelerate, ~280ms. One curve drives the whole morph so the
+// header, logo, and search contract together as a single motion.
+const EASE = 'cubic-bezier(.2,0,0,1)'
+const DUR = '280ms'
+
+// Static logo lockup — memoized so scroll-state toggles never re-render the
+// (path-heavy) bunny SVG. Only the wrapper's transform animates.
+const LogoLockup = memo(function LogoLockup() {
+  return (
+    <>
+      <Logo size={46} carve="var(--color-bg)" className="text-brand" />
+      <span className="font-display text-[28px] font-bold tracking-[-0.04em] text-text">hop</span>
+    </>
+  )
+})
 
 interface FieldProps {
   label: string
   value: string
   onChange: (v: string) => void
   width: string
+  collapsed: boolean
 }
 
-function Field({ label, value, onChange, width }: FieldProps) {
+// A search field that MORPHS: its label collapses to zero height on scroll and
+// the input narrows, so the whole row contracts rather than cross-fading.
+function Field({ label, value, onChange, width, collapsed }: FieldProps) {
   return (
-    <label className="flex flex-col justify-center leading-[1.05]">
-      <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
+    <label className="flex min-w-0 flex-col justify-center leading-[1.05]">
+      <span
+        className="overflow-hidden text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2"
+        style={{
+          maxHeight: collapsed ? 0 : 16,
+          opacity: collapsed ? 0 : 1,
+          transition: `max-height ${DUR} ${EASE}, opacity ${DUR} ${EASE}`,
+        }}
+      >
         {label}
       </span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`bg-transparent text-[15px] font-semibold text-text outline-none ${width}`}
+        className={`bg-transparent font-semibold text-text outline-none ${width}`}
+        style={{
+          fontSize: collapsed ? 14 : 15,
+          transition: `font-size ${DUR} ${EASE}`,
+        }}
       />
     </label>
   )
 }
 
-// Scroll-aware top bar. At the top: full editable search. On scroll: the search
-// condenses to a compact clickable pill pinned between the logo and avatar.
-// Sticky with a frosted backdrop; hairline border fades in only once scrolled.
-// Degrades to fully expanded if JS is off (default state).
+// Scroll-aware top bar. The whole header SHRINKS in height on scroll (76→56px),
+// the logo scales down, and the search CONTRACTS in place (labels collapse,
+// "Dates/Who" hide) into a compact route+dates pill — one continuous morph, not
+// a cross-fade. Frosted backdrop + hairline appear only once scrolled. Degrades
+// to fully expanded with no JS.
 export default function TopNav({
   from = 'San Francisco',
   to = 'Los Angeles',
@@ -55,25 +84,21 @@ export default function TopNav({
   const [vWho, setWho] = useState(who)
 
   const [scrolled, setScrolled] = useState(false)
-  // When the user clicks the collapsed pill, force-expand until they scroll again.
-  const [forceOpen, setForceOpen] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
 
+  // IntersectionObserver on a top sentinel: zero per-frame JS, no scroll
+  // listener. Fires only on the cross transition; React bails on equal state.
   useEffect(() => {
     const el = sentinelRef.current
     if (!el || typeof IntersectionObserver === 'undefined') return
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        setScrolled(!entry.isIntersecting)
-        if (entry.isIntersecting) setForceOpen(false)
-      },
-      { rootMargin: '0px', threshold: 0 },
-    )
+    const io = new IntersectionObserver(([entry]) => setScrolled(!entry.isIntersecting), {
+      threshold: 0,
+    })
     io.observe(el)
     return () => io.disconnect()
   }, [])
 
-  const collapsed = scrolled && !forceOpen
+  const c = scrolled // collapsed
 
   return (
     <>
@@ -81,81 +106,97 @@ export default function TopNav({
       <div ref={sentinelRef} aria-hidden className="absolute left-0 top-0 h-px w-px" />
 
       <header
-        className="sticky top-0 z-50 transition-colors duration-200"
+        className="sticky top-0 z-50"
         style={{
-          background: scrolled ? 'color-mix(in srgb, var(--color-bg) 78%, transparent)' : 'transparent',
-          backdropFilter: scrolled ? 'blur(14px) saturate(140%)' : 'none',
-          WebkitBackdropFilter: scrolled ? 'blur(14px) saturate(140%)' : 'none',
-          borderBottom: scrolled ? '1px solid var(--color-border)' : '1px solid transparent',
+          height: c ? 56 : 76,
+          background: c ? 'color-mix(in srgb, var(--color-bg) 80%, transparent)' : 'transparent',
+          // Blur ONLY when scrolled — top-of-page has zero filter cost.
+          // Lighter radius/saturate than before; promote to its own compositor
+          // layer so the blur never repaints page content behind it on scroll.
+          backdropFilter: c ? 'blur(10px) saturate(120%)' : 'none',
+          WebkitBackdropFilter: c ? 'blur(10px) saturate(120%)' : 'none',
+          borderBottom: c ? '1px solid var(--color-border)' : '1px solid transparent',
+          transform: 'translateZ(0)',
+          isolation: 'isolate',
+          willChange: c ? 'backdrop-filter' : 'auto',
+          transition: `height ${DUR} ${EASE}, background ${DUR} ${EASE}, border-color ${DUR} ${EASE}`,
         }}
       >
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between px-16 py-[18px]">
-          {/* logo — pinned left */}
-          <div className="flex flex-shrink-0 items-center gap-3">
-            <Logo size={46} carve="var(--color-bg)" className="text-brand" />
-            <span className="font-display text-[28px] font-bold tracking-[-0.04em] text-text">
-              hop
-            </span>
+        <div className="mx-auto flex h-full max-w-[1440px] items-center justify-between px-16">
+          {/* logo — pinned left, scales down on collapse */}
+          <div
+            className="flex flex-shrink-0 items-center gap-3"
+            style={{
+              transform: c ? 'scale(0.84)' : 'scale(1)',
+              transformOrigin: 'left center',
+              transition: `transform ${DUR} ${EASE}`,
+            }}
+          >
+            <LogoLockup />
           </div>
 
-          {/* search: full fields ↔ compact pill (smooth width/opacity, no lift) */}
-          <div className="relative flex flex-1 justify-center px-6">
-            {/* full search */}
+          {/* search — one element that contracts from full fields to a pill */}
+          <div className="flex flex-1 justify-center px-6">
             <form
-              className="flex items-center gap-4 rounded-full border border-border bg-surface py-[10px] pl-[22px] pr-3 transition-all duration-300"
+              className="flex items-center rounded-full border border-border bg-surface"
               style={{
-                opacity: collapsed ? 0 : 1,
-                transform: collapsed ? 'scale(0.96)' : 'scale(1)',
-                pointerEvents: collapsed ? 'none' : 'auto',
-                position: collapsed ? 'absolute' : 'static',
+                gap: c ? 10 : 16,
+                paddingLeft: c ? 18 : 22,
+                paddingRight: c ? 6 : 12,
+                paddingTop: c ? 6 : 10,
+                paddingBottom: c ? 6 : 10,
+                transition: `gap ${DUR} ${EASE}, padding ${DUR} ${EASE}`,
               }}
-              aria-hidden={collapsed}
             >
-              <Field label="From" value={vFrom} onChange={setFrom} width="w-[112px]" />
-              <span className="text-brand">
-                <Icon name="swap_horiz" size={20} />
+              <Field label="From" value={c ? fromCode : vFrom} onChange={setFrom} width={c ? 'w-[34px]' : 'w-[112px]'} collapsed={c} />
+              <span className="flex-shrink-0 text-brand">
+                <Icon name="swap_horiz" size={c ? 16 : 20} />
               </span>
-              <Field label="To" value={vTo} onChange={setTo} width="w-[96px]" />
-              <span className="h-[26px] w-px bg-border" />
-              <Field label="Dates" value={vDates} onChange={setDates} width="w-[78px]" />
-              <span className="h-[26px] w-px bg-border" />
-              <Field label="Who" value={vWho} onChange={setWho} width="w-[60px]" />
+              <Field label="To" value={c ? toCode : vTo} onChange={setTo} width={c ? 'w-[34px]' : 'w-[96px]'} collapsed={c} />
+
+              {/* divider + Dates: collapse the divider; Dates stays in pill */}
+              <span
+                className="w-px flex-shrink-0 bg-border"
+                style={{ height: c ? 18 : 26, transition: `height ${DUR} ${EASE}` }}
+              />
+              <Field label="Dates" value={vDates} onChange={setDates} width={c ? 'w-[72px]' : 'w-[78px]'} collapsed={c} />
+
+              {/* Who — hidden entirely when collapsed (width + opacity to 0) */}
+              <span
+                className="w-px flex-shrink-0 overflow-hidden bg-border"
+                style={{
+                  height: c ? 0 : 26,
+                  opacity: c ? 0 : 1,
+                  transition: `height ${DUR} ${EASE}, opacity ${DUR} ${EASE}`,
+                }}
+              />
+              <div
+                className="overflow-hidden"
+                style={{
+                  maxWidth: c ? 0 : 90,
+                  opacity: c ? 0 : 1,
+                  transition: `max-width ${DUR} ${EASE}, opacity ${DUR} ${EASE}`,
+                }}
+              >
+                <Field label="Who" value={vWho} onChange={setWho} width="w-[60px]" collapsed={c} />
+              </div>
+
               <button
                 type="submit"
                 aria-label="Search"
-                className="grid h-10 w-10 place-items-center rounded-full bg-brand text-white transition-colors hover:bg-brand-deep"
+                className="grid flex-shrink-0 place-items-center rounded-full bg-brand text-white transition-colors hover:bg-brand-deep"
+                style={{ width: c ? 32 : 40, height: c ? 32 : 40, transition: `width ${DUR} ${EASE}, height ${DUR} ${EASE}` }}
               >
-                <Icon name="search" size={19} />
+                <Icon name="search" size={c ? 15 : 19} />
               </button>
             </form>
-
-            {/* compact pill */}
-            <button
-              type="button"
-              onClick={() => setForceOpen(true)}
-              aria-hidden={!collapsed}
-              tabIndex={collapsed ? 0 : -1}
-              className="flex items-center gap-3 rounded-full border border-border bg-surface py-[10px] pl-5 pr-[14px] text-[14px] font-semibold text-text transition-all duration-300 hover:bg-sunk"
-              style={{
-                opacity: collapsed ? 1 : 0,
-                transform: collapsed ? 'scale(1)' : 'scale(0.96)',
-                pointerEvents: collapsed ? 'auto' : 'none',
-                position: collapsed ? 'static' : 'absolute',
-              }}
-            >
-              <span className="tabular-nums">{fromCode}</span>
-              <Icon name="swap_horiz" size={16} className="text-brand" />
-              <span className="tabular-nums">{toCode}</span>
-              <span className="h-[18px] w-px bg-border" />
-              <span className="font-medium text-text2">{vDates}</span>
-              <span className="grid h-7 w-7 place-items-center rounded-full bg-brand text-white">
-                <Icon name="search" size={15} />
-              </span>
-            </button>
           </div>
 
-          {/* account — pinned right */}
-          <div className="flex flex-shrink-0 items-center">
+          {/* account — pinned right, scales down on collapse */}
+          <div
+            className="flex flex-shrink-0 items-center"
+            style={{ transform: c ? 'scale(0.86)' : 'scale(1)', transformOrigin: 'right center', transition: `transform ${DUR} ${EASE}` }}
+          >
             <div className="grid h-[42px] w-[42px] place-items-center rounded-full bg-brand font-display text-[16px] font-bold text-white">
               O
             </div>
