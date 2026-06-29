@@ -13,6 +13,13 @@ export function tier(value: number | undefined): CppTier {
   return 'muted'
 }
 
+// Render a cpp value as the canonical user-facing unit: "5.4¢/pt". Never show a
+// raw "cpp" label or "¢/mile" to users. One decimal place, matching cpp()'s
+// rounding. Does not change cpp()/tier()/rankOptions() or the thresholds.
+export function formatValue(value: number): string {
+  return `${value.toFixed(1)}¢/pt`
+}
+
 export function rankOptions(options: FlightOption[]): FlightOption[] {
   return [...options].sort((a, b) => {
     if (a.cpp === undefined && b.cpp === undefined) return 0

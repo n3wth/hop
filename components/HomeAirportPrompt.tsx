@@ -1,16 +1,42 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import HomeAirportPicker from './HomeAirportPicker'
+
+const DISMISS_KEY = 'hop:home-airport-prompt-dismissed'
 
 // Shown on the signed-in home when the user has no home airport yet. A warm,
 // solid-bunny prompt to set it once — then every search/deal starts from home.
 // Uses the SOLID bunny (favicon-bunny.svg) on a teal chip, not the line mark.
 export default function HomeAirportPrompt() {
   const [done, setDone] = useState<string | null>(null)
+  // Persist dismissal so the prompt stays gone on reload (it's purely a nudge —
+  // the home airport can still be set anytime in /account).
   const [dismissed, setDismissed] = useState(false)
+  const [ready, setReady] = useState(false)
 
-  if (dismissed) return null
+  useEffect(() => {
+    try {
+      // Read client-only persisted dismissal on mount (can't run during SSR).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (localStorage.getItem(DISMISS_KEY) === '1') setDismissed(true)
+    } catch {
+      // storage unavailable — show the prompt as usual.
+    }
+    setReady(true)
+  }, [])
+
+  function dismiss() {
+    setDismissed(true)
+    try {
+      localStorage.setItem(DISMISS_KEY, '1')
+    } catch {
+      // ignore — dismissal still holds for this session via state.
+    }
+  }
+
+  // Avoid a flash of the prompt before we've read the persisted dismissal.
+  if (!ready || dismissed) return null
 
   return (
     <section className="rounded-[var(--radius-lg)] border border-border bg-surface p-6 sm:p-7">
@@ -27,7 +53,14 @@ export default function HomeAirportPrompt() {
                 Home set to {done}.
               </h3>
               <p className="mt-1 text-[13.5px] leading-[1.5] text-text2">
-                Every search and deal now starts from there. Change it anytime in your account.
+                Every search and deal now starts from there. Change it anytime in{' '}
+                <a
+                  href="/account"
+                  className="font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline"
+                >
+                  your account
+                </a>
+                .
               </p>
             </>
           ) : (
@@ -43,16 +76,16 @@ export default function HomeAirportPrompt() {
             </>
           )}
         </div>
-        {!done ? (
-          <button
-            type="button"
-            aria-label="Dismiss"
-            onClick={() => setDismissed(true)}
-            className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full text-text3 transition-colors hover:bg-sunk hover:text-text2"
-          >
-            <span className="text-[20px] leading-none">×</span>
-          </button>
-        ) : null}
+        {/* The × stays visible in the done state so the member can dismiss the
+            confirmation; dismissal persists across reloads. */}
+        <button
+          type="button"
+          aria-label="Dismiss"
+          onClick={dismiss}
+          className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full text-text3 transition-colors hover:bg-sunk hover:text-text2"
+        >
+          <span className="text-[20px] leading-none">×</span>
+        </button>
       </div>
     </section>
   )

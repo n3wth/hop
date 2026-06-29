@@ -47,14 +47,19 @@ export default function CountUp({
   const rafRef = useRef<number | undefined>(undefined)
 
   useEffect(() => {
+    // Reduced-motion (or a trivial 0 target): show the final value immediately
+    // and never start the animation — no count-up, no momentary 0 flash. The
+    // initial state is already `value`, so this also keeps SSR/first paint stable.
     if (prefersReducedMotion() || value === 0) {
+      // Sync to the final value (no animation). Deliberate state set when the
+      // value prop changes under reduced motion — not a cascading render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplay(value)
       return
     }
 
     setDisplay(0)
     let start: number | null = null
-    let timer: ReturnType<typeof setTimeout>
 
     const tick = (now: number) => {
       if (start === null) start = now
@@ -67,7 +72,7 @@ export default function CountUp({
       else setDisplay(value)
     }
 
-    timer = setTimeout(() => {
+    const timer = setTimeout(() => {
       rafRef.current = requestAnimationFrame(tick)
     }, delayMs)
 

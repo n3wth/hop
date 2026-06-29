@@ -130,7 +130,7 @@ export default function Counterfactual({
         </span>
         <div className="min-w-0">
           <h3 className="font-display text-[16px] font-semibold tracking-[-0.01em] text-text">
-            Counterfactual you
+            What if…
           </h3>
           <p className="mt-1 max-w-[58ch] text-[13px] leading-[1.55] text-text2">
             A mirror for your portfolio. Ask what a different points stack would unlock — hop

@@ -8,7 +8,18 @@ import {
   getCheckoutOffer,
 } from '@/lib/duffel-orders'
 import { saveBooking } from '@/lib/bookings'
-import type { ApiResult, CheckoutPassenger, OrderResult } from '@/lib/types'
+import type { ApiResult, CheckoutOffer, CheckoutPassenger, OrderResult } from '@/lib/types'
+
+// Re-fetch a fresh, re-priced offer when the held price expires mid-checkout, so
+// the client can update the total in place instead of bouncing the user back to
+// search. Auth + gate checked here too (never trust the client).
+export async function refreshOffer(offerId: string): Promise<ApiResult<CheckoutOffer>> {
+  if (!isCheckoutEnabled()) return { ok: false, reason: 'Checkout is not enabled' }
+  const session = await auth0.getSession()
+  if (!session?.user) return { ok: false, reason: 'Please sign in to book' }
+  if (!offerId) return { ok: false, reason: 'Missing offer' }
+  return getCheckoutOffer(offerId)
+}
 
 // Server actions for native cash checkout. Each re-verifies auth + the checkout
 // gate (never trust the client). All return ApiResult — the client renders the

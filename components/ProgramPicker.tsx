@@ -56,6 +56,9 @@ export default function ProgramPicker({
 
   const matches = useMemo(() => filterPrograms(value), [value])
   const showList = open && matches.length > 0
+  // The registry is a convenience, not a gate — an unmatched entry is still saved
+  // as typed (the server canonicalizes). Say so plainly instead of a dead list.
+  const showNoMatch = open && value.trim().length > 0 && matches.length === 0
 
   function select(p: ProgramDef) {
     onChange(p.name)
@@ -108,7 +111,7 @@ export default function ProgramPicker({
         aria-label="Program"
         autoComplete="off"
         role="combobox"
-        aria-expanded={showList}
+        aria-expanded={showList || showNoMatch}
         aria-controls={listId}
         aria-autocomplete="list"
         aria-activedescendant={showList ? `${listId}-${active}` : undefined}
@@ -151,6 +154,13 @@ export default function ProgramPicker({
             </li>
           ))}
         </ul>
+      ) : showNoMatch ? (
+        <div
+          role="status"
+          className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 rounded-[12px] border border-border bg-paper px-3 py-2.5 text-[12.5px] text-text2"
+        >
+          No saved program matches — we&apos;ll add it as typed.
+        </div>
       ) : null}
     </div>
   )

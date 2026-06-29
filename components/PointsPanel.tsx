@@ -42,9 +42,9 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
         className="overflow-hidden rounded-[22px] px-5 py-7 text-[#eef3f1] sm:px-[30px]"
         style={{ background: 'var(--color-text)' }}
       >
-        <div className="text-[13px] font-semibold uppercase tracking-[0.14em] text-[#7be0c6]">
+        <h2 className="text-[13px] font-semibold uppercase tracking-[0.14em] text-wallet-active">
           Your points
-        </div>
+        </h2>
         <p className="mt-2 max-w-[40ch] text-[14px] leading-[1.55] text-[#bcd0cb]">
           Add your loyalty programs and hop will tell you which redemptions your
           points actually unlock — and whether to book with miles or cash.
@@ -76,8 +76,9 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
 
               <div className="min-w-0">
                 <div
-                  className="truncate text-[13px] font-medium sm:text-[14px]"
-                  style={{ color: active ? '#7be0c6' : '#e6edeb' }}
+                  className={`truncate text-[13px] font-medium sm:text-[14px] ${
+                    active ? 'text-wallet-active' : 'text-[#e6edeb]'
+                  }`}
                 >
                   {b.program}
                 </div>
@@ -95,7 +96,7 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
                   style={{
                     ['--hop-bar-w' as string]: `${pct}%`,
                     ['--hop-delay' as string]: `${160 + i * 70}ms`,
-                    background: active ? 'var(--color-mint-bright)' : 'rgba(255,255,255,0.26)',
+                    background: active ? 'var(--color-wallet-active)' : 'rgba(255,255,255,0.26)',
                   }}
                 />
               </div>

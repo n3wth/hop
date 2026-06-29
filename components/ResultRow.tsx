@@ -36,7 +36,12 @@ function rankLabel(option: FlightOption, rank?: number): string {
   if (option.kind === 'cash') return 'Cash'
   if (rank == null) return ''
   const map: Record<number, string> = { 1: 'Runner-up', 2: '3rd', 3: '4th', 4: '5th' }
-  return map[rank] ?? `${rank + 1}th`
+  // Overall placement is rank + 1 (the pick is 1st). Ordinal-suffix the fallback
+  // so beyond the mapped few it reads "6th", "21st", "22nd" — never "21th".
+  const place = rank + 1
+  const tens = place % 100
+  const suffix = tens >= 11 && tens <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][place % 10] ?? 'th'
+  return map[rank] ?? `${place}${suffix}`
 }
 
 // One plain assessment line — no first-person bunny theatrics (copy-spec).
@@ -79,15 +84,14 @@ export default function ResultRow({ option, rank, maxCpp, index = 0, open, onTog
   const cpp = option.cpp
   const cppText = cpp != null ? `${cpp.toFixed(1)}¢` : null
 
-  // Value bar: award/transfer scaled by cpp vs the strongest alternative; cash
-  // gets a fixed neutral baseline (it has no cpp).
+  // Value bar: award/transfer scaled by cpp vs the strongest alternative. Cash
+  // has no cpp to rank, so its track reads EMPTY (0%) — a phantom fixed fill
+  // would imply a value score it doesn't have.
   const barPct = isCash
-    ? 40
+    ? 0
     : cpp != null && maxCpp
       ? Math.max(10, Math.round((cpp / maxCpp) * 100))
       : 0
-  // Cash has no cpp to rank, so its bar reads as a neutral, recessive baseline
-  // (ink-faint) rather than a heavy dark strip that competes with real value.
   const barColor = isCash ? 'var(--color-text3)' : BAR[option.tier]
 
   const unit = option.program?.toLowerCase().includes('southwest') ? 'pts' : 'mi'
@@ -118,6 +122,7 @@ export default function ResultRow({ option, rank, maxCpp, index = 0, open, onTog
         onClick={onToggle}
         aria-expanded={open}
         aria-controls={panelId}
+        aria-label={`${open ? 'Hide' : 'Show'} details for ${option.airline} ${option.route}`}
         className="flex flex-1 cursor-pointer flex-col px-[22px] pb-[22px] pt-6 text-left"
       >
         <div className="flex items-start justify-between">
@@ -191,8 +196,17 @@ export default function ResultRow({ option, rank, maxCpp, index = 0, open, onTog
         </div>
       </button>
 
-      {/* expandable detail — smooth height grow, no vertical lift */}
-      <div className="hop-collapse px-[22px]" data-open={open} id={panelId} role="region">
+      {/* expandable detail — smooth height grow, no vertical lift. While
+          collapsed it's inert + aria-hidden so its booking link leaves the tab
+          order and screen-reader flow until the card is opened. */}
+      <div
+        className="hop-collapse px-[22px]"
+        data-open={open}
+        id={panelId}
+        role="region"
+        inert={!open}
+        aria-hidden={!open}
+      >
         <div>
           <div className="border-t border-border pb-[20px] pt-[16px]">
             {/* itinerary */}

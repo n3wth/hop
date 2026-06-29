@@ -49,13 +49,15 @@ export default function ResultsSkeleton() {
         <Bar w="90px" h={12} />
       </div>
 
-      {/* Verdict hero placeholder — teal plane, two columns */}
+      {/* Verdict hero placeholder — teal plane. Grid + radius collapse at the
+          SAME breakpoints as VerdictRail (single column below lg, 1fr/392px at
+          lg) so swapping the skeleton for the real hero causes no layout shift. */}
       <section
-        className="mt-[26px] grid overflow-hidden rounded-[28px]"
-        style={{ gridTemplateColumns: '1fr 392px', background: 'var(--color-brand)' }}
+        className="mt-[26px] grid grid-cols-1 overflow-hidden rounded-[20px] lg:grid-cols-[1fr_392px] lg:rounded-[28px]"
+        style={{ background: 'var(--color-brand)' }}
       >
         {/* LEFT — headline + subline + stat strip (on-brand: tint shimmer on teal) */}
-        <div className="px-[52px] pb-[46px] pt-12">
+        <div className="px-6 pb-9 pt-8 sm:px-10 lg:px-[52px] lg:pb-[46px] lg:pt-12">
           <div className="mb-[26px] border-b border-white/15 pb-4">
             <span className="block h-[12px] w-[110px] rounded-[6px] bg-white/15" />
           </div>
@@ -81,15 +83,17 @@ export default function ResultsSkeleton() {
           </div>
         </div>
 
-        {/* RIGHT — bunny well + boarding-pass card placeholder */}
+        {/* RIGHT — bunny well + boarding-pass card placeholder. Border + bunny
+            well match VerdictRail's responsive treatment (top divider below lg,
+            left divider at lg; well hidden below lg). */}
         <aside
-          className="relative flex flex-col justify-between border-l border-dashed border-white/20"
+          className="relative flex flex-col justify-between border-t border-dashed border-white/20 lg:border-l lg:border-t-0"
           style={{ background: 'var(--color-brand-deep)' }}
         >
-          <div className="grid flex-1 place-items-center pt-9">
+          <div className="hidden flex-1 place-items-center pt-9 lg:grid">
             <span className="block h-[140px] w-[140px] rounded-full bg-white/10" />
           </div>
-          <div className="mx-[26px] mb-[26px] space-y-[14px] rounded-[18px] bg-paper p-[22px]">
+          <div className="mx-5 mb-6 mt-6 space-y-[14px] rounded-[18px] bg-paper p-[22px] sm:mx-[26px] sm:mb-[26px] lg:mt-0">
             <div className="flex items-center gap-[11px]">
               <span className="hop-skeleton block h-[40px] w-[40px] rounded-[10px]" />
               <div className="flex-1 space-y-[7px]">

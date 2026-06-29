@@ -17,6 +17,7 @@
 // message; a persistent composer + follow-up Suggestion chips carry deliberation.
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useChat } from '@ai-sdk/react'
 import Icon from './Icon'
 import FlyingBunny from './FlyingBunny'
@@ -130,13 +131,39 @@ export default function Concierge({
 
   const seeded = useMemo(() => toInitialMessages(initialMessages), [initialMessages])
 
-  const { messages, sendMessage, status, stop, setMessages, error } = useChat<HopUIMessage>({
-    transport,
-    messages: seeded,
-  })
+  const { messages, sendMessage, status, stop, setMessages, error, regenerate } =
+    useChat<HopUIMessage>({
+      transport,
+      messages: seeded,
+    })
+
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
   const busy = status === 'submitted' || status === 'streaming'
   const hasThread = messages.length > 0
+  // Has the assistant produced at least one turn? Gates the static follow-up
+  // chips — they only make sense once there's an answer to follow up on.
+  const hasAssistantTurn = messages.some((m) => m.role === 'assistant')
+
+  // Inline-confirm state for the destructive "start over" (the persisted thread
+  // is DELETEd for signed-in users — never silently wipe it on a single tap).
+  const [confirmingClear, setConfirmingClear] = useState(false)
+
+  // aria-live status for screen readers: 'thinking' while the agent works, then
+  // the final answer announced ONCE per turn (sighted users see streaming text;
+  // blind users otherwise get nothing). Kept terse; not a transcript.
+  // DERIVED (no effect, no setState): while busy we announce "thinking" — so the
+  // SR isn't spammed token-by-token mid-stream; once the turn settles the string
+  // flips to the final answer, which aria-live announces exactly once because the
+  // text changes a single time. Errors announce a retry prompt.
+  const liveStatus = useMemo(() => {
+    if (busy) return 'hop is thinking…'
+    if (status === 'error') return "hop couldn't reach its concierge. Try again."
+    const last = messages[messages.length - 1]
+    if (last && last.role === 'assistant') return textOf(last).trim()
+    return ''
+  }, [busy, status, messages])
   // True only when the signed-in visitor has real balances in play — gates the
   // ownership voice in tool labels + a2ui cards ("your points"/"you have") vs a
   // neutral value framing for signed-out / no-balance visitors.
@@ -160,14 +187,35 @@ export default function Concierge({
     [input, send],
   )
 
-  // Quiet "start over" — clears the live thread and (signed-in) the server one.
-  const startOver = useCallback(() => {
+  // "Start over" is destructive for signed-in users (it DELETEs the persisted
+  // thread), so it asks for an inline confirm first. On confirm we delete the
+  // server thread BEFORE clearing the client — and only clear if the delete
+  // succeeded, so a failed wipe never strands the user with an empty UI but a
+  // thread still on the server that will resurrect on reload.
+  const clearLocal = useCallback(() => {
     setMessages([])
     setInput('')
-    if (signedIn) {
-      void fetch('/api/conversation', { method: 'DELETE' }).catch(() => {})
+    setConfirmingClear(false)
+    // liveStatus is derived from messages — clearing the thread resets it.
+  }, [setMessages])
+
+  const startOver = useCallback(() => {
+    if (!signedIn) {
+      // No persisted thread to lose — clear immediately, no confirm needed.
+      clearLocal()
+      return
     }
-  }, [setMessages, signedIn])
+    if (!confirmingClear) {
+      setConfirmingClear(true)
+      return
+    }
+    void fetch('/api/conversation', { method: 'DELETE' })
+      .then((res) => {
+        if (res.ok) clearLocal()
+        else setConfirmingClear(false)
+      })
+      .catch(() => setConfirmingClear(false))
+  }, [signedIn, confirmingClear, clearLocal])
 
   // Auto-ask once when handed an initialQuery (e.g. the home composer deep-linked
   // into /ask?q=…). Guarded so it fires a single time, never on re-render, and
@@ -179,6 +227,14 @@ export default function Concierge({
     if (!q || seeded.length) return
     autoAskedRef.current = true
     void sendMessage({ text: q })
+    // Drop ?q= from the URL so a reload/share doesn't re-ask the question and
+    // the address bar reflects the live conversation, not the deep link.
+    if (searchParams.has('q')) {
+      const next = new URLSearchParams(searchParams)
+      next.delete('q')
+      const qs = next.toString()
+      router.replace(qs ? `/ask?${qs}` : '/ask', { scroll: false })
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -212,6 +268,11 @@ export default function Concierge({
   // read as part of the app, not a widget.
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      {/* Screen-reader live status: announces "thinking" and the settled answer
+          once. Visually hidden; sighted users read the streamed text directly. */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {liveStatus}
+      </div>
       {/* identity rail — flush with the app, not card chrome */}
       <div className="hop-ask-measure flex flex-shrink-0 items-center justify-between pb-3 pt-1">
         <div className="flex items-center gap-2">
@@ -231,14 +292,34 @@ export default function Concierge({
               <span className="hidden sm:inline">What hop remembers</span>
             </a>
           ) : null}
-          <button
-            type="button"
-            onClick={startOver}
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] font-medium text-text3 transition-colors hover:text-brand"
-          >
-            <Icon name="lightbulb" size={13} />
-            Start over
-          </button>
+          {confirmingClear ? (
+            <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text3">
+              <span className="hidden sm:inline">Clear this thread?</span>
+              <button
+                type="button"
+                onClick={startOver}
+                className="rounded-full bg-brand px-2.5 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-brand-deep"
+              >
+                Yes, start over
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingClear(false)}
+                className="rounded-full px-2.5 py-1.5 text-[12px] font-medium text-text3 transition-colors hover:text-brand"
+              >
+                Cancel
+              </button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={startOver}
+              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] font-medium text-text3 transition-colors hover:text-brand"
+            >
+              <Icon name="lightbulb" size={13} />
+              Start over
+            </button>
+          )}
         </div>
       </div>
 
@@ -252,12 +333,25 @@ export default function Concierge({
         />
         <Conversation className="h-full">
           <ConversationContent className="hop-ask-measure pb-4 pt-2">
-            {messages.map((m) => (
-              <Turn key={m.id} message={m} onChip={send} hasBalances={hasBalances} />
-            ))}
-            {/* a fresh assistant turn that hasn't streamed text yet → thinking */}
+            {messages.map((m) => {
+              // Suppress an assistant turn that has nothing renderable yet (the
+              // byline would flash empty before the first token/tool frame).
+              // While busy, the ThinkingTurn covers it; this avoids a bare byline.
+              if (busy && m.role === 'assistant' && !hasRenderablePart(m)) return null
+              return (
+                <Turn
+                  key={m.id}
+                  message={m}
+                  onChip={send}
+                  hasBalances={hasBalances}
+                  homeAirport={homeAirport}
+                />
+              )
+            })}
+            {/* keep the thinking indicator until the assistant turn has a
+                renderable part — no empty-byline flash */}
             {busy && needsThinking(messages) ? <ThinkingTurn /> : null}
-            {error ? <ErrorTurn onRetry={() => send(lastUserText(messages))} /> : null}
+            {error ? <ErrorTurn onRetry={() => void regenerate()} /> : null}
           </ConversationContent>
           <ConversationScrollButton />
         </Conversation>
@@ -267,11 +361,15 @@ export default function Concierge({
           reading measure. Lives at the viewport floor; the thread scrolls behind
           it. A hairline separates the live composer from the scrolling history. */}
       <div className="hop-ask-measure flex-shrink-0 border-t border-hair pt-3">
-        <Suggestions className="pb-2.5">
-          {FOLLOW_UPS.map((f) => (
-            <Suggestion key={f} suggestion={f} onClick={send} />
-          ))}
-        </Suggestions>
+        {/* Static follow-ups only make sense once there's an answer to follow up
+            on; disabled while the agent is busy so a tap can't queue mid-stream. */}
+        {hasAssistantTurn ? (
+          <Suggestions className="pb-2.5">
+            {FOLLOW_UPS.map((f) => (
+              <Suggestion key={f} suggestion={f} onClick={send} disabled={busy} />
+            ))}
+          </Suggestions>
+        ) : null}
 
         <PromptInput onSubmit={onSubmit}>
           <Icon name="lightbulb" size={20} className="mb-1.5 flex-shrink-0 text-brand" />
@@ -304,10 +402,12 @@ function Turn({
   message,
   onChip,
   hasBalances,
+  homeAirport,
 }: {
   message: HopUIMessage
   onChip: (p: string) => void
   hasBalances: boolean
+  homeAirport?: string
 }) {
   if (message.role === 'user') {
     const text = textOf(message)
@@ -363,7 +463,12 @@ function Turn({
         {/* 3 — a2ui blocks (cards / choices), appended below the prose */}
         {a2ui.map((a) => (
           <div key={a.key} className="mt-1">
-            <A2UIBlocks blocks={a.blocks} onChip={onChip} hasBalances={hasBalances} />
+            <A2UIBlocks
+              blocks={a.blocks}
+              onChip={onChip}
+              hasBalances={hasBalances}
+              homeAirport={homeAirport}
+            />
           </div>
         ))}
       </MessageContent>
@@ -371,12 +476,27 @@ function Turn({
   )
 }
 
+// Does an assistant message have anything we'd actually render (text, a tool
+// frame, or an a2ui block)? Used to keep the thinking indicator up until the
+// turn has real content, so the byline never flashes empty.
+function hasRenderablePart(m: HopUIMessage): boolean {
+  return m.parts.some(
+    (p) =>
+      (p.type === 'text' && !!p.text) ||
+      p.type === 'data-tool' ||
+      (p.type === 'data-a2ui' && (p.data?.blocks?.length ?? 0) > 0),
+  )
+}
+
 // Does the latest message still need a "thinking" placeholder? True when the
-// last turn is the user's (assistant hasn't started) — so the dots show up
-// promptly before the first token or tool frame arrives.
+// last turn is the user's (assistant hasn't started) OR a fresh assistant turn
+// exists but has nothing renderable yet — so the dots stay up promptly until the
+// first token, tool frame, or block arrives (no empty-byline flash between).
 function needsThinking(messages: HopUIMessage[]): boolean {
   const last = messages[messages.length - 1]
-  return !!last && last.role === 'user'
+  if (!last) return false
+  if (last.role === 'user') return true
+  return last.role === 'assistant' && !hasRenderablePart(last)
 }
 
 function textOf(m: HopUIMessage): string {
@@ -384,13 +504,6 @@ function textOf(m: HopUIMessage): string {
     .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
     .map((p) => p.text)
     .join('')
-}
-
-function lastUserText(messages: HopUIMessage[]): string {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i].role === 'user') return textOf(messages[i])
-  }
-  return ''
 }
 
 // Pre-token thinking state inside an assistant turn — the flying bunny + a quiet
@@ -417,7 +530,7 @@ function ErrorTurn({ onRetry }: { onRetry: () => void }) {
       <MessageContent>
         <div className="flex flex-col items-start gap-2.5 rounded-[14px] border border-border bg-paper p-4">
           <p className="text-[14px] leading-[1.6] text-text2">
-            hop couldn&apos;t reach its travel brain just then. Give it another go.
+            hop couldn&apos;t reach its concierge just then. Give it another go.
           </p>
           <button
             type="button"
@@ -477,6 +590,7 @@ function Landing({
       onChip={onStarter}
       density="full"
       signedIn={signedIn}
+      needsPrograms={signedIn && !totalPoints}
       submitDisabled={status !== 'ready'}
       autoFocus
       photos={tiles}

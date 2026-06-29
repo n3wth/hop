@@ -1,6 +1,8 @@
 'use client'
 
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
+import Link from 'next/link'
 import Icon from './Icon'
 import FlyingBunny from './FlyingBunny'
 import AccountMenu from './AccountMenu'
@@ -34,9 +36,9 @@ const DUR = '280ms'
 const LogoLockup = memo(function LogoLockup() {
   // Icon only — the bunny stands alone as the mark. Links to the home page.
   return (
-    <a href="/" aria-label="hop — home" className="flex items-center">
+    <Link href="/" aria-label="hop — home" className="flex items-center">
       <FlyingBunny size={41} carve="var(--color-bg)" />
-    </a>
+    </Link>
   )
 })
 
@@ -47,6 +49,80 @@ function compactPoints(n: number): string {
   return String(n)
 }
 
+// YYYY-MM-DD for `today + days`. Seeded search dates are computed RELATIVE to
+// today so a default never silently goes stale (a hardcoded past date would
+// render an un-searchable trip).
+function isoOffset(days: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
+// One sheet controller for both mobile overlays (search + menu). When open it:
+// locks body scroll, moves focus into the dialog, traps Tab within it, closes
+// on Escape, and closes on resize to md (where the trigger/sheet vanish — a
+// stranded sheet would swallow nav clicks). Returns the dialog ref to attach.
+function useSheet(open: boolean, close: () => void) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+
+    // Close immediately (and bail) if we're already at desktop.
+    const mq = window.matchMedia('(min-width: 768px)')
+    if (mq.matches) {
+      close()
+      return
+    }
+
+    const node = ref.current
+
+    // Lock background scroll while the full-viewport sheet is up.
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    // Move focus into the dialog (first focusable, else the dialog itself).
+    const focusables = node?.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    )
+    const first = focusables?.[0]
+    ;(first ?? node)?.focus()
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        close()
+        return
+      }
+      if (e.key !== 'Tab' || !node) return
+      // Trap Tab within the dialog's focusable set.
+      const items = node.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      )
+      if (items.length === 0) return
+      const firstEl = items[0]
+      const lastEl = items[items.length - 1]
+      const active = document.activeElement
+      if (e.shiftKey && active === firstEl) {
+        e.preventDefault()
+        lastEl.focus()
+      } else if (!e.shiftKey && active === lastEl) {
+        e.preventDefault()
+        firstEl.focus()
+      }
+    }
+
+    mq.addEventListener('change', close)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prevOverflow
+      mq.removeEventListener('change', close)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open, close])
+
+  return ref
+}
+
 // Scroll-aware top bar. The header SHRINKS in height on scroll (76→56px) and the
 // logo scales down, but the search stays full size and fully editable. Frosted
 // backdrop + hairline appear only once scrolled. Degrades to expanded with no JS.
@@ -54,16 +130,23 @@ export default function TopNav({
   fromCode = 'SFO',
   toCode = 'LAX',
   dates = 'Jul 9 – 12',
-  depart = '2026-07-09',
-  ret = '2026-07-12',
+  depart,
+  ret,
   adults = 1,
   user = null,
   pointsTotal,
   hideSearch = false,
 }: TopNavProps) {
+  const pathname = usePathname()
+
+  // Default seeded dates are relative to today (depart ≈ +10d, return ≈ +3d
+  // after) so the header search never opens onto a stale, un-searchable trip.
+  const seedDepart = depart ?? isoOffset(10)
+  const seedRet = ret ?? isoOffset(13)
+
   const initial: SearchState = useMemo(
-    () => ({ from: fromCode, to: toCode, depart, ret, adults, oneWay: !ret }),
-    [fromCode, toCode, depart, ret, adults],
+    () => ({ from: fromCode, to: toCode, depart: seedDepart, ret: seedRet, adults, oneWay: !seedRet }),
+    [fromCode, toCode, seedDepart, seedRet, adults],
   )
 
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -86,74 +169,19 @@ export default function TopNav({
     return () => io.disconnect()
   }, [])
 
-  // The mobile search sheet is a full-viewport fixed z-[70] layer. It must never
-  // outlive the mobile context: once the viewport reaches md (where the sheet is
-  // display:none and the pill that opens it disappears) a stuck-open sheet would
-  // sit invisibly over the header and swallow every nav click. Close it on any
-  // resize to desktop, and on Escape, so it can never get stranded over the nav.
-  useEffect(() => {
-    if (!mobileOpen) return
-    const mq = window.matchMedia('(min-width: 768px)')
-    const close = () => setMobileOpen(false)
-    if (mq.matches) {
-      close()
-      return
-    }
-    mq.addEventListener('change', close)
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => {
-      mq.removeEventListener('change', close)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [mobileOpen])
+  // Both mobile sheets share one controller: scroll-lock + focus-into + Tab-trap
+  // + Esc + close-on-resize-to-md (a stranded full-viewport sheet would swallow
+  // nav clicks). The returned ref is attached to each dialog.
+  const searchSheetRef = useSheet(mobileOpen, () => setMobileOpen(false))
+  const menuSheetRef = useSheet(menuOpen, () => setMenuOpen(false))
 
-  // The mobile search sheet is a full-viewport fixed z-[70] layer. It must never
-  // outlive the mobile context: once the viewport reaches md (where the sheet is
-  // display:none and the pill that opens it disappears) a stuck-open sheet would
-  // sit invisibly over the header and swallow every nav click. Close it on any
-  // resize to desktop, and on Escape, so it can never get stranded.
-  useEffect(() => {
-    if (!mobileOpen) return
-    const mq = window.matchMedia('(min-width: 768px)')
-    const close = () => setMobileOpen(false)
-    if (mq.matches) {
-      close()
-      return
-    }
-    mq.addEventListener('change', close)
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => {
-      mq.removeEventListener('change', close)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [mobileOpen])
+  // returnTo on the sign-in links: after auth, Auth0 lands the user back where
+  // they were rather than dumping them on the home page.
+  const returnTo = `?returnTo=${encodeURIComponent(pathname || '/')}`
+  const signInHref = `/auth/login${returnTo}`
 
-  // Same stranding guard as the search sheet: close the menu on resize to md (its
-  // trigger is md:hidden) and on Escape, so it can never sit invisibly over the nav.
-  useEffect(() => {
-    if (!menuOpen) return
-    const mq = window.matchMedia('(min-width: 768px)')
-    const close = () => setMenuOpen(false)
-    if (mq.matches) {
-      close()
-      return
-    }
-    mq.addEventListener('change', close)
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => {
-      mq.removeEventListener('change', close)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [menuOpen])
+  // Active-route helper for aria-current on the desktop/mobile nav links.
+  const isActive = (href: string) => pathname === href
 
   const c = scrolled // collapsed
 
@@ -189,15 +217,24 @@ export default function TopNav({
           {hideSearch ? (
             <>
               <nav className="-ml-4 hidden items-center gap-1 md:flex sm:-ml-5 lg:-ml-7">
-                <a href="/search" className="rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hover:text-text">
-                  Search
-                </a>
-                <a href="/deals" className="rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hover:text-text">
-                  Deals
-                </a>
-                <a href="/ask" className="rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hover:text-text">
-                  Ask
-                </a>
+                {[
+                  { href: '/search', label: 'Search' },
+                  { href: '/deals', label: 'Deals' },
+                  { href: '/ask', label: 'Ask' },
+                ].map((l) => (
+                  <a
+                    key={l.href}
+                    href={l.href}
+                    aria-current={isActive(l.href) ? 'page' : undefined}
+                    className={
+                      isActive(l.href)
+                        ? 'rounded-full bg-sunk px-3.5 py-2 text-[14px] font-semibold text-text'
+                        : 'rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hover:text-text'
+                    }
+                  >
+                    {l.label}
+                  </a>
+                ))}
               </nav>
               <div className="flex-1" />
               {/* MOBILE affordance — on hideSearch pages the nav links (md:flex)
@@ -264,7 +301,7 @@ export default function TopNav({
               </div>
             ) : (
               <a
-                href="/auth/login"
+                href={signInHref}
                 className="rounded-full border border-border bg-surface px-5 py-2.5 text-[14px] font-semibold text-text transition-colors hover:bg-sunk"
               >
                 Sign in
@@ -277,9 +314,11 @@ export default function TopNav({
       {/* MOBILE expanded search — solid sheet (no translucency), opens from the pill */}
       {mobileOpen && (
         <div
+          ref={searchSheetRef}
           role="dialog"
           aria-modal="true"
           aria-label="Edit search"
+          tabIndex={-1}
           className="fixed inset-0 z-[70] flex flex-col bg-bg md:hidden"
         >
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -290,7 +329,7 @@ export default function TopNav({
               onClick={() => setMobileOpen(false)}
               className="grid h-9 w-9 place-items-center rounded-full text-text2 hover:bg-sunk"
             >
-              <span className="text-[22px] leading-none">×</span>
+              <Icon name="close" size={20} />
             </button>
           </div>
           <div className="flex-1 overflow-auto p-4">
@@ -307,9 +346,11 @@ export default function TopNav({
           always reachable at 390px (the desktop nav/account are hidden below md/sm). */}
       {menuOpen && (
         <div
+          ref={menuSheetRef}
           role="dialog"
           aria-modal="true"
           aria-label="Menu"
+          tabIndex={-1}
           className="fixed inset-0 z-[70] flex flex-col bg-bg md:hidden"
         >
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -320,19 +361,29 @@ export default function TopNav({
               onClick={() => setMenuOpen(false)}
               className="grid h-9 w-9 place-items-center rounded-full text-text2 hover:bg-sunk"
             >
-              <span className="text-[22px] leading-none">×</span>
+              <Icon name="close" size={20} />
             </button>
           </div>
           <nav className="flex flex-col gap-1 p-4">
-            <a href="/search" onClick={() => setMenuOpen(false)} className="rounded-[12px] px-4 py-3 text-[16px] font-semibold text-text transition-colors hover:bg-sunk">
-              Search
-            </a>
-            <a href="/deals" onClick={() => setMenuOpen(false)} className="rounded-[12px] px-4 py-3 text-[16px] font-semibold text-text transition-colors hover:bg-sunk">
-              Deals
-            </a>
-            <a href="/ask" onClick={() => setMenuOpen(false)} className="rounded-[12px] px-4 py-3 text-[16px] font-semibold text-text transition-colors hover:bg-sunk">
-              Ask
-            </a>
+            {[
+              { href: '/search', label: 'Search' },
+              { href: '/deals', label: 'Deals' },
+              { href: '/ask', label: 'Ask' },
+            ].map((l) => (
+              <a
+                key={l.href}
+                href={l.href}
+                aria-current={isActive(l.href) ? 'page' : undefined}
+                onClick={() => setMenuOpen(false)}
+                className={
+                  isActive(l.href)
+                    ? 'rounded-[12px] bg-sunk px-4 py-3 text-[16px] font-semibold text-text'
+                    : 'rounded-[12px] px-4 py-3 text-[16px] font-semibold text-text transition-colors hover:bg-sunk'
+                }
+              >
+                {l.label}
+              </a>
+            ))}
           </nav>
           <div className="mt-auto border-t border-border p-4">
             {user ? (
@@ -340,7 +391,7 @@ export default function TopNav({
                 Your account
               </a>
             ) : (
-              <a href="/auth/login" className="flex items-center justify-center rounded-full bg-brand px-5 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep">
+              <a href={signInHref} className="flex items-center justify-center rounded-full bg-brand px-5 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep">
                 Sign in
               </a>
             )}

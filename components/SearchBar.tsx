@@ -98,6 +98,11 @@ function AirportField({
   const [active, setActive] = useState(0)
   const ref = usePopover(open, () => setOpen(false))
   const listId = useId()
+  // Stable base id for the option elements so aria-activedescendant can point at
+  // the highlighted row (the focus stays on the input — this is the ARIA combobox
+  // pattern). Each option's id is `${optBaseId}-${index}`.
+  const optBaseId = useId()
+  const listRef = useRef<HTMLUListElement>(null)
 
   // When closed, show the selected city; when open, show what's being typed.
   const display = open ? query : cityForCode(code)
@@ -109,6 +114,14 @@ function AirportField({
         .slice(0, 6),
     [open, query, excludeCode],
   )
+
+  // Keep the active option scrolled into view as the user arrows through (the
+  // list can overflow its max-height). Runs after the active index changes.
+  useEffect(() => {
+    if (!open) return
+    const el = listRef.current?.querySelector<HTMLElement>(`#${CSS.escape(`${optBaseId}-${active}`)}`)
+    el?.scrollIntoView({ block: 'nearest' })
+  }, [active, open, optBaseId])
 
   function choose(c: string) {
     onSelect(c)
@@ -133,6 +146,10 @@ function AirportField({
         aria-label={label}
         aria-expanded={open}
         aria-controls={listId}
+        aria-autocomplete="list"
+        aria-activedescendant={
+          open && results.length > 0 ? `${optBaseId}-${active}` : undefined
+        }
         autoComplete="off"
         onFocus={() => {
           setOpen(true)
@@ -164,14 +181,17 @@ function AirportField({
       />
       {open && results.length > 0 && (
         <ul
+          ref={listRef}
           id={listId}
           role="listbox"
-          className="absolute left-0 top-[calc(100%+10px)] z-[80] max-h-[280px] w-[260px] overflow-auto rounded-xl border border-border bg-surface py-1 shadow-[0_12px_32px_-8px_rgba(20,32,31,0.22)]"
+          aria-label={label}
+          className="absolute left-0 top-[calc(100%+10px)] z-[80] max-h-[280px] w-[260px] overflow-auto rounded-xl border border-border bg-surface py-1"
         >
           {results.map((a, i) => (
-            <li key={a.code} role="option" aria-selected={i === active}>
+            <li key={a.code} id={`${optBaseId}-${i}`} role="option" aria-selected={i === active}>
               <button
                 type="button"
+                tabIndex={-1}
                 onMouseEnter={() => setActive(i)}
                 onMouseDown={(e) => {
                   e.preventDefault()
@@ -241,15 +261,20 @@ function MonthGrid({
   const sameDay = (a: Date | null, b: Date | null) =>
     !!a && !!b && a.getTime() === b.getTime()
 
+  const monthLabel = `${MONTHS[month]} ${year}`
+
   return (
-    <div className="w-[224px]">
-      <div className="mb-2 text-center text-[13px] font-semibold text-text">
-        {MONTHS[month]} {year}
+    <div className="w-[224px]" role="grid" aria-label={monthLabel}>
+      <div className="mb-2 text-center text-[13px] font-semibold text-text" aria-hidden>
+        {monthLabel}
       </div>
       <div className="grid grid-cols-7 gap-y-1">
+        {/* Single-letter weekday row is decorative — the day buttons carry the
+            full date in their aria-label, so hide this from assistive tech. */}
         {WEEKDAYS.map((w, i) => (
           <div
             key={i}
+            aria-hidden
             className="grid h-6 place-items-center text-[10px] font-semibold uppercase text-text3"
           >
             {w}
@@ -263,11 +288,19 @@ function MonthGrid({
           const inRange =
             depart && ret && d.getTime() > depart.getTime() && d.getTime() < ret.getTime()
           const selected = isStart || isEnd
+          // Full, screen-reader-friendly date — "Wednesday, July 9, 2026".
+          const fullDate = d.toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+          })
           return (
-            <div key={i} className="grid place-items-center">
+            <div key={i} className="grid place-items-center" role="gridcell" aria-selected={selected}>
               <button
                 type="button"
                 disabled={disabled}
+                aria-label={fullDate}
                 onClick={() => onPick(d)}
                 className={`grid h-8 w-8 cursor-pointer place-items-center rounded-full text-[12.5px] font-medium transition-colors ${
                   disabled
@@ -308,6 +341,11 @@ function CalendarPop({ depart, ret, oneWay, onOneWayChange, onChange, children }
     })
   }
 
+  // Don't let the user page back before the current month — those days are all
+  // disabled anyway, so "Previous" there is a dead control.
+  const atFirstMonth =
+    view.year === today.getFullYear() && view.month === today.getMonth()
+
   function pick(d: Date) {
     // One way → a single date pick is the whole trip; never set a return.
     if (oneWay) {
@@ -339,8 +377,9 @@ function CalendarPop({ depart, ret, oneWay, onOneWayChange, onChange, children }
             <button
               type="button"
               aria-label="Previous month"
+              disabled={atFirstMonth}
               onClick={() => shift(-1)}
-              className="grid h-7 w-7 place-items-center rounded-full text-text2 hover:bg-sunk"
+              className="grid h-7 w-7 place-items-center rounded-full text-text2 enabled:hover:bg-sunk disabled:cursor-not-allowed disabled:text-text3/40"
             >
               <span className="-scale-x-100">
                 <Icon name="expand_more" size={18} className="-rotate-90" />
@@ -355,6 +394,8 @@ function CalendarPop({ depart, ret, oneWay, onOneWayChange, onChange, children }
               <Icon name="expand_more" size={18} className="-rotate-90" />
             </button>
           </div>
+          {/* Two months side-by-side on wider viewports; a single month on
+              mobile so the popover fits a phone without horizontal scroll. */}
           <div className="flex gap-5">
             <MonthGrid
               year={view.year}
@@ -364,14 +405,16 @@ function CalendarPop({ depart, ret, oneWay, onOneWayChange, onChange, children }
               today={today}
               onPick={pick}
             />
-            <MonthGrid
-              year={next.getFullYear()}
-              month={next.getMonth()}
-              depart={departD}
-              ret={retD}
-              today={today}
-              onPick={pick}
-            />
+            <div className="hidden sm:block">
+              <MonthGrid
+                year={next.getFullYear()}
+                month={next.getMonth()}
+                depart={departD}
+                ret={retD}
+                today={today}
+                onPick={pick}
+              />
+            </div>
           </div>
           <div className="mt-3 flex items-center justify-between border-t border-hair pt-3 text-[12px] text-text3">
             <span>
@@ -714,7 +757,7 @@ export function SearchForm({
         paddingBottom: 10,
         background: scrolled ? 'transparent' : 'var(--color-surface)',
         borderColor: scrolled ? 'transparent' : 'var(--color-border)',
-        transition: 'background 280ms cubic-bezier(.2,0,0,1), border-color 280ms cubic-bezier(.2,0,0,1)',
+        transition: 'background 280ms var(--ease-premium), border-color 280ms var(--ease-premium)',
       }}
     >
       <AirportField
@@ -722,7 +765,7 @@ export function SearchForm({
         code={s.from}
         onSelect={pickFrom}
         excludeCode={s.to}
-        inputClassName="w-[112px] bg-transparent text-[15px] font-semibold text-text outline-none"
+        inputClassName="w-[132px] bg-transparent text-[15px] font-semibold text-text outline-none"
       />
       <button
         type="button"
@@ -737,7 +780,7 @@ export function SearchForm({
         code={s.to}
         onSelect={pickTo}
         excludeCode={s.from}
-        inputClassName="w-[112px] bg-transparent text-[15px] font-semibold text-text outline-none"
+        inputClassName="w-[132px] bg-transparent text-[15px] font-semibold text-text outline-none"
       />
 
       <span className="h-[26px] w-px flex-shrink-0 bg-border" />
@@ -800,7 +843,7 @@ export function SearchForm({
       {error && (
         <p
           role="alert"
-          className="absolute left-0 top-[calc(100%+6px)] z-[55] whitespace-nowrap rounded-lg border border-border bg-surface px-3 py-1.5 text-[12px] font-medium text-weak"
+          className="absolute left-0 top-[calc(100%+6px)] z-[55] max-w-[280px] rounded-lg border border-border bg-surface px-3 py-1.5 text-[12px] font-medium leading-snug text-weak"
         >
           {error}
         </p>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import type { StandingOrder } from '@/lib/standing-orders-model'
 import type { StandingOrderAlert } from '@/lib/standing-order-alerts'
 import {
@@ -45,6 +45,29 @@ export default function StandingOrders({
       <AlertsList alerts={alerts} unseen={unseen} />
     </div>
   )
+}
+
+// Two-step inline confirm for destructive actions — no modal (flat design). First
+// click arms ("Confirm?"), second click within the window runs it; auto-disarms.
+function useConfirm(timeoutMs = 4000) {
+  const [armed, setArmed] = useState(false)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current)
+    },
+    [],
+  )
+  function arm() {
+    setArmed(true)
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => setArmed(false), timeoutMs)
+  }
+  function disarm() {
+    if (timer.current) clearTimeout(timer.current)
+    setArmed(false)
+  }
+  return { armed, arm, disarm }
 }
 
 // --- NL composer ------------------------------------------------------------
@@ -117,8 +140,16 @@ function WatchComposer() {
               {!pending ? <Icon name="notifications" size={16} /> : null}
             </button>
           </div>
-          {error ? <p className="mt-1.5 text-[12.5px] font-medium text-weak">{error}</p> : null}
-          {note ? <p className="mt-1.5 text-[12.5px] font-medium text-brand">{note}</p> : null}
+          {error ? (
+            <p role="alert" className="mt-1.5 text-[12.5px] font-medium text-weak">
+              {error}
+            </p>
+          ) : null}
+          {note ? (
+            <p role="status" className="mt-1.5 text-[12.5px] font-medium text-brand">
+              {note}
+            </p>
+          ) : null}
         </div>
       </div>
     </section>
@@ -157,12 +188,16 @@ function WatchList({ orders }: { orders: StandingOrder[] }) {
 
 function WatchRow({ order, first }: { order: StandingOrder; first: boolean }) {
   const router = useRouter()
-  const [pending, start] = useTransition()
+  // Per-row pending isolation: toggle and remove run on separate transitions, so
+  // only the clicked button relabels.
+  const [toggling, startToggle] = useTransition()
+  const [removing, startRemove] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const confirm = useConfirm()
 
   function toggle() {
     setError(null)
-    start(async () => {
+    startToggle(async () => {
       const res = await pauseWatch(order.id, !order.active)
       if (res.ok) router.refresh()
       else setError(res.error ?? 'Could not update')
@@ -170,7 +205,8 @@ function WatchRow({ order, first }: { order: StandingOrder; first: boolean }) {
   }
   function remove() {
     setError(null)
-    start(async () => {
+    confirm.disarm()
+    startRemove(async () => {
       const res = await removeWatch(order.id)
       if (res.ok) router.refresh()
       else setError(res.error ?? 'Could not remove')
@@ -209,27 +245,53 @@ function WatchRow({ order, first }: { order: StandingOrder; first: boolean }) {
         <div className="mt-[2px] truncate text-[12.5px] text-text3">
           {dates} · {meta}
         </div>
-        {error ? <p className="mt-1 text-[12px] font-medium text-weak">{error}</p> : null}
+        {error ? (
+          <p role="alert" className="mt-1 text-[12px] font-medium text-weak">
+            {error}
+          </p>
+        ) : null}
       </div>
       <span className="flex items-center gap-0.5 border-l border-hair pl-2 sm:pl-3">
         <button
           type="button"
           onClick={toggle}
-          disabled={pending}
+          disabled={toggling || removing}
           aria-label={order.active ? `Pause ${route}` : `Resume ${route}`}
           className="rounded-[8px] px-2 py-1.5 text-[12.5px] font-semibold text-text3 transition-colors hover:text-brand disabled:opacity-60"
         >
-          {order.active ? 'Pause' : 'Resume'}
+          {toggling ? '…' : order.active ? 'Pause' : 'Resume'}
         </button>
-        <button
-          type="button"
-          onClick={remove}
-          disabled={pending}
-          aria-label={`Remove ${route}`}
-          className="rounded-[8px] px-2 py-1.5 text-[12.5px] font-semibold text-text3 transition-colors hover:text-weak disabled:opacity-60"
-        >
-          {pending ? '…' : 'Remove'}
-        </button>
+        {confirm.armed ? (
+          <>
+            <button
+              type="button"
+              onClick={remove}
+              disabled={removing}
+              aria-label={`Confirm remove ${route}`}
+              className="rounded-[8px] px-2 py-1.5 text-[12.5px] font-semibold text-weak transition-colors disabled:opacity-60"
+            >
+              {removing ? '…' : 'Confirm?'}
+            </button>
+            <button
+              type="button"
+              onClick={confirm.disarm}
+              disabled={removing}
+              className="rounded-[8px] px-2 py-1.5 text-[12.5px] font-semibold text-text3 transition-colors hover:text-text disabled:opacity-60"
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={confirm.arm}
+            disabled={toggling || removing}
+            aria-label={`Remove ${route}`}
+            className="rounded-[8px] px-2 py-1.5 text-[12.5px] font-semibold text-text3 transition-colors hover:text-weak disabled:opacity-60"
+          >
+            Remove
+          </button>
+        )}
       </span>
     </li>
   )

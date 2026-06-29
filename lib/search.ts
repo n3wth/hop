@@ -15,6 +15,7 @@ import { cpp, tier, rankOptions } from '@/lib/cpp'
 import { applyPrefs, type TravelPrefs } from '@/lib/prefs-model'
 import { transfersTo, effectiveBalanceFor } from '@/lib/transfers'
 import { cashBookingUrl, pointsBookingUrl } from '@/lib/booking'
+import { isCheckoutEnabled } from '@/lib/env'
 import { searchCash } from '@/lib/duffel'
 import { searchAwards } from '@/lib/seatsaero'
 import { getBalances } from '@/lib/awardwallet'
@@ -110,9 +111,11 @@ export async function assembleSearch(
 
   const cashUrl = cashBookingUrl(params)
 
-  // Native in-app checkout when enabled (HOP_ENABLE_CHECKOUT + a Duffel offer id
-  // on the option). Otherwise cash deep-links out to the affiliate (Kiwi).
-  const checkoutEnabled = /^(1|true|yes)$/i.test(process.env.HOP_ENABLE_CHECKOUT ?? '')
+  // Native in-app checkout when enabled (the flag AND a Duffel test key, via
+  // isCheckoutEnabled(), plus a Duffel offer id on the option). /book is only
+  // linked when it can actually transact — otherwise cash deep-links out to the
+  // affiliate (Kiwi).
+  const checkoutEnabled = isCheckoutEnabled()
   const cashBookUrl = (o: FlightOption): string => {
     if (checkoutEnabled && typeof o.id === 'string' && o.id.startsWith('off_')) {
       // Carry the route too: Duffel offers expire within minutes, so /book may

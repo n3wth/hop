@@ -20,10 +20,10 @@
  *  swaps the generic points line for the member's own ("my Amex points"). */
 export function conciergeChips(signedIn: boolean): string[] {
   return [
-    'Somewhere warm for a long weekend',
+    'Where can I go with my points?',
     'Cheapest way to Tokyo',
     signedIn ? 'Best use of my Amex points' : 'Best use of my points',
-    'Off the beaten path',
+    'Somewhere warm for a long weekend',
   ]
 }
 
@@ -54,12 +54,16 @@ export function conciergeHeroCopy(opts: {
   // Heading — the canonical "Where to next?", warmed with a name when we have one.
   const heading = first ? `Where to next, ${first}?` : 'Where to next?'
 
-  // Sub — one promise, phrased for what we know. Grounded in the member's real
-  // points when present; the marketing promise otherwise. Same sentence shape
-  // either way so the two surfaces never read as different products.
+  // Sub — one promise, phrased for what we KNOW. When we have the member's real
+  // points we ground the line in them. Otherwise we DON'T claim to know any
+  // balances (we don't yet) — we describe what hop does and, signed-in, invite
+  // linking. Same sentence shape so the two surfaces never read as different
+  // products.
   const sub = totalPoints
-    ? `Tell hop a vibe, a budget, or a city you can't stop thinking about. With ~${totalPoints.toLocaleString('en-US')} points, hop reads award space and cash for the same trip and tells you the verdict — miles or money, which one actually wins.`
-    : "Tell hop a vibe, a budget, or a city you can't stop thinking about. hop reads award space and cash for the same trip, knows your point balances, and tells you the verdict — miles or money, which one actually wins."
+    ? `Tell hop a vibe, a budget, or a city you can't stop thinking about. With ~${totalPoints.toLocaleString('en-US')} points, hop reads award space and cash for the same trip and tells you the verdict — points or cash, which one actually wins.`
+    : signedIn
+      ? "Tell hop a vibe, a budget, or a city you can't stop thinking about. hop reads award space and cash for the same trip and tells you the verdict — points or cash, which one wins. Link your programs and it'll price every answer against your real balances."
+      : "Tell hop a vibe, a budget, or a city you can't stop thinking about. hop reads award space and cash for the same trip and tells you the verdict — points or cash, which one actually wins."
 
   return {
     eyebrow: CONCIERGE_EYEBROW,

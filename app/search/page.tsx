@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import type { SearchParams } from '@/lib/types'
 import { assembleSearch } from '@/lib/search'
 import { getUserBalances } from '@/lib/accounts'
@@ -5,6 +6,7 @@ import { getPrefs } from '@/lib/prefs'
 import { cityForCode } from '@/lib/airports'
 import { destinationImage } from '@/lib/images'
 import { auth0 } from '@/lib/auth0'
+import { SITE_URL } from '@/lib/seo'
 import AppShell from '@/components/AppShell'
 import RouteBar from '@/components/RouteBar'
 import VerdictRail from '@/components/VerdictRail'
@@ -91,6 +93,56 @@ function fmtRange(depart: string, ret?: string): string {
   return `${fmtDay(depart)} – ${fmtDay(ret)}`
 }
 
+// Per-route metadata. Title is "${from} → ${to}" — the root layout's template
+// ('%s · hop') appends the suffix, so we do NOT add '· hop' here. The canonical
+// points at the CLEAN /search path rebuilt from the parsed params (not the raw,
+// possibly-messy query string), so every variant of the same trip dedupes to one
+// URL. The description is verdict-flavored without running the engine.
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}): Promise<Metadata> {
+  const p = parseParams(await searchParams)
+  const fromCity = cityForCode(p.from)
+  const toCity = cityForCode(p.to)
+  const dates = fmtRange(p.depart, p.return)
+
+  const title = `${p.from} → ${p.to}`
+  const description = `Points or cash for ${fromCity} (${p.from}) → ${toCity} (${p.to}), ${dates} — hop reads live award space and cash fares and gives you the verdict, with the value per point.`
+
+  // Clean canonical query: stable key order, only the fields that define the
+  // trip, return omitted for one-way.
+  const qs = new URLSearchParams({
+    from: p.from,
+    to: p.to,
+    depart: p.depart,
+    adults: String(p.adults),
+  })
+  if (p.return) qs.set('return', p.return)
+  const canonical = `/search?${qs.toString()}`
+
+  const cardTitle = `${title} · hop`
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      type: 'website',
+      siteName: 'hop',
+      url: `${SITE_URL}${canonical}`,
+      title: cardTitle,
+      description,
+      locale: 'en_US',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: cardTitle,
+      description,
+    },
+  }
+}
+
 export default async function Search({
   searchParams,
 }: {
@@ -161,7 +213,7 @@ export default async function Search({
           reads as a premium spread, not edge-to-edge sprawl at 1920+. */}
       <div className="mx-auto max-w-[1440px] 2xl:max-w-[1560px]">
         {/* plain trip context — route + facts, not fake masthead metadata */}
-        <RouteBar result={result} />
+        <RouteBar result={result} hasRealBalances={hasRealBalances} />
 
         {/* the verdict hero */}
         <VerdictRail result={result} destPhoto={destPhoto} hasRealBalances={hasRealBalances} />

@@ -26,3 +26,44 @@ export const TAGLINE = 'Your personal travel agent'
 export const TEAL = '#0d6e6e'
 export const CREAM = '#f3f1ec'
 export const INK = '#19545d'
+
+// Per-page metadata helper. Next 16 merges metadata SHALLOWLY across
+// layout → page, so a page that sets `openGraph` (or `alternates`) without
+// restating title/description/url inherits the root '/' canonical and the
+// homepage social card. This composes a complete, self-contained block per
+// sub-page: a route-specific canonical, plus an OG/Twitter card that carries
+// the page's own title + description. `title` is the bare child title — the
+// root layout's `template` ('%s · hop') appends the suffix, so do NOT add
+// '· hop' here. Exported for the route lanes to use.
+export function pageMeta({
+  title,
+  description,
+  path,
+}: {
+  title: string
+  description: string
+  path: string
+}) {
+  const canonical = path.startsWith('/') ? path : `/${path}`
+  const url = `${SITE_URL}${canonical === '/' ? '' : canonical}`
+  // OG/Twitter want the fully-resolved title (template doesn't apply to them).
+  const cardTitle = `${title} · ${SITE_NAME}`
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      type: 'website' as const,
+      siteName: SITE_NAME,
+      url,
+      title: cardTitle,
+      description,
+      locale: 'en_US',
+    },
+    twitter: {
+      card: 'summary_large_image' as const,
+      title: cardTitle,
+      description,
+    },
+  }
+}

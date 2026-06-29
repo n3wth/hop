@@ -1,12 +1,25 @@
+import type { Metadata } from 'next'
 import { auth0 } from '@/lib/auth0'
 import { mockBalances } from '@/lib/mock'
 import { getUserBalances } from '@/lib/accounts'
 import { getPrefs } from '@/lib/prefs'
+import { pageMeta } from '@/lib/seo'
 import AppShell from '@/components/AppShell'
 import Concierge, { type ConciergePhoto, type ConciergeInitialMessage } from '@/components/Concierge'
 import { destinations, topValue, imageQuery } from '@/lib/destinations'
 import { destinationImages } from '@/lib/images'
 import { getConversation } from '@/lib/conversations'
+
+// Self-contained metadata: Next 16 merges metadata shallowly across layout →
+// page, so we restate a route-specific canonical + OG/Twitter card (via the
+// shared pageMeta helper) rather than inherit the homepage social card. The
+// description states the verdict intent — points or cash, which one wins.
+export const metadata: Metadata = pageMeta({
+  title: 'Ask hop',
+  description:
+    'Tell hop a vibe, a budget, or a city. It reads award space and cash for the same trip and gives you the verdict — points or cash, which one wins.',
+  path: '/ask',
+})
 
 // /ask — hop's AI concierge. An immersive, app-like front door for "where should
 // I go with my points?". The Concierge panel owns the hero state (a warm focal

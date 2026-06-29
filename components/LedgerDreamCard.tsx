@@ -39,6 +39,9 @@ export default function LedgerDreamCard({
   const [blurb, setBlurb] = useState(dream.initialBlurb)
   const [index, setIndex] = useState(0)
   const [streaming, setStreaming] = useState(false)
+  // Announced to screen readers ONCE when a stream completes — the live blurb
+  // paragraph itself is not a live region (it would announce every token).
+  const [announce, setAnnounce] = useState('')
   // The card currently shown (updates after a successful "another" fetch so the
   // photo/proof swap together with the new blurb, never mid-stream).
   const [view, setView] = useState<DreamCardData>(dream)
@@ -51,6 +54,7 @@ export default function LedgerDreamCard({
     const ctrl = new AbortController()
     abortRef.current = ctrl
     setStreaming(true)
+    let text = ''
     try {
       const res = await fetch('/api/dream', {
         method: 'POST',
@@ -61,7 +65,6 @@ export default function LedgerDreamCard({
       if (!res.ok || !res.body) return
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
-      let text = ''
       let first = true
       for (;;) {
         const { done, value } = await reader.read()
@@ -80,7 +83,11 @@ export default function LedgerDreamCard({
     } catch {
       // aborted or network error — keep whatever is shown.
     } finally {
-      if (abortRef.current === ctrl) setStreaming(false)
+      if (abortRef.current === ctrl) {
+        setStreaming(false)
+        // Announce the completed narration once, now that it's settled.
+        if (text) setAnnounce(text)
+      }
     }
   }, [])
 
@@ -99,13 +106,17 @@ export default function LedgerDreamCard({
     const count = Math.max(1, variantCount)
     const next = (index + 1) % count
     setIndex(next)
+    // Immediate feedback on tap — show a "Dreaming…" state and flip the caret on
+    // before the network resolves, so the button never feels dead.
+    setStreaming(true)
+    setBlurb('Dreaming…')
     void (async () => {
       try {
         const res = await fetch(`/api/dream/card?index=${next}`, { method: 'GET' })
         if (res.ok) {
           const data = (await res.json()) as DreamCardData
           setView(data)
-          setBlurb(data.initialBlurb)
+          // narrate() will replace this once the first token streams in.
         }
       } catch {
         // keep the current card; narration below still re-fetches.
@@ -156,12 +167,12 @@ export default function LedgerDreamCard({
             <span
               className="absolute right-4 top-4 flex items-baseline gap-1 rounded-full px-3 py-1.5"
               style={{ background: 'var(--color-good-bg)' }}
-              title="cents per point — how hard each mile works here"
+              title="cents per point — how hard each point works here"
             >
               <span className="font-display text-[16px] font-semibold leading-none tabular-nums text-good">
                 {v.cpp.toFixed(1)}
               </span>
-              <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-good">cpp</span>
+              <span className="text-[10px] font-semibold tracking-[0.02em] text-good">¢/pt</span>
             </span>
           ) : null}
 
@@ -184,16 +195,22 @@ export default function LedgerDreamCard({
 
         {/* ── NARRATION + PROOF ───────────────────────────────────────────── */}
         <div className="flex flex-col p-5 sm:p-7 lg:p-8">
-          {/* AI narration — second-person, evocative, grounded in the engine. */}
-          <p
-            className="font-display text-[19px] leading-[1.4] tracking-[-0.01em] text-text sm:text-[22px]"
-            aria-live="polite"
-          >
+          {/* AI narration — second-person, evocative, grounded in the engine.
+              NOT a live region (it would announce every streamed token); the
+              completed text is announced once via the SR-only region below. */}
+          <p className="font-display text-[19px] leading-[1.4] tracking-[-0.01em] text-text sm:text-[22px]">
             {blurb}
             {streaming ? (
-              <span aria-hidden className="ml-0.5 inline-block h-[0.9em] w-[2px] translate-y-[1px] animate-pulse bg-brand align-middle" />
+              <span
+                aria-hidden
+                className="ml-0.5 inline-block h-[0.9em] w-[2px] translate-y-[1px] bg-brand align-middle motion-safe:animate-pulse"
+              />
             ) : null}
           </p>
+          {/* Announces the finished narration once it has settled. */}
+          <span className="sr-only" role="status" aria-live="polite">
+            {announce}
+          </span>
 
           {/* ── THE PROOF — how you afford it, straight from the engine ────── */}
           <div className="mt-6 rounded-[var(--radius)] border border-hair bg-sunk p-4 sm:p-5">

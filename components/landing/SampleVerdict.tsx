@@ -17,14 +17,17 @@ export default async function SampleVerdict() {
     >
       {/* LEFT — the verdict */}
       <div className="px-6 pb-8 pt-7 sm:px-10 lg:px-[44px] lg:pb-10 lg:pt-9">
-        <span className="mb-5 inline-flex items-center gap-2 border-b border-white/15 pb-3">
+        <span className="mb-5 inline-flex flex-wrap items-center gap-2 border-b border-white/15 pb-3">
+          <span className="rounded-full border border-white/25 px-2.5 py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-white/85">
+            Sample verdict
+          </span>
           <span className="rounded-full bg-[#0a5757] px-2.5 py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6ff0d2]">
             SFO → JFK
           </span>
         </span>
 
         <h3 className="font-display text-[26px] font-semibold leading-[1.06] tracking-[-0.02em] text-white sm:text-[32px] lg:text-[38px]">
-          Use your <span className="text-[#ffe7b0]">Alaska miles</span> and save
+          Use <span className="text-[#ffe7b0]">Alaska miles</span> and save
         </h3>
 
         <div className="mt-2 flex items-baseline gap-3">
@@ -36,16 +39,16 @@ export default async function SampleVerdict() {
           </span>
         </div>
 
-        <p className="mt-5 max-w-[44ch] text-[15.5px] leading-[1.55] text-[#c7ece5]">
+        <p className="mt-5 max-w-[44ch] text-[15.5px] leading-[1.55] text-hero-body">
           <b className="font-semibold text-white">25,000 miles</b> at{' '}
-          <b className="font-semibold text-white">2.1¢ each</b> — the best
-          redemption across your programs. Cash is{' '}
-          <b className="font-semibold text-white">$768</b>. You have the miles.
+          <b className="font-semibold text-white">2.1¢/pt</b> — the best
+          redemption in this example. Cash is{' '}
+          <b className="font-semibold text-white">$768</b>, so points win.
         </p>
 
         <div className="mt-7 flex flex-wrap gap-x-8 gap-y-4 border-t border-white/15 pt-6">
           <Stat label="You pay" value="25,000" unit="miles" />
-          <Stat label="Value" value="2.1¢" unit="/ mile" />
+          <Stat label="Value" value="2.1¢" unit="/ pt" />
           <Stat label="Cash price" value="$768" />
           <Stat label="You save" value="$243" accent />
         </div>
@@ -81,7 +84,7 @@ export default async function SampleVerdict() {
         )}
         <span className="absolute bottom-5 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.18em] text-white">
           <Icon name="check_circle" size={14} />
-          the smarter book
+          the verdict
         </span>
       </aside>
     </section>
@@ -101,7 +104,7 @@ function Stat({
 }) {
   return (
     <div>
-      <div className="mb-[5px] text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8fcabf]">
+      <div className="mb-[5px] text-[11px] font-semibold uppercase tracking-[0.16em] text-hero-label">
         {label}
       </div>
       <div

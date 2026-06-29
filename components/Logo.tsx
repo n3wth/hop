@@ -5,19 +5,28 @@ export interface LogoProps extends SVGProps<SVGSVGElement> {
   /** Color of the carved negative space — match the surface behind the logo.
       Defaults to the cream canvas so the mark sits seamlessly on the page. */
   carve?: string
+  /** Decorative mode: when the logo sits inside an already-labelled link (e.g.
+      a "hop — home" anchor), the SVG should be hidden from a11y tree so the
+      label isn't announced twice. Defaults to a labelled standalone mark. */
+  decorative?: boolean
 }
 
 // hop bunny mark — silhouette via currentColor, negative space carved in `carve`
 // (set it to whatever surface the logo sits on). viewBox per the locked asset.
-export default function Logo({ size = 52, className, carve = 'var(--color-bg)', ...rest }: LogoProps) {
+export default function Logo({
+  size = 52,
+  className,
+  carve = 'var(--color-bg)',
+  decorative = false,
+  ...rest
+}: LogoProps) {
   return (
     <svg
       viewBox="0 0 462 466"
       width={size}
       height={size}
       className={className}
-      aria-label="hop"
-      role="img"
+      {...(decorative ? { 'aria-hidden': true } : { 'aria-label': 'hop', role: 'img' })}
       {...rest}
     >
       <path

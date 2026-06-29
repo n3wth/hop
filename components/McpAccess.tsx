@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import Icon from './Icon'
 import type { ApiTokenInfo } from '@/lib/api-tokens'
 
@@ -24,7 +24,17 @@ const CLIENTS: { id: ClientId; label: string }[] = [
   { id: 'generic', label: 'Any MCP client' },
 ]
 
-function CopyButton({ value, label }: { value: string; label: string }) {
+function CopyButton({
+  value,
+  label,
+  onCopied,
+}: {
+  value: string
+  label: string
+  // Fired on a successful copy — lets the fresh-token panel record that the
+  // one-time secret has been captured.
+  onCopied?: () => void
+}) {
   const [copied, setCopied] = useState(false)
   return (
     <button
@@ -33,6 +43,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
         try {
           await navigator.clipboard.writeText(value)
           setCopied(true)
+          onCopied?.()
           setTimeout(() => setCopied(false), 1500)
         } catch {
           // Clipboard can fail (permissions); no-op, the value is still visible.
@@ -72,14 +83,46 @@ function ConfigBlock({
   )
 }
 
+// Two-step inline confirm for destructive actions — no modal (flat design). First
+// click arms ("Confirm?"), second click within the window runs it; auto-disarms.
+function useConfirm(timeoutMs = 4000) {
+  const [armedId, setArmedId] = useState<string | null>(null)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current)
+    },
+    [],
+  )
+  function arm(id: string) {
+    setArmedId(id)
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => setArmedId(null), timeoutMs)
+  }
+  function disarm() {
+    if (timer.current) clearTimeout(timer.current)
+    setArmedId(null)
+  }
+  return { armedId, arm, disarm }
+}
+
 export default function McpAccess({ initialTokens }: Props) {
   const [tokens, setTokens] = useState<ApiTokenInfo[]>(initialTokens)
   const [fresh, setFresh] = useState<string | null>(null) // plaintext shown once
+  // Whether the freshly minted token has been captured (copied) or dismissed.
+  // While a fresh token is uncopied, revoke/rename are locked so the user can't
+  // lose the one-time secret by navigating away from the panel.
+  const [freshCopied, setFreshCopied] = useState(false)
   const [client, setClient] = useState<ClientId>('claude-desktop')
   const [mintName, setMintName] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
+  const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const confirm = useConfirm()
+
+  // A fresh token is "unsecured" until the user copies or dismisses it.
+  const freshUnsecured = fresh !== null && !freshCopied
 
   // The MCP server URL is the streamable-HTTP endpoint on THIS origin. Computed
   // client-side so it's correct in dev, preview, and prod without env wiring.
@@ -92,52 +135,82 @@ export default function McpAccess({ initialTokens }: Props) {
 
   function mint() {
     const name = mintName.trim()
+    setError(null)
     startTransition(async () => {
-      const res = await fetch('/api/mcp-token', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name: name || 'Token' }),
-      })
-      const data = await res.json().catch(() => null)
-      if (data?.ok && data.token) {
-        setFresh(data.token as string)
-        setTokens((t) => [data.info as ApiTokenInfo, ...t])
-        setMintName('')
+      try {
+        const res = await fetch('/api/mcp-token', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ name: name || 'Token' }),
+        })
+        const data = await res.json().catch(() => null)
+        if (data?.ok && data.token) {
+          setFresh(data.token as string)
+          setFreshCopied(false)
+          setTokens((t) => [data.info as ApiTokenInfo, ...t])
+          setMintName('')
+        } else {
+          setError(data?.error ?? 'Could not mint a token. Try again.')
+        }
+      } catch {
+        setError('Could not reach the server. Try again.')
       }
     })
   }
 
   function revoke(id: string) {
+    // Never revoke while an uncopied fresh token is on screen.
+    if (freshUnsecured) return
+    setError(null)
+    confirm.disarm()
     startTransition(async () => {
-      const res = await fetch(`/api/mcp-token?id=${encodeURIComponent(id)}`, {
-        method: 'DELETE',
-      })
-      const data = await res.json().catch(() => null)
-      if (data?.ok) setTokens((t) => t.filter((x) => x.id !== id))
+      try {
+        const res = await fetch(`/api/mcp-token?id=${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+        })
+        const data = await res.json().catch(() => null)
+        if (data?.ok) setTokens((t) => t.filter((x) => x.id !== id))
+        else setError(data?.error ?? 'Could not revoke that token. Try again.')
+      } catch {
+        setError('Could not reach the server. Try again.')
+      }
     })
   }
 
   function startRename(t: ApiTokenInfo) {
+    if (freshUnsecured) return
     setEditingId(t.id)
     setEditName(t.name || '')
   }
 
   function saveRename(id: string) {
     const name = editName
+    setError(null)
     startTransition(async () => {
-      const res = await fetch('/api/mcp-token', {
-        method: 'PATCH',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ id, name }),
-      })
-      const data = await res.json().catch(() => null)
-      if (data?.ok && data.info) {
-        const info = data.info as ApiTokenInfo
-        setTokens((t) => t.map((x) => (x.id === id ? info : x)))
+      try {
+        const res = await fetch('/api/mcp-token', {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ id, name }),
+        })
+        const data = await res.json().catch(() => null)
+        if (data?.ok && data.info) {
+          const info = data.info as ApiTokenInfo
+          setTokens((t) => t.map((x) => (x.id === id ? info : x)))
+          setEditingId(null)
+          setEditName('')
+        } else {
+          setError(data?.error ?? 'Could not rename that token. Try again.')
+        }
+      } catch {
+        setError('Could not reach the server. Try again.')
       }
-      setEditingId(null)
-      setEditName('')
     })
+  }
+
+  function dismissFresh() {
+    setFresh(null)
+    setFreshCopied(false)
   }
 
   // Per-client snippet + copy payload, recomputed when the client or token change.
@@ -260,20 +333,48 @@ export default function McpAccess({ initialTokens }: Props) {
         copyValue={snippet.copyValue}
         copyLabel={snippet.copyLabel}
       />
+      {/* No token yet — the snippet carries a placeholder, so say so plainly. */}
+      {!fresh && tokens.length === 0 ? (
+        <p className="mt-2 text-[12px] leading-[1.5] text-text2">
+          This config uses a placeholder. Mint a token below and swap it in for{' '}
+          <code className="font-mono">&lt;your-hop-token&gt;</code> — without one the tools
+          run, but won&apos;t see your balances.
+        </p>
+      ) : null}
 
-      {/* freshly minted plaintext — shown once */}
+      {/* freshly minted plaintext — shown once. Sticky until copied or dismissed:
+          while uncopied it stays put and locks revoke/rename so the one-time
+          secret can't be lost. */}
       {fresh ? (
         <div className="mt-4 rounded-[12px] border border-brand-light bg-brand-light px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            <div className="text-[12px] font-semibold text-brand-deep">
-              Copy your token now — it won&apos;t be shown again.
+            <div role="status" className="text-[12px] font-semibold text-brand-deep">
+              {freshCopied
+                ? 'Token copied — store it now. It won’t be shown again.'
+                : 'Copy your token now — it won’t be shown again.'}
             </div>
-            <CopyButton value={fresh} label="Copy token" />
+            <div className="flex flex-shrink-0 items-center gap-1.5">
+              <CopyButton value={fresh} label="Copy token" onCopied={() => setFreshCopied(true)} />
+              <button
+                type="button"
+                onClick={dismissFresh}
+                className="inline-flex flex-shrink-0 items-center rounded-[10px] border border-border bg-surface px-3 py-1.5 text-[12.5px] font-semibold text-text2 transition-colors hover:text-text"
+              >
+                Dismiss
+              </button>
+            </div>
           </div>
           <code className="mt-2 block break-all font-mono text-[12.5px] text-brand-deep">
             {fresh}
           </code>
         </div>
+      ) : null}
+
+      {/* mint/revoke/rename failures — previously swallowed. */}
+      {error ? (
+        <p role="alert" className="mt-3 text-[12.5px] font-medium text-weak">
+          {error}
+        </p>
       ) : null}
 
       {/* mint — with a name */}
@@ -361,19 +462,42 @@ export default function McpAccess({ initialTokens }: Props) {
                   <button
                     type="button"
                     onClick={() => startRename(t)}
-                    disabled={pending}
-                    className="inline-flex items-center rounded-[10px] border border-border px-3 py-1.5 text-[12.5px] font-semibold text-text2 transition-colors hover:text-text disabled:opacity-60"
+                    disabled={pending || freshUnsecured}
+                    title={freshUnsecured ? 'Copy your new token first' : undefined}
+                    className="inline-flex items-center rounded-[10px] border border-border px-3 py-1.5 text-[12.5px] font-semibold text-text2 transition-colors hover:text-text disabled:opacity-50"
                   >
                     Rename
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => revoke(t.id)}
-                    disabled={pending}
-                    className="inline-flex items-center rounded-[10px] border border-border px-3 py-1.5 text-[12.5px] font-semibold text-text2 transition-colors hover:text-text disabled:opacity-60"
-                  >
-                    Revoke
-                  </button>
+                  {confirm.armedId === t.id ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => revoke(t.id)}
+                        disabled={pending}
+                        className="inline-flex items-center rounded-[10px] border border-weak px-3 py-1.5 text-[12.5px] font-semibold text-weak transition-colors disabled:opacity-60"
+                      >
+                        Confirm?
+                      </button>
+                      <button
+                        type="button"
+                        onClick={confirm.disarm}
+                        disabled={pending}
+                        className="inline-flex items-center rounded-[10px] border border-border px-3 py-1.5 text-[12.5px] font-semibold text-text2 transition-colors hover:text-text disabled:opacity-60"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => confirm.arm(t.id)}
+                      disabled={pending || freshUnsecured}
+                      title={freshUnsecured ? 'Copy your new token first' : undefined}
+                      className="inline-flex items-center rounded-[10px] border border-border px-3 py-1.5 text-[12.5px] font-semibold text-text2 transition-colors hover:text-weak disabled:opacity-50"
+                    >
+                      Revoke
+                    </button>
+                  )}
                 </div>
               )}
             </li>

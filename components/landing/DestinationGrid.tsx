@@ -1,7 +1,16 @@
 import Icon from '@/components/Icon'
+import { formatValue, tier } from '@/lib/cpp'
 import type { Destination } from '@/lib/destinations'
 import { computeCpp, imageQuery } from '@/lib/destinations'
 import type { DestImage } from '@/lib/images'
+
+// Map a value tier to its token chip colors. Same good/ok/weak language the
+// verdict uses, so a chip's color always means the same thing across surfaces.
+const TIER_CHIP: Record<ReturnType<typeof tier>, string> = {
+  green: 'bg-good-bg text-good',
+  amber: 'bg-ok-bg text-ok',
+  muted: 'bg-weak-bg text-weak',
+}
 
 // 37500 → "37.5k", 12500 → "12.5k". Compact award figure for the card chip.
 function compactMiles(n: number): string {
@@ -11,8 +20,9 @@ function compactMiles(n: number): string {
 }
 
 // A single wanderlust card: a real destination photo up top with the city + its
-// country flag overlaid, then the economics — "from X miles", a cpp chip, and the
-// program that books it well. Flat, warm, solid: no card shadow/lift; hover scales
+// country flag overlaid, then the economics — "from X miles", a ¢/pt value chip
+// (colored by tier()), and the program that books it well. Flat, warm, solid: no
+// card shadow/lift; hover scales
 // the IMAGE inside its clipped frame and tints the border. Links into a real
 // search seeded for that destination so the dream is one tap from the verdict.
 function DestinationCard({
@@ -106,8 +116,10 @@ function DestinationCard({
             <span className="ml-1 text-[12px] font-medium text-text3">miles</span>
           </span>
           {cppVal !== undefined ? (
-            <span className="rounded-full bg-good-bg px-2.5 py-1 text-[11.5px] font-semibold tabular-nums text-good">
-              {cppVal.toFixed(1)}¢ / mi
+            <span
+              className={`rounded-full px-2.5 py-1 text-[11.5px] font-semibold tabular-nums ${TIER_CHIP[tier(cppVal)]}`}
+            >
+              {formatValue(cppVal)}
             </span>
           ) : null}
         </div>

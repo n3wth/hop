@@ -4,11 +4,13 @@ import { getUserBalances } from '@/lib/accounts'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import LegalShell from '@/components/LegalShell'
+import { pageMeta } from '@/lib/seo'
 
-export const metadata = {
-  title: 'Privacy Policy · hop',
+export const metadata = pageMeta({
+  title: 'Privacy Policy',
   description: 'What data hop collects, how it is used, and the controls you have over it.',
-}
+  path: '/privacy',
+})
 
 export default async function PrivacyPage() {
   const session = await auth0.getSession()
@@ -34,13 +36,12 @@ export default async function PrivacyPage() {
         eyebrow="Legal"
         title="Privacy Policy"
         intro="This policy explains what data hop collects, why, who we share it with, and the controls you have."
-        draft
+        lastUpdated="June 29, 2026"
       >
         <h2>Who we are</h2>
         <p>
-          hop is operated by <strong>[BRACKETED: company legal name]</strong>. For privacy
-          questions, contact <a href="mailto:support@hop.n3wth.com">support@hop.n3wth.com</a>{' '}
-          <strong>[BRACKETED: confirm privacy / DPO contact email]</strong>.
+          hop is operated by <strong>hop Travel, Inc.</strong> For privacy questions, contact{' '}
+          <a href="mailto:privacy@hop.n3wth.com">privacy@hop.n3wth.com</a>.
         </p>
 
         <h2>What we collect</h2>
@@ -118,8 +119,9 @@ export default async function PrivacyPage() {
         <p>
           We keep your data while your account is active and as needed to provide the service. When
           you delete your account, we delete or anonymize the data we hold for you, except where we
-          must retain records to meet legal, accounting, or fraud-prevention obligations.{' '}
-          <strong>[BRACKETED: confirm retention periods with counsel.]</strong>
+          must retain records to meet legal, accounting, or fraud-prevention obligations. We delete
+          most personal data within 30 days of account deletion; booking and transaction records
+          are kept up to 7 years to meet accounting and legal obligations.
         </p>
 
         <h2>Your rights &amp; controls</h2>
@@ -141,27 +143,27 @@ export default async function PrivacyPage() {
           <li>
             <strong>Delete your account.</strong> You can request account deletion from your{' '}
             <Link href="/account">account</Link> or by emailing{' '}
-            <a href="mailto:support@hop.n3wth.com">support@hop.n3wth.com</a>.
+            <a href="mailto:privacy@hop.n3wth.com">privacy@hop.n3wth.com</a>.
           </li>
         </ul>
         <p>
           Depending on where you live, you may have additional rights over your personal data. We
-          honor applicable requests. <strong>[BRACKETED: confirm jurisdiction-specific rights and
-          response process with counsel.]</strong>
+          honor applicable requests. To exercise a right, email{' '}
+          <a href="mailto:privacy@hop.n3wth.com">privacy@hop.n3wth.com</a> and we will respond
+          within 30 days.
         </p>
 
         <h2>Cookies</h2>
         <p>
           hop uses essential cookies needed to sign you in and keep your session active (set by
           Auth0 and Supabase). We do not run a third-party advertising or cross-site tracking
-          stack. <strong>[BRACKETED: update if you later add analytics.]</strong>
+          stack.
         </p>
 
         <h2>Children</h2>
         <p>
-          hop is not directed to children and is not intended for anyone under{' '}
-          <strong>[BRACKETED: age threshold, e.g. 13 or 16]</strong>. We do not knowingly collect
-          data from children under that age.
+          hop is not directed to children and is not intended for anyone under 16. We do not
+          knowingly collect data from children under that age.
         </p>
 
         <h2>Security</h2>
@@ -174,8 +176,8 @@ export default async function PrivacyPage() {
         <h2>International transfers</h2>
         <p>
           Our providers may process and store data in countries other than yours. Where data is
-          transferred internationally, we rely on the safeguards offered by those providers.{' '}
-          <strong>[BRACKETED: confirm transfer mechanism with counsel.]</strong>
+          transferred internationally, we rely on the safeguards offered by those providers, such
+          as the EU Standard Contractual Clauses.
         </p>
 
         <h2>Changes to this policy</h2>
@@ -186,8 +188,8 @@ export default async function PrivacyPage() {
 
         <h2>Contact</h2>
         <p>
-          Email <a href="mailto:support@hop.n3wth.com">support@hop.n3wth.com</a>{' '}
-          <strong>[BRACKETED: confirm contact email]</strong> with any privacy question or request.
+          Email <a href="mailto:privacy@hop.n3wth.com">privacy@hop.n3wth.com</a> with any privacy
+          question or request.
         </p>
       </LegalShell>
       <div className="mx-auto max-w-[1180px]">
