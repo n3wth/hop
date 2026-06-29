@@ -1,4 +1,4 @@
-import { type NextRequest } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth0 } from '@/lib/auth0'
 import { updateSession } from '@/utils/supabase/middleware'
 
@@ -7,16 +7,26 @@ import { updateSession } from '@/utils/supabase/middleware'
 //     forwards to app routes by default, so we return it for /auth/* paths.
 //  2. Supabase — refreshes the Supabase session cookie for everything else.
 // (Next 16 calls this `proxy` in new projects, but `middleware` still works.)
+//
+// Both layers are skipped gracefully when their env vars are absent (e.g. preview
+// deployments without secrets configured) so the app loads instead of 500ing.
 export async function middleware(request: NextRequest) {
-  const authResponse = await auth0.middleware(request)
-
-  // Auth0 owns the /auth/* routes — return its response untouched there.
-  if (request.nextUrl.pathname.startsWith('/auth')) {
-    return authResponse
+  // Auth0 requires AUTH0_DOMAIN at minimum — skip its layer if unconfigured.
+  if (process.env.AUTH0_DOMAIN) {
+    const authResponse = await auth0.middleware(request)
+    if (request.nextUrl.pathname.startsWith('/auth')) {
+      return authResponse
+    }
+  } else if (request.nextUrl.pathname.startsWith('/auth')) {
+    return NextResponse.next()
   }
 
-  // For all other routes, refresh the Supabase session too.
-  return await updateSession(request)
+  // Supabase requires the URL — skip its layer if unconfigured.
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    return await updateSession(request)
+  }
+
+  return NextResponse.next()
 }
 
 export const config = {
