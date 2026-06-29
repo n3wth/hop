@@ -37,32 +37,31 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
   return (
     <section className="overflow-hidden rounded-[22px] text-[#eef3f1]" style={{ background: 'var(--color-text)' }}>
       {/* no restating header — the balances + total speak for themselves */}
-      <div className="px-[30px] pt-[10px]">
+      <div className="px-4 pt-[10px] sm:px-[30px]">
         {balances.map((b, i) => {
           const active = isActive(b, pick)
           const pct = Math.max(5, Math.round((b.balance / max) * 100))
           return (
             <div
               key={b.code + b.program}
-              className={`grid items-center gap-5 py-[18px] ${i > 0 ? 'border-t border-white/[0.07]' : ''}`}
-              style={{ gridTemplateColumns: '46px 1fr 200px 116px' }}
+              className={`grid items-center gap-3 py-[16px] sm:gap-5 sm:py-[18px] [grid-template-columns:40px_1fr_auto] lg:[grid-template-columns:46px_1fr_200px_116px] ${i > 0 ? 'border-t border-white/[0.07]' : ''}`}
             >
-              <BrandIcon code={b.code} name={b.program} size={46} surface="dark" />
+              <BrandIcon code={b.code} name={b.program} size={40} surface="dark" />
 
               <div className="min-w-0">
                 <div
-                  className="truncate text-[14px] font-medium"
+                  className="truncate text-[13px] font-medium sm:text-[14px]"
                   style={{ color: active ? '#7be0c6' : '#e6edeb' }}
                 >
                   {b.program}
                 </div>
-                <div className="mt-[2px] text-[12px] text-[#8aa39e]">
+                <div className="mt-[2px] truncate text-[12px] text-[#8aa39e]">
                   {active && spend != null ? `Using ${spend.toLocaleString()} here` : b.status}
                 </div>
               </div>
 
-              {/* value bar */}
-              <div className="h-[8px] overflow-hidden rounded-full bg-white/10">
+              {/* value bar — desktop only (no room on mobile) */}
+              <div className="hidden h-[8px] overflow-hidden rounded-full bg-white/10 lg:block">
                 <span
                   className="block h-full rounded-full"
                   style={{
@@ -72,7 +71,7 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
                 />
               </div>
 
-              <div className="text-right font-display text-[16px] font-semibold tabular-nums text-white">
+              <div className="text-right font-display text-[15px] font-semibold tabular-nums text-white sm:text-[16px]">
                 {b.balance.toLocaleString()}
               </div>
             </div>
@@ -81,7 +80,7 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
       </div>
 
       {/* footer total — with a low-key sync line that earns its place */}
-      <div className="flex items-center justify-between border-t border-white/10 bg-white/[0.03] px-[30px] py-[18px]">
+      <div className="flex items-center justify-between border-t border-white/10 bg-white/[0.03] px-4 py-[16px] sm:px-[30px] sm:py-[18px]">
         <span className="text-[13px] text-[#9fb5b0]">
           {total.toLocaleString()} across {balances.length} programs
           <span className="ml-2 text-[11px] text-[#6f8782]">AwardWallet · updated today</span>

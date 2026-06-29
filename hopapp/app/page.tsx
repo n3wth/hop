@@ -41,12 +41,12 @@ export default async function Home() {
         <PointsPanel balances={result.balances} pick={result.pick} />
       </div>
 
-      <footer className="mt-[46px] flex items-center justify-between text-[12px] tracking-[0.04em] text-text3">
+      <footer className="mt-[46px] flex flex-col gap-4 border-t border-border pt-6 text-[12px] tracking-[0.04em] text-text3 sm:flex-row sm:items-center sm:justify-between sm:border-t-0 sm:pt-0">
         <div>
           hop compares <b className="font-semibold text-text2">cash, miles, and transfer partners</b>{' '}
           in one search.
         </div>
-        <div className="flex gap-[22px]">
+        <div className="flex flex-wrap gap-x-5 gap-y-2 sm:gap-[22px]">
           <span>How we value points</span>
           <span>Refresh balances</span>
           <span>Price alert</span>

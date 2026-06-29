@@ -40,8 +40,7 @@ export default function VerdictRail({ result }: VerdictRailProps) {
     >
       {/* LEFT — the verdict */}
       <div className="px-6 pb-9 pt-8 sm:px-10 lg:px-[52px] lg:pb-[46px] lg:pt-12">
-        <span className="mb-[26px] inline-flex items-center gap-[11px] border-b border-white/15 pb-4 text-[12px] font-semibold uppercase tracking-[0.22em] text-[#9fe0d6]">
-          <span className="h-[7px] w-[7px] rounded-full bg-[#5fe3c8]" />
+        <span className="mb-[26px] inline-flex items-center border-b border-white/15 pb-4 text-[12px] font-semibold uppercase tracking-[0.22em] text-[#9fe0d6]">
           Best value
         </span>
 
@@ -121,10 +120,9 @@ export default function VerdictRail({ result }: VerdictRailProps) {
             'radial-gradient(120% 120% at 85% 15%, rgba(255,255,255,.10), rgba(255,255,255,0) 55%), var(--color-brand-deep)',
         }}
       >
-        <div className="relative grid flex-1 place-items-center overflow-hidden pt-9">
-          <span className="hop-float">
-            <Logo size={172} carve="var(--color-brand-deep)" className="text-white" />
-          </span>
+        {/* big bunny illustration — desktop only (redundant with header on mobile) */}
+        <div className="relative hidden flex-1 place-items-center overflow-hidden pt-9 lg:grid">
+          <Logo size={172} carve="var(--color-brand-deep)" className="text-white" />
         </div>
 
         {pick ? <PickPass pick={pick} /> : null}
@@ -182,7 +180,7 @@ function PickPass({ pick }: { pick: FlightOption }) {
   const details = [pick.cabin, pick.aircraft, pick.fareBrand].filter(Boolean)
 
   return (
-    <div className="relative mx-[26px] mb-[26px] rounded-[18px] bg-paper text-text">
+    <div className="relative mx-5 mb-6 mt-6 rounded-[18px] bg-paper text-text sm:mx-[26px] sm:mb-[26px] lg:mt-0">
       {/* header band: airline + flight no + Direct tag */}
       <div className="flex items-center justify-between px-[22px] pb-[14px] pt-[18px]">
         <div className="flex min-w-0 items-center gap-[11px]">

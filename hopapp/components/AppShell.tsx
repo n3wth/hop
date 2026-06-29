@@ -12,7 +12,7 @@ export default function AppShell({ children, ...nav }: AppShellProps) {
   return (
     <div className="relative">
       <TopNav {...nav} />
-      <div className="mx-auto max-w-[1440px] px-16 pb-24">{children}</div>
+      <div className="px-4 pb-24 sm:px-8 lg:px-16">{children}</div>
     </div>
   )
 }

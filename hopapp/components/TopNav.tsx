@@ -125,7 +125,7 @@ export default function TopNav({
           transition: `height ${DUR} ${EASE}, background ${DUR} ${EASE}, border-color ${DUR} ${EASE}`,
         }}
       >
-        <div className="mx-auto flex h-full max-w-[1440px] items-center gap-4 px-4 sm:gap-6 sm:px-8 lg:gap-9 lg:px-16">
+        <div className="flex h-full items-center gap-4 px-4 sm:gap-6 sm:px-8 lg:gap-9 lg:px-16">
           {/* logo — left, scales down on collapse */}
           <div
             className="flex flex-shrink-0 items-center gap-[11px]"
@@ -151,59 +151,37 @@ export default function TopNav({
             <span className="ml-1 truncate text-[12px] text-text3">{vDates}</span>
           </button>
 
-          {/* DESKTOP search — grouped next to the logo; contracts to a pill on scroll */}
+          {/* DESKTOP search — full form, STABLE on scroll so the logo↔search gap
+              never shifts and all fields (incl. Who) stay visible. */}
           <div className="hidden min-w-0 flex-shrink-0 md:flex">
             <form
               className="flex items-center rounded-full border border-border bg-surface"
               style={{
-                gap: c ? 10 : 16,
-                paddingLeft: c ? 18 : 22,
-                paddingRight: c ? 6 : 12,
-                paddingTop: c ? 6 : 10,
-                paddingBottom: c ? 6 : 10,
-                transition: `gap ${DUR} ${EASE}, padding ${DUR} ${EASE}`,
+                gap: 16,
+                paddingLeft: 22,
+                paddingRight: 12,
+                paddingTop: 10,
+                paddingBottom: 10,
               }}
             >
-              <Field label="From" value={c ? fromCode : vFrom} onChange={setFrom} width={c ? 'w-[34px]' : 'w-[112px]'} collapsed={c} />
+              <Field label="From" value={vFrom} onChange={setFrom} width="w-[112px]" collapsed={false} />
               <span className="flex-shrink-0 text-brand">
-                <Icon name="swap_horiz" size={c ? 16 : 20} />
+                <Icon name="swap_horiz" size={20} />
               </span>
-              <Field label="To" value={c ? toCode : vTo} onChange={setTo} width={c ? 'w-[34px]' : 'w-[96px]'} collapsed={c} />
+              <Field label="To" value={vTo} onChange={setTo} width="w-[96px]" collapsed={false} />
 
-              {/* divider + Dates: collapse the divider; Dates stays in pill */}
-              <span
-                className="w-px flex-shrink-0 bg-border"
-                style={{ height: c ? 18 : 26, transition: `height ${DUR} ${EASE}` }}
-              />
-              <Field label="Dates" value={vDates} onChange={setDates} width={c ? 'w-[72px]' : 'w-[78px]'} collapsed={c} />
+              <span className="h-[26px] w-px flex-shrink-0 bg-border" />
+              <Field label="Dates" value={vDates} onChange={setDates} width="w-[78px]" collapsed={false} />
 
-              {/* Who — hidden entirely when collapsed (width + opacity to 0) */}
-              <span
-                className="w-px flex-shrink-0 overflow-hidden bg-border"
-                style={{
-                  height: c ? 0 : 26,
-                  opacity: c ? 0 : 1,
-                  transition: `height ${DUR} ${EASE}, opacity ${DUR} ${EASE}`,
-                }}
-              />
-              <div
-                className="overflow-hidden"
-                style={{
-                  maxWidth: c ? 0 : 90,
-                  opacity: c ? 0 : 1,
-                  transition: `max-width ${DUR} ${EASE}, opacity ${DUR} ${EASE}`,
-                }}
-              >
-                <Field label="Who" value={vWho} onChange={setWho} width="w-[60px]" collapsed={c} />
-              </div>
+              <span className="h-[26px] w-px flex-shrink-0 bg-border" />
+              <Field label="Who" value={vWho} onChange={setWho} width="w-[60px]" collapsed={false} />
 
               <button
                 type="submit"
                 aria-label="Search"
-                className="grid flex-shrink-0 place-items-center rounded-full bg-brand text-white transition-colors hover:bg-brand-deep"
-                style={{ width: c ? 32 : 40, height: c ? 32 : 40, transition: `width ${DUR} ${EASE}, height ${DUR} ${EASE}` }}
+                className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-brand text-white transition-colors hover:bg-brand-deep"
               >
-                <Icon name="search" size={c ? 15 : 19} />
+                <Icon name="search" size={19} />
               </button>
             </form>
           </div>
@@ -211,9 +189,9 @@ export default function TopNav({
           {/* spacer pushes the account to the far right (desktop only) */}
           <div className="hidden flex-1 md:block" />
 
-          {/* account — right, scales down on collapse */}
+          {/* account — right, scales down on collapse; hidden on mobile to save space */}
           <div
-            className="flex flex-shrink-0 items-center"
+            className="hidden flex-shrink-0 items-center sm:flex"
             style={{ transform: c ? 'scale(0.86)' : 'scale(1)', transformOrigin: 'right center', transition: `transform ${DUR} ${EASE}` }}
           >
             <div className="grid h-9 w-9 place-items-center rounded-full bg-brand font-display text-[15px] font-bold text-white sm:h-[42px] sm:w-[42px] sm:text-[16px]">
