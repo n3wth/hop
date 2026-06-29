@@ -39,7 +39,7 @@ export default function AccountMenu({ user }: { user: AccountUser }) {
         aria-expanded={open}
         aria-label="Account menu"
         title="Account"
-        className="grid h-10 w-10 cursor-pointer place-items-center overflow-hidden rounded-full bg-brand font-display text-[15px] font-bold text-white ring-offset-2 transition-[box-shadow,background-color] hover:bg-brand-deep hover:ring-2 hover:ring-brand/30 focus-visible:ring-2 focus-visible:ring-brand"
+        className="grid h-10 w-10 cursor-pointer place-items-center overflow-hidden rounded-full bg-brand font-display text-[15px] font-semibold text-white ring-offset-2 transition-[box-shadow,background-color] hover:bg-brand-deep hover:ring-2 hover:ring-brand/30 focus-visible:ring-2 focus-visible:ring-brand"
       >
         {user.picture && imgOk ? (
           // eslint-disable-next-line @next/next/no-img-element

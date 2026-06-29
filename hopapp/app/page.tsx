@@ -108,14 +108,14 @@ export default async function Home() {
           </span>
 
           <h1
-            className="hop-rise mt-6 max-w-[16ch] font-display text-[40px] font-semibold leading-[1.0] tracking-[-0.03em] text-text sm:max-w-[18ch] sm:text-[60px] lg:text-[78px]"
+            className="hop-rise mt-6 max-w-[20ch] text-balance font-display text-[40px] font-semibold leading-[1.0] tracking-[-0.03em] text-text sm:text-[60px] lg:text-[78px]"
             style={{ ['--hop-delay' as string]: '90ms' }}
           >
             One search. The smarter way to book.
           </h1>
 
           <p
-            className="hop-rise mt-6 max-w-[52ch] text-[16px] leading-[1.6] text-text2 sm:text-[18px]"
+            className="hop-rise mt-6 max-w-[50ch] text-pretty text-[16px] leading-[1.6] text-text2 sm:text-[18px]"
             style={{ ['--hop-delay' as string]: '140ms' }}
           >
             hop reads your real point balances, checks award space and cash for

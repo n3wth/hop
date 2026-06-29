@@ -17,7 +17,7 @@ export default async function InspirationTeaser() {
         <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
           Imagine where your points could go
         </span>
-        <h2 className="font-display text-[26px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[34px]">
+        <h2 className="text-balance font-display text-[26px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[34px]">
           The trips where miles stretch furthest.
         </h2>
         <p className="mt-1 text-[15px] leading-[1.55] text-text2">

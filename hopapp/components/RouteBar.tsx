@@ -1,13 +1,9 @@
 import type { SearchResult } from '@/lib/types'
+import { cityForCode } from '@/lib/airports'
 import Icon from './Icon'
 
 export interface RouteBarProps {
   result: SearchResult
-}
-
-const CITY_NAMES: Record<string, string> = {
-  SFO: 'San Francisco',
-  LAX: 'Los Angeles',
 }
 
 // A right-aligned stat: bold value over a small caption, so the summary carries
@@ -39,7 +35,7 @@ export default function RouteBar({ result }: RouteBarProps) {
             {from}
           </span>
           <span className="text-[12px] uppercase tracking-[0.06em] text-text3">
-            {CITY_NAMES[from] ?? from}
+            {cityForCode(from)}
           </span>
         </div>
         <span className="flex items-center text-brand">
@@ -50,7 +46,7 @@ export default function RouteBar({ result }: RouteBarProps) {
             {to}
           </span>
           <span className="text-[12px] uppercase tracking-[0.06em] text-text3">
-            {CITY_NAMES[to] ?? to}
+            {cityForCode(to)}
           </span>
         </div>
       </div>

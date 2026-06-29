@@ -88,7 +88,7 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
         {/* best-find ribbon */}
         {isTopFind && (
           <span
-            className="absolute left-3 top-3 inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em]"
+            className="absolute left-3 top-3 inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em]"
             style={{ background: 'var(--color-gold-soft)', color: 'var(--color-amber)' }}
           >
             Best find
@@ -102,7 +102,7 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
           title="cents per point — how much value each mile pulls"
         >
           <span
-            className="font-display text-[18px] font-bold leading-none tabular-nums"
+            className="font-display text-[18px] font-semibold leading-none tabular-nums"
             style={{ color: chip.fg }}
           >
             {value?.toFixed(1)}
@@ -122,7 +122,7 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
             aria-hidden
           />
           <div className="min-w-0">
-            <h3 className="truncate font-display text-[24px] font-bold leading-tight text-white">
+            <h3 className="truncate font-display text-[24px] font-semibold leading-tight tracking-[-0.01em] text-white">
               {dest.city}
             </h3>
             <p className="truncate text-[12px] font-semibold uppercase tracking-[0.08em] text-white/85">
@@ -141,13 +141,13 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
         <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-hair pt-4">
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-text3">Miles</div>
-            <div className="mt-0.5 font-display text-[18px] font-bold tabular-nums text-text">
+            <div className="mt-0.5 font-display text-[18px] font-semibold tabular-nums text-text">
               {compactMiles(dest.typicalAwardMiles)}
             </div>
           </div>
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-text3">vs. cash</div>
-            <div className="mt-0.5 font-display text-[18px] font-bold tabular-nums text-text">
+            <div className="mt-0.5 font-display text-[18px] font-semibold tabular-nums text-text">
               {cashCompare}
             </div>
           </div>
@@ -159,12 +159,12 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
 
         {/* CTA */}
         <div className="mt-auto flex items-center justify-between pt-5">
-          <span className="text-[14px] font-bold text-text transition-colors group-hover:text-brand">
+          <span className="text-[14px] font-semibold text-text transition-colors group-hover:text-brand">
             See the math
           </span>
           <span
             aria-hidden
-            className="text-[15px] font-bold text-text3 transition-colors group-hover:text-brand"
+            className="text-[14px] font-semibold text-text3 transition-colors group-hover:text-brand"
           >
             Search this →
           </span>

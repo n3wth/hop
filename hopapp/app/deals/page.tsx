@@ -56,19 +56,19 @@ export default async function DealsPage() {
   return (
     <AppShell user={user} pointsTotal={pointsTotal} hideSearch>
       <div className="mx-auto max-w-[1180px]">
-        {/* editorial header */}
-        <header className="pt-10 sm:pt-14">
-          <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-brand">
+        {/* editorial header — centered over the full-width feed */}
+        <header className="mx-auto max-w-[60ch] pt-10 text-center sm:pt-14">
+          <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
             Sweet spots
           </span>
-          <h1 className="mt-3 max-w-[16ch] font-display text-[38px] font-bold leading-[1.05] text-text sm:text-[52px]">
+          <h1 className="mx-auto mt-3 max-w-[18ch] text-balance font-display text-[38px] font-semibold leading-[1.05] tracking-[-0.02em] text-text sm:text-[52px]">
             Where your miles go furthest
           </h1>
-          <p className="mt-4 max-w-[54ch] text-[16px] leading-relaxed text-text2 sm:text-[17px]">
+          <p className="mx-auto mt-4 max-w-[54ch] text-pretty text-[16px] leading-relaxed text-text2 sm:text-[17px]">
             The redemptions where points beat cash by the widest margin, ranked
             by cents per point. Every one is a route you can book.
           </p>
-          <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px] text-text3">
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[13px] text-text3">
             <span>
               <b className="font-semibold text-text2">{deals.length}</b> routes
             </span>

@@ -40,11 +40,11 @@ const STEPS: Step[] = [
 export default function HowItWorks() {
   return (
     <section>
-      <div className="mx-auto flex max-w-[54ch] flex-col items-center gap-2 text-center">
+      <div className="mx-auto flex max-w-[64ch] flex-col items-center gap-2 text-center">
         <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
           How hop works
         </span>
-        <h2 className="font-display text-[26px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[34px]">
+        <h2 className="max-w-[26ch] text-balance font-display text-[26px] font-semibold leading-[1.12] tracking-[-0.02em] text-text sm:text-[34px]">
           One search reads your points, the market, and the math.
         </h2>
       </div>
