@@ -28,9 +28,18 @@ export interface ConciergePhoto {
   countryCode: string
 }
 
+export interface ConciergeProgram {
+  program: string
+  balance: number
+}
+
 export interface ConciergeProps {
   /** Total usable points across the user's programs — grounds the answer when signed in. */
   totalPoints?: number
+  /** Per-program balances — lets the concierge reason about specific currencies. */
+  programs?: ConciergeProgram[]
+  /** The user's home airport (IATA) — where realistic trips depart from. */
+  homeAirport?: string
   /** code → photo, for the mood gallery + suggestion cards. */
   photos?: Record<string, ConciergePhoto>
   /** Codes to feature in the landing mood gallery, best-value first. */
@@ -56,7 +65,13 @@ function searchHref(code: string): string {
 // real destination photography to set the mood. After an ask, the dark panel
 // gives way to a clean answer with photo-led suggestion cards. Flat + solid: the
 // dark-teal surface and image scrims are the only allowed depth; no hover-lift.
-export default function Concierge({ totalPoints, photos = {}, galleryCodes = [] }: ConciergeProps) {
+export default function Concierge({
+  totalPoints,
+  programs,
+  homeAirport,
+  photos = {},
+  galleryCodes = [],
+}: ConciergeProps) {
   const [question, setQuestion] = useState('')
   const [asked, setAsked] = useState('')
   const [result, setResult] = useState<ConciergeResponse | null>(null)
@@ -81,7 +96,10 @@ export default function Concierge({ totalPoints, photos = {}, galleryCodes = [] 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           question: trimmed,
-          context: totalPoints != null ? { totalPoints } : undefined,
+          context:
+            totalPoints != null || homeAirport || programs?.length
+              ? { totalPoints, programs, homeAirport }
+              : undefined,
         }),
       })
       const data = (await res.json()) as ConciergeResponse

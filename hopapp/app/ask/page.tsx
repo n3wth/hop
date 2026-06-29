@@ -1,6 +1,7 @@
 import { auth0 } from '@/lib/auth0'
 import { mockBalances } from '@/lib/mock'
 import { getUserBalances } from '@/lib/accounts'
+import { getPrefs } from '@/lib/prefs'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import Concierge, { type ConciergePhoto } from '@/components/Concierge'
@@ -25,14 +26,20 @@ export default async function AskPage() {
       }
     : null
 
-  // Total usable points across programs — context for the concierge. Live when
-  // configured, mock otherwise; only computed when signed in.
+  // Context for the concierge — the user's real points (total + per-program) and
+  // their home airport (where realistic trips depart from). Live when configured,
+  // mock otherwise; only computed when signed in. Never crashes the page.
   let totalPoints: number | undefined
+  let programs: { program: string; balance: number }[] | undefined
+  let homeAirport: string | undefined
   if (user) {
     // Unified per-user balances (manual + AwardWallet, merged). Empty → mock.
     const real = su?.sub ? await getUserBalances(su.sub) : []
     const balances = real.length > 0 ? real : mockBalances()
     totalPoints = balances.reduce((sum, b) => sum + b.balance, 0)
+    programs = balances.map((b) => ({ program: b.program, balance: b.balance }))
+    const prefs = su?.sub ? await getPrefs(su.sub) : {}
+    homeAirport = prefs.homeAirport
   }
 
   // Destination photography for the mood gallery + suggestion cards. Fetched
@@ -60,6 +67,8 @@ export default async function AskPage() {
         <div className="hop-rise" style={{ ['--hop-delay' as string]: '40ms' }}>
           <Concierge
             totalPoints={totalPoints}
+            programs={programs}
+            homeAirport={homeAirport}
             photos={photos}
             galleryCodes={galleryCodes}
           />

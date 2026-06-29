@@ -26,6 +26,8 @@ export interface ConciergeProgram {
 export interface ConciergeContext {
   programs?: ConciergeProgram[]
   totalPoints?: number
+  /** The user's home airport (IATA) — where realistic trips depart from. */
+  homeAirport?: string
 }
 
 export interface ConciergeRequest {
@@ -117,6 +119,10 @@ export function buildPrompt(
     '',
     "The user's points balances:",
     balancesSummary(context),
+    '',
+    context?.homeAirport
+      ? `The user flies from ${context.homeAirport.toUpperCase()} (their home airport). Favor trips that make sense from there, frame distances/routes from ${context.homeAirport.toUpperCase()}, and mention it naturally (e.g. "from ${context.homeAirport.toUpperCase()}").`
+      : "The user hasn't set a home airport. Keep suggestions origin-agnostic, or gently suggest they set one for sharper picks.",
     '',
     'Destinations dataset (code · city · region · vibe [tags] · ~award miles one-way · best program · ~value):',
     destinationsSummary(),
