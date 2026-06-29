@@ -49,10 +49,14 @@ function DestinationCard({
         style={{ background: 'var(--color-brand-deep)' }}
       >
         {photo ? (
+          // ~280px 4-up card — the small thumb is plenty; the 1080px regular is
+          // 3-4x the bytes for no visible gain at this size.
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={photo.url}
+            src={photo.thumb}
             alt={photo.alt}
+            width={400}
+            height={275}
             loading="lazy"
             className="h-full w-full object-cover"
           />

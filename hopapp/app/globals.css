@@ -16,7 +16,7 @@
 
   --color-text: #14201f; /* ink */
   --color-text2: #4a5a58; /* ink-soft */
-  --color-text3: #8a9794; /* ink-faint */
+  --color-text3: #5f6f6c; /* ink-faint — darkened to clear WCAG AA on cream/paper/surface/sunk */
 
   --color-border: #e2ddd2;
   --color-border-soft: #ece9e1;
@@ -31,13 +31,13 @@
 
   --color-good: #0d6e6e; /* strong CPP value reads teal in editorial chips */
   --color-good-bg: #e3f1ef;
-  --color-ok: #b8742a; /* amber — mid value */
+  --color-ok: #8f5618; /* amber — mid value; darkened to clear AA on ok-bg/gold-soft */
   --color-ok-bg: #f6ecd9;
   --color-weak: #a8513a; /* rust — weak value */
   --color-weak-bg: #f4e7e3;
 
   --color-gold: #c98a3c;
-  --color-amber: #b8742a;
+  --color-amber: #8f5618; /* darkened to clear AA on gold-soft (Best find badge) */
 
   /* hero / wallet accents */
   --color-hero-cream: #eafaf7;

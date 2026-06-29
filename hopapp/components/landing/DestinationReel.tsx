@@ -21,10 +21,13 @@ function Tile({ d, photo }: { d: Destination; photo?: DestImage | null }) {
       style={{ background: 'var(--color-brand-deep)' }}
     >
       {photo ? (
+        // Small ~300px tile — use the small thumb, not the full 1080px regular.
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={photo.url}
+          src={photo.thumb}
           alt={photo.alt}
+          width={300}
+          height={210}
           loading="lazy"
           className="h-full w-full object-cover"
         />

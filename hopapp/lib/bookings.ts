@@ -59,6 +59,44 @@ export async function saveBooking(
   }
 }
 
+// Ownership check for the confirmation page: returns the user's booking row for
+// a given Duffel order id, or null when it isn't theirs (or doesn't exist). The
+// query is scoped by user_id so an attacker-supplied order id belonging to
+// another user never matches. Never throws.
+export async function getBookingByOrderId(
+  userId: string,
+  orderId: string,
+): Promise<Booking | null> {
+  try {
+    const db = supabaseAdmin()
+    if (!db) return null
+    const { data, error } = await db
+      .from(TABLE)
+      .select(
+        'id, duffel_order_id, booking_reference, offer_snapshot, total_amount, total_currency, status, created_at',
+      )
+      .eq('user_id', userId)
+      .eq('duffel_order_id', orderId)
+      .maybeSingle()
+    if (error || !data) return null
+    const snap = (data.offer_snapshot ?? {}) as OfferSnapshot
+    return {
+      id: data.id as string,
+      duffelOrderId: (data.duffel_order_id as string) ?? undefined,
+      bookingReference: (data.booking_reference as string) ?? undefined,
+      totalAmount: (data.total_amount as string) ?? undefined,
+      totalCurrency: (data.total_currency as string) ?? undefined,
+      status: (data.status as string) ?? undefined,
+      createdAt: (data.created_at as string) ?? undefined,
+      route: snap.route,
+      airline: snap.airline,
+      date: snap.date,
+    }
+  } catch {
+    return null
+  }
+}
+
 // All bookings for a user, newest first — rendered under "Trips" on /account.
 export async function getBookings(userId: string): Promise<Booking[]> {
   try {

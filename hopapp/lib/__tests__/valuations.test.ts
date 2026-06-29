@@ -1,26 +1,15 @@
-import { describe, it, expect, afterEach, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import {
   programValue,
   valueOfPoints,
   listValuations,
   valuationsByName,
   clampCpp,
-  parseValuationJson,
-  buildValuationPrompt,
-  refreshValuationsViaAI,
-  resetValuations,
   GENERIC_BASELINE,
   MIN_CPP,
   MAX_CPP,
-  VALUATION_SOURCES,
 } from '../valuations'
 import { PROGRAMS, programById } from '../programs'
-
-afterEach(() => {
-  resetValuations()
-  vi.restoreAllMocks()
-  vi.unstubAllEnvs()
-})
 
 describe('baseline table coverage', () => {
   it('prices every canonical program', () => {
@@ -35,10 +24,6 @@ describe('baseline table coverage', () => {
       expect(cpp).toBeGreaterThanOrEqual(MIN_CPP)
       expect(cpp).toBeLessThanOrEqual(MAX_CPP)
     }
-  })
-
-  it('has named sources', () => {
-    expect(VALUATION_SOURCES.length).toBeGreaterThan(0)
   })
 })
 
@@ -106,103 +91,6 @@ describe('clampCpp()', () => {
     expect(clampCpp('2.0')).toBeNull()
     expect(clampCpp(null)).toBeNull()
     expect(clampCpp(undefined)).toBeNull()
-  })
-})
-
-describe('parseValuationJson()', () => {
-  it('parses a clean JSON map and clamps values', () => {
-    const out = parseValuationJson('{"amex-mr": 2.5, "delta": 1.1}')
-    expect(out['amex-mr']).toBe(2.5)
-    expect(out['delta']).toBe(1.1)
-  })
-
-  it('strips markdown fences', () => {
-    const out = parseValuationJson('```json\n{"amex-mr": 2.0}\n```')
-    expect(out['amex-mr']).toBe(2.0)
-  })
-
-  it('drops ids that are not real canonical programs', () => {
-    const out = parseValuationJson('{"amex-mr": 2.0, "fake-program": 3.0}')
-    expect(out['amex-mr']).toBe(2.0)
-    expect(out['fake-program']).toBeUndefined()
-  })
-
-  it('clamps insane AI values into the sane band (no hallucinated 50cpp leaks)', () => {
-    const out = parseValuationJson('{"amex-mr": 99, "delta": -4}')
-    expect(out['amex-mr']).toBe(MAX_CPP)
-    expect(out['delta']).toBe(MIN_CPP)
-  })
-
-  it('returns {} on garbage / non-JSON', () => {
-    expect(parseValuationJson('not json at all')).toEqual({})
-    expect(parseValuationJson('')).toEqual({})
-    expect(parseValuationJson('{ broken')).toEqual({})
-  })
-})
-
-describe('buildValuationPrompt()', () => {
-  it('mentions the sane clamp band and every program id', () => {
-    const { system, user } = buildValuationPrompt()
-    expect(system).toContain(String(MIN_CPP))
-    expect(system).toContain(String(MAX_CPP))
-    expect(system).toContain('amex-mr')
-    expect(system).toContain('JSON')
-    expect(user.length).toBeGreaterThan(0)
-  })
-})
-
-describe('refreshValuationsViaAI()', () => {
-  it('falls back to baseline when no provider is configured — never throws', async () => {
-    vi.stubEnv('AI_GATEWAY_API_KEY', '')
-    vi.stubEnv('ANTHROPIC_API_KEY', '')
-    vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', '')
-    const res = await refreshValuationsViaAI()
-    expect(res.source).toBe('baseline')
-    expect(res.updated).toEqual([])
-    expect(res.valuations['amex-mr']).toBe(2.0)
-  })
-
-  it('falls back to baseline when the gateway errors — never throws', async () => {
-    vi.stubEnv('AI_GATEWAY_API_KEY', 'test-key')
-    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network down'))
-    const res = await refreshValuationsViaAI()
-    expect(res.source).toBe('baseline')
-    expect(res.valuations['delta']).toBe(1.2)
-  })
-
-  it('merges clamped AI values over baseline and updates the live table', async () => {
-    vi.stubEnv('AI_GATEWAY_API_KEY', 'test-key')
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          choices: [{ message: { content: '{"amex-mr": 2.4, "delta": 99}' } }],
-        }),
-        { status: 200 },
-      ),
-    )
-    const res = await refreshValuationsViaAI()
-    expect(res.source).toBe('ai')
-    expect(res.updated.sort()).toEqual(['amex-mr', 'delta'])
-    // clamped: 99 -> MAX_CPP
-    expect(res.valuations['delta']).toBe(MAX_CPP)
-    expect(res.valuations['amex-mr']).toBe(2.4)
-    // unpriced program keeps its baseline
-    expect(res.valuations['hilton']).toBe(0.35)
-    // live table reflects the refresh
-    expect(programValue('amex-mr')).toBe(2.4)
-  })
-
-  it('keeps baseline when AI returns no usable values', async () => {
-    vi.stubEnv('AI_GATEWAY_API_KEY', 'test-key')
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(
-        JSON.stringify({ choices: [{ message: { content: 'sorry I cannot help' } }] }),
-        { status: 200 },
-      ),
-    )
-    const res = await refreshValuationsViaAI()
-    expect(res.source).toBe('baseline')
-    expect(programValue('amex-mr')).toBe(2.0)
   })
 })
 

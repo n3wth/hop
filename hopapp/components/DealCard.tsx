@@ -12,7 +12,7 @@ export interface DealCardProps {
   /** Rank in the feed (0 = the single best find). */
   rank: number
   /** Hero photo for this destination (null → solid brand-tint fallback). */
-  photo?: { url: string; alt: string; credit: { name: string; link: string } } | null
+  photo?: { url: string; thumb: string; alt: string; credit: { name: string; link: string } } | null
 }
 
 // cpp tier → chip palette. Mirrors lib/cpp tiers but renders editorially:
@@ -62,10 +62,14 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
         style={{ background: 'var(--color-brand-deep)' }}
       >
         {photo ? (
+          // ~360-400px card in a 3-up grid — the small thumb is sized right; the
+          // 1080px regular ships ~3-4x the bytes per card for no visible gain.
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={photo.url}
+            src={photo.thumb}
             alt={photo.alt}
+            width={400}
+            height={250}
             loading="lazy"
             className="h-full w-full object-cover"
           />

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { auth0 } from '@/lib/auth0'
 import { getOrder } from '@/lib/duffel-orders'
+import { getBookingByOrderId } from '@/lib/bookings'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import Icon from '@/components/Icon'
@@ -25,7 +26,14 @@ export default async function ConfirmationPage({
 
   const q = await searchParams
   const orderId = Array.isArray(q.order) ? q.order[0] : q.order
-  const res = orderId ? await getOrder(orderId) : { ok: false as const, reason: 'No order' }
+  // Ownership gate: only load the order if it belongs to THIS user (verified
+  // against hop_bookings, scoped by sub). Prevents IDOR — substituting another
+  // user's Duffel order id must not reveal their passenger PII.
+  const owned = orderId ? await getBookingByOrderId(su.sub, orderId) : null
+  const res =
+    orderId && owned
+      ? await getOrder(orderId)
+      : { ok: false as const, reason: 'No order' }
 
   return (
     <AppShell user={user} hideSearch>
