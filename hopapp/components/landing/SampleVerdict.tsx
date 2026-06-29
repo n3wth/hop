@@ -17,9 +17,8 @@ export default async function SampleVerdict() {
     >
       {/* LEFT — the verdict */}
       <div className="px-6 pb-8 pt-7 sm:px-10 lg:px-[44px] lg:pb-10 lg:pt-9">
-        <span className="mb-5 inline-flex items-center gap-2 border-b border-white/15 pb-3 text-[12px] font-semibold uppercase tracking-[0.22em] text-[#9fe0d6]">
-          Sample verdict
-          <span className="rounded-full bg-[#0a5757] px-2 py-[2px] text-[9.5px] tracking-[0.14em] text-[#6ff0d2]">
+        <span className="mb-5 inline-flex items-center gap-2 border-b border-white/15 pb-3">
+          <span className="rounded-full bg-[#0a5757] px-2.5 py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6ff0d2]">
             SFO → JFK
           </span>
         </span>

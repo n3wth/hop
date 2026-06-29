@@ -166,7 +166,7 @@ function AirportField({
         <ul
           id={listId}
           role="listbox"
-          className="absolute left-0 top-[calc(100%+10px)] z-[60] max-h-[280px] w-[260px] overflow-auto rounded-xl border border-border bg-surface py-1"
+          className="absolute left-0 top-[calc(100%+10px)] z-[80] max-h-[280px] w-[260px] overflow-auto rounded-xl border border-border bg-surface py-1 shadow-[0_12px_32px_-8px_rgba(20,32,31,0.22)]"
         >
           {results.map((a, i) => (
             <li key={a.code} role="option" aria-selected={i === active}>
