@@ -250,7 +250,7 @@ export default function TopNav({
           className="fixed inset-0 z-[70] flex flex-col bg-bg md:hidden"
         >
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <span className="font-display text-[17px] font-bold text-text">Edit search</span>
+            <span className="font-display text-[17px] font-semibold text-text">Edit search</span>
             <button
               type="button"
               aria-label="Close search"
