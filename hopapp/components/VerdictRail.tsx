@@ -25,9 +25,14 @@ function milesUnit(pick: FlightOption | undefined): string {
 // Editorial verdict hero — the magazine cover. Teal plane: headline + factual
 // subline + stat strip on the left; bunny + boarding-pass pick card on the right.
 export default function VerdictRail({ result, destPhoto }: VerdictRailProps) {
-  const { pick, summary, verdict } = result
+  const { pick, summary, verdict, cashOption } = result
   const usingPoints = verdict === 'use-points'
   const unit = milesUnit(pick)
+  // "Book cash" must link to the actual cheapest CASH option — on a pay-cash
+  // verdict `pick` may still be a weak award row, so don't use pick.bookingUrl.
+  const ctaHref = usingPoints
+    ? (pick?.bookingUrl ?? '#')
+    : (cashOption?.bookingUrl ?? pick?.bookingUrl ?? '#')
 
   const save = summary.saveVsCash ?? 0
   const cpp = summary.bestCpp
@@ -104,7 +109,7 @@ export default function VerdictRail({ result, destPhoto }: VerdictRailProps) {
 
         <div className="mt-[34px] flex flex-wrap items-center gap-4">
           <a
-            href={pick?.bookingUrl ?? '#'}
+            href={ctaHref}
             className="inline-flex items-center gap-[10px] rounded-[14px] bg-white px-7 py-4 text-[16px] font-semibold text-[#073e3e] transition-colors hover:bg-[#fffdf6]"
           >
             <Icon name="check_circle" size={19} />

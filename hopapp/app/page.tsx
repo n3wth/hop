@@ -93,9 +93,12 @@ export default async function Home() {
   // ── SIGNED OUT — marketing front door ────────────────────────────────────
   return (
     <AppShell user={null} hideSearch>
-      <div className="mx-auto flex max-w-[1180px] flex-col gap-16 pt-6 sm:gap-20 sm:pt-12 lg:gap-24 lg:pt-16">
+      <div className="mx-auto flex max-w-[1180px] flex-col gap-16 pt-4 sm:gap-20 sm:pt-6 lg:gap-24 lg:pt-8">
         {/* ── HERO ───────────────────────────────────────────────────────── */}
-        <section className="flex min-h-[58vh] flex-col items-center justify-center pt-4 text-center sm:min-h-[64vh] sm:pt-8">
+        {/* Sits naturally toward the top: a capped min-height keeps it generous on
+            tall screens without floating in dead space on short/wide ones, where
+            the destination reel should crest into view below the search. */}
+        <section className="flex min-h-[clamp(0px,52vh,560px)] flex-col items-center justify-center pt-6 text-center sm:pt-10">
           <span
             className="hop-rise inline-flex items-center gap-2 rounded-full border border-border bg-paper px-4 py-1.5 text-[12px] font-semibold uppercase tracking-[0.16em] text-brand"
             style={{ ['--hop-delay' as string]: '40ms' }}

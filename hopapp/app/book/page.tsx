@@ -40,7 +40,7 @@ export default async function BookPage({
 
   return (
     <AppShell user={user} hideSearch>
-      <div className="mx-auto max-w-[860px] pb-4 pt-8 sm:pt-12">
+      <div className="mx-auto max-w-[1040px] pb-4 pt-8 sm:pt-12">
         {!isCheckoutEnabled() ? (
           <Notice
             icon="schedule"
@@ -59,6 +59,7 @@ export default async function BookPage({
             offerId={offerId}
             route={hasRoute ? (route as { from: string; to: string; depart: string; return?: string; adults?: number }) : undefined}
             email={su.email ?? undefined}
+            name={su.name ?? undefined}
           />
         )}
         <SiteFooter />
@@ -75,10 +76,12 @@ async function OfferGate({
   offerId,
   route,
   email,
+  name,
 }: {
   offerId: string
   route?: { from: string; to: string; depart: string; return?: string; adults?: number }
   email?: string
+  name?: string
 }) {
   let res = await getCheckoutOffer(offerId)
   // Stale/expired id → rebuild a live offer from the route (if we have it).
@@ -95,7 +98,7 @@ async function OfferGate({
       />
     )
   }
-  return <CheckoutForm offer={res.data} defaultEmail={email} />
+  return <CheckoutForm offer={res.data} defaultEmail={email} defaultName={name} />
 }
 
 function Notice({

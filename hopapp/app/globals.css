@@ -151,36 +151,6 @@ body {
   animation-delay: 240ms;
 }
 
-/* The mascot GLOWS on hover — a soft brand-teal aura that breathes slowly in and
-   out (an explicitly-requested moment of delight; the one sanctioned glow). The
-   drop-shadow hugs the bunny silhouette, not a box. Reduced-motion users get a
-   calm, steady glow with no pulse. */
-.hop-bunny-glow {
-  transition: filter 600ms var(--ease-premium);
-}
-.hop-bunny-glow:hover {
-  animation: hop-bunny-breathe 2600ms ease-in-out infinite;
-}
-@keyframes hop-bunny-breathe {
-  0%,
-  100% {
-    filter: drop-shadow(0 0 5px color-mix(in srgb, var(--color-brand) 30%, transparent))
-      drop-shadow(0 0 10px color-mix(in srgb, var(--color-brand) 16%, transparent));
-  }
-  50% {
-    filter: drop-shadow(0 0 12px color-mix(in srgb, var(--color-brand) 62%, transparent))
-      drop-shadow(0 0 26px color-mix(in srgb, var(--color-brand) 38%, transparent));
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .hop-bunny-glow {
-    transition: none;
-  }
-  .hop-bunny-glow:hover {
-    animation: none;
-    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--color-brand) 45%, transparent));
-  }
-}
 
 /* Value bars grow from 0 to their target width once, on load. The target width
    is supplied inline as --hop-bar-w; the animation eases out to it. */

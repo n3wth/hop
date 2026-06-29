@@ -1,6 +1,7 @@
 import type { SearchParams } from '@/lib/types'
 import { assembleSearch } from '@/lib/search'
 import { getUserBalances } from '@/lib/accounts'
+import { getPrefs } from '@/lib/prefs'
 import { cityForCode } from '@/lib/airports'
 import { destinationImage } from '@/lib/images'
 import { auth0 } from '@/lib/auth0'
@@ -112,8 +113,13 @@ export default async function Search({
   // Signed in → ground the search in this user's real balances (manual +
   // AwardWallet, merged); pass them in so no other user's data can leak. Signed
   // out → undefined keeps the env-global/mock fallback inside assembleSearch.
-  const userBalances = su?.sub ? await getUserBalances(su.sub) : undefined
-  const result = await assembleSearch(params, userBalances)
+  // Stored travel prefs (nonstop/cabin/…) are remembered like the home airport
+  // and re-rank the verdict. Signed out → no prefs → today's cpp-only ranking.
+  const [userBalances, prefs] = await Promise.all([
+    su?.sub ? getUserBalances(su.sub) : Promise.resolve(undefined),
+    su?.sub ? getPrefs(su.sub) : Promise.resolve(undefined),
+  ])
+  const result = await assembleSearch(params, userBalances, prefs?.travelPrefs)
 
   // Destination photo for the verdict hero — the place you're heading, behind
   // the boarding pass (replaces the redundant bunny). Query the CITY skyline/

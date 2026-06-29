@@ -12,6 +12,7 @@ import type {
   SearchResult,
 } from '@/lib/types'
 import { cpp, tier, rankOptions } from '@/lib/cpp'
+import { applyPrefs, type TravelPrefs } from '@/lib/prefs-model'
 import { transfersTo, effectiveBalanceFor } from '@/lib/transfers'
 import { cashBookingUrl, pointsBookingUrl } from '@/lib/booking'
 import { searchCash } from '@/lib/duffel'
@@ -42,6 +43,7 @@ function youHaveFor(option: FlightOption, balances: Balance[]): number | undefin
 export async function assembleSearch(
   params: SearchParams,
   userBalances?: Balance[],
+  prefs?: TravelPrefs,
 ): Promise<SearchResult> {
   let cashOptions: FlightOption[] = []
   let awardOptions: FlightOption[] = []
@@ -247,7 +249,11 @@ export async function assembleSearch(
     .sort((a, b) => (a.cashPrice ?? Infinity) - (b.cashPrice ?? Infinity))
     .slice(0, MAX_CASH)
 
-  const options = rankOptions([...trimmedAwards, ...trimmedCash])
+  // cpp ranking first (rankOptions), THEN the user's natural-language prefs as a
+  // filter + tiebreaker ON TOP (lib/prefs-model.applyPrefs). Default (no prefs)
+  // = today's behavior: applyPrefs is a no-op on empty prefs. The pick is read
+  // off this list below, so the verdict respects prefs too.
+  const options = applyPrefs(rankOptions([...trimmedAwards, ...trimmedCash]), prefs)
 
   // pick = best redemption (highest cpp award/transfer); else cheapest cash.
   const bestAward = options.find(isAward)
@@ -281,10 +287,20 @@ export async function assembleSearch(
         : 0,
   }
 
+  // Cheapest cash option (with its real bookingUrl) — the "Book cash" CTA needs
+  // this on a pay-cash verdict, since `pick` may be a weak award row.
+  const cashOption =
+    cash.length > 0
+      ? cash.reduce((cheapest, o) =>
+          (o.cashPrice ?? Infinity) < (cheapest.cashPrice ?? Infinity) ? o : cheapest,
+        )
+      : undefined
+
   return {
     params,
     options,
     pick,
+    cashOption,
     verdict,
     summary,
     balances,

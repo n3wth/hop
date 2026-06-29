@@ -30,11 +30,22 @@ interface PassengerDraft {
   phoneNumber: string
 }
 
-function emptyPassenger(email?: string): PassengerDraft {
+function emptyPassenger(email?: string, name?: string): PassengerDraft {
+  // Prefill the first traveler's name from the signed-in profile (best-effort
+  // split on the last space — the user can correct it). Saves typing for the
+  // common case of booking for yourself.
+  let givenName = ''
+  let familyName = ''
+  const trimmed = name?.trim()
+  if (trimmed) {
+    const parts = trimmed.split(/\s+/)
+    givenName = parts.slice(0, -1).join(' ') || parts[0]
+    familyName = parts.length > 1 ? parts[parts.length - 1] : ''
+  }
   return {
     title: 'mr',
-    givenName: '',
-    familyName: '',
+    givenName,
+    familyName,
     bornOn: '',
     gender: 'm',
     email: email ?? '',
@@ -82,14 +93,18 @@ const CARD_STYLES = {
 export default function CheckoutForm({
   offer,
   defaultEmail,
+  defaultName,
 }: {
   offer: CheckoutOffer
   defaultEmail?: string
+  defaultName?: string
 }) {
   const router = useRouter()
   const count = Math.max(1, offer.passengerCount)
   const [passengers, setPassengers] = useState<PassengerDraft[]>(() =>
-    Array.from({ length: count }, (_, i) => emptyPassenger(i === 0 ? defaultEmail : undefined)),
+    Array.from({ length: count }, (_, i) =>
+      emptyPassenger(i === 0 ? defaultEmail : undefined, i === 0 ? defaultName : undefined),
+    ),
   )
 
   const cardActions = useDuffelCardFormActions()
@@ -200,32 +215,32 @@ export default function CheckoutForm({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-7 lg:grid-cols-[1fr_330px]">
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px] lg:gap-10">
       {/* LEFT — passenger + payment */}
       <div className="min-w-0">
-        <h1 className="font-display text-[26px] font-semibold tracking-[-0.02em] text-text">
+        <h1 className="font-display text-[30px] font-semibold tracking-[-0.02em] text-text sm:text-[34px]">
           Book this flight
         </h1>
-        <p className="mt-1 text-[14px] text-text2">
+        <p className="mt-2 max-w-[52ch] text-[15px] leading-[1.55] text-text2">
           Enter traveler details and pay securely. You&apos;ll get a confirmation with your booking
           reference.
         </p>
 
         {/* passengers */}
-        <div className="mt-7 space-y-6">
+        <div className="mt-8 space-y-6">
           {passengers.map((p, i) => (
-            <section key={i} className="rounded-[16px] border border-border bg-surface p-5 sm:p-6">
-              <div className="mb-4 flex items-center gap-2">
+            <section key={i} className="rounded-[18px] border border-border bg-surface p-6 sm:p-7">
+              <div className="mb-5 flex items-center gap-2.5">
                 <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-light text-[13px] font-semibold text-brand">
                   {i + 1}
                 </span>
-                <h2 className="font-display text-[16px] font-semibold text-text">
+                <h2 className="font-display text-[17px] font-semibold text-text">
                   {count > 1 ? `Traveler ${i + 1}` : 'Traveler'}
                 </h2>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-6">
-                <Field className="sm:col-span-1" label="Title">
+              <div className="grid grid-cols-12 gap-x-4 gap-y-5">
+                <Field className="col-span-12 sm:col-span-3" label="Title">
                   <Select
                     value={p.title}
                     onChange={(v) => update(i, { title: v as Title })}
@@ -237,14 +252,14 @@ export default function CheckoutForm({
                     ]}
                   />
                 </Field>
-                <Field className="sm:col-span-3" label="First name">
+                <Field className="col-span-6 sm:col-span-5" label="First name">
                   <Input
                     value={p.givenName}
                     onChange={(v) => update(i, { givenName: v })}
                     autoComplete="given-name"
                   />
                 </Field>
-                <Field className="sm:col-span-2" label="Last name">
+                <Field className="col-span-6 sm:col-span-4" label="Last name">
                   <Input
                     value={p.familyName}
                     onChange={(v) => update(i, { familyName: v })}
@@ -252,10 +267,10 @@ export default function CheckoutForm({
                   />
                 </Field>
 
-                <Field className="sm:col-span-2" label="Date of birth">
+                <Field className="col-span-7 sm:col-span-4" label="Date of birth">
                   <Input type="date" value={p.bornOn} onChange={(v) => update(i, { bornOn: v })} />
                 </Field>
-                <Field className="sm:col-span-1" label="Gender">
+                <Field className="col-span-5 sm:col-span-2" label="Gender">
                   <Select
                     value={p.gender}
                     onChange={(v) => update(i, { gender: v as Gender })}
@@ -265,7 +280,7 @@ export default function CheckoutForm({
                     ]}
                   />
                 </Field>
-                <Field className="sm:col-span-3" label="Phone">
+                <Field className="col-span-12 sm:col-span-6" label="Phone">
                   <Input
                     type="tel"
                     value={p.phoneNumber}
@@ -275,7 +290,7 @@ export default function CheckoutForm({
                   />
                 </Field>
 
-                <Field className="col-span-2 sm:col-span-6" label="Email">
+                <Field className="col-span-12" label="Email">
                   <Input
                     type="email"
                     value={p.email}
@@ -455,17 +470,26 @@ function Select({
   onChange: (v: string) => void
   options: Array<[string, string]>
 }) {
+  // Custom-styled native select: appearance-none kills the OS chrome, and we draw
+  // our own chevron so it matches the Inputs exactly (same height, border, font).
   return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="rounded-[11px] border-[1.5px] border-border bg-paper px-3 py-[10px] text-[14.5px] text-text outline-none transition-colors focus:border-brand"
-    >
-      {options.map(([v, label]) => (
-        <option key={v} value={v}>
-          {label}
-        </option>
-      ))}
-    </select>
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full cursor-pointer appearance-none rounded-[11px] border-[1.5px] border-border bg-paper px-3 py-[10px] pr-9 text-[14.5px] text-text outline-none transition-colors focus:border-brand"
+      >
+        {options.map(([v, label]) => (
+          <option key={v} value={v}>
+            {label}
+          </option>
+        ))}
+      </select>
+      <Icon
+        name="expand_more"
+        size={18}
+        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-text3"
+      />
+    </div>
   )
 }

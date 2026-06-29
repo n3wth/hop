@@ -143,6 +143,9 @@ export interface SearchResult {
   params: SearchParams
   options: FlightOption[] // sorted by cpp desc, pick is options[0] when present
   pick?: FlightOption
+  // Cheapest cash option (with its real bookingUrl) — the "Book cash" CTA target
+  // when the verdict is pay-cash, since `pick` may still be a weak award option.
+  cashOption?: FlightOption
   verdict: 'use-points' | 'pay-cash' | 'none'
   summary: {
     cheapestCash?: number
