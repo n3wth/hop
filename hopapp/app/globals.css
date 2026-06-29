@@ -513,25 +513,8 @@ body {
   transform: scale(0.9);
 }
 
-/* ── Nav link underline reveal ───────────────────────────────────────────
-   A thin underline that slides in from the left on hover, using a
-   background gradient so it's GPU-friendly. */
+/* ── Nav link hover ──────────────────────────────────────────────────────
+   Clean color transition only — no underline. */
 .hop-nav-link {
-  position: relative;
   transition: color 150ms ease;
-}
-.hop-nav-link::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 1.5px;
-  background: var(--color-brand);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 200ms var(--ease-premium);
-}
-.hop-nav-link:hover::after {
-  transform: scaleX(1);
 }
