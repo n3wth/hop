@@ -7,23 +7,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 The app runs **Next.js 16.2.9 + React 19** — APIs, conventions, and file layout differ from older
 Next. Before writing any framework code (route handlers, `middleware`/`proxy`, metadata, server
 actions, caching, `params`/`searchParams` shapes), read the relevant guide in
-`hopapp/node_modules/next/dist/docs/` and heed deprecation notices. Do not assume training-data
-behavior. (This rule lives in `hopapp/AGENTS.md`, imported by `hopapp/CLAUDE.md`.)
+`node_modules/next/dist/docs/` and heed deprecation notices. Do not assume training-data behavior.
+(This rule also lives in `AGENTS.md`.)
 
 ## Repository layout
 
-The Next.js app lives in **`hopapp/`** — that is the real project root. **Run every command from
-`hopapp/`**, not the repo root.
+The **repo root is the Next.js app** (App Router, RSC, TypeScript, Tailwind v4) — run every command
+from the root.
 
-- `hopapp/` — the application (App Router, RSC, TypeScript, Tailwind v4)
+- `app/`, `components/`, `lib/`, `utils/`, `public/` — the application
 - `docs/design/` — the design source of truth: `CHOSEN-editorial.html` (canonical visual
   reference), `copy-spec.md` (strict copy voice), `icons.json`, logo assets
 - `docs/plans/` — implementation plans (e.g. the flight-optimizer plan)
-- `hopapp/docs/content-plan.md` — content + destination-data strategy (sweet-spots table, SEO,
+- `docs/content-plan.md` — content + destination-data strategy (sweet-spots table, SEO,
   concierge seed prompts)
-- `hop-v9/` — empty placeholder
 
-## Commands (run from `hopapp/`)
+## Commands (run from the repo root)
 
 ```bash
 npm run dev            # dev server (http://localhost:3000)
@@ -41,8 +40,7 @@ MOCK=1 npm run dev     # serve from mock fixtures (no upstream API keys needed)
 ```
 
 Vitest uses the **node** environment and only collects `lib/**/*.test.ts` and `app/**/*.test.ts`
-(see `hopapp/vitest.config.ts`). The `@/*` path alias maps to the `hopapp/` root in both tsconfig
-and vitest.
+(see `vitest.config.ts`). The `@/*` path alias maps to the repo root in both tsconfig and vitest.
 
 ## Architecture — the big picture
 
@@ -104,7 +102,7 @@ A user's data is only ever reachable via that user's own token.
 Streamed chat (`ai` SDK + `@anthropic-ai/sdk`, `components/ai-elements/*`, `streamdown` for
 markdown) grounded in the user's real `totalPoints` + destination set. Related server logic:
 `lib/concierge-*.ts`, `lib/mcp-tools.ts`, `app/api/concierge`/`conversation` routes. Seed prompts
-for the composer chips are specified in `hopapp/docs/content-plan.md` §5.
+for the composer chips are specified in `docs/content-plan.md` §5.
 
 ### Page surfaces (App Router)
 
@@ -136,7 +134,7 @@ in one round-trip.
 - **Flat editorial** design: **no shadows, gradients, or glows.** Depth comes from a subtle
   paper-grain background, type, color, and composition. Canonical reference:
   `docs/design/CHOSEN-editorial.html`.
-- **Tailwind v4 CSS-first**: design tokens are defined in `hopapp/app/globals.css` `@theme`
+- **Tailwind v4 CSS-first**: design tokens are defined in `app/globals.css` `@theme`
   (warm cream canvas, primary teal, value tiers good/ok/weak). **WCAG AA is required** — token
   colors were already darkened to pass; don't regress contrast. Prefer tokens over hardcoded hex.
 - **Type**: Bricolage Grotesque (display, `.font-display`), General Sans (body), Fraunces italic
