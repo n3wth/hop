@@ -499,12 +499,22 @@ export function reconcileEconomics(
 // This is what makes the same question render differently per traveler. The
 // model still only chooses block TYPE + fields; personalizeBlocks() enforces the
 // outcome server-side regardless.
-export function a2uiGuidance(profile: TravelProfile | undefined, hasHistory: boolean): string {
-  const lines: string[] = [
+export function a2uiGuidance(
+  profile: TravelProfile | undefined,
+  hasHistory: boolean,
+  hasBalances = false,
+): string {
+  const lines: string[] = ([
     'GENERATIVE UI (a2ui): alongside your prose, you MAY emit a typed UI spec so hop renders branded, tailored cards instead of plain text.',
     'Emit it as a fenced ```json block containing {"blocks": [ ... ]} as the LAST thing in your reply. Use ONLY these block types and fields:',
     '- verdict_card { type, code (IATA), reason } — the one-glance call for ONE destination. Do NOT put miles/cpp/affordability in it; hop fills those from the engine.',
-    '- compare { type, left:{code,reason}, right:{code,reason}, takeaway? } — when the traveler is TORN between two destinations, show them side-by-side vs. their points.',
+    '- compare { type, left:{code,reason}, right:{code,reason}, takeaway? } — when the traveler is TORN between two destinations, show them side-by-side.',
+    // The cards and the prose must agree — a reader should never see a place
+    // named in words with no matching card, or a card for a place never mentioned.
+    'AGREEMENT: emit exactly one verdict_card (or compare side) for each destination you NAME in your prose, and name in your prose every destination you emit a card for. The set of places in your words and the set in your cards must match.',
+    hasBalances
+      ? null
+      : 'OWNERSHIP: this visitor has NO connected balances. In card `reason` text frame value neutrally (what the route is worth, points vs cash) — never write "your points" or "you have"; hop renders these as a value demonstration, not owned balances.',
     '- timing { type, place, weeks:[{label, level:"low"|"mid"|"high"}], note? } — a cheapest-week strip. Use coarse levels, never invent dollar amounts.',
     '- weather { type, place, month, highC?, lowC?, summary } — pass through what get_weather returned; do not invent climate numbers.',
     '- web_note { type, text, source, url? } — a cited live fact from web_search. ALWAYS include the source.',
@@ -514,7 +524,7 @@ export function a2uiGuidance(profile: TravelProfile | undefined, hasHistory: boo
     '- counterfactual { type, mutation:{op:"add"|"set"|"swap", program?, amount?, from?, to?} } — when the user asks "what if I had a different points portfolio?". Author ONLY the mutation intent (use program brand names as the user said them); hop runs its engine to fill what unlocks and the dollar value. Use "add" for more of a program, "set" for an exact target, "swap" for holding one program instead of another (from/to).',
     'PROACTIVE COUNTERFACTUAL: when price_trip shows affordable===false for a destination the traveler is clearly drawn to, do not just say "save toward it" — emit a counterfactual block with op:"add" proposing the SMALLEST realistic top-up of a transferable program the traveler ALREADY holds that would cross the line (hop computes what else that unlocks and the dollar value). When TWO destinations are both a stretch and both in play, prefer a compare block instead.',
     'Rules: pick the block TYPE that fits; never emit HTML, styles, or block types not listed; omit the spec entirely if prose alone is best. Never author counterfactual unlock counts or dollar values — hop computes them.',
-  ]
+  ] as (string | null)[]).filter((l): l is string => l != null)
 
   // Personalization nudges — tuned to THIS user's profile + history.
   const pers: string[] = []

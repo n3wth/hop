@@ -136,6 +136,10 @@ export default function Concierge({
 
   const busy = status === 'submitted' || status === 'streaming'
   const hasThread = messages.length > 0
+  // True only when the signed-in visitor has real balances in play — gates the
+  // ownership voice in tool labels + a2ui cards ("your points"/"you have") vs a
+  // neutral value framing for signed-out / no-balance visitors.
+  const hasBalances = signedIn && (programs?.length ?? 0) > 0
 
   const send = useCallback(
     (text: string) => {
@@ -229,7 +233,7 @@ export default function Concierge({
       <Conversation className="min-h-0 rounded-[20px] border border-border bg-bg px-3 py-4 sm:px-5">
         <ConversationContent>
           {messages.map((m) => (
-            <Turn key={m.id} message={m} onChip={send} />
+            <Turn key={m.id} message={m} onChip={send} hasBalances={hasBalances} />
           ))}
           {/* a fresh assistant turn that hasn't streamed text yet → thinking */}
           {busy && needsThinking(messages) ? <ThinkingTurn /> : null}
@@ -266,7 +270,15 @@ export default function Concierge({
 // Render a single message. USER → a brand-tint bubble. ASSISTANT → hop byline,
 // then its parts IN ORDER: streamed markdown (<Response>), tool-activity cards
 // (<Tool>), and server-validated a2ui blocks rendered inside the turn.
-function Turn({ message, onChip }: { message: HopUIMessage; onChip: (p: string) => void }) {
+function Turn({
+  message,
+  onChip,
+  hasBalances,
+}: {
+  message: HopUIMessage
+  onChip: (p: string) => void
+  hasBalances: boolean
+}) {
   if (message.role === 'user') {
     const text = textOf(message)
     return (
@@ -292,6 +304,7 @@ function Turn({ message, onChip }: { message: HopUIMessage; onChip: (p: string) 
               <ToolActivity
                 key={part.id ?? i}
                 step={{ tool: frame.tool, state: frame.state as ToolState, detail: frame.detail }}
+                hasBalances={hasBalances}
               />
             )
           }
@@ -299,7 +312,7 @@ function Turn({ message, onChip }: { message: HopUIMessage; onChip: (p: string) 
             const blocks = part.data?.blocks ?? []
             return blocks.length ? (
               <div key={part.id ?? i} className="mt-1">
-                <A2UIBlocks blocks={blocks} onChip={onChip} />
+                <A2UIBlocks blocks={blocks} onChip={onChip} hasBalances={hasBalances} />
               </div>
             ) : null
           }

@@ -8,6 +8,17 @@
 // verdict_card / compare come from `econ`, which the SERVER stamped from hop's
 // engine — never from the model.
 //
+// The verdict_card / compare blocks speak the SAME visual language as the
+// signature VerdictRail: lead with the "$X vs cash" savings, the same labeled
+// stat strip (You pay / Value / Cash price), and the same verdict color. So an
+// agent verdict reads as a compact instance of the one engine voice.
+//
+// OWNERSHIP VOICE: `hasBalances` (threaded from the server, true only when the
+// signed-in visitor's real balances are in play) gates first-person possession.
+// Signed-out / no balances → value framing ("Priced this route", "Value per
+// point") and never "you have"/"with your points" — the points belong to no one
+// we know.
+//
 // Unknown/invalid blocks never reach here: parseA2UI() drops them. As a final
 // belt-and-suspenders, the switch returns null for anything unexpected.
 
@@ -31,19 +42,22 @@ function searchHref(code: string): string {
   return `/search?to=${encodeURIComponent(code)}`
 }
 
-// Render a list of blocks. Each block is self-contained + on-brand.
+// Render a list of blocks. Each block is self-contained + on-brand. `hasBalances`
+// gates the ownership voice (see file header) on verdict_card / compare.
 export function A2UIBlocks({
   blocks,
   onChip,
+  hasBalances = false,
 }: {
   blocks: A2UIBlock[]
   onChip?: (prompt: string) => void
+  hasBalances?: boolean
 }) {
   if (!blocks.length) return null
   return (
     <div className="flex flex-col gap-3">
       {blocks.map((b, i) => (
-        <A2UIBlockView key={`${b.type}-${i}`} block={b} onChip={onChip} />
+        <A2UIBlockView key={`${b.type}-${i}`} block={b} onChip={onChip} hasBalances={hasBalances} />
       ))}
     </div>
   )
@@ -53,15 +67,17 @@ export function A2UIBlocks({
 export function A2UIBlockView({
   block,
   onChip,
+  hasBalances = false,
 }: {
   block: A2UIBlock
   onChip?: (prompt: string) => void
+  hasBalances?: boolean
 }) {
   switch (block.type) {
     case 'verdict_card':
-      return <VerdictCard b={block} />
+      return <VerdictCard b={block} hasBalances={hasBalances} />
     case 'compare':
-      return <Compare b={block} />
+      return <Compare b={block} hasBalances={hasBalances} />
     case 'timing':
       return <Timing b={block} />
     case 'weather':
@@ -82,12 +98,15 @@ export function A2UIBlockView({
   }
 }
 
-// ── Shared bits ──────────────────────────────────────────────────────────────
+// ── Shared bits — the VerdictRail vocabulary, compact ─────────────────────────
 
-// The one-glance verdict pill. Solid fill, brand tokens, no emoji.
+// The one-glance verdict pill. Solid fill, brand tokens, no emoji. Same call
+// language as VerdictRail's "Best value" / "Pay cash" verdict.
 function VerdictPill({ verdict, cpp }: { verdict: A2UIEconomics['verdict']; cpp?: number }) {
   const label =
     verdict === 'points' ? 'Use points' : verdict === 'cash' ? 'Pay cash' : 'Save toward'
+  // Brand teal for the points win (matches VerdictRail), warm ochre for save,
+  // muted ink for cash — the same three-state palette the rail uses.
   const bg = verdict === 'points' ? '#0d6e6e' : verdict === 'cash' ? '#5a5750' : '#9a6a2e'
   return (
     <span
@@ -102,47 +121,92 @@ function VerdictPill({ verdict, cpp }: { verdict: A2UIEconomics['verdict']; cpp?
   )
 }
 
-// The engine-computed facts row (points / you-have / value). Renders nothing if
-// econ is absent (destination not in the dataset) — degrades to reason-only.
-function EconFacts({ econ }: { econ?: A2UIEconomics }) {
-  if (!econ) return null
-  return (
-    <dl className="mt-3 flex flex-col gap-1.5 border-t border-border pt-3 text-[12px]">
-      <div className="flex items-baseline justify-between">
-        <dt className="text-text3">Points</dt>
-        <dd className="font-display font-semibold tabular-nums text-text">
-          {Math.round(econ.milesNeeded / 1000)}k
-          <span className="ml-1 font-sans font-normal text-text3">{econ.bestProgram}</span>
-        </dd>
+// The savings hero — VerdictRail's signature "$X vs cash" moment, miniaturized.
+// On a points win it leads with the dollars skipped; on cash/save it states the
+// cash price plainly. Numbers are engine-stamped (econ), never model-authored.
+function SavingsLead({ econ }: { econ: A2UIEconomics }) {
+  if (econ.verdict === 'points') {
+    // Cash you skip by flying on points = the cash price (award taxes are
+    // negligible in the dataset, mirroring VerdictRail's saveVsCash framing).
+    const save = Math.round(econ.cashUsd)
+    return (
+      <div className="mt-2.5 flex items-baseline gap-1.5">
+        <span className="font-display text-[30px] font-semibold leading-[0.95] tracking-[-0.03em] tabular-nums text-brand">
+          ${save.toLocaleString('en-US')}
+        </span>
+        <span className="font-display text-[13px] font-semibold leading-tight tracking-[-0.01em] text-text2">
+          vs&nbsp;cash
+        </span>
       </div>
-      {econ.youHave != null ? (
-        <div className="flex items-baseline justify-between">
-          <dt className="text-text3">You have</dt>
-          <dd
-            className={`font-display font-semibold tabular-nums ${econ.affordable ? 'text-brand' : 'text-text2'}`}
-          >
-            {econ.youHave.toLocaleString('en-US')}
-            {econ.affordable ? (
-              <span className="ml-1 font-sans font-normal text-brand">enough</span>
-            ) : null}
-          </dd>
-        </div>
-      ) : null}
-      {econ.cpp != null ? (
-        <div className="flex items-baseline justify-between">
-          <dt className="text-text3">Value</dt>
-          <dd className="font-display font-semibold tabular-nums text-text">
-            {econ.cpp.toFixed(1)}¢/pt
-          </dd>
-        </div>
-      ) : null}
-    </dl>
+    )
+  }
+  return (
+    <div className="mt-2.5 flex items-baseline gap-1.5">
+      <span className="font-display text-[24px] font-semibold leading-[0.95] tracking-[-0.02em] tabular-nums text-text">
+        ${Math.round(econ.cashUsd).toLocaleString('en-US')}
+      </span>
+      <span className="text-[12px] font-medium text-text3">cash{econ.verdict === 'save' ? ' · save toward it' : ''}</span>
+    </div>
+  )
+}
+
+// One labeled stat in VerdictRail's strip vocabulary (small caps label over a
+// display-weight value). `accent` paints the value brand-teal for the hero stat.
+function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div>
+      <div className="mb-0.5 text-[9.5px] font-semibold uppercase tracking-[0.14em] text-text3">
+        {label}
+      </div>
+      <div
+        className={`font-display text-[15px] font-semibold leading-none tabular-nums ${accent ? 'text-brand' : 'text-text'}`}
+      >
+        {value}
+      </div>
+    </div>
+  )
+}
+
+// The engine-computed stat strip — VerdictRail's "You pay / Value / Cash price /
+// You save" treatment, compact. Renders nothing if econ is absent (destination
+// not in the dataset) — degrades to reason-only. `hasBalances` swaps the
+// ownership label: "You pay" (the visitor's own points win) vs the neutral
+// "Points" for a signed-out value demonstration.
+function EconFacts({ econ, hasBalances }: { econ?: A2UIEconomics; hasBalances: boolean }) {
+  if (!econ) return null
+  const owns = hasBalances && econ.youHave != null
+  const points = `${Math.round(econ.milesNeeded / 1000)}k`
+  return (
+    <div className="mt-3 border-t border-border pt-3">
+      <div className="flex flex-wrap gap-x-5 gap-y-2.5">
+        <Stat label={owns ? 'You pay' : 'Points'} value={points} />
+        {econ.cpp != null ? <Stat label="Value" value={`${econ.cpp.toFixed(1)}¢`} /> : null}
+        <Stat label="Cash price" value={`$${Math.round(econ.cashUsd).toLocaleString('en-US')}`} />
+        {econ.verdict === 'points' ? (
+          <Stat label="You save" value={`$${Math.round(econ.cashUsd).toLocaleString('en-US')}`} accent />
+        ) : null}
+      </div>
+      {/* program path — value framing when signed-out, possession when owned */}
+      {owns ? (
+        <p className="mt-2.5 text-[11.5px] leading-[1.5] text-text2">
+          <b className={`font-semibold tabular-nums ${econ.affordable ? 'text-brand' : 'text-text'}`}>
+            {econ.youHave!.toLocaleString('en-US')}
+          </b>{' '}
+          toward {econ.bestProgram}
+          {econ.affordable ? <span className="font-semibold text-brand"> — enough</span> : ' — keep saving'}
+        </p>
+      ) : (
+        <p className="mt-2.5 text-[11.5px] leading-[1.5] text-text3">
+          Best via {econ.bestProgram}
+        </p>
+      )}
+    </div>
   )
 }
 
 // ── verdict_card ─────────────────────────────────────────────────────────────
 
-function VerdictCard({ b }: { b: VerdictCardBlock }) {
+function VerdictCard({ b, hasBalances }: { b: VerdictCardBlock; hasBalances: boolean }) {
   const econ = b.econ
   const city = econ?.city ?? b.code
   return (
@@ -161,6 +225,9 @@ function VerdictCard({ b }: { b: VerdictCardBlock }) {
         </div>
         {econ ? <VerdictPill verdict={econ.verdict} cpp={econ.cpp} /> : null}
       </div>
+
+      {/* lead with the savings — the VerdictRail hero moment, compact */}
+      {econ ? <SavingsLead econ={econ} /> : null}
 
       <p className="mt-2 text-[13px] leading-[1.5] text-text2">{b.reason}</p>
 
@@ -182,7 +249,7 @@ function VerdictCard({ b }: { b: VerdictCardBlock }) {
         </div>
       ) : null}
 
-      <EconFacts econ={econ} />
+      <EconFacts econ={econ} hasBalances={hasBalances} />
 
       <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand">
         See the search
@@ -194,7 +261,7 @@ function VerdictCard({ b }: { b: VerdictCardBlock }) {
 
 // ── compare ──────────────────────────────────────────────────────────────────
 
-function Compare({ b }: { b: CompareBlock }) {
+function Compare({ b, hasBalances }: { b: CompareBlock; hasBalances: boolean }) {
   return (
     <div className="rounded-[16px] border border-border bg-surface p-4">
       <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
@@ -202,8 +269,8 @@ function Compare({ b }: { b: CompareBlock }) {
         Side by side
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <CompareSide side={b.left} />
-        <CompareSide side={b.right} />
+        <CompareSide side={b.left} hasBalances={hasBalances} />
+        <CompareSide side={b.right} hasBalances={hasBalances} />
       </div>
       {b.takeaway ? (
         <p className="mt-3 border-t border-border pt-3 text-[13px] leading-[1.5] text-text2">
@@ -214,7 +281,7 @@ function Compare({ b }: { b: CompareBlock }) {
   )
 }
 
-function CompareSide({ side }: { side: CompareBlock['left'] }) {
+function CompareSide({ side, hasBalances }: { side: CompareBlock['left']; hasBalances: boolean }) {
   const econ = side.econ
   const city = econ?.city ?? side.code
   return (
@@ -226,8 +293,9 @@ function CompareSide({ side }: { side: CompareBlock['left'] }) {
         <span className="font-display text-[15px] font-semibold leading-tight text-text">{city}</span>
         {econ ? <VerdictPill verdict={econ.verdict} cpp={econ.cpp} /> : null}
       </div>
+      {econ ? <SavingsLead econ={econ} /> : null}
       <p className="mt-1.5 text-[12px] leading-[1.5] text-text2">{side.reason}</p>
-      <EconFacts econ={econ} />
+      <EconFacts econ={econ} hasBalances={hasBalances} />
     </a>
   )
 }

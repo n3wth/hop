@@ -75,13 +75,19 @@ export function encodeToolFrame(frame: ToolActivityFrame): string {
 }
 
 // A short, human-friendly detail line per tool call, derived from its input.
-// Pure + total -- never throws on odd input shapes.
-function toolDetail(toolName: string, input: unknown): string | undefined {
+// Pure + total -- never throws on odd input shapes. `hasBalances` neutralizes the
+// "your points" phrasing for visitors with nothing connected — the agent is
+// demonstrating route value, not pricing points anyone owns.
+function toolDetail(toolName: string, input: unknown, hasBalances: boolean): string | undefined {
   const o = input && typeof input === 'object' ? (input as Record<string, unknown>) : {}
   const s = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 120) : undefined)
   switch (toolName) {
-    case 'price_trip':
-      return s(o.code) ? `Pricing ${String(o.code).toUpperCase()} against your points` : undefined
+    case 'price_trip': {
+      const code = s(o.code)
+      if (!code) return undefined
+      const suffix = hasBalances ? 'against your points' : 'against cash'
+      return `Pricing ${String(code).toUpperCase()} ${suffix}`
+    }
     case 'get_weather': {
       const place = s(o.place)
       const month = s(o.month)
@@ -310,6 +316,9 @@ function buildAgenticSystem(
 ): string {
   const profileBlock = profileSummary(profile)
   const historyBlock = travelHistorySummary(history)
+  // True only when the visitor has real balances in play — gates the ownership
+  // voice (no "your points" for a signed-out / no-balance visitor).
+  const hasBalances = (context?.programs?.length ?? 0) > 0
   return [
     "You are hop's AI travel concierge. hop helps people turn loyalty points into great trips.",
     'Recommend WHERE to go and whether to use POINTS or CASH. Be warm, concrete, and concise — full of wanderlust but practical. No emoji spam, no hype.',
@@ -328,6 +337,12 @@ function buildAgenticSystem(
     '- Honor the profile: respect dietary/accessibility/cabin needs and NEVER suggest a destination the user listed as avoided.',
     '- After tool calls, weave the real figures into a flowing 1-4 sentence answer. Mention how many points a trip needs and which program books it.',
     '- Write approximations in words ("about 40k", "around $420") — do NOT use a leading "~" before numbers.',
+    // PROSE/UI AGREEMENT — the rendered cards and the words must name the SAME
+    // places, so a reader never sees "4 great cities" with only 2 cards.
+    '- AGREEMENT: every destination you NAME as a recommendation in your prose MUST also be emitted as a verdict_card (or a compare side) in the a2ui spec, and do NOT emit a card for a place you did not mention. If you want to name several places, emit a card for each; if you only want a couple of cards, only name those couple in your prose. Keep the count consistent.',
+    hasBalances
+      ? "- The user is signed in with real balances, so you MAY speak of \"your points\" and whether they have enough."
+      : "- OWNERSHIP: the visitor has NO connected balances, so NEVER say \"your points\", \"you have\", or imply they own any miles. Frame value neutrally — what the route is worth (e.g. \"these miles are worth about 3.1¢ here\", \"points beat cash by about $X on this route\") — and you may invite them to sign in to check their own balances.",
     '',
     'Points valuations (cents per point):',
     valuationsSummary(),
@@ -350,7 +365,7 @@ function buildAgenticSystem(
     'Destinations dataset (code · city · region · vibe [tags] · ~award miles one-way · best program · ~value):',
     destinationsSummary(),
     '',
-    a2uiGuidance(profile, !!history?.connected),
+    a2uiGuidance(profile, !!history?.connected, hasBalances),
   ].join('\n')
 }
 
@@ -620,6 +635,9 @@ export async function POST(request: Request): Promise<Response> {
     // never the model — same guarantee as price_trip. Prose is also run through
     // sanitizeProse so load-bearing "~"-figures are never struck out by remark-gfm.
     const balances = context?.programs ?? []
+    // True only when the visitor has real balances in play — gates the ownership
+    // voice in tool labels + a2ui card framing ("your points" vs "this route").
+    const hasBalances = balances.length > 0
     const hasHistory = !!history?.connected
     const encoder = new TextEncoder()
     const stream = new ReadableStream<Uint8Array>({
@@ -669,7 +687,7 @@ export async function POST(request: Request): Promise<Response> {
                 id,
                 tool: part.toolName,
                 state: 'input-available',
-                detail: toolDetail(part.toolName, part.input),
+                detail: toolDetail(part.toolName, part.input, hasBalances),
               })
             } else if (part.type === 'tool-result') {
               const id = toolFrameIds.get(part.toolCallId)

@@ -317,4 +317,18 @@ describe('a2uiGuidance() — prompt-side personalization rules', () => {
     const g = a2uiGuidance(undefined, true)
     for (const t of A2UI_BLOCK_TYPES) expect(g).toContain(t)
   })
+
+  it('always demands prose/card AGREEMENT so named places match emitted cards', () => {
+    expect(a2uiGuidance(undefined, true, true)).toContain('AGREEMENT')
+    expect(a2uiGuidance(undefined, true, false)).toContain('AGREEMENT')
+  })
+
+  it('forbids the ownership voice only when there are NO balances', () => {
+    // No balances → never imply owned points in card reason text.
+    const out = a2uiGuidance(undefined, true, false)
+    expect(out).toContain('OWNERSHIP')
+    expect(out.toLowerCase()).toContain('no connected balances')
+    // Real balances → the ownership guard is dropped (it may say "your points").
+    expect(a2uiGuidance(undefined, true, true)).not.toContain('OWNERSHIP')
+  })
 })

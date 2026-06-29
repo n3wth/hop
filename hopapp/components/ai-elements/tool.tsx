@@ -99,13 +99,25 @@ const TOOL_COPY: Record<string, { icon: IconName; running: string; done: string 
   save_profile_fact: { icon: 'loyalty', running: 'Remembering that…', done: 'Saved to your profile' },
 }
 
+// VALUE-NEUTRAL copy for visitors with no real balances (signed-out / nothing
+// connected). The agent isn't pricing against points anyone owns, so the label
+// must not imply "your points" — it's a value demonstration of the route.
+const TOOL_COPY_NEUTRAL: Record<string, { running: string; done: string }> = {
+  price_trip: { running: 'Pricing this route…', done: 'Priced this route' },
+}
+
 function humanize(tool: string): string {
   return tool.replace(/_/g, ' ')
 }
 
-export function toolTitle(step: ToolActivityStep): string {
-  const copy = TOOL_COPY[step.tool]
+export function toolTitle(step: ToolActivityStep, hasBalances = false): string {
   const running = step.state === 'input-streaming' || step.state === 'input-available'
+  // Neutral framing first when the visitor has no balances to price against.
+  if (!hasBalances) {
+    const neutral = TOOL_COPY_NEUTRAL[step.tool]
+    if (neutral) return running ? neutral.running : neutral.done
+  }
+  const copy = TOOL_COPY[step.tool]
   if (copy) return running ? copy.running : copy.done
   return running ? `Working: ${humanize(step.tool)}…` : `Used ${humanize(step.tool)}`
 }
@@ -123,17 +135,27 @@ export function shortDetail(detail: string): string {
     .replace(/^(pricing|searching|checking|saving|remembering)\s+/i, '')
     .replace(/\s+against your points$/i, '')
     .replace(/\s+with your points$/i, '')
+    .replace(/\s+against cash$/i, '')
     .trim()
 }
 
 // A ready-made tool card for one activity step. Collapsed by default; expands to
-// the optional detail line. Used inside an assistant turn.
-export function ToolActivity({ step, children }: { step: ToolActivityStep; children?: ReactNode }) {
+// the optional detail line. Used inside an assistant turn. `hasBalances` selects
+// value-neutral labels for visitors with no points to price against.
+export function ToolActivity({
+  step,
+  children,
+  hasBalances = false,
+}: {
+  step: ToolActivityStep
+  children?: ReactNode
+  hasBalances?: boolean
+}) {
   const hasDetail = !!step.detail || !!children
   // Surface the per-call detail in the collapsed header so stacked rows
   // (e.g. three price_trip calls) are legible without expanding each one.
   const suffix = step.detail ? shortDetail(step.detail) : ''
-  const title = suffix ? `${toolTitle(step)} · ${suffix}` : toolTitle(step)
+  const title = suffix ? `${toolTitle(step, hasBalances)} · ${suffix}` : toolTitle(step, hasBalances)
   return (
     <Tool>
       <ToolHeader title={title} icon={toolIcon(step)} state={step.state} />

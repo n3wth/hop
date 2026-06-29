@@ -5,6 +5,7 @@ import { auth0 } from '@/lib/auth0'
 import AppShell from '@/components/AppShell'
 import DealCard from '@/components/DealCard'
 import SiteFooter from '@/components/SiteFooter'
+import Icon from '@/components/Icon'
 
 export const metadata = {
   title: 'Sweet spots · hop',
@@ -80,6 +81,26 @@ export default async function DealsPage() {
             <span>best value first</span>
           </div>
         </header>
+
+        {/* agent on-ramp — these are great-value routes in the abstract; hop's
+            concierge can say which ones YOUR points actually reach. A door into
+            /ask so the static feed isn't a dead end. */}
+        <div className="mx-auto mt-7 flex max-w-[640px] flex-col items-center justify-between gap-3 rounded-[var(--radius-lg)] border border-border bg-surface px-5 py-4 text-center sm:flex-row sm:gap-4 sm:text-left">
+          <div className="flex items-center gap-2.5">
+            <Icon name="lightbulb" size={18} className="flex-shrink-0 text-brand" />
+            <span className="text-[14px] leading-[1.5] text-text2">
+              <span className="font-semibold text-text">Not sure which fit?</span> Ask hop
+              which of these your points can reach.
+            </span>
+          </div>
+          <a
+            href="/ask?q=Which%20of%20these%20sweet%20spots%20fit%20my%20points%3F"
+            className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-[var(--radius)] bg-brand px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep"
+          >
+            <Icon name="flight" size={16} />
+            Ask hop
+          </a>
+        </div>
 
         {/* the feed */}
         <section className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">

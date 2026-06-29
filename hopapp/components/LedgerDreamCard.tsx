@@ -9,13 +9,16 @@ export type { DreamCardData }
 // THE LEDGER DREAM card — a cinematic, flat, on-brand "Dream of the Week" built
 // FROM the user's real points stack. The destination, miles, cpp, cash value and
 // the exact pool→program PROOF are all the ENGINE's (lib/ledger-dream), resolved
-// server-side and passed in. The AI narration streams in client-side from
-// /api/dream; if it's slow or down, the server's templated blurb is used as the
-// initial text and the card stays whole.
+// server-side and passed in. The card SHOWS the server-rendered narration as-is
+// on first paint — no gateway call fires on mount, so a passive view costs zero
+// AI. Live AI narration only streams in when the user explicitly asks for a new
+// dream via "Dream me another".
 //
-// "Dream me another" increments the portfolio index and re-narrates — a different
-// corner of their wealth, same deterministic engine. DreamCardData is the
-// engine→client serializer's shape (lib/dream-view), re-exported above.
+// "Dream me another" walks the ranked dream list (wrapping around), re-narrating
+// a different corner of their wealth — same deterministic engine. With a single
+// dream it simply re-narrates the same one, so the affordance is always live.
+// DreamCardData is the engine→client serializer's shape (lib/dream-view),
+// re-exported above.
 
 function compactMiles(n: number): string {
   const k = n / 1000
@@ -81,20 +84,21 @@ export default function LedgerDreamCard({
     }
   }, [])
 
-  // On mount, upgrade the server's templated blurb to the live AI narration for
-  // the same (index 0) dream. Cheap, and makes the card feel alive. Deferred to a
-  // microtask so the first setState doesn't fire synchronously inside the effect
-  // body (avoids cascading renders; the templated blurb shows until it arrives).
+  // NO narration call on mount. The server already rendered a grounded blurb
+  // (dream.initialBlurb), shown above as the initial state — a passive view of
+  // the card costs zero AI. We only abort any in-flight stream on unmount.
   useEffect(() => {
-    queueMicrotask(() => void narrate(0))
     return () => abortRef.current?.abort()
-  }, [narrate])
+  }, [])
 
+  // "Dream me another" walks the ranked dream list and WRAPS around, so it always
+  // produces a dream even when there's only one reachable (it re-narrates that
+  // one). Fetches the next dream's CARD (engine pick) via a tiny GET to swap the
+  // visible data, then streams the new AI narration.
   const dreamAnother = useCallback(() => {
-    const next = index + 1
+    const count = Math.max(1, variantCount)
+    const next = (index + 1) % count
     setIndex(next)
-    // Fetch the next dream's CARD (engine pick) and its narration together. We
-    // hit a tiny GET to swap the visible card data, then stream the new blurb.
     void (async () => {
       try {
         const res = await fetch(`/api/dream/card?index=${next}`, { method: 'GET' })
@@ -108,10 +112,9 @@ export default function LedgerDreamCard({
       }
       void narrate(next)
     })()
-  }, [index, narrate])
+  }, [index, narrate, variantCount])
 
   const v = view
-  const canAnother = variantCount > 1 || v.saveToward
 
   return (
     <article className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper lg:rounded-[var(--radius-hero)]">
@@ -276,17 +279,15 @@ export default function LedgerDreamCard({
               <Icon name="flight" size={17} />
               {v.saveToward ? 'See the route' : 'Make it real'}
             </a>
-            {canAnother ? (
-              <button
-                type="button"
-                onClick={dreamAnother}
-                disabled={streaming}
-                className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-border bg-paper px-5 py-3 text-[14.5px] font-semibold text-text transition-colors hover:border-brand hover:text-brand disabled:opacity-50"
-              >
-                <Icon name="lightbulb" size={16} />
-                Dream me another
-              </button>
-            ) : null}
+            <button
+              type="button"
+              onClick={dreamAnother}
+              disabled={streaming}
+              className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-border bg-paper px-5 py-3 text-[14.5px] font-semibold text-text transition-colors hover:border-brand hover:text-brand disabled:opacity-50"
+            >
+              <Icon name="lightbulb" size={16} />
+              Dream me another
+            </button>
           </div>
 
           {v.photo ? (
