@@ -18,6 +18,7 @@ export interface ResultsListProps {
 // sync and stay aligned. Surfaces degraded + empty states.
 export default function ResultsList({ result }: ResultsListProps) {
   const { pick, options, degraded } = result
+  const oneWay = !result.params.return
   const others = options.filter((o) => o.id !== pick?.id)
   const [expanded, setExpanded] = useState(false)
 
@@ -66,6 +67,7 @@ export default function ResultsList({ result }: ResultsListProps) {
               index={i}
               open={expanded}
               onToggle={() => setExpanded((v) => !v)}
+              oneWay={oneWay}
             />
           ))}
         </div>

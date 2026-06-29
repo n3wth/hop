@@ -27,6 +27,7 @@ function Stat({ value, label }: { value: string; label: string }) {
 // weighted stat group on the right. Pure read-out — every token informs the trip.
 export default function RouteBar({ result }: RouteBarProps) {
   const { from, to, adults } = result.params
+  const oneWay = !result.params.return
   const ways = result.options.length
   const programs = result.balances.length
 
@@ -60,7 +61,7 @@ export default function RouteBar({ result }: RouteBarProps) {
         <span className="h-9 w-px bg-border" />
         <Stat value={String(adults)} label={adults === 1 ? 'traveler' : 'travelers'} />
         <span className="h-9 w-px bg-border" />
-        <Stat value="RT" label="round trip" />
+        <Stat value={oneWay ? 'OW' : 'RT'} label={oneWay ? 'one way' : 'round trip'} />
         <span className="h-9 w-px bg-border" />
         <Stat value={String(programs)} label="programs" />
       </div>

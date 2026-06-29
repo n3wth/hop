@@ -7,6 +7,7 @@ import RouteBar from '@/components/RouteBar'
 import VerdictRail from '@/components/VerdictRail'
 import ResultsList from '@/components/ResultsList'
 import PointsPanel from '@/components/PointsPanel'
+import SiteFooter from '@/components/SiteFooter'
 
 const DEFAULT_PARAMS: SearchParams = {
   from: 'SFO',
@@ -16,16 +17,47 @@ const DEFAULT_PARAMS: SearchParams = {
   adults: 1,
 }
 
-// Parse the raw query into a clean SearchParams, defaulting any missing field.
-// searchParams is a Promise in Next 16 — the caller awaits before passing in.
+// Local-midnight ISO for today — the floor for any valid depart/return date.
+function todayISO(): string {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+// True for a well-formed "YYYY-MM-DD" string.
+function isValidISO(s: string | undefined): s is string {
+  return !!s && /^\d{4}-\d{2}-\d{2}$/.test(s)
+}
+
+// Parse the raw query into a clean SearchParams, defaulting any missing field
+// and defensively clamping bad input so a nonsensical URL never crashes or runs
+// a broken search. searchParams is a Promise in Next 16 — awaited by the caller.
 function parseParams(q: Record<string, string | string[] | undefined>): SearchParams {
   const str = (v: string | string[] | undefined): string | undefined =>
     Array.isArray(v) ? v[0] : v
 
   const from = str(q.from)?.toUpperCase() || DEFAULT_PARAMS.from
-  const to = str(q.to)?.toUpperCase() || DEFAULT_PARAMS.to
-  const depart = str(q.depart) || DEFAULT_PARAMS.depart
-  const ret = str(q.return) || DEFAULT_PARAMS.return
+  let to = str(q.to)?.toUpperCase() || DEFAULT_PARAMS.to
+  // Origin and destination must differ — fall back to a sane default destination.
+  if (to === from) to = from === DEFAULT_PARAMS.to ? DEFAULT_PARAMS.from : DEFAULT_PARAMS.to
+
+  const floor = todayISO()
+  const departRaw = str(q.depart)
+  // Clamp a missing/malformed/past depart up to today (or the default).
+  let depart = isValidISO(departRaw) ? departRaw : DEFAULT_PARAMS.depart
+  if (depart < floor) depart = floor > DEFAULT_PARAMS.depart ? floor : DEFAULT_PARAMS.depart
+
+  // One-way when `return` is absent. Drop a malformed or pre-departure return.
+  const retRaw = str(q.return)
+  const ret =
+    retRaw === undefined
+      ? undefined
+      : isValidISO(retRaw) && retRaw >= depart
+        ? retRaw
+        : undefined
+
   const adultsRaw = parseInt(str(q.adults) ?? '', 10)
   const adults = Number.isFinite(adultsRaw)
     ? Math.min(9, Math.max(1, adultsRaw))
@@ -71,6 +103,8 @@ export default async function Home({
     ? {
         initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
         name: su.name ?? su.email ?? undefined,
+        email: su.email ?? undefined,
+        picture: su.picture ?? undefined,
       }
     : null
 
@@ -104,17 +138,7 @@ export default async function Home({
         <PointsPanel balances={result.balances} pick={result.pick} />
       </div>
 
-      <footer className="mt-[46px] flex flex-col gap-4 border-t border-border pt-6 text-[12px] tracking-[0.04em] text-text3 sm:flex-row sm:items-center sm:justify-between sm:border-t-0 sm:pt-0">
-        <div>
-          hop compares <b className="font-semibold text-text2">cash, miles, and transfer partners</b>{' '}
-          in one search.
-        </div>
-        <div className="flex flex-wrap gap-x-5 gap-y-2 sm:gap-[22px]">
-          <span>How we value points</span>
-          <span>Refresh balances</span>
-          <span>Price alert</span>
-        </div>
-      </footer>
+      <SiteFooter />
     </AppShell>
   )
 }

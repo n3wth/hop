@@ -81,6 +81,8 @@ interface AirportFieldProps {
   onSelect: (code: string) => void
   inputClassName?: string
   labelClassName?: string
+  /** The other field's code — excluded from this list so origin ≠ destination. */
+  excludeCode?: string
 }
 
 function AirportField({
@@ -89,6 +91,7 @@ function AirportField({
   onSelect,
   inputClassName,
   labelClassName,
+  excludeCode,
 }: AirportFieldProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -98,9 +101,13 @@ function AirportField({
 
   // When closed, show the selected city; when open, show what's being typed.
   const display = open ? query : cityForCode(code)
+  // Pull one extra then drop the other field's airport — same one can't be both.
   const results = useMemo(
-    () => searchAirports(open ? query : '', 6),
-    [open, query],
+    () =>
+      searchAirports(open ? query : '', 7)
+        .filter((a) => a.code !== excludeCode)
+        .slice(0, 6),
+    [open, query, excludeCode],
   )
 
   function choose(c: string) {
@@ -199,6 +206,8 @@ function AirportField({
 interface CalendarPopProps {
   depart: string
   ret: string
+  oneWay: boolean
+  onOneWayChange: (oneWay: boolean) => void
   onChange: (depart: string, ret: string) => void
   children: (open: boolean, toggle: () => void) => ReactNode
 }
@@ -280,12 +289,12 @@ function MonthGrid({
   )
 }
 
-function CalendarPop({ depart, ret, onChange, children }: CalendarPopProps) {
+function CalendarPop({ depart, ret, oneWay, onOneWayChange, onChange, children }: CalendarPopProps) {
   const [open, setOpen] = useState(false)
   const ref = usePopover(open, () => setOpen(false))
   const today = useMemo(() => startOfDay(new Date()), [])
   const departD = fromISO(depart)
-  const retD = fromISO(ret)
+  const retD = oneWay ? null : fromISO(ret)
   // Which month the left pane shows; anchored on the depart month.
   const [view, setView] = useState(() => {
     const base = departD ?? today
@@ -300,6 +309,12 @@ function CalendarPop({ depart, ret, onChange, children }: CalendarPopProps) {
   }
 
   function pick(d: Date) {
+    // One way → a single date pick is the whole trip; never set a return.
+    if (oneWay) {
+      onChange(toISO(d), '')
+      setOpen(false)
+      return
+    }
     // No depart yet, or both set, or picking before depart → start fresh.
     if (!departD || (departD && retD) || d.getTime() < departD.getTime()) {
       onChange(toISO(d), '')
@@ -316,6 +331,10 @@ function CalendarPop({ depart, ret, onChange, children }: CalendarPopProps) {
       {children(open, () => setOpen((o) => !o))}
       {open && (
         <div className="absolute left-0 top-[calc(100%+10px)] z-[60] rounded-xl border border-border bg-surface p-4">
+          {/* trip-type lives here (Google-Flights style), not in the search row */}
+          <div className="mb-3 flex justify-center border-b border-hair pb-3">
+            <TripTypeToggle oneWay={oneWay} onChange={onOneWayChange} />
+          </div>
           <div className="mb-1 flex items-center justify-between">
             <button
               type="button"
@@ -356,7 +375,13 @@ function CalendarPop({ depart, ret, onChange, children }: CalendarPopProps) {
           </div>
           <div className="mt-3 flex items-center justify-between border-t border-hair pt-3 text-[12px] text-text3">
             <span>
-              {departD ? fmtRange(depart, ret) : 'Pick depart date'}
+              {departD
+                ? oneWay
+                  ? fmtDay(depart)
+                  : fmtRange(depart, ret)
+                : oneWay
+                  ? 'Pick a date'
+                  : 'Pick depart date'}
             </span>
             {departD && (
               <button
@@ -436,10 +461,64 @@ export interface SearchState {
   depart: string
   ret: string
   adults: number
+  oneWay: boolean
 }
 
 function whoLabel(n: number) {
   return n === 1 ? '1 adult' : `${n} adults`
+}
+
+// Today at local midnight, as ISO — the floor for any valid depart/return.
+function todayISO(): string {
+  return toISO(startOfDay(new Date()))
+}
+
+// Validate a search; returns a user-facing message or null when it's good to go.
+function validateSearch(s: SearchState): string | null {
+  if (!s.from || !s.to) return 'Pick an origin and destination.'
+  if (s.from === s.to) return 'Origin and destination can’t match.'
+  if (!s.depart) return 'Pick a departure date.'
+  const floor = todayISO()
+  if (s.depart < floor) return 'Departure can’t be in the past.'
+  if (!s.oneWay) {
+    if (!s.ret) return 'Pick a return date, or switch to one way.'
+    if (s.ret < s.depart) return 'Return can’t be before departure.'
+  }
+  return null
+}
+
+// Round-trip / one-way segmented toggle. Flat, brand-tinted active pill.
+function TripTypeToggle({
+  oneWay,
+  onChange,
+}: {
+  oneWay: boolean
+  onChange: (oneWay: boolean) => void
+}) {
+  return (
+    <div className="inline-flex rounded-full border border-border bg-surface p-[3px] text-[12.5px] font-semibold">
+      <button
+        type="button"
+        aria-pressed={!oneWay}
+        onClick={() => onChange(false)}
+        className={`rounded-full px-3.5 py-1.5 ${
+          !oneWay ? 'bg-brand text-white' : 'text-text2'
+        }`}
+      >
+        Round trip
+      </button>
+      <button
+        type="button"
+        aria-pressed={oneWay}
+        onClick={() => onChange(true)}
+        className={`rounded-full px-3.5 py-1.5 ${
+          oneWay ? 'bg-brand text-white' : 'text-text2'
+        }`}
+      >
+        One way
+      </button>
+    </div>
+  )
 }
 
 // The full editable From/To/Dates/Who form. `variant` switches between the
@@ -448,34 +527,67 @@ export function SearchForm({
   initial,
   variant,
   onSubmitted,
+  scrolled = false,
 }: {
   initial: SearchState
   variant: 'desktop' | 'mobile'
   onSubmitted?: () => void
+  /** Header collapsed (scrolled) — desktop pill goes transparent/borderless. */
+  scrolled?: boolean
 }) {
   const router = useRouter()
   const [s, setS] = useState<SearchState>(initial)
+  const [error, setError] = useState<string | null>(null)
 
   // Re-sync local edits when the server sends new params (e.g. after a search
   // navigation). React's "adjust state during render" pattern — keyed on the
   // committed param tuple — avoids the cascading-render cost of an effect.
-  const initialKey = `${initial.from}|${initial.to}|${initial.depart}|${initial.ret}|${initial.adults}`
+  const initialKey = `${initial.from}|${initial.to}|${initial.depart}|${initial.ret}|${initial.adults}|${initial.oneWay}`
   const [syncedKey, setSyncedKey] = useState(initialKey)
   if (syncedKey !== initialKey) {
     setSyncedKey(initialKey)
     setS(initial)
+    setError(null)
+  }
+
+  // Pick an airport for one field, keeping origin ≠ destination by swapping when
+  // the chosen code already occupies the other field (the nicest collision UX).
+  function pickFrom(c: string) {
+    setError(null)
+    setS((p) => (c === p.to ? { ...p, from: c, to: p.from } : { ...p, from: c }))
+  }
+  function pickTo(c: string) {
+    setError(null)
+    setS((p) => (c === p.from ? { ...p, to: c, from: p.to } : { ...p, to: c }))
+  }
+
+  // Switching to one way drops the return; switching back leaves it for re-pick.
+  function setOneWay(oneWay: boolean) {
+    setError(null)
+    setS((p) => ({ ...p, oneWay, ret: oneWay ? '' : p.ret }))
+  }
+
+  // Reverse the route — swap From/To (and their displayed cities follow state).
+  function swapFromTo() {
+    setError(null)
+    setS((p) => ({ ...p, from: p.to, to: p.from }))
   }
 
   function submit() {
     const from = airportByCode(s.from)?.code ?? s.from
     const to = airportByCode(s.to)?.code ?? s.to
+    const msg = validateSearch({ ...s, from, to })
+    if (msg) {
+      setError(msg)
+      return
+    }
     const qs = new URLSearchParams({
       from,
       to,
       depart: s.depart,
       adults: String(s.adults),
     })
-    if (s.ret) qs.set('return', s.ret)
+    if (!s.oneWay && s.ret) qs.set('return', s.ret)
     onSubmitted?.()
     router.push(`/?${qs.toString()}`)
   }
@@ -489,26 +601,41 @@ export function SearchForm({
         }}
         className="flex flex-col gap-3"
       >
-        <div className="flex flex-col gap-2 rounded-xl border border-border bg-paper p-3">
+        <div className="relative flex flex-col gap-2 rounded-xl border border-border bg-paper p-3">
           <AirportField
             label="From"
             code={s.from}
-            onSelect={(c) => setS((p) => ({ ...p, from: c }))}
+            onSelect={pickFrom}
+            excludeCode={s.to}
             inputClassName="w-full bg-transparent text-[15px] font-semibold text-text outline-none"
           />
           <div className="h-px w-full bg-hair" />
           <AirportField
             label="To"
             code={s.to}
-            onSelect={(c) => setS((p) => ({ ...p, to: c }))}
+            onSelect={pickTo}
+            excludeCode={s.from}
             inputClassName="w-full bg-transparent text-[15px] font-semibold text-text outline-none"
           />
+          <button
+            type="button"
+            aria-label="Swap origin and destination"
+            onClick={swapFromTo}
+            className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full border border-border bg-surface text-brand transition-colors hover:bg-sunk"
+          >
+            <Icon name="swap_horiz" size={18} className="rotate-90" />
+          </button>
         </div>
 
         <CalendarPop
           depart={s.depart}
           ret={s.ret}
-          onChange={(depart, ret) => setS((p) => ({ ...p, depart, ret }))}
+          oneWay={s.oneWay}
+          onOneWayChange={setOneWay}
+          onChange={(depart, ret) => {
+            setError(null)
+            setS((p) => ({ ...p, depart, ret }))
+          }}
         >
           {(open, toggle) => (
             <button
@@ -518,10 +645,10 @@ export function SearchForm({
               className="flex w-full flex-col items-start rounded-xl border border-border bg-paper p-3 text-left"
             >
               <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
-                Dates
+                {s.oneWay ? 'Date' : 'Dates'}
               </span>
               <span className="text-[15px] font-semibold text-text">
-                {fmtRange(s.depart, s.ret)}
+                {s.oneWay ? fmtDay(s.depart) : fmtRange(s.depart, s.ret)}
               </span>
             </button>
           )}
@@ -548,6 +675,12 @@ export function SearchForm({
           )}
         </WhoPop>
 
+        {error && (
+          <p role="alert" className="text-[12.5px] font-medium text-weak">
+            {error}
+          </p>
+        )}
+
         <button
           type="submit"
           className="mt-1 flex h-12 items-center justify-center gap-2 rounded-xl bg-brand font-semibold text-white transition-colors hover:bg-brand-deep"
@@ -559,29 +692,47 @@ export function SearchForm({
     )
   }
 
-  // desktop
+  // desktop — form is the relative container so validation + popovers anchor to
+  // it. Chrome (border/bg) dissolves on scroll so the fields blend into the
+  // frosted header; layout/size stays stable horizontally either way.
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault()
         submit()
       }}
-      className="flex items-center rounded-full border border-border bg-surface"
-      style={{ gap: 16, paddingLeft: 22, paddingRight: 12, paddingTop: 10, paddingBottom: 10 }}
+      className="relative flex items-center rounded-full border"
+      style={{
+        gap: 16,
+        paddingLeft: 22,
+        paddingRight: 12,
+        paddingTop: 10,
+        paddingBottom: 10,
+        background: scrolled ? 'transparent' : 'var(--color-surface)',
+        borderColor: scrolled ? 'transparent' : 'var(--color-border)',
+        transition: 'background 280ms cubic-bezier(.2,0,0,1), border-color 280ms cubic-bezier(.2,0,0,1)',
+      }}
     >
       <AirportField
         label="From"
         code={s.from}
-        onSelect={(c) => setS((p) => ({ ...p, from: c }))}
+        onSelect={pickFrom}
+        excludeCode={s.to}
         inputClassName="w-[112px] bg-transparent text-[15px] font-semibold text-text outline-none"
       />
-      <span className="flex-shrink-0 text-brand">
+      <button
+        type="button"
+        aria-label="Swap origin and destination"
+        onClick={swapFromTo}
+        className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full text-brand transition-colors hover:bg-sunk"
+      >
         <Icon name="swap_horiz" size={20} />
-      </span>
+      </button>
       <AirportField
         label="To"
         code={s.to}
-        onSelect={(c) => setS((p) => ({ ...p, to: c }))}
+        onSelect={pickTo}
+        excludeCode={s.from}
         inputClassName="w-[112px] bg-transparent text-[15px] font-semibold text-text outline-none"
       />
 
@@ -590,44 +741,49 @@ export function SearchForm({
       <CalendarPop
         depart={s.depart}
         ret={s.ret}
-        onChange={(depart, ret) => setS((p) => ({ ...p, depart, ret }))}
+        oneWay={s.oneWay}
+        onOneWayChange={setOneWay}
+        onChange={(depart, ret) => {
+          setError(null)
+          setS((p) => ({ ...p, depart, ret }))
+        }}
       >
-        {(open, toggle) => (
-          <button
-            type="button"
-            onClick={toggle}
-            aria-expanded={open}
-            className="flex flex-col justify-center text-left leading-[1.05]"
-          >
-            <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
-              Dates
-            </span>
-            <span className="w-[120px] text-[15px] font-semibold text-text">
-              {fmtRange(s.depart, s.ret)}
-            </span>
-          </button>
-        )}
-      </CalendarPop>
+          {(open, toggle) => (
+            <button
+              type="button"
+              onClick={toggle}
+              aria-expanded={open}
+              className="flex flex-col justify-center text-left leading-[1.05]"
+            >
+              <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
+                {s.oneWay ? 'Date' : 'Dates'}
+              </span>
+              <span className="w-[120px] text-[15px] font-semibold text-text">
+                {s.oneWay ? fmtDay(s.depart) : fmtRange(s.depart, s.ret)}
+              </span>
+            </button>
+          )}
+        </CalendarPop>
 
-      <span className="h-[26px] w-px flex-shrink-0 bg-border" />
+        <span className="h-[26px] w-px flex-shrink-0 bg-border" />
 
-      <WhoPop adults={s.adults} onChange={(n) => setS((p) => ({ ...p, adults: n }))}>
-        {(open, toggle) => (
-          <button
-            type="button"
-            onClick={toggle}
-            aria-expanded={open}
-            className="flex flex-col justify-center text-left leading-[1.05]"
-          >
-            <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
-              Who
-            </span>
-            <span className="w-[64px] text-[15px] font-semibold text-text">
-              {whoLabel(s.adults)}
-            </span>
-          </button>
-        )}
-      </WhoPop>
+        <WhoPop adults={s.adults} onChange={(n) => setS((p) => ({ ...p, adults: n }))}>
+          {(open, toggle) => (
+            <button
+              type="button"
+              onClick={toggle}
+              aria-expanded={open}
+              className="flex flex-col justify-center text-left leading-[1.05]"
+            >
+              <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
+                Who
+              </span>
+              <span className="w-[64px] text-[15px] font-semibold text-text">
+                {whoLabel(s.adults)}
+              </span>
+            </button>
+          )}
+        </WhoPop>
 
       <button
         type="submit"
@@ -636,6 +792,15 @@ export function SearchForm({
       >
         <Icon name="search" size={19} />
       </button>
+
+      {error && (
+        <p
+          role="alert"
+          className="absolute left-0 top-[calc(100%+6px)] z-[55] whitespace-nowrap rounded-lg border border-border bg-surface px-3 py-1.5 text-[12px] font-medium text-weak"
+        >
+          {error}
+        </p>
+      )}
     </form>
   )
 }

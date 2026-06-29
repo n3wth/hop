@@ -3,6 +3,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import Icon from './Icon'
 import FlyingBunny from './FlyingBunny'
+import AccountMenu from './AccountMenu'
 import { SearchForm, type SearchState } from './SearchBar'
 
 export interface TopNavProps {
@@ -16,7 +17,7 @@ export interface TopNavProps {
   ret?: string
   adults?: number
   /** Auth0 session, passed from the server. Null when signed out. */
-  user?: { initial: string; name?: string } | null
+  user?: { initial: string; name?: string; email?: string; picture?: string } | null
 }
 
 // Crafted easing — decelerate, ~280ms. One curve drives the whole morph so the
@@ -27,8 +28,12 @@ const DUR = '280ms'
 // Static logo lockup — memoized so scroll-state toggles never re-render the
 // (path-heavy) bunny SVG. Only the wrapper's transform animates.
 const LogoLockup = memo(function LogoLockup() {
-  // Icon only — the bunny stands alone as the mark (wordmark removed for now).
-  return <FlyingBunny size={48} carve="var(--color-bg)" />
+  // Icon only — the bunny stands alone as the mark. Links to the home page.
+  return (
+    <a href="/" aria-label="hop — home" className="flex items-center">
+      <FlyingBunny size={48} carve="var(--color-bg)" />
+    </a>
+  )
 })
 
 // Scroll-aware top bar. The header SHRINKS in height on scroll (76→56px) and the
@@ -44,7 +49,7 @@ export default function TopNav({
   user = null,
 }: TopNavProps) {
   const initial: SearchState = useMemo(
-    () => ({ from: fromCode, to: toCode, depart, ret, adults }),
+    () => ({ from: fromCode, to: toCode, depart, ret, adults, oneWay: !ret }),
     [fromCode, toCode, depart, ret, adults],
   )
 
@@ -115,7 +120,7 @@ export default function TopNav({
           {/* DESKTOP search — full editable form, STABLE on scroll so the
               logo↔search gap never shifts and all fields stay visible. */}
           <div className="hidden min-w-0 flex-shrink-0 md:flex">
-            <SearchForm initial={initial} variant="desktop" />
+            <SearchForm initial={initial} variant="desktop" scrolled={c} />
           </div>
 
           {/* spacer pushes the account to the far right (desktop only) */}
@@ -127,13 +132,7 @@ export default function TopNav({
             style={{ transform: c ? 'scale(0.86)' : 'scale(1)', transformOrigin: 'right center', transition: `transform ${DUR} ${EASE}` }}
           >
             {user ? (
-              <a
-                href="/auth/logout"
-                title={`${user.name ?? 'Signed in'} — log out`}
-                className="grid h-9 w-9 place-items-center rounded-full bg-brand font-display text-[15px] font-bold text-white transition-colors hover:bg-brand-deep sm:h-[42px] sm:w-[42px] sm:text-[16px]"
-              >
-                {user.initial}
-              </a>
+              <AccountMenu user={user} />
             ) : (
               <a
                 href="/auth/login"
