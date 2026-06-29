@@ -2,6 +2,7 @@ import Icon from '@/components/Icon'
 import HeroSearch from '@/components/landing/HeroSearch'
 import DestinationGrid from '@/components/landing/DestinationGrid'
 import AgentComposer from '@/components/landing/AgentComposer'
+import type { ConciergeHeroPhoto } from '@/components/ConciergeHero'
 import LedgerDream from '@/components/landing/LedgerDream'
 import HomeAirportPrompt from '@/components/HomeAirportPrompt'
 import {
@@ -24,12 +25,15 @@ export default async function SignedInHome({
   totalPoints,
   seed,
   hasHomeAirport = true,
+  heroBackdrop,
 }: {
   first?: string
   programs: number
   totalPoints: number
   seed: SearchState
   hasHomeAirport?: boolean
+  /** Photographic backdrop for the agent hero, matching the /ask landing. */
+  heroBackdrop?: ConciergeHeroPhoto
 }) {
   // Personalized to the member's real balance; best value first. If they're
   // light on points (or programs failed), fall back to the universally great
@@ -53,7 +57,12 @@ export default async function SignedInHome({
         className="hop-rise"
         style={{ ['--hop-delay' as string]: '40ms' }}
       >
-        <AgentComposer variant="in" first={first} totalPoints={programs > 0 ? totalPoints : undefined} />
+        <AgentComposer
+          variant="in"
+          first={first}
+          totalPoints={programs > 0 ? totalPoints : undefined}
+          backdrop={heroBackdrop}
+        />
       </section>
 
       {/* ── YOUR POINTS — compact synced state ───────────────────────────── */}

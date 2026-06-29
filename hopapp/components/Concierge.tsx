@@ -20,6 +20,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { useChat } from '@ai-sdk/react'
 import Icon from './Icon'
 import FlyingBunny from './FlyingBunny'
+import ConciergeHero, { type ConciergeHeroPhoto } from './ConciergeHero'
+import { conciergeHeroCopy } from '@/lib/concierge-hero'
 import { A2UIBlocks } from './concierge/A2UIBlock'
 import {
   ConciergeTransport,
@@ -79,14 +81,8 @@ export interface ConciergeProps {
   initialQuery?: string
 }
 
-// Starter prompts — the obvious first taps on the landing.
-const STARTERS = [
-  'Somewhere warm for a long weekend',
-  'Best use of my Amex points',
-  'Cheapest way to Tokyo',
-  'A big-city food trip',
-  'Off the beaten path',
-] as const
+// Starter prompts now live in lib/concierge-hero (one canonical set, shared with
+// the home teaser) and are rendered by <ConciergeHero>.
 
 // Follow-up chips that keep the deliberation going — composer stays primary.
 const FOLLOW_UPS = ['Compare these', 'Cheaper', 'Best weather', "When's cheapest"] as const
@@ -376,9 +372,12 @@ function ErrorTurn({ onRetry }: { onRetry: () => void }) {
 }
 
 // --- Warm guided landing -----------------------------------------------------
-// The immersive front door: a real-photography backdrop (scrimmed), the headline
-// prompt, the central composer, evocative starters, the Gmail learn-from-trips
-// seam, and a mood gallery. First message replaces this with the conversation.
+// The immersive front door — the FULL version of the shared <ConciergeHero> the
+// home teaser also renders (one visual language, one voice via
+// lib/concierge-hero). It owns the photographic backdrop, headline prompt,
+// composer, starters, the Gmail learn-from-trips seam, and the mood gallery.
+// The first message replaces this with the conversation. The home teaser is the
+// same hero, thinner; landing here from /ask?q=… reads as one continuous motion.
 function Landing({
   input,
   setInput,
@@ -400,167 +399,26 @@ function Landing({
   totalPoints?: number
   signedIn: boolean
 }) {
-  const tiles = galleryCodes
+  const tiles: ConciergeHeroPhoto[] = galleryCodes
     .map((c) => photos[c])
-    .filter(Boolean)
-    .slice(0, 6) as ConciergePhoto[]
-  const backdrop = tiles[0]
+    .filter((p): p is ConciergePhoto => Boolean(p))
+    .slice(0, 6)
+    .map((p) => ({ thumb: p.thumb, alt: p.alt, city: p.city, countryCode: p.countryCode }))
+
+  const copy = conciergeHeroCopy({ signedIn, totalPoints })
 
   return (
-    <div
-      className="relative flex min-h-[clamp(440px,72vh,680px)] flex-col overflow-hidden rounded-[var(--radius-hero)]"
-      style={{ background: 'var(--color-brand-ink)' }}
-    >
-      {backdrop ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={backdrop.thumb}
-          alt=""
-          aria-hidden
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35"
-        />
-      ) : null}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'linear-gradient(to bottom, rgba(7,62,62,0.62) 0%, rgba(7,62,62,0.86) 55%, rgba(7,62,62,0.97) 100%)',
-        }}
-      />
-
-      <div className="relative flex flex-1 flex-col items-center justify-center px-5 py-12 text-center sm:px-10">
-        <span
-          className="hop-rise inline-flex items-center gap-2 rounded-full bg-[#0a5757] px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6ff0d2]"
-          style={{ ['--hop-delay' as string]: '40ms' }}
-        >
-          <Icon name="lightbulb" size={13} />
-          Your points concierge
-        </span>
-
-        <h2
-          className="hop-rise mt-6 font-display text-[40px] font-semibold leading-[1.0] tracking-[-0.03em] text-white sm:text-[64px]"
-          style={{ ['--hop-delay' as string]: '90ms' }}
-        >
-          Where to next?
-        </h2>
-
-        <p
-          className="hop-rise mt-4 max-w-[46ch] text-[15px] leading-[1.6] text-[#c7ece5] sm:text-[16px]"
-          style={{ ['--hop-delay' as string]: '140ms' }}
-        >
-          {totalPoints
-            ? `Tell hop a vibe, a budget, or a city you can't stop thinking about. With ~${totalPoints.toLocaleString('en-US')} points, hop finds where they win — then talks it through with you.`
-            : "Tell hop a vibe, a budget, or a city you can't stop thinking about — hop reads the points world and talks the trade-offs through with you."}
-        </p>
-
-        {/* central composer — prominent, the obvious action */}
-        <form
-          onSubmit={onSubmit}
-          className="hop-rise mt-8 w-full max-w-[560px]"
-          style={{ ['--hop-delay' as string]: '190ms' }}
-        >
-          <div className="flex items-center gap-2 rounded-[18px] bg-white px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5">
-            <Icon name="lightbulb" size={20} className="flex-shrink-0 text-brand" />
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="somewhere warm, ~40k points…"
-              aria-label="Ask hop where to go"
-              enterKeyHint="send"
-              autoFocus
-              className="min-w-0 flex-1 bg-transparent py-1.5 text-[16px] text-text outline-none placeholder:text-text3"
-            />
-            <button
-              type="submit"
-              disabled={!input.trim() || status !== 'ready'}
-              className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:bg-border disabled:text-text3"
-            >
-              <span className="hidden sm:inline">Ask hop</span>
-              <Icon name="flight" size={16} className="rotate-90" />
-            </button>
-          </div>
-        </form>
-
-        {/* evocative starters */}
-        <div
-          className="hop-rise mt-5 flex flex-wrap justify-center gap-2"
-          style={{ ['--hop-delay' as string]: '240ms' }}
-        >
-          {STARTERS.map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => onStarter(p)}
-              className="rounded-full border border-[#2c6f6b] bg-[#0a5757] px-3.5 py-1.5 text-[13px] font-medium text-[#d8f1ec] transition-colors hover:border-[#6ff0d2] hover:text-white"
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-
-        {/* gets-to-know-you affordances: Gmail seam + what-hop-remembers */}
-        <div
-          className="hop-rise mt-4 flex flex-wrap items-center justify-center gap-2"
-          style={{ ['--hop-delay' as string]: '300ms' }}
-        >
-          <button
-            type="button"
-            disabled
-            aria-disabled
-            title="Coming soon — let hop learn from your past trips"
-            className="flex cursor-not-allowed items-center gap-1.5 rounded-full border border-[#2c6f6b] bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-[#9fd6cd]"
-          >
-            <Icon name="loyalty" size={14} className="flex-shrink-0" />
-            Connect Gmail to learn from past trips
-            <span className="rounded-full bg-[#0a5757] px-1.5 py-px text-[10px] uppercase tracking-wide text-[#d8f1ec]">
-              Soon
-            </span>
-          </button>
-          {signedIn ? (
-            <a
-              href="/account"
-              className="flex items-center gap-1.5 rounded-full border border-[#2c6f6b] bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-[#9fd6cd] transition-colors hover:border-[#6ff0d2] hover:text-white"
-            >
-              <Icon name="info" size={14} className="flex-shrink-0" />
-              What hop remembers
-            </a>
-          ) : null}
-        </div>
-      </div>
-
-      {/* mood gallery — sets the tone at the base of the panel */}
-      {tiles.length > 0 ? (
-        <div
-          className="hop-rise relative grid grid-cols-3 gap-px bg-[#0a4f4f] sm:grid-cols-6"
-          style={{ ['--hop-delay' as string]: '300ms' }}
-        >
-          {tiles.map((t, i) => (
-            <div
-              key={t.city + i}
-              className={`relative aspect-[4/3] overflow-hidden ${i >= 3 ? 'hidden sm:block' : ''}`}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={t.thumb} alt={t.alt} loading="lazy" className="h-full w-full object-cover" />
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0"
-                style={{
-                  background: 'linear-gradient(to top, rgba(7,62,62,0.82) 0%, rgba(7,62,62,0) 60%)',
-                }}
-              />
-              <div className="absolute inset-x-0 bottom-0 flex items-center gap-1.5 p-2">
-                <span
-                  className={`fi fi-${t.countryCode} h-[10px] w-[14px] flex-shrink-0 rounded-[1px]`}
-                  aria-hidden
-                />
-                <span className="truncate text-[11px] font-semibold text-white">{t.city}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : null}
-    </div>
+    <ConciergeHero
+      copy={copy}
+      value={input}
+      onValueChange={setInput}
+      onSubmit={onSubmit}
+      onChip={onStarter}
+      density="full"
+      signedIn={signedIn}
+      submitDisabled={status !== 'ready'}
+      autoFocus
+      photos={tiles}
+    />
   )
 }

@@ -12,6 +12,7 @@ import ConnectBand from '@/components/landing/ConnectBand'
 import InspirationTeaser from '@/components/landing/InspirationTeaser'
 import DestinationReel from '@/components/landing/DestinationReel'
 import SignedInHome from '@/components/landing/SignedInHome'
+import { conciergeBackdrop } from '@/lib/concierge-backdrop'
 
 // A sensible default search to seed the hero form. Picking it pre-fills the
 // fields so the very first action — a real search — is one tap away.
@@ -65,6 +66,10 @@ export default async function Home() {
 
   const first = user?.name?.trim().split(' ')[0]
 
+  // One canonical photographic backdrop for the agent hero teaser, matching the
+  // /ask landing's imagery. Never crashes the home if the image call fails.
+  const heroBackdrop = (await conciergeBackdrop()) ?? undefined
+
   // Home airport (Supabase pref) seeds the default From + gates the set-home prompt.
   const prefs = su?.sub ? await getPrefs(su.sub) : {}
   const homeSeed: SearchState = prefs.homeAirport
@@ -82,6 +87,7 @@ export default async function Home() {
             totalPoints={totalPoints}
             seed={homeSeed}
             hasHomeAirport={!!prefs.homeAirport}
+            heroBackdrop={heroBackdrop}
           />
         </div>
         <div className="mx-auto max-w-[1180px]">
@@ -99,7 +105,7 @@ export default async function Home() {
         {/* Lead with the conversational promise: a composer that opens the agent
             (routing through sign-in when they act). The verdict below is the proof. */}
         <section className="pt-2 sm:pt-4">
-          <AgentComposer variant="out" />
+          <AgentComposer variant="out" backdrop={heroBackdrop} />
 
           {/* search stays reachable — demoted to a secondary fast-path */}
           <p className="hop-rise mt-5 text-center text-[13.5px] text-text2" style={{ ['--hop-delay' as string]: '300ms' }}>
