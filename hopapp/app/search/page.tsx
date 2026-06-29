@@ -2,6 +2,7 @@ import type { SearchParams } from '@/lib/types'
 import { assembleSearch } from '@/lib/search'
 import { getUserBalances } from '@/lib/accounts'
 import { cityForCode } from '@/lib/airports'
+import { destinationImage } from '@/lib/images'
 import { auth0 } from '@/lib/auth0'
 import AppShell from '@/components/AppShell'
 import RouteBar from '@/components/RouteBar'
@@ -114,6 +115,11 @@ export default async function Search({
   const userBalances = su?.sub ? await getUserBalances(su.sub) : undefined
   const result = await assembleSearch(params, userBalances)
 
+  // Destination photo for the verdict hero — the place you're heading, behind
+  // the boarding pass (replaces the redundant bunny). Cached; null → bunny.
+  const destCity = cityForCode(params.to)
+  const destPhoto = await destinationImage(`${destCity} ${params.to} cityscape`)
+
   const who =
     params.adults === 1 ? '1 adult' : `${params.adults} adults`
 
@@ -135,7 +141,7 @@ export default async function Search({
       <RouteBar result={result} />
 
       {/* the verdict hero */}
-      <VerdictRail result={result} />
+      <VerdictRail result={result} destPhoto={destPhoto} />
 
       {/* other ways to fly */}
       <ResultsList result={result} />

@@ -34,6 +34,32 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
   const max = balances.reduce((m, b) => Math.max(m, b.balance), 0) || 1
   const spend = pick?.miles
 
+  // No programs yet → don't show a fake "0 across 0 programs" wallet. Invite the
+  // user to add their points so hop can value redemptions against what they hold.
+  if (balances.length === 0) {
+    return (
+      <section
+        className="overflow-hidden rounded-[22px] px-5 py-7 text-[#eef3f1] sm:px-[30px]"
+        style={{ background: 'var(--color-text)' }}
+      >
+        <div className="text-[13px] font-semibold uppercase tracking-[0.14em] text-[#7be0c6]">
+          Your points
+        </div>
+        <p className="mt-2 max-w-[40ch] text-[14px] leading-[1.55] text-[#bcd0cb]">
+          Add your loyalty programs and hop will tell you which redemptions your
+          points actually unlock — and whether to book with miles or cash.
+        </p>
+        <a
+          href="/account"
+          className="mt-4 inline-flex items-center gap-2 rounded-[12px] bg-white px-5 py-3 text-[14px] font-semibold text-[#0c3a3a] transition-colors hover:bg-[#eafaf7]"
+        >
+          Add your programs
+          <span aria-hidden className="text-[15px] leading-none">→</span>
+        </a>
+      </section>
+    )
+  }
+
   return (
     <section className="overflow-hidden rounded-[22px] text-[#eef3f1]" style={{ background: 'var(--color-text)' }}>
       {/* no restating header — the balances + total speak for themselves */}
@@ -82,8 +108,8 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
       {/* footer total — with a low-key sync line that earns its place */}
       <div className="flex items-center justify-between border-t border-white/10 bg-white/[0.03] px-4 py-[16px] sm:px-[30px] sm:py-[18px]">
         <span className="text-[13px] text-[#9fb5b0]">
-          {total.toLocaleString()} across {balances.length} programs
-          <span className="ml-2 text-[11px] text-[#6f8782]">AwardWallet · updated today</span>
+          {total.toLocaleString()} across {balances.length}{' '}
+          {balances.length === 1 ? 'program' : 'programs'}
         </span>
         <span className="font-display text-[20px] font-semibold tabular-nums text-white">
           {compact(total)}

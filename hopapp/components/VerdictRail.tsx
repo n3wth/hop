@@ -8,6 +8,9 @@ import CountUp from './CountUp'
 
 export interface VerdictRailProps {
   result: SearchResult
+  /** Destination photo (server-fetched from the pick's destCode). When present
+      it fills the hero behind the boarding pass instead of the bunny mark. */
+  destPhoto?: { url: string; alt: string } | null
 }
 
 function fmt(n: number | undefined): string {
@@ -21,7 +24,7 @@ function milesUnit(pick: FlightOption | undefined): string {
 
 // Editorial verdict hero — the magazine cover. Teal plane: headline + factual
 // subline + stat strip on the left; bunny + boarding-pass pick card on the right.
-export default function VerdictRail({ result }: VerdictRailProps) {
+export default function VerdictRail({ result, destPhoto }: VerdictRailProps) {
   const { pick, summary, verdict } = result
   const usingPoints = verdict === 'use-points'
   const unit = milesUnit(pick)
@@ -131,9 +134,27 @@ export default function VerdictRail({ result }: VerdictRailProps) {
         className="relative flex flex-col justify-between border-t border-dashed border-white/20 lg:border-l lg:border-t-0"
         style={{ background: 'var(--color-brand-deep)' }}
       >
-        {/* big bunny illustration — desktop only (redundant with header on mobile) */}
-        <div className="relative hidden flex-1 place-items-center overflow-hidden pt-9 lg:grid">
-          <Logo size={172} carve="var(--color-brand-deep)" className="text-white" />
+        {/* destination photo — the place you're heading, behind the pass. Falls
+            back to the bunny mark when no photo is available. Desktop only. */}
+        <div className="relative hidden flex-1 place-items-center overflow-hidden lg:grid">
+          {destPhoto ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={destPhoto.url} alt={destPhoto.alt} className="absolute inset-0 h-full w-full object-cover" />
+              <div
+                aria-hidden
+                className="absolute inset-0"
+                style={{
+                  background:
+                    'linear-gradient(to bottom, rgba(7,62,62,0.30) 0%, rgba(7,62,62,0.66) 100%)',
+                }}
+              />
+            </>
+          ) : (
+            <div className="grid place-items-center pt-9">
+              <Logo size={172} carve="var(--color-brand-deep)" className="text-white" />
+            </div>
+          )}
         </div>
 
         {pick ? <PickPass pick={pick} /> : null}
