@@ -4,6 +4,8 @@
 
 import type { SearchParams } from '@/lib/types'
 import { assembleSearch } from '@/lib/search'
+import { auth0 } from '@/lib/auth0'
+import { getUserBalances } from '@/lib/accounts'
 
 function parseParams(url: URL): SearchParams {
   const q = url.searchParams
@@ -20,6 +22,12 @@ function parseParams(url: URL): SearchParams {
 
 export async function GET(request: Request) {
   const params = parseParams(new URL(request.url))
-  const result = await assembleSearch(params)
+  // Signed in → ground in this user's real balances (manual + AwardWallet);
+  // signed out → undefined keeps the env-global/mock fallback in assembleSearch.
+  const session = await auth0.getSession()
+  const userBalances = session?.user?.sub
+    ? await getUserBalances(session.user.sub)
+    : undefined
+  const result = await assembleSearch(params, userBalances)
   return Response.json(result)
 }

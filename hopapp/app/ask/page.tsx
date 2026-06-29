@@ -1,15 +1,18 @@
 import { auth0 } from '@/lib/auth0'
 import { mockBalances } from '@/lib/mock'
-import { getBalances } from '@/lib/awardwallet'
+import { getUserBalances } from '@/lib/accounts'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
-import Icon from '@/components/Icon'
-import Concierge from '@/components/Concierge'
+import Concierge, { type ConciergePhoto } from '@/components/Concierge'
+import { destinations, topValue, imageQuery } from '@/lib/destinations'
+import { destinationImages } from '@/lib/images'
 
-// /ask — hop's AI concierge. A warm, full-page front door for "where should I
-// go with my points?". Auth-aware: when signed in we ground the answer in the
-// user's real total points (live AwardWallet, mock fixtures otherwise). The page
-// never crashes if balances can't load — the concierge simply answers untethered.
+// /ask — hop's AI concierge. An immersive, app-like front door for "where should
+// I go with my points?". The Concierge panel owns the hero state (a warm focal
+// prompt, prominent input, evocative chips, and a backdrop of destination
+// photography). Auth-aware: when signed in we ground the answer in the user's
+// real total points (live AwardWallet, mock fixtures otherwise). The page never
+// crashes if balances can't load — the concierge simply answers untethered.
 export default async function AskPage() {
   const session = await auth0.getSession()
   const su = session?.user
@@ -26,47 +29,40 @@ export default async function AskPage() {
   // configured, mock otherwise; only computed when signed in.
   let totalPoints: number | undefined
   if (user) {
-    const res = await getBalances().catch(() => ({ ok: false as const }))
-    const balances = res.ok ? res.data : mockBalances()
+    // Unified per-user balances (manual + AwardWallet, merged). Empty → mock.
+    const real = su?.sub ? await getUserBalances(su.sub) : []
+    const balances = real.length > 0 ? real : mockBalances()
     totalPoints = balances.reduce((sum, b) => sum + b.balance, 0)
   }
 
+  // Destination photography for the mood gallery + suggestion cards. Fetched
+  // server-side (keeps the Unsplash key off the client), cached per query.
+  // Keyed by IATA code so the client can look up by suggestion / gallery code.
+  const imgs = await destinationImages(destinations.map((d) => imageQuery(d)))
+  const photos: Record<string, ConciergePhoto> = {}
+  for (const d of destinations) {
+    const img = imgs[imageQuery(d)]
+    if (img) {
+      photos[d.code] = {
+        thumb: img.thumb,
+        alt: img.alt,
+        city: d.city,
+        country: d.country,
+        countryCode: d.countryCode,
+      }
+    }
+  }
+  const galleryCodes = topValue(6).map((d) => d.code)
+
   return (
     <AppShell user={user} pointsTotal={totalPoints} hideSearch>
-      <div className="mx-auto flex max-w-[760px] flex-col gap-10 pt-6 sm:pt-12">
-        {/* ── Header ─────────────────────────────────────────────────────── */}
-        <header className="flex flex-col items-center pt-4 text-center sm:pt-8">
-          <span
-            className="hop-rise inline-flex items-center gap-2 rounded-full border border-border bg-paper px-4 py-1.5 text-[12px] font-semibold uppercase tracking-[0.16em] text-brand"
-            style={{ ['--hop-delay' as string]: '40ms' }}
-          >
-            <Icon name="lightbulb" size={14} />
-            Your points concierge
-          </span>
-
-          <h1
-            className="hop-rise mt-6 max-w-[18ch] font-display text-[34px] font-semibold leading-[1.05] tracking-[-0.03em] text-text sm:text-[48px]"
-            style={{ ['--hop-delay' as string]: '90ms' }}
-          >
-            Tell hop what you&apos;re dreaming of.
-          </h1>
-
-          <p
-            className="hop-rise mt-5 max-w-[48ch] text-[16px] leading-[1.6] text-text2 sm:text-[17px]"
-            style={{ ['--hop-delay' as string]: '140ms' }}
-          >
-            A vibe, a budget, a city you can&apos;t stop thinking about. hop reads
-            the points world and tells you where it&apos;s worth going — and
-            whether to spend miles or money to get there.
-          </p>
-        </header>
-
-        {/* ── The concierge ──────────────────────────────────────────────── */}
-        <div
-          className="hop-rise"
-          style={{ ['--hop-delay' as string]: '200ms' }}
-        >
-          <Concierge totalPoints={totalPoints} />
+      <div className="mx-auto flex max-w-[980px] flex-col gap-8 pt-4 sm:pt-8">
+        <div className="hop-rise" style={{ ['--hop-delay' as string]: '40ms' }}>
+          <Concierge
+            totalPoints={totalPoints}
+            photos={photos}
+            galleryCodes={galleryCodes}
+          />
         </div>
 
         <SiteFooter />

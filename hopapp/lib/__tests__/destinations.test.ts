@@ -18,6 +18,14 @@ describe('destinations dataset', () => {
       expect(c as number).toBeGreaterThan(0)
     }
   })
+
+  it('carries a valid ISO-3166-1 alpha-2 countryCode and no emoji field', () => {
+    for (const d of destinations) {
+      expect(d.countryCode, `${d.city} countryCode`).toMatch(/^[a-z]{2}$/)
+      // emoji was removed in favor of flags + photography
+      expect((d as unknown as Record<string, unknown>).emoji, `${d.city} emoji`).toBeUndefined()
+    }
+  })
 })
 
 describe('affordableWith', () => {

@@ -11,6 +11,8 @@ export interface DealCardProps {
   ret: string
   /** Rank in the feed (0 = the single best find). */
   rank: number
+  /** Hero photo for this destination (null → solid brand-tint fallback). */
+  photo?: { url: string; alt: string; credit: { name: string; link: string } } | null
 }
 
 // cpp tier → chip palette. Mirrors lib/cpp tiers but renders editorially:
@@ -31,9 +33,12 @@ function money(n: number): string {
   return `$${Math.round(n).toLocaleString('en-US')}`
 }
 
-// One standout award redemption, rendered as a card you'd want to chase.
-// Flat, on-system: no shadow/gradient, hover is color-only, no vertical motion.
-export default function DealCard({ dest, fromCode, depart, ret, rank }: DealCardProps) {
+// One standout award redemption, rendered as a travel-magazine card you'd want
+// to chase: a real destination photo up top (with a legibility scrim + the city
+// and its flag overlaid), then the economics — cpp value, miles, cash compare,
+// and the program that books it. Flat + on-system: no card shadow/lift; hover
+// gently scales the IMAGE inside its clipped frame and tints the border.
+export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: DealCardProps) {
   const value = computeCpp(dest)
   const t = tier(value)
   const chip = CHIP[t]
@@ -49,82 +54,129 @@ export default function DealCard({ dest, fromCode, depart, ret, rank }: DealCard
   return (
     <a
       href={href}
-      className="group flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-5 transition-colors hover:border-brand sm:p-6"
+      className="group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-colors hover:border-brand"
     >
-      {/* top row: place + the value chip */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            {isTopFind && (
-              <span
-                className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em]"
-                style={{
-                  background: 'var(--color-gold-soft)',
-                  color: 'var(--color-amber)',
-                  borderColor: 'var(--color-gold)',
-                }}
-              >
-                Best find
-              </span>
-            )}
-            <span className="truncate text-[12px] font-semibold uppercase tracking-[0.08em] text-text3">
-              {dest.country}
-            </span>
-          </div>
-          <h3 className="mt-1 truncate font-display text-[24px] font-bold leading-tight text-text">
-            {dest.city}
-          </h3>
-        </div>
+      {/* ── photo header ─────────────────────────────────────────────────── */}
+      <div
+        className="relative aspect-[16/10] w-full overflow-hidden"
+        style={{ background: 'var(--color-brand-deep)' }}
+      >
+        {photo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={photo.url}
+            alt={photo.alt}
+            loading="lazy"
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          // Solid brand-deep fallback — never a broken image; keeps the white
+          // city + flag overlay legible.
+          <div aria-hidden className="h-full w-full" style={{ background: 'var(--color-brand-deep)' }} />
+        )}
 
+        {/* legibility scrim (allowed: image overlay, not a UI surface) */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(to top, rgba(7,62,62,0.78) 0%, rgba(7,62,62,0.28) 38%, rgba(7,62,62,0) 64%)',
+          }}
+        />
+
+        {/* best-find ribbon */}
+        {isTopFind && (
+          <span
+            className="absolute left-3 top-3 inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em]"
+            style={{ background: 'var(--color-gold-soft)', color: 'var(--color-amber)' }}
+          >
+            Best find
+          </span>
+        )}
+
+        {/* cpp chip */}
         <span
-          className="flex flex-shrink-0 flex-col items-end rounded-[14px] border px-3 py-2 text-right"
+          className="absolute right-3 top-3 flex flex-col items-end rounded-[12px] border px-2.5 py-1.5 text-right"
           style={{ background: chip.bg, borderColor: chip.bd }}
           title="cents per point — how much value each mile pulls"
         >
-          <span className="font-display text-[22px] font-bold leading-none tabular-nums" style={{ color: chip.fg }}>
+          <span
+            className="font-display text-[18px] font-bold leading-none tabular-nums"
+            style={{ color: chip.fg }}
+          >
             {value?.toFixed(1)}
           </span>
-          <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]" style={{ color: chip.fg }}>
+          <span
+            className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.08em]"
+            style={{ color: chip.fg }}
+          >
             cents / pt
           </span>
         </span>
-      </div>
 
-      {/* vibe + route hook */}
-      <p className="mt-3 text-[14px] leading-snug text-text2">{dest.vibe}</p>
-      <p className="mt-1 text-[13px] font-medium text-text3">from {fromCode}</p>
-
-      {/* the economics: miles needed, cash you'd skip, best program */}
-      <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-hair pt-4">
-        <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-text3">Miles</div>
-          <div className="mt-0.5 font-display text-[18px] font-bold tabular-nums text-text">
-            {compactMiles(dest.typicalAwardMiles)}
+        {/* city + flag overlaid bottom-left */}
+        <div className="absolute inset-x-0 bottom-0 flex items-end gap-2.5 p-4">
+          <span
+            className={`fi fi-${dest.countryCode} mb-1 h-[15px] w-[20px] flex-shrink-0 rounded-[2px]`}
+            aria-hidden
+          />
+          <div className="min-w-0">
+            <h3 className="truncate font-display text-[24px] font-bold leading-tight text-white">
+              {dest.city}
+            </h3>
+            <p className="truncate text-[12px] font-semibold uppercase tracking-[0.08em] text-white/85">
+              {dest.country}
+            </p>
           </div>
-        </div>
-        <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-text3">vs. cash</div>
-          <div className="mt-0.5 font-display text-[18px] font-bold tabular-nums text-text">
-            {cashCompare}
-          </div>
-        </div>
-        <div className="col-span-2">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-text3">Book it with</div>
-          <div className="mt-0.5 truncate text-[14px] font-semibold text-brand">{dest.bestProgram}</div>
         </div>
       </div>
 
-      {/* CTA */}
-      <div className="mt-5 flex items-center justify-between">
-        <span className="text-[14px] font-bold text-text transition-colors group-hover:text-brand">
-          See the math
-        </span>
-        <span
-          aria-hidden
-          className="text-[15px] font-bold text-text3 transition-colors group-hover:text-brand"
-        >
-          Search this →
-        </span>
+      {/* ── body ─────────────────────────────────────────────────────────── */}
+      <div className="flex flex-1 flex-col p-5 sm:p-5">
+        <p className="text-[14px] leading-snug text-text2">{dest.vibe}</p>
+        <p className="mt-1 text-[13px] font-medium text-text3">from {fromCode}</p>
+
+        {/* the economics: miles needed, cash you'd skip, best program */}
+        <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-hair pt-4">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-text3">Miles</div>
+            <div className="mt-0.5 font-display text-[18px] font-bold tabular-nums text-text">
+              {compactMiles(dest.typicalAwardMiles)}
+            </div>
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-text3">vs. cash</div>
+            <div className="mt-0.5 font-display text-[18px] font-bold tabular-nums text-text">
+              {cashCompare}
+            </div>
+          </div>
+          <div className="col-span-2">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-text3">Book it with</div>
+            <div className="mt-0.5 truncate text-[14px] font-semibold text-brand">{dest.bestProgram}</div>
+          </div>
+        </div>
+
+        {/* CTA */}
+        <div className="mt-auto flex items-center justify-between pt-5">
+          <span className="text-[14px] font-bold text-text transition-colors group-hover:text-brand">
+            See the math
+          </span>
+          <span
+            aria-hidden
+            className="text-[15px] font-bold text-text3 transition-colors group-hover:text-brand"
+          >
+            Search this →
+          </span>
+        </div>
+
+        {/* photo credit — Unsplash API terms (plain text; cannot nest <a> in the
+            card link. The /deals footer carries the linked Unsplash attribution.) */}
+        {photo && (
+          <p className="mt-3 text-[10px] text-text3">
+            Photo: {photo.credit.name} / Unsplash
+          </p>
+        )}
       </div>
     </a>
   )

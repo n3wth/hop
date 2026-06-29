@@ -1,13 +1,15 @@
 import DestinationGrid from '@/components/landing/DestinationGrid'
-import { topValue } from '@/lib/destinations'
+import { topValue, imageQuery } from '@/lib/destinations'
+import { destinationImages } from '@/lib/images'
 
 // Sells the dream before the visitor has connected anything: the best-value
 // award redemptions hop can find right now. It's a teaser — points-rich travel
 // is the payoff, and these are the trips where miles stretch furthest. Flat
 // cards on cream, on-brand. Clicking any one drops you straight into a real
 // search for that city.
-export default function InspirationTeaser() {
+export default async function InspirationTeaser() {
   const picks = topValue(4)
+  const photos = await destinationImages(picks.map((d) => imageQuery(d)))
 
   return (
     <section>
@@ -25,7 +27,7 @@ export default function InspirationTeaser() {
       </div>
 
       <div className="mt-8">
-        <DestinationGrid destinations={picks} />
+        <DestinationGrid destinations={picks} photos={photos} stagger />
       </div>
     </section>
   )

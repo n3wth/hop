@@ -7,32 +7,32 @@ interface Step {
   body: string
 }
 
-// The honest mechanism — four plain steps naming the real sources, so trust is
-// earned by specificity, not adjectives. Flat cards on cream; the connecting
-// number rail reads as a single sequence.
+// The honest mechanism — four plain steps, so trust is earned by specificity,
+// not adjectives. Flat cards on cream; the connecting number rail reads as a
+// single sequence.
 const STEPS: Step[] = [
   {
     icon: 'loyalty',
-    source: 'AwardWallet',
-    title: 'Reads your real balances',
-    body: 'Connect once and hop pulls live point and mile balances across every program you hold.',
+    source: 'Your balances',
+    title: 'Reads your real points',
+    body: 'Add your programs once and hop knows exactly how many points and miles you have to spend.',
   },
   {
     icon: 'flight',
-    source: 'Seats.aero',
-    title: 'Checks award space',
-    body: 'It finds where seats are actually bookable with miles on your exact dates and route.',
+    source: 'Award space',
+    title: 'Finds bookable seats',
+    body: 'It checks where seats are actually bookable with miles on your exact dates and route.',
   },
   {
     icon: 'receipt_long',
-    source: 'Duffel',
-    title: 'Prices the cash fare',
-    body: 'Live cash prices for the same flights, so the comparison is apples to apples.',
+    source: 'Cash fares',
+    title: 'Prices the same flight',
+    body: 'Live cash prices for those same flights, so the comparison is apples to apples.',
   },
   {
     icon: 'workspace_premium',
-    source: 'cents-per-point',
-    title: 'Tells you the smarter book',
+    source: 'The verdict',
+    title: 'Names the smarter book',
     body: 'hop computes the value of each redemption and names the one verdict: points or cash.',
   },
 ]

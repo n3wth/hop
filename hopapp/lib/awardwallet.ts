@@ -130,8 +130,16 @@ export function normalizeAwardWalletAccount(account: AwardWalletAccount): Balanc
   }
 }
 
-export async function getBalances(): Promise<ApiResult<Balance[]>> {
-  if (!hasEnv('AWARDWALLET_API_KEY') || !hasEnv('AWARDWALLET_USER_ID')) {
+// Fetch a connected user's points balances. Pass the signed-in user's linked
+// AwardWallet connected-user id for per-user balances; omit it to fall back to
+// the global env id (back-compat for existing callers + tests). NEVER throws.
+export async function getBalances(awUserId?: string): Promise<ApiResult<Balance[]>> {
+  if (!hasEnv('AWARDWALLET_API_KEY')) {
+    return { ok: false, reason: 'AwardWallet credentials not configured' }
+  }
+  // Resolve the target connected user: explicit per-user id wins, else env global.
+  const resolvedId = awUserId && awUserId.trim() !== '' ? awUserId.trim() : null
+  if (!resolvedId && !hasEnv('AWARDWALLET_USER_ID')) {
     return { ok: false, reason: 'AwardWallet credentials not configured' }
   }
 
@@ -139,7 +147,7 @@ export async function getBalances(): Promise<ApiResult<Balance[]>> {
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
 
   try {
-    const userId = encodeURIComponent(env.awardWalletUserId())
+    const userId = encodeURIComponent(resolvedId ?? env.awardWalletUserId())
     const res = await fetch(`${AWARDWALLET_BASE}/connectedUser/${userId}`, {
       method: 'GET',
       headers: {

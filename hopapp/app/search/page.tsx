@@ -1,5 +1,6 @@
 import type { SearchParams } from '@/lib/types'
 import { assembleSearch } from '@/lib/search'
+import { getUserBalances } from '@/lib/accounts'
 import { cityForCode } from '@/lib/airports'
 import { auth0 } from '@/lib/auth0'
 import AppShell from '@/components/AppShell'
@@ -94,7 +95,6 @@ export default async function Search({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const params = parseParams(await searchParams)
-  const result = await assembleSearch(params)
 
   // Auth0 session → header avatar (null when signed out).
   const session = await auth0.getSession()
@@ -107,6 +107,12 @@ export default async function Search({
         picture: su.picture ?? undefined,
       }
     : null
+
+  // Signed in → ground the search in this user's real balances (manual +
+  // AwardWallet, merged); pass them in so no other user's data can leak. Signed
+  // out → undefined keeps the env-global/mock fallback inside assembleSearch.
+  const userBalances = su?.sub ? await getUserBalances(su.sub) : undefined
+  const result = await assembleSearch(params, userBalances)
 
   const who =
     params.adults === 1 ? '1 adult' : `${params.adults} adults`

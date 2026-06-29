@@ -1,7 +1,7 @@
 import { auth0 } from '@/lib/auth0'
 import { mockBalances } from '@/lib/mock'
-import { getBalances } from '@/lib/awardwallet'
 import { getPrefs } from '@/lib/prefs'
+import { getUserBalances } from '@/lib/accounts'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import Icon from '@/components/Icon'
@@ -11,6 +11,7 @@ import SampleVerdict from '@/components/landing/SampleVerdict'
 import HowItWorks from '@/components/landing/HowItWorks'
 import ConnectBand from '@/components/landing/ConnectBand'
 import InspirationTeaser from '@/components/landing/InspirationTeaser'
+import DestinationReel from '@/components/landing/DestinationReel'
 import SignedInHome from '@/components/landing/SignedInHome'
 
 // A sensible default search to seed the hero form. Picking it pre-fills the
@@ -51,8 +52,9 @@ export default async function Home() {
   let programs = 0
   let totalPoints = 0
   if (user) {
-    const res = await getBalances().catch(() => ({ ok: false as const }))
-    const balances = res.ok ? res.data : mockBalances()
+    // Unified per-user balances (manual + AwardWallet, merged). Empty → mock.
+    const real = su?.sub ? await getUserBalances(su.sub) : []
+    const balances = real.length > 0 ? real : mockBalances()
     programs = balances.length
     totalPoints = balances.reduce((sum, b) => sum + b.balance, 0)
   }
@@ -136,6 +138,9 @@ export default async function Home() {
             — it&apos;s ready to go.
           </p>
         </section>
+
+        {/* ── THE DREAM, IMMEDIATELY — a reel of real destinations ───────── */}
+        <DestinationReel />
 
         {/* ── A TASTE OF THE OUTPUT ──────────────────────────────────────── */}
         <SampleVerdict />

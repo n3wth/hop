@@ -36,7 +36,14 @@ function youHaveFor(option: FlightOption, balances: Balance[]): number | undefin
   return hit?.balance
 }
 
-export async function assembleSearch(params: SearchParams): Promise<SearchResult> {
+// Optionally accepts pre-resolved per-user balances (manual + AwardWallet merged
+// by lib/accounts.getUserBalances). When omitted, falls back to the AwardWallet
+// env global via getBalances() — preserving the original behavior for callers
+// without a session and for the test suite.
+export async function assembleSearch(
+  params: SearchParams,
+  userBalances?: Balance[],
+): Promise<SearchResult> {
   let cashOptions: FlightOption[] = []
   let awardOptions: FlightOption[] = []
   let balances: Balance[] = []
@@ -66,12 +73,16 @@ export async function assembleSearch(params: SearchParams): Promise<SearchResult
     })
     cashOptions = mockCash().map(reroute)
     awardOptions = mockAwards().map(reroute)
-    balances = mockBalances()
+    // Signed-in user's real balances ground the mock fixtures too; else mock.
+    balances = userBalances && userBalances.length > 0 ? userBalances : mockBalances()
   } else {
+    // When the caller resolved per-user balances, use them and skip the
+    // AwardWallet env-global fetch entirely. Otherwise fall back to getBalances().
+    const wantBalances = userBalances === undefined
     const [cashRes, awardsRes, balancesRes] = await Promise.all([
       searchCash(params),
       searchAwards(params),
-      getBalances(),
+      wantBalances ? getBalances() : Promise.resolve(null),
     ])
 
     if (cashRes.ok) cashOptions = cashRes.data
@@ -80,8 +91,14 @@ export async function assembleSearch(params: SearchParams): Promise<SearchResult
     if (awardsRes.ok) awardOptions = awardsRes.data
     else degraded.push('awards')
 
-    if (balancesRes.ok) balances = balancesRes.data
-    else degraded.push('balances')
+    if (balancesRes === null) {
+      // Caller supplied balances (possibly empty) — trust them, no degrade.
+      balances = userBalances ?? []
+    } else if (balancesRes.ok) {
+      balances = balancesRes.data
+    } else {
+      degraded.push('balances')
+    }
   }
 
   // Cheapest cash price is the baseline for award cpp comparison.

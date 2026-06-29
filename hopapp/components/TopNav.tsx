@@ -129,7 +129,7 @@ export default function TopNav({
                   Deals
                 </a>
                 <a href="/ask" className="rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hover:text-text">
-                  Ask hop
+                  Ask
                 </a>
               </nav>
               <div className="flex-1" />

@@ -61,6 +61,73 @@ export interface TransferSource {
   ratio?: string // e.g. "1:1"
 }
 
+// --- Native cash checkout (Duffel Orders) ----------------------------------
+
+// A passenger as collected by the checkout form, mapped to Duffel's required
+// fields. `id` matches the offer's passenger id (echoed back at order creation).
+export interface CheckoutPassenger {
+  id: string // Duffel offer passenger id, e.g. "pas_..."
+  title: 'mr' | 'ms' | 'mrs' | 'miss'
+  givenName: string
+  familyName: string
+  bornOn: string // ISO date "YYYY-MM-DD"
+  gender: 'm' | 'f'
+  email: string
+  phoneNumber: string // E.164, e.g. "+14155550100"
+}
+
+// A re-priced, fresh offer — what the checkout page renders before payment.
+// Mapped from Duffel's offers.get so the UI never touches the raw SDK shape.
+export interface CheckoutOffer {
+  id: string
+  totalAmount: string // e.g. "254.30"
+  totalCurrency: string // ISO 4217, e.g. "USD" / "GBP"
+  expiresAt?: string // ISO 8601 — offers expire; re-search past this
+  passengerIdentityDocumentsRequired: boolean
+  passengers: Array<{ id: string; type?: string }>
+  airline: string
+  airlineCode?: string
+  route: string // "SFO → LAX"
+  segments: CheckoutSegment[]
+  passengerCount: number
+}
+
+export interface CheckoutSegment {
+  origin?: string
+  destination?: string
+  departingAt?: string
+  arrivingAt?: string
+  marketingCarrier?: string
+  flightNumber?: string
+}
+
+// A persisted booking — what /account renders under "Trips".
+export interface Booking {
+  id: string
+  duffelOrderId?: string
+  bookingReference?: string // PNR
+  totalAmount?: string
+  totalCurrency?: string
+  status?: string
+  createdAt?: string
+  // From offer_snapshot — enough to render a trip card without re-fetching.
+  route?: string
+  airline?: string
+  date?: string
+}
+
+// The order result returned to the confirmation page after orders.create.
+export interface OrderResult {
+  id: string
+  bookingReference?: string
+  totalAmount?: string
+  totalCurrency?: string
+  passengerNames: string[]
+  segments: CheckoutSegment[]
+  route: string
+  airline: string
+}
+
 export interface Balance {
   program: string // "Amex Membership Rewards"
   code: string // monogram, "AX"

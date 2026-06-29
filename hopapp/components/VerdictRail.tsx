@@ -170,7 +170,7 @@ function HStat({
 }
 
 // Boarding-pass card for the pick — a real ticket: airline + flight no, the
-// itinerary as origin/time —✈ dur nonstop— dest/time, and a cabin/aircraft/fare
+// itinerary as origin/time — dur nonstop — dest/time, and a cabin/aircraft/fare
 // detail row. Notched ticket edge. Airline name appears once.
 function PickPass({ pick }: { pick: FlightOption }) {
   const [routeFrom, routeTo] = pick.route.split('→').map((s) => s.trim())

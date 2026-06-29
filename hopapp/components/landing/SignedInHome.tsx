@@ -2,14 +2,15 @@ import Icon from '@/components/Icon'
 import HeroSearch from '@/components/landing/HeroSearch'
 import DestinationGrid from '@/components/landing/DestinationGrid'
 import HomeAirportPrompt from '@/components/HomeAirportPrompt'
-import { affordableWith, topValue } from '@/lib/destinations'
+import { affordableWith, topValue, imageQuery } from '@/lib/destinations'
+import { destinationImages } from '@/lib/images'
 import type { SearchState } from '@/components/SearchBar'
 
 // The personalized home for a signed-in member. NOT the marketing page — it
 // leads with a warm greeting and their synced state, then the single most
 // useful, aspirational module: where their actual points can take them right
 // now. Search, concierge, and program management follow. Flat, warm, on-brand.
-export default function SignedInHome({
+export default async function SignedInHome({
   first,
   programs,
   totalPoints,
@@ -28,6 +29,7 @@ export default function SignedInHome({
   const affordable = affordableWith(totalPoints)
   const picks = (affordable.length >= 4 ? affordable : topValue(8)).slice(0, 8)
   const personalized = affordable.length >= 4
+  const photos = await destinationImages(picks.map((d) => imageQuery(d)))
 
   return (
     <div className="flex flex-col gap-14 pt-4 sm:gap-16 sm:pt-8 lg:gap-20">
@@ -69,7 +71,7 @@ export default function SignedInHome({
         </div>
 
         <div className="mt-8">
-          <DestinationGrid destinations={picks} origin={seed.from} />
+          <DestinationGrid destinations={picks} origin={seed.from} photos={photos} />
         </div>
       </section>
 

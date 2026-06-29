@@ -1,5 +1,6 @@
-import { topValue } from '@/lib/destinations'
-import { getBalances } from '@/lib/awardwallet'
+import { topValue, imageQuery } from '@/lib/destinations'
+import { destinationImages } from '@/lib/images'
+import { getUserBalances } from '@/lib/accounts'
 import { auth0 } from '@/lib/auth0'
 import AppShell from '@/components/AppShell'
 import DealCard from '@/components/DealCard'
@@ -28,6 +29,10 @@ export default async function DealsPage() {
   const deals = topValue(24)
   const { depart, ret } = defaultDates()
 
+  // Batch-fetch destination photography (cached per query, day-long revalidate).
+  // Null entries fall back to a solid brand-tint tile in the card.
+  const photos = await destinationImages(deals.map((d) => imageQuery(d)))
+
   // Auth0 session → consistent header avatar (null when signed out).
   const session = await auth0.getSession()
   const su = session?.user
@@ -43,8 +48,9 @@ export default async function DealsPage() {
   // Header points chip — only when signed in and balances resolve.
   let pointsTotal: number | undefined
   if (user) {
-    const bal = await getBalances()
-    if (bal.ok) pointsTotal = bal.data.reduce((s, b) => s + b.balance, 0)
+    // Unified per-user balances (manual + AwardWallet) for the header chip.
+    const real = su?.sub ? await getUserBalances(su.sub) : []
+    if (real.length > 0) pointsTotal = real.reduce((s, b) => s + b.balance, 0)
   }
 
   return (
@@ -53,26 +59,25 @@ export default async function DealsPage() {
         {/* editorial header */}
         <header className="pt-10 sm:pt-14">
           <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-brand">
-            Incredible right now
+            Sweet spots
           </span>
-          <h1 className="mt-3 max-w-[18ch] font-display text-[38px] font-bold leading-[1.05] text-text sm:text-[52px]">
-            Sweet spots worth your miles right now
+          <h1 className="mt-3 max-w-[16ch] font-display text-[38px] font-bold leading-[1.05] text-text sm:text-[52px]">
+            Where your miles go furthest
           </h1>
-          <p className="mt-4 max-w-[58ch] text-[16px] leading-relaxed text-text2 sm:text-[17px]">
-            The award redemptions where your points punch hardest — ranked by
-            cents-per-point, the truest measure of a great deal. Every card is a
-            real route you can chase today.
+          <p className="mt-4 max-w-[54ch] text-[16px] leading-relaxed text-text2 sm:text-[17px]">
+            The redemptions where points beat cash by the widest margin, ranked
+            by cents per point. Every one is a route you can book.
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px] text-text3">
             <span>
-              <b className="font-semibold text-text2">{deals.length}</b> sweet spots
+              <b className="font-semibold text-text2">{deals.length}</b> routes
             </span>
             <span className="hidden sm:inline">·</span>
             <span>
-              Hooked from <b className="font-semibold text-text2">{ORIGIN}</b>
+              from <b className="font-semibold text-text2">{ORIGIN}</b>
             </span>
             <span className="hidden sm:inline">·</span>
-            <span>Sorted by value, best first</span>
+            <span>best value first</span>
           </div>
         </header>
 
@@ -86,9 +91,24 @@ export default async function DealsPage() {
               fromCode={ORIGIN}
               depart={depart}
               ret={ret}
+              photo={photos[imageQuery(dest)]}
             />
           ))}
         </section>
+
+        {/* Unsplash attribution (API terms) */}
+        <p className="mt-8 text-[12px] text-text3">
+          Destination photography via{' '}
+          <a
+            href="https://unsplash.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-border underline-offset-2 hover:text-text2"
+          >
+            Unsplash
+          </a>
+          .
+        </p>
 
         <SiteFooter />
       </div>

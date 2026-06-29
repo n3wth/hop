@@ -1,12 +1,33 @@
 import { redirect } from 'next/navigation'
 import { auth0 } from '@/lib/auth0'
+import { getUserAwId, getManualBalances } from '@/lib/accounts'
+import { getBalances } from '@/lib/awardwallet'
+import { hasEnv } from '@/lib/env'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
+import ProgramsManager from '@/components/ProgramsManager'
 import Icon from '@/components/Icon'
+import type { Balance } from '@/lib/types'
+
+// Human-readable note for the AwardWallet handshake outcome (?aw=… flag the
+// OAuth start/callback routes set on their redirect back to /account).
+const AW_NOTES: Record<string, { tone: 'ok' | 'warn'; text: string }> = {
+  connected: { tone: 'ok', text: 'AwardWallet connected — your balances will auto-sync.' },
+  unconfigured: { tone: 'warn', text: 'Auto-sync isn’t available yet. Add programs manually below.' },
+  denied: { tone: 'warn', text: 'AwardWallet access was declined. You can add programs manually.' },
+  state: { tone: 'warn', text: 'That connect link expired. Try connecting again.' },
+  noid: { tone: 'warn', text: 'AwardWallet didn’t return an account. Try again.' },
+  error: { tone: 'warn', text: 'Couldn’t finish connecting. Try again.' },
+}
 
 // Account / profile page. Auth-gated — anonymous visitors go to login. Shows the
-// Auth0 profile; saved searches + booking history (Supabase) land here next.
-export default async function AccountPage() {
+// Auth0 profile + "Your programs" (manual balances, optional AwardWallet sync).
+export default async function AccountPage({
+  // Next.js 16: searchParams is async.
+  searchParams,
+}: {
+  searchParams: Promise<{ aw?: string }>
+}) {
   const session = await auth0.getSession()
   if (!session) redirect('/auth/login')
 
@@ -19,6 +40,27 @@ export default async function AccountPage() {
     email: u.email ?? undefined,
     picture: u.picture ?? undefined,
   }
+
+  // Manual programs (primary) + the optional AwardWallet link (live balances).
+  const [manual, awId] = await Promise.all([
+    u.sub ? getManualBalances(u.sub) : Promise.resolve([]),
+    u.sub ? getUserAwId(u.sub) : Promise.resolve(null),
+  ])
+  const awConnected = !!awId
+  let awBalances: Balance[] = []
+  let awReason: string | undefined
+  if (awConnected && awId) {
+    const res = await getBalances(awId).catch(() => ({
+      ok: false as const,
+      reason: 'request failed',
+    }))
+    if (res.ok) awBalances = res.data
+    else awReason = res.reason
+  }
+  const awUnconfigured = !hasEnv('AWARDWALLET_CONNECT_URL')
+
+  const awFlag = (await searchParams).aw
+  const awNote = awFlag ? AW_NOTES[awFlag] : undefined
 
   return (
     <AppShell user={user}>
@@ -60,6 +102,39 @@ export default async function AccountPage() {
               Log out
             </a>
           </div>
+        </section>
+
+        {/* your programs — manual balances (primary) + optional AwardWallet sync */}
+        <section className="mt-10">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
+              Your programs
+            </h2>
+            <a
+              href="/search"
+              className="text-[13px] font-semibold text-brand transition-colors hover:text-brand-deep"
+            >
+              New search
+            </a>
+          </div>
+          {awNote ? (
+            <p
+              className={`mt-3 rounded-[12px] border px-4 py-2.5 text-[13px] font-medium ${
+                awNote.tone === 'ok'
+                  ? 'border-brand-light bg-brand-light text-brand-deep'
+                  : 'border-border bg-sunk text-text2'
+              }`}
+            >
+              {awNote.text}
+            </p>
+          ) : null}
+          <ProgramsManager
+            manual={manual}
+            awConnected={awConnected}
+            awBalances={awBalances}
+            awReason={awReason}
+            awUnconfigured={awUnconfigured}
+          />
         </section>
 
         {/* saved searches */}
