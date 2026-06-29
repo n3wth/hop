@@ -31,7 +31,7 @@ export default function RouteBar({ result }: RouteBarProps) {
   const programs = result.balances.length
 
   return (
-    <div className="flex items-center justify-between pt-4">
+    <div className="hidden items-center justify-between pt-4 lg:flex">
       <div className="flex items-center gap-[18px]">
         <div className="flex flex-col">
           <span className="font-display text-[19px] font-semibold tracking-[-0.01em] text-text">

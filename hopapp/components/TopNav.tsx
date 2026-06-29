@@ -24,7 +24,10 @@ const LogoLockup = memo(function LogoLockup() {
   return (
     <>
       <FlyingBunny size={46} carve="var(--color-bg)" />
-      <span className="font-display text-[28px] font-bold tracking-[-0.04em] text-text">hop</span>
+      {/* wordmark hidden on mobile — bunny alone saves space next to the search pill */}
+      <span className="hidden font-display text-[28px] font-bold tracking-[-0.04em] text-text sm:inline">
+        hop
+      </span>
     </>
   )
 })
@@ -122,7 +125,7 @@ export default function TopNav({
           transition: `height ${DUR} ${EASE}, background ${DUR} ${EASE}, border-color ${DUR} ${EASE}`,
         }}
       >
-        <div className="mx-auto flex h-full max-w-[1440px] items-center gap-9 px-16">
+        <div className="mx-auto flex h-full max-w-[1440px] items-center gap-4 px-4 sm:gap-6 sm:px-8 lg:gap-9 lg:px-16">
           {/* logo — left, scales down on collapse */}
           <div
             className="flex flex-shrink-0 items-center gap-[11px]"
@@ -135,9 +138,21 @@ export default function TopNav({
             <LogoLockup />
           </div>
 
-          {/* search — grouped next to the logo (not orphaned center); one
-              element that contracts from full fields to a pill */}
-          <div className="flex min-w-0 flex-shrink-0">
+          {/* MOBILE search — a single compact tap pill (full fields below md) */}
+          <button
+            type="button"
+            aria-label="Edit search"
+            className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-border bg-surface px-4 py-2.5 md:hidden"
+          >
+            <Icon name="search" size={16} className="flex-shrink-0 text-brand" />
+            <span className="truncate text-[13px] font-semibold text-text">
+              {fromCode} → {toCode}
+            </span>
+            <span className="ml-1 truncate text-[12px] text-text3">{vDates}</span>
+          </button>
+
+          {/* DESKTOP search — grouped next to the logo; contracts to a pill on scroll */}
+          <div className="hidden min-w-0 flex-shrink-0 md:flex">
             <form
               className="flex items-center rounded-full border border-border bg-surface"
               style={{
@@ -193,15 +208,15 @@ export default function TopNav({
             </form>
           </div>
 
-          {/* spacer pushes the account to the far right — logo|search ——— avatar */}
-          <div className="flex-1" />
+          {/* spacer pushes the account to the far right (desktop only) */}
+          <div className="hidden flex-1 md:block" />
 
           {/* account — right, scales down on collapse */}
           <div
             className="flex flex-shrink-0 items-center"
             style={{ transform: c ? 'scale(0.86)' : 'scale(1)', transformOrigin: 'right center', transition: `transform ${DUR} ${EASE}` }}
           >
-            <div className="grid h-[42px] w-[42px] place-items-center rounded-full bg-brand font-display text-[16px] font-bold text-white">
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-brand font-display text-[15px] font-bold text-white sm:h-[42px] sm:w-[42px] sm:text-[16px]">
               O
             </div>
           </div>

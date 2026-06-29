@@ -33,13 +33,15 @@ export default function SeeTheMath({ pick, cheapestCash, threshold, unit }: SeeT
   const clears = cpp != null && cpp >= threshold
 
   return (
-    <div className="mt-[18px]">
+    // basis-full so, in the hero's button row, the button sits beside "Book"
+    // (it's the first inline child) but the expanding panel wraps to full width below.
+    <div className="contents">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls={panelId}
-        className="inline-flex items-center gap-[8px] rounded-[14px] border-[1.5px] border-[#bfe9e1]/40 px-[22px] py-[15px] text-[15px] font-medium text-[#bfe9e1] transition-colors hover:border-[#bfe9e1] hover:text-white"
+        className="inline-flex items-center gap-[8px] rounded-[14px] border-[1.5px] border-[#bfe9e1]/40 px-7 py-4 text-[15px] font-medium text-[#bfe9e1] transition-colors hover:border-[#bfe9e1] hover:text-white"
       >
         See the math
         <span
@@ -50,7 +52,7 @@ export default function SeeTheMath({ pick, cheapestCash, threshold, unit }: SeeT
         </span>
       </button>
 
-      <div className="hop-collapse" data-open={open} id={panelId} role="region" aria-label="How we value these points">
+      <div className="hop-collapse basis-full" data-open={open} id={panelId} role="region" aria-label="How we value these points">
         <div>
           <div className="mt-[18px] rounded-[16px] border border-white/12 bg-white/[0.04] p-[22px] text-[#dcefe9]">
             {/* the formula, spelled out with this pick's real numbers */}

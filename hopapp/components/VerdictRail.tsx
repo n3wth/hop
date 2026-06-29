@@ -35,17 +35,17 @@ export default function VerdictRail({ result }: VerdictRailProps) {
 
   return (
     <section
-      className="mt-[26px] grid overflow-hidden rounded-[28px] text-[#eafaf7]"
-      style={{ gridTemplateColumns: '1fr 392px', background: 'var(--color-brand)' }}
+      className="mt-[26px] grid grid-cols-1 overflow-hidden rounded-[20px] text-[#eafaf7] lg:grid-cols-[1fr_392px] lg:rounded-[28px]"
+      style={{ background: 'var(--color-brand)' }}
     >
       {/* LEFT — the verdict */}
-      <div className="px-[52px] pb-[46px] pt-12">
+      <div className="px-6 pb-9 pt-8 sm:px-10 lg:px-[52px] lg:pb-[46px] lg:pt-12">
         <span className="mb-[26px] inline-flex items-center gap-[11px] border-b border-white/15 pb-4 text-[12px] font-semibold uppercase tracking-[0.22em] text-[#9fe0d6]">
           <span className="h-[7px] w-[7px] rounded-full bg-[#5fe3c8]" />
           Best value
         </span>
 
-        <h1 className="hop-rise font-display text-[64px] font-semibold leading-[0.98] tracking-[-0.025em] text-white" style={{ ['--hop-delay' as string]: '60ms' }}>
+        <h1 className="hop-rise font-display text-[34px] font-semibold leading-[1.02] tracking-[-0.025em] text-white sm:text-[48px] sm:leading-[1.0] lg:text-[64px] lg:leading-[0.98]" style={{ ['--hop-delay' as string]: '60ms' }}>
           {usingPoints ? (
             <>
               Use your <span className="text-[#ffe7b0]">{airlineShort}&nbsp;{unit}.</span>
@@ -94,19 +94,18 @@ export default function VerdictRail({ result }: VerdictRailProps) {
             <Icon name="check_circle" size={19} />
             {usingPoints ? `Book with ${airlineShort} ${unit}` : 'Book cash'}
           </a>
+          {/* See the math — sits to the RIGHT of Book; its panel expands below. */}
+          {pick ? (
+            <SeeTheMath
+              pick={pick}
+              cheapestCash={cash}
+              threshold={POINTS_THRESHOLD_CPP}
+              unit={unit}
+            />
+          ) : null}
         </div>
 
-        {/* See the math — transparency panel, expands full-width below the CTAs */}
-        {pick ? (
-          <SeeTheMath
-            pick={pick}
-            cheapestCash={cash}
-            threshold={POINTS_THRESHOLD_CPP}
-            unit={unit}
-          />
-        ) : null}
-
-        <div className="hop-rise mt-[42px] flex gap-10 border-t border-white/15 pt-[30px]" style={{ ['--hop-delay' as string]: '220ms' }}>
+        <div className="hop-rise mt-8 flex flex-wrap gap-x-8 gap-y-5 border-t border-white/15 pt-7 sm:gap-10 lg:mt-[42px] lg:pt-[30px]" style={{ ['--hop-delay' as string]: '220ms' }}>
           <HStat label="You pay" value={fmt(miles)} unit={unit} />
           <HStat label="Value" value={cpp != null ? `${cpp.toFixed(1)}¢` : '—'} unit={`/ ${unit.slice(0, -1)}`} />
           <HStat label="Cash price" value={`$${fmt(cash)}`} />
@@ -116,7 +115,7 @@ export default function VerdictRail({ result }: VerdictRailProps) {
 
       {/* RIGHT — bunny + boarding-pass pick */}
       <aside
-        className="relative flex flex-col justify-between border-l border-dashed border-white/20"
+        className="relative flex flex-col justify-between border-t border-dashed border-white/20 lg:border-l lg:border-t-0"
         style={{
           background:
             'radial-gradient(120% 120% at 85% 15%, rgba(255,255,255,.10), rgba(255,255,255,0) 55%), var(--color-brand-deep)',
