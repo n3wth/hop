@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Bricolage_Grotesque, Fraunces, Geist } from 'next/font/google'
+import { Suspense } from 'react'
 import {
   SITE_URL,
   SITE_NAME,
@@ -7,6 +8,8 @@ import {
   DEFAULT_DESCRIPTION,
   TEAL,
 } from '@/lib/seo'
+import { PostHogClientProvider } from '@/components/PostHogProvider'
+import { PostHogPageView } from '@/components/PostHogPageView'
 import './globals.css'
 
 // Display headlines: Bricolage Grotesque via next/font/google — self-hosted, preloaded.
@@ -101,7 +104,14 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${bricolage.variable} ${fraunces.variable} ${geistSans.variable}`}>
       <head />
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">
+        <PostHogClientProvider>
+          <Suspense fallback={null}>
+            <PostHogPageView />
+          </Suspense>
+          {children}
+        </PostHogClientProvider>
+      </body>
     </html>
   )
 }
