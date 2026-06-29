@@ -590,6 +590,10 @@ export function SearchForm({
     if (!s.oneWay && s.ret) qs.set('return', s.ret)
     onSubmitted?.()
     router.push(`/search?${qs.toString()}`)
+    // Same-route (query-only) pushes don't auto-scroll in the App Router, so a
+    // search FROM the results page would leave you scrolled mid-list. Reset to
+    // the top so every new search starts at the verdict.
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0 })
   }
 
   if (variant === 'mobile') {

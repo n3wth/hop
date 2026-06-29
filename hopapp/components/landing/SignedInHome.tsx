@@ -101,7 +101,7 @@ export default async function SignedInHome({
             the cash fare, and tells you the smarter way to book it.
           </p>
           <div className="mt-6">
-            <HeroSearch initial={seed} />
+            <HeroSearch initial={seed} align="start" />
           </div>
         </div>
 
