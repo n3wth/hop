@@ -56,7 +56,7 @@ export default function FlyingBunny({ size = 46, className, carve }: FlyingBunny
       className={className}
       style={{ display: 'inline-flex', willChange: 'transform', transformOrigin: 'center bottom' }}
     >
-      <Logo size={size} carve={carve} className="text-brand" />
+      <Logo size={size} carve={carve} className="text-text" />
     </span>
   )
 }

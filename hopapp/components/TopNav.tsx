@@ -35,7 +35,7 @@ const LogoLockup = memo(function LogoLockup() {
   // Icon only — the bunny stands alone as the mark. Links to the home page.
   return (
     <a href="/" aria-label="hop — home" className="flex items-center">
-      <FlyingBunny size={48} carve="var(--color-bg)" />
+      <FlyingBunny size={41} carve="var(--color-bg)" />
     </a>
   )
 })
@@ -152,15 +152,9 @@ export default function TopNav({
         }}
       >
         <div className="flex h-full items-center gap-4 px-4 sm:gap-6 sm:px-8 lg:gap-9 lg:px-16">
-          {/* logo — left, scales down on collapse */}
-          <div
-            className="flex flex-shrink-0 items-center gap-[11px]"
-            style={{
-              transform: c ? 'scale(0.84)' : 'scale(1)',
-              transformOrigin: 'left center',
-              transition: `transform ${DUR} ${EASE}`,
-            }}
-          >
+          {/* logo — left. Stays the SAME size whether at top or scrolled; only its
+              vertical position shifts as the header height contracts (76→56px). */}
+          <div className="flex flex-shrink-0 items-center gap-[11px]">
             <LogoLockup />
           </div>
 

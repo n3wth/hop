@@ -48,14 +48,11 @@ export default async function SignedInHome({
         className="hop-rise grid grid-cols-1 items-center gap-8 lg:grid-cols-[1fr_360px] lg:gap-12"
         style={{ ['--hop-delay' as string]: '40ms' }}
       >
-        {/* Greeting */}
+        {/* Greeting — no "Balances synced" chip when connected; the points summary
+            panel on the right already shows the total + program count. The empty
+            state keeps a CTA chip since there's nothing else prompting them. */}
         <div>
-          {programs > 0 ? (
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-paper px-3.5 py-1.5 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-brand">
-              <Icon name="check_circle" size={13} />
-              Balances synced
-            </span>
-          ) : (
+          {programs === 0 ? (
             <a
               href="/account"
               className="inline-flex items-center gap-2 rounded-full border border-border bg-paper px-3.5 py-1.5 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-brand transition-colors hover:bg-sunk"
@@ -63,8 +60,8 @@ export default async function SignedInHome({
               <Icon name="loyalty" size={13} />
               Add your programs to get started
             </a>
-          )}
-          <h1 className="mt-4 font-display text-[36px] font-semibold leading-[1.02] tracking-[-0.03em] text-text sm:text-[52px] lg:text-[60px]">
+          ) : null}
+          <h1 className={`font-display text-[36px] font-semibold leading-[1.02] tracking-[-0.03em] text-text sm:text-[52px] lg:text-[60px] ${programs === 0 ? 'mt-4' : ''}`}>
             {first ? `Welcome back, ${first}.` : 'Welcome back.'}
           </h1>
           <p className="mt-3 max-w-[52ch] text-[16px] leading-[1.55] text-text2 sm:text-[18px]">
