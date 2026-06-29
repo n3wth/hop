@@ -135,39 +135,63 @@ export function buildPrompt(
 
 // --- Anthropic client -------------------------------------------------------
 
-interface ClientSetup {
-  client: Anthropic
-  // Model id to use with THIS client. The Vercel AI Gateway namespaces models
-  // (e.g. 'anthropic/claude-sonnet-4-6'); the direct Anthropic API does not.
-  model: string
-  extraHeaders?: Record<string, string>
-}
+// Gateway model. Override with AI_GATEWAY_MODEL — set to 'anthropic/claude-sonnet-4-6'
+// once paid AI Gateway credits are added (Claude is restricted on the free tier).
+// Default is a capable model available without paid credits.
+const GATEWAY_MODEL = process.env.AI_GATEWAY_MODEL || 'deepseek/deepseek-v3'
 
-function makeClient(): ClientSetup | null {
-  // 1) Vercel AI Gateway — preferred in prod. One key, model fallbacks, ZDR.
-  //    The Anthropic SDK speaks to it directly via baseURL + the gateway key.
+// Produce the concierge's raw text answer from whichever provider is configured.
+// Returns null when no provider is available or the call fails — the caller then
+// serves the graceful fallback. NEVER throws.
+async function callConcierge(system: string, user: string): Promise<string | null> {
+  // 1) Vercel AI Gateway (preferred in prod) — OpenAI-compatible endpoint, so it
+  //    works for any gateway model (DeepSeek on the free tier; Claude with credits).
   const gatewayKey = process.env.AI_GATEWAY_API_KEY
   if (gatewayKey) {
-    return {
-      client: new Anthropic({ apiKey: gatewayKey, baseURL: 'https://ai-gateway.vercel.sh' }),
-      model: `anthropic/${MODEL}`,
+    try {
+      const res = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${gatewayKey}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: GATEWAY_MODEL,
+          max_tokens: 1024,
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: user },
+          ],
+        }),
+        signal: AbortSignal.timeout(20_000),
+      })
+      if (!res.ok) return null
+      const json = (await res.json()) as {
+        choices?: Array<{ message?: { content?: string } }>
+      }
+      return json.choices?.[0]?.message?.content?.trim() || null
+    } catch {
+      return null
     }
   }
-  // 2) Direct Anthropic API key.
+
+  // 2) Direct Anthropic API key, or 3) Claude Code OAuth token (dev; rate-limited).
   const apiKey = process.env.ANTHROPIC_API_KEY
-  if (apiKey) {
-    return { client: new Anthropic({ apiKey }), model: MODEL }
-  }
-  // 3) Claude Code OAuth token (dev only; rate-limited). Needs the beta header.
   const authToken = process.env.CLAUDE_CODE_OAUTH_TOKEN
-  if (authToken) {
-    return {
-      client: new Anthropic({ authToken }),
-      model: MODEL,
-      extraHeaders: { 'anthropic-beta': 'oauth-2025-04-20' },
-    }
+  if (!apiKey && !authToken) return null
+  try {
+    const client = apiKey ? new Anthropic({ apiKey }) : new Anthropic({ authToken })
+    const message = await client.messages.create(
+      { model: MODEL, max_tokens: 1024, system, messages: [{ role: 'user', content: user }] },
+      {
+        timeout: 20_000,
+        ...(authToken ? { headers: { 'anthropic-beta': 'oauth-2025-04-20' } } : {}),
+      },
+    )
+    return extractText(message) || null
+  } catch {
+    return null
   }
-  return null
 }
 
 // --- Response parsing --------------------------------------------------------
@@ -270,27 +294,10 @@ export async function POST(request: Request): Promise<Response> {
     )
   }
 
-  const setup = makeClient()
-  if (!setup) {
-    return Response.json(fallbackAnswer(question, context), { status: 200 })
-  }
-
   const { system, user } = buildPrompt(question, context)
 
   try {
-    const message = await setup.client.messages.create(
-      {
-        model: setup.model,
-        max_tokens: 1024,
-        system,
-        messages: [{ role: 'user', content: user }],
-      },
-      {
-        timeout: 20_000,
-        ...(setup.extraHeaders ? { headers: setup.extraHeaders } : {}),
-      },
-    )
-    const text = extractText(message)
+    const text = await callConcierge(system, user)
     if (!text) {
       return Response.json(fallbackAnswer(question, context), { status: 200 })
     }
