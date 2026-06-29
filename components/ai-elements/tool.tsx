@@ -1,18 +1,5 @@
 'use client'
 
-// AI Elements — Tool (themed for hop).
-// Adopts the official <Tool>/<ToolHeader>/<ToolContent> collapsible structure
-// and its state model (input-streaming → input-available → output-available /
-// output-error), restyled to hop's flat house style with a native <details>
-// disclosure (no radix). It narrates the agent's mid-thought tool use in plain,
-// warm language — "Searching the web…", "Checking weather…", "Pricing with your
-// points…" — with a quiet brand spinner while running and a check when done.
-//
-// This file also exposes ToolActivity: a compact, render-ready view over hop's
-// concierge tool stream (web_search / get_weather / price_trip / save_profile_fact),
-// so the conversation can show tool activity without the caller wiring header +
-// content + state badges by hand.
-
 import type { ComponentProps, ReactNode } from 'react'
 import Icon, { type IconName } from '../Icon'
 import { Loader } from './loader'
@@ -25,13 +12,9 @@ export type ToolState =
 
 export type ToolProps = ComponentProps<'details'>
 
+// Lightweight: no outer card box — just a slim inline disclosure row.
 export function Tool({ className = '', ...props }: ToolProps) {
-  return (
-    <details
-      className={`group/tool not-prose w-full overflow-hidden rounded-[12px] border border-border bg-surface ${className}`}
-      {...props}
-    />
-  )
+  return <details className={`group/tool not-prose w-full ${className}`} {...props} />
 }
 
 export type ToolHeaderProps = {
@@ -41,31 +24,33 @@ export type ToolHeaderProps = {
   className?: string
 }
 
-// The disclosure row: tool icon + friendly title + a status affordance. Running
-// shows the brand Loader; done shows a check; error shows the error glyph. Color
-// is the only thing that changes on hover (house rule — no lift).
+// A slim pill-row: icon + title + status. Hover gets a subtle surface tint.
 export function ToolHeader({ title, icon = 'lightbulb', state, className = '' }: ToolHeaderProps) {
   const running = state === 'input-streaming' || state === 'input-available'
   const errored = state === 'output-error'
   return (
     <summary
-      className={`flex cursor-pointer list-none items-center gap-2.5 px-3.5 py-2.5 text-text2 transition-colors hover:text-text [&::-webkit-details-marker]:hidden ${className}`}
+      className={`flex cursor-pointer list-none items-center gap-2 rounded-lg px-2.5 py-1.5 text-text3 transition-colors hover:bg-surface hover:text-text2 [&::-webkit-details-marker]:hidden ${className}`}
     >
-      <Icon name={icon} size={16} className={running ? 'text-brand hop-pulse' : 'text-text3'} />
-      <span className="text-[13px] font-medium">{title}</span>
-      <span className="ml-auto inline-flex items-center text-text3">
+      <Icon
+        name={icon}
+        size={13}
+        className={running ? 'text-brand hop-pulse' : errored ? 'text-amber' : 'text-text3'}
+      />
+      <span className="flex-1 truncate text-[12px] font-medium leading-none">{title}</span>
+      <span className="ml-auto inline-flex shrink-0 items-center gap-1.5">
         {running ? (
-          <Loader size={14} className="text-brand" />
+          <Loader size={11} className="text-brand" />
         ) : errored ? (
-          <Icon name="error" size={15} className="text-[#9a6a2e]" />
+          <Icon name="error" size={12} className="text-[#9a6a2e]" />
         ) : (
-          <Icon name="check_circle" size={15} className="text-brand" />
+          <Icon name="check_circle" size={12} className="text-brand/50" />
         )}
       </span>
       <Icon
         name="expand_more"
-        size={16}
-        className="text-text3 transition-transform group-open/tool:rotate-180"
+        size={13}
+        className="shrink-0 text-text3/60 transition-transform group-open/tool:rotate-180"
       />
     </summary>
   )
@@ -73,25 +58,24 @@ export function ToolHeader({ title, icon = 'lightbulb', state, className = '' }:
 
 export type ToolContentProps = ComponentProps<'div'>
 
+// Indented with a left accent instead of a bordered card.
 export function ToolContent({ className = '', ...props }: ToolContentProps) {
   return (
-    <div className={`border-t border-hair px-3.5 py-3 text-[12px] text-text2 ${className}`} {...props} />
+    <div
+      className={`ml-5 mt-0.5 border-l-2 border-hair pl-3 py-2 text-[12px] leading-[1.55] text-text3 ${className}`}
+      {...props}
+    />
   )
 }
 
-// --- Convenience: hop's tool-activity model ---------------------------------
+// --- hop tool-activity model ------------------------------------------------
 
-// One step of agent tool use as surfaced by the concierge stream. `label` is the
-// human line shown in the header; `detail` (optional) is the small expandable
-// note (e.g. the place priced, the search objective).
 export interface ToolActivityStep {
   tool: string
   state: ToolState
   detail?: string
 }
 
-// Friendly, warm copy per concierge tool — present-progressive while running,
-// settled once done. No emoji. Falls back to a humanized tool name.
 const TOOL_COPY: Record<string, { icon: IconName; running: string; done: string }> = {
   web_search: { icon: 'search', running: 'Searching the web…', done: 'Searched the web' },
   get_weather: { icon: 'schedule', running: 'Checking the weather…', done: 'Checked the weather' },
@@ -99,9 +83,6 @@ const TOOL_COPY: Record<string, { icon: IconName; running: string; done: string 
   save_profile_fact: { icon: 'loyalty', running: 'Remembering that…', done: 'Saved to your profile' },
 }
 
-// VALUE-NEUTRAL copy for visitors with no real balances (signed-out / nothing
-// connected). The agent isn't pricing against points anyone owns, so the label
-// must not imply "your points" — it's a value demonstration of the route.
 const TOOL_COPY_NEUTRAL: Record<string, { running: string; done: string }> = {
   price_trip: { running: 'Pricing this route…', done: 'Priced this route' },
 }
@@ -112,7 +93,6 @@ function humanize(tool: string): string {
 
 export function toolTitle(step: ToolActivityStep, hasBalances = false): string {
   const running = step.state === 'input-streaming' || step.state === 'input-available'
-  // Neutral framing first when the visitor has no balances to price against.
   if (!hasBalances) {
     const neutral = TOOL_COPY_NEUTRAL[step.tool]
     if (neutral) return running ? neutral.running : neutral.done
@@ -126,10 +106,6 @@ export function toolIcon(step: ToolActivityStep): IconName {
   return TOOL_COPY[step.tool]?.icon ?? 'lightbulb'
 }
 
-// Strip the verb prefix ("Pricing "/"Searching "/"Checking ") and the trailing
-// " against your points" / " for …" so a detail like "Pricing HNL against your
-// points" collapses to just the place ("HNL"). Keeps the collapsed header self-
-// identifying when several identical tool rows stack. Text only — brand-safe.
 export function shortDetail(detail: string): string {
   return detail
     .replace(/^(pricing|searching|checking|saving|remembering)\s+/i, '')
@@ -139,9 +115,6 @@ export function shortDetail(detail: string): string {
     .trim()
 }
 
-// A ready-made tool card for one activity step. Collapsed by default; expands to
-// the optional detail line. Used inside an assistant turn. `hasBalances` selects
-// value-neutral labels for visitors with no points to price against.
 export function ToolActivity({
   step,
   children,
@@ -152,8 +125,6 @@ export function ToolActivity({
   hasBalances?: boolean
 }) {
   const hasDetail = !!step.detail || !!children
-  // Surface the per-call detail in the collapsed header so stacked rows
-  // (e.g. three price_trip calls) are legible without expanding each one.
   const suffix = step.detail ? shortDetail(step.detail) : ''
   const title = suffix ? `${toolTitle(step, hasBalances)} · ${suffix}` : toolTitle(step, hasBalances)
   return (
@@ -161,7 +132,7 @@ export function ToolActivity({
       <ToolHeader title={title} icon={toolIcon(step)} state={step.state} />
       {hasDetail ? (
         <ToolContent>
-          {step.detail ? <p className="leading-[1.5]">{step.detail}</p> : null}
+          {step.detail ? <p>{step.detail}</p> : null}
           {children}
         </ToolContent>
       ) : null}

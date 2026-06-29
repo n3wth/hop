@@ -44,7 +44,6 @@ import {
 } from './ai-elements/prompt-input'
 import { ToolActivity, type ToolState } from './ai-elements/tool'
 import { Suggestions, Suggestion } from './ai-elements/suggestion'
-import { Loader } from './ai-elements/loader'
 
 // A lightweight, serializable photo record passed from the server page so the
 // client can render real imagery without exposing the Unsplash key.
@@ -273,12 +272,12 @@ export default function Concierge({
       <div role="status" aria-live="polite" className="sr-only">
         {liveStatus}
       </div>
-      {/* identity rail — flush with the app, not card chrome */}
-      <div className="hop-ask-measure flex flex-shrink-0 items-center justify-between pb-3 pt-1">
+      {/* identity rail — minimal, just enough to orient and offer controls */}
+      <div className="hop-ask-measure flex flex-shrink-0 items-center justify-between pb-2 pt-1">
         <div className="flex items-center gap-2">
-          <FlyingBunny size={24} carve="var(--color-bg)" />
-          <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-brand">
-            hop concierge
+          <FlyingBunny size={22} carve="var(--color-bg)" />
+          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand/70">
+            hop
           </span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -332,7 +331,7 @@ export default function Concierge({
           className="hop-ask-veil pointer-events-none absolute inset-x-0 top-0 z-10 h-6"
         />
         <Conversation className="h-full">
-          <ConversationContent className="hop-ask-measure pb-4 pt-2">
+          <ConversationContent className="hop-ask-measure pb-6 pt-4">
             {messages.map((m) => {
               // Suppress an assistant turn that has nothing renderable yet (the
               // byline would flash empty before the first token/tool frame).
@@ -357,14 +356,13 @@ export default function Concierge({
         </Conversation>
       </div>
 
-      {/* pinned dock: follow-up chips + persistent composer, aligned to the
-          reading measure. Lives at the viewport floor; the thread scrolls behind
-          it. A hairline separates the live composer from the scrolling history. */}
-      <div className="hop-ask-measure flex-shrink-0 border-t border-hair pt-3">
-        {/* Static follow-ups only make sense once there's an answer to follow up
-            on; disabled while the agent is busy so a tap can't queue mid-stream. */}
-        {hasAssistantTurn ? (
-          <Suggestions className="pb-2.5">
+      {/* pinned dock: follow-up chips above the persistent composer, aligned to
+          the reading measure. Lives at the viewport floor; the thread scrolls
+          behind it. */}
+      <div className="hop-ask-measure flex-shrink-0 border-t border-hair pb-5 pt-3">
+        {/* Follow-up chips: only once the agent has answered; hidden while busy */}
+        {hasAssistantTurn && !busy ? (
+          <Suggestions className="mb-3">
             {FOLLOW_UPS.map((f) => (
               <Suggestion key={f} suggestion={f} onClick={send} disabled={busy} />
             ))}
@@ -372,7 +370,6 @@ export default function Concierge({
         ) : null}
 
         <PromptInput onSubmit={onSubmit}>
-          <Icon name="lightbulb" size={20} className="mb-1.5 flex-shrink-0 text-brand" />
           <PromptInputTextarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -506,17 +503,17 @@ function textOf(m: HopUIMessage): string {
     .join('')
 }
 
-// Pre-token thinking state inside an assistant turn — the flying bunny + a quiet
-// "dreaming up ideas" line with the brand Loader. Flat; motion is the Loader
-// only (reduced-motion-safe).
+// Pre-token thinking state — three animated dots (typing indicator).
+// Motion is the .hop-dot bounce only; reduced-motion freezes them flat.
 function ThinkingTurn() {
   return (
     <Message from="assistant">
       <AssistantByline />
       <MessageContent>
-        <div className="flex items-center gap-2.5 text-text3">
-          <Loader size={15} className="text-brand" />
-          <span className="text-[14px]">hop is dreaming up some ideas…</span>
+        <div className="flex items-center gap-[5px] py-1">
+          <span className="hop-dot h-[7px] w-[7px] rounded-full bg-brand/50" />
+          <span className="hop-dot h-[7px] w-[7px] rounded-full bg-brand/50" />
+          <span className="hop-dot h-[7px] w-[7px] rounded-full bg-brand/50" />
         </div>
       </MessageContent>
     </Message>

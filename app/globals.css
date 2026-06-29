@@ -325,6 +325,18 @@ body {
   animation: hop-pulse 1.4s ease-in-out infinite;
 }
 
+/* Typing-indicator dots — three-dot bounce for ThinkingTurn */
+@keyframes hop-dot-bounce {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-4px); }
+}
+.hop-dot {
+  display: inline-block;
+  animation: hop-dot-bounce 1.3s ease-in-out infinite;
+}
+.hop-dot:nth-child(2) { animation-delay: 0.18s; }
+.hop-dot:nth-child(3) { animation-delay: 0.36s; }
+
 @media (prefers-reduced-motion: reduce) {
   .hop-rise,
   .hop-bar,
@@ -345,7 +357,8 @@ body {
     animation: none;
   }
   .hop-spin,
-  .hop-pulse {
+  .hop-pulse,
+  .hop-dot {
     animation: none;
   }
 }

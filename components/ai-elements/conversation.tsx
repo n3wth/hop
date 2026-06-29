@@ -31,7 +31,7 @@ export function Conversation({ className = '', ...props }: ConversationProps) {
 export type ConversationContentProps = ComponentProps<typeof StickToBottom.Content>
 
 export function ConversationContent({ className = '', ...props }: ConversationContentProps) {
-  return <StickToBottom.Content className={`flex flex-col gap-6 ${className}`} {...props} />
+  return <StickToBottom.Content className={`flex flex-col gap-8 ${className}`} {...props} />
 }
 
 export type ConversationScrollButtonProps = ComponentProps<'button'>

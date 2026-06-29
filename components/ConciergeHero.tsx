@@ -178,9 +178,10 @@ export default function ConciergeHero({
           </div>
         </form>
 
-        {/* one-tap starters — one canonical set, same on both surfaces */}
+        {/* one-tap starters — one canonical set, same on both surfaces.
+            Full density: 2-column grid up to max-w-[560px] for neat alignment. */}
         <div
-          className="hop-rise mt-5 flex flex-wrap justify-center gap-2"
+          className={`hop-rise mt-6 w-full max-w-[560px] ${full ? 'grid grid-cols-2 gap-2' : 'flex flex-wrap justify-center gap-2'}`}
           style={{ ['--hop-delay' as string]: '240ms' }}
         >
           {copy.chips.map((p) => (
@@ -188,7 +189,7 @@ export default function ConciergeHero({
               key={p}
               type="button"
               onClick={() => onChip(p)}
-              className="rounded-full border border-[#2c6f6b] bg-[#0a5757] px-3.5 py-1.5 text-[13px] font-medium text-hero-body transition-colors hover:border-wallet-active hover:text-hero-white-hover"
+              className={`rounded-full border border-[#2c6f6b] bg-[#0a5757] px-3.5 py-2 text-[13px] font-medium text-hero-body transition-colors hover:border-wallet-active hover:text-hero-white-hover ${full ? 'text-center' : ''}`}
             >
               {p}
             </button>
