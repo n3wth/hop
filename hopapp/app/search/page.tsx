@@ -123,6 +123,7 @@ export default async function Search({
       ret={params.return ?? ''}
       adults={params.adults}
       user={user}
+      pointsTotal={user ? result.balances.reduce((s, b) => s + b.balance, 0) : undefined}
     >
       {/* plain trip context — route + facts, not fake masthead metadata */}
       <RouteBar result={result} />

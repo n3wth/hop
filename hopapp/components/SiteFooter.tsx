@@ -7,7 +7,7 @@ export default function SiteFooter() {
         <b className="font-semibold text-text2">cash, miles, and transfer partners</b> in one search.
       </div>
       <div className="flex flex-wrap gap-x-5 gap-y-2 sm:gap-[22px]">
-        <a href="/" className="transition-colors hover:text-text2">
+        <a href="/search" className="transition-colors hover:text-text2">
           Search
         </a>
         <a href="/account" className="transition-colors hover:text-text2">

@@ -69,7 +69,7 @@ export default async function AccountPage() {
               Saved searches
             </h2>
             <a
-              href="/"
+              href="/search"
               className="text-[13px] font-semibold text-brand transition-colors hover:text-brand-deep"
             >
               New search

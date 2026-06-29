@@ -18,6 +18,8 @@ export interface TopNavProps {
   adults?: number
   /** Auth0 session, passed from the server. Null when signed out. */
   user?: { initial: string; name?: string; email?: string; picture?: string } | null
+  /** Total points across the user's programs — shown beside the avatar. */
+  pointsTotal?: number
 }
 
 // Crafted easing — decelerate, ~280ms. One curve drives the whole morph so the
@@ -36,6 +38,13 @@ const LogoLockup = memo(function LogoLockup() {
   )
 })
 
+// 618314 → "618K", 1240000 → "1.2M". Compact points for the header chip.
+function compactPoints(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
+  if (n >= 1_000) return `${Math.round(n / 1_000)}K`
+  return String(n)
+}
+
 // Scroll-aware top bar. The header SHRINKS in height on scroll (76→56px) and the
 // logo scales down, but the search stays full size and fully editable. Frosted
 // backdrop + hairline appear only once scrolled. Degrades to expanded with no JS.
@@ -47,6 +56,7 @@ export default function TopNav({
   ret = '2026-07-12',
   adults = 1,
   user = null,
+  pointsTotal,
 }: TopNavProps) {
   const initial: SearchState = useMemo(
     () => ({ from: fromCode, to: toCode, depart, ret, adults, oneWay: !ret }),
@@ -132,7 +142,21 @@ export default function TopNav({
             style={{ transform: c ? 'scale(0.86)' : 'scale(1)', transformOrigin: 'right center', transition: `transform ${DUR} ${EASE}` }}
           >
             {user ? (
-              <AccountMenu user={user} />
+              <div className="flex items-center gap-3">
+                {pointsTotal != null ? (
+                  <a
+                    href="/account"
+                    title="Your points"
+                    className="hidden items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-2 transition-colors hover:bg-sunk lg:flex"
+                  >
+                    <span className="font-display text-[14px] font-semibold tabular-nums text-text">
+                      {compactPoints(pointsTotal)}
+                    </span>
+                    <span className="text-[12px] font-medium text-text3">pts</span>
+                  </a>
+                ) : null}
+                <AccountMenu user={user} />
+              </div>
             ) : (
               <a
                 href="/auth/login"

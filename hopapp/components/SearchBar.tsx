@@ -269,14 +269,14 @@ function MonthGrid({
                 type="button"
                 disabled={disabled}
                 onClick={() => onPick(d)}
-                className={`grid h-8 w-8 place-items-center rounded-full text-[12.5px] font-medium ${
+                className={`grid h-8 w-8 cursor-pointer place-items-center rounded-full text-[12.5px] font-medium transition-colors ${
                   disabled
-                    ? 'cursor-not-allowed text-text3'
+                    ? 'cursor-not-allowed text-text3/50 hover:bg-transparent'
                     : selected
                       ? 'bg-brand font-semibold text-white'
                       : inRange
-                        ? 'bg-brand-light text-brand-deep'
-                        : 'text-text hover:bg-sunk'
+                        ? 'bg-brand-light text-brand-deep hover:bg-brand-mint-deep'
+                        : 'text-text hover:bg-brand-light hover:text-brand-deep'
                 }`}
               >
                 {d.getDate()}
@@ -589,7 +589,7 @@ export function SearchForm({
     })
     if (!s.oneWay && s.ret) qs.set('return', s.ret)
     onSubmitted?.()
-    router.push(`/?${qs.toString()}`)
+    router.push(`/search?${qs.toString()}`)
   }
 
   if (variant === 'mobile') {
