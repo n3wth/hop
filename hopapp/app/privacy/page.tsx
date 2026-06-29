@@ -96,6 +96,13 @@ export default async function PrivacyPage() {
             revoke. When connected, hop receives the balances it returns.
           </li>
           <li>
+            <strong>Google (Gmail)</strong> — optional, explicit-consent connection so hop can learn
+            from your past trips. We request read-only access and read only your
+            travel-confirmation emails (a tight search). We store only the normalized trip facts
+            (destination, month, airline, cabin, whether points were used) — never the emails
+            themselves — and you can disconnect and delete them at any time.
+          </li>
+          <li>
             <strong>seats.aero</strong> — award availability data.
           </li>
           <li>
@@ -125,6 +132,11 @@ export default async function PrivacyPage() {
             <strong>Disconnect AwardWallet.</strong> You can revoke the AwardWallet connection at
             any time from your <Link href="/account">account</Link>; we stop syncing balances from
             it.
+          </li>
+          <li>
+            <strong>Disconnect Gmail.</strong> You can revoke Gmail access at any time from your{' '}
+            <Link href="/account">account</Link>; we revoke our token with Google and delete the
+            stored trips.
           </li>
           <li>
             <strong>Delete your account.</strong> You can request account deletion from your{' '}

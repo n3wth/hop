@@ -19,6 +19,7 @@
 // Until AWARDWALLET_CONNECT_URL is set, this route redirects back to /account
 // with an error flag and the UI keeps manual entry as the primary path.
 
+import { createHmac } from 'node:crypto'
 import { NextResponse, type NextRequest } from 'next/server'
 import { auth0 } from '@/lib/auth0'
 import { hasEnv, env } from '@/lib/env'
@@ -26,6 +27,19 @@ import { hasEnv, env } from '@/lib/env'
 // Short-lived httpOnly cookie carrying the CSRF nonce we hand to AwardWallet and
 // re-check on the callback. Tied to this browser session only.
 export const STATE_COOKIE = 'aw_oauth_state'
+
+// Bind the OAuth `state` to the initiating Auth0 user so a captured callback URL
+// (attacker's connectedUser id + attacker's state) cannot link the attacker's
+// AwardWallet account into a VICTIM's session. The cookie stores
+// `state.hmac(state|userId)`; the callback recomputes the tag against the
+// CURRENT session sub and rejects on mismatch — an attacker's tag (bound to
+// their sub) never validates for the victim. Signed with AUTH0_SECRET (already
+// required for sessions) so the binding can't be forged client-side.
+export function stateCookieValue(state: string, userId: string): string {
+  const secret = process.env.AUTH0_SECRET ?? ''
+  const tag = createHmac('sha256', secret).update(`${state}|${userId}`).digest('hex')
+  return `${state}.${tag}`
+}
 
 function base(req: NextRequest): string {
   return process.env.APP_BASE_URL ?? req.nextUrl.origin
@@ -59,7 +73,7 @@ export async function GET(req: NextRequest) {
   // Set the nonce cookie directly on the redirect response (reliable in route
   // handlers, unlike mutating the cookies() store alongside a redirect).
   const res = NextResponse.redirect(authUrl)
-  res.cookies.set(STATE_COOKIE, state, {
+  res.cookies.set(STATE_COOKIE, stateCookieValue(state, session.user.sub), {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

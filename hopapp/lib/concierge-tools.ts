@@ -10,6 +10,7 @@
 import { tool, gateway } from 'ai'
 import { z } from 'zod'
 import { computeCpp, destinationByCode } from '@/lib/destinations'
+import { POINTS_THRESHOLD_CPP } from '@/lib/search'
 import { effectiveBalanceFor } from '@/lib/transfers'
 import type { Balance } from '@/lib/types'
 import { CABINS } from '@/lib/prefs-model'
@@ -72,9 +73,11 @@ export function priceTrip(
   const eff = effectiveBalanceFor(d.bestProgram, asBalances)
   const youHave = eff?.amount
   const affordable = youHave != null ? youHave >= milesNeeded : undefined
-  // Verdict: can't afford → save; strong CPP → points; weak CPP → cash.
+  // Verdict: can't afford → save; strong CPP → points; weak CPP → cash. Uses the
+  // SAME threshold as the real engine (lib/search POINTS_THRESHOLD_CPP) so this
+  // coarse call never contradicts verdict()/assembleSearch for the same dest.
   const verdict: PriceTripResult['verdict'] =
-    affordable === false ? 'save' : cpp != null && cpp >= 1.5 ? 'points' : 'cash'
+    affordable === false ? 'save' : cpp != null && cpp >= POINTS_THRESHOLD_CPP ? 'points' : 'cash'
 
   return {
     code: d.code,

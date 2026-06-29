@@ -2,13 +2,17 @@ import { redirect } from 'next/navigation'
 import { auth0 } from '@/lib/auth0'
 import { getUserAwId, getManualBalances } from '@/lib/accounts'
 import { getBalances } from '@/lib/awardwallet'
-import { hasEnv } from '@/lib/env'
+import { hasEnv, isGmailHistoryEnabled } from '@/lib/env'
+import { getTravelHistory } from '@/lib/travel-history'
+import { isGmailConnected } from '@/lib/travel-history-sync'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import ProgramsManager from '@/components/ProgramsManager'
+import GmailHistory from '@/components/GmailHistory'
+import McpAccess from '@/components/McpAccess'
+import { listTokens } from '@/lib/api-tokens'
 import StandingOrders from '@/components/StandingOrders'
 import Counterfactual from '@/components/Counterfactual'
-import Icon from '@/components/Icon'
 import type { Balance } from '@/lib/types'
 import { listStandingOrders } from '@/lib/standing-orders'
 import { listAlerts, countUnseenAlerts } from '@/lib/standing-order-alerts'
@@ -24,13 +28,23 @@ const AW_NOTES: Record<string, { tone: 'ok' | 'warn'; text: string }> = {
   error: { tone: 'warn', text: 'Couldn’t finish connecting. Try again.' },
 }
 
+// Human-readable note for the Gmail handshake outcome (?gmail=… flag the Gmail
+// OAuth start/callback routes set on their redirect back to /account).
+const GMAIL_NOTES: Record<string, { tone: 'ok' | 'warn'; text: string }> = {
+  connected: { tone: 'ok', text: 'Gmail connected — hop is learning from your past trips.' },
+  unconfigured: { tone: 'warn', text: 'Gmail history isn’t available yet.' },
+  denied: { tone: 'warn', text: 'Gmail access was declined. Nothing was read.' },
+  state: { tone: 'warn', text: 'That connect link expired. Try connecting again.' },
+  error: { tone: 'warn', text: 'Couldn’t finish connecting Gmail. Try again.' },
+}
+
 // Account / profile page. Auth-gated — anonymous visitors go to login. Shows the
 // Auth0 profile + "Your programs" (manual balances, optional AwardWallet sync).
 export default async function AccountPage({
   // Next.js 16: searchParams is async.
   searchParams,
 }: {
-  searchParams: Promise<{ aw?: string }>
+  searchParams: Promise<{ aw?: string; gmail?: string }>
 }) {
   const session = await auth0.getSession()
   if (!session) redirect('/auth/login')
@@ -74,8 +88,21 @@ export default async function AccountPage({
   // honestly so the user knows whether watches are live yet.
   const cronLive = /^(1|true|yes)$/i.test(process.env.STANDING_ORDERS_CRON_ENABLED ?? '')
 
-  const awFlag = (await searchParams).aw
+  // Gmail travel-history seam: connection state + the trips hop has learned.
+  // Both helpers degrade to empty/not-connected on any failure.
+  const gmailEnabled = isGmailHistoryEnabled()
+  const [gmailState, travelHistory] = await Promise.all([
+    u.sub ? isGmailConnected(u.sub) : Promise.resolve({ connected: false, email: null }),
+    u.sub ? getTravelHistory(u.sub) : Promise.resolve(null),
+  ])
+  // "Add to Claude" MCP tokens for this user (list = no secrets).
+  const mcpTokens = u.sub ? await listTokens(u.sub) : []
+
+  const sp = await searchParams
+  const awFlag = sp.aw
   const awNote = awFlag ? AW_NOTES[awFlag] : undefined
+  const gmailFlag = sp.gmail
+  const gmailNote = gmailFlag ? GMAIL_NOTES[gmailFlag] : undefined
 
   return (
     <AppShell user={user}>
@@ -182,43 +209,50 @@ export default async function AccountPage({
           <Counterfactual />
         </section>
 
-        {/* trips */}
+        {/* trips — Gmail travel-history seam (explicit consent) */}
         <section className="mt-10">
           <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
             Trips
           </h2>
-          <EmptyCard
-            icon="receipt_long"
-            title="No trips yet"
-            body="Flights you book through hop will show up here with their confirmation details."
+          <p className="mt-1 text-[13.5px] text-text2">
+            Let hop learn from where you’ve flown — so its suggestions fit how you
+            actually travel.
+          </p>
+          {gmailNote ? (
+            <p
+              className={`mt-3 rounded-[12px] border px-4 py-2.5 text-[13px] font-medium ${
+                gmailNote.tone === 'ok'
+                  ? 'border-brand-light bg-brand-light text-brand-deep'
+                  : 'border-border bg-sunk text-text2'
+              }`}
+            >
+              {gmailNote.text}
+            </p>
+          ) : null}
+          <GmailHistory
+            enabled={gmailEnabled}
+            connected={gmailState.connected}
+            email={gmailState.email}
+            trips={travelHistory?.trips ?? []}
           />
+        </section>
+
+        {/* add to claude — MCP access tokens */}
+        <section className="mt-10">
+          <div>
+            <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
+              Use hop from Claude
+            </h2>
+            <p className="mt-1 text-[13.5px] text-text2">
+              Mint a token to call hop&apos;s points-vs-cash engine from Claude or any
+              MCP client.
+            </p>
+          </div>
+          <McpAccess initialTokens={mcpTokens} />
         </section>
 
         <SiteFooter />
       </div>
     </AppShell>
-  )
-}
-
-// A calm, on-brand empty state — icon chip + title + one line. Not a blank box.
-function EmptyCard({
-  icon,
-  title,
-  body,
-}: {
-  icon: 'loyalty' | 'receipt_long'
-  title: string
-  body: string
-}) {
-  return (
-    <div className="mt-4 flex items-start gap-4 rounded-[16px] border border-border bg-surface px-6 py-7">
-      <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
-        <Icon name={icon} size={22} />
-      </span>
-      <div className="min-w-0">
-        <div className="text-[15px] font-semibold text-text">{title}</div>
-        <p className="mt-1 max-w-[52ch] text-[13.5px] leading-[1.55] text-text2">{body}</p>
-      </div>
-    </div>
   )
 }

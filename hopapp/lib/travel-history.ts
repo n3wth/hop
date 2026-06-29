@@ -3,17 +3,21 @@
 // typical cabin, trips per year). The agent reads this into its prompt to make
 // suggestions feel personal ("you usually go somewhere warm in February").
 //
-// ⚠️ PLACEHOLDER. getTravelHistory currently returns a typed STUB — there is NO
-// real data source wired yet. The intended real source is the user's inbox:
-//   TODO: replace the stub with a real Gmail-derived history. Two candidate
-//   paths, both behind the user's explicit "Connect Gmail" consent:
-//     1. Gmail MCP (mcp__gmail__search_emails / read_email) → parse airline
-//        confirmation + itinerary emails into PastTrip[].
-//     2. AwardWallet's email-parsing (we already integrate AwardWallet; it can
-//        ingest forwarded itineraries) → normalize into PastTrip[].
-//   Until then this returns connected:false with an empty history so the UI can
-//   show a "Connect Gmail (coming soon)" affordance and the agent degrades
-//   cleanly (it simply has no history to cite).
+// REAL SOURCE: the user's Gmail, BEHIND EXPLICIT CONSENT. When a user connects
+// Gmail (lib/gmail.ts OAuth flow), we read ONLY their travel-confirmation emails
+// (tight query), parse them into PastTrip[] (lib/gmail-parser.ts), store ONLY the
+// normalized trip facts (never raw email) in hop_travel_history, and return
+// { connected:true, trips, patterns } here. Until a user connects — or while the
+// seam is gated off (env.isGmailHistoryEnabled) — this returns the not-connected
+// empty history so the UI shows a "Connect Gmail" affordance and the agent
+// degrades cleanly (it simply has no history to cite).
+//
+// PRIVACY: consent is explicit (OAuth), scope is gmail.readonly, we read only
+// confirmation mail, we persist only trip facts, and the user can disconnect +
+// delete everything from /account. Everything is scoped to the Auth0 sub.
+
+import { supabaseAdmin } from '@/utils/supabase/admin'
+import { isGmailHistoryEnabled } from '@/lib/env'
 
 // One past trip the user has taken. Kept minimal + serializable.
 export interface PastTrip {
@@ -23,6 +27,8 @@ export interface PastTrip {
   destinationCity: string
   // ISO month string "YYYY-MM" of travel (day-precision not needed for patterns).
   month: string
+  // Airline flown, if the confirmation told us (e.g. "United").
+  airline?: string
   // Cabin flown, if the source told us.
   cabin?: 'economy' | 'premium' | 'business' | 'first'
   // Whether it was booked with points (vs. cash) — when the source distinguishes.
@@ -99,15 +105,81 @@ export function derivePatterns(trips: PastTrip[]): TravelPatterns {
   return { usualMonths, favoriteRegions: [], typicalCabin, tripsPerYear }
 }
 
-// Get the user's travel history. STUB: always returns EMPTY_TRAVEL_HISTORY for
-// now — no Gmail/AwardWallet call yet. Signature is async + userId-scoped so the
-// real implementation can drop in without touching callers.
+const TABLE = 'hop_travel_history'
+
+const CABINS = new Set(['economy', 'premium', 'business', 'first'])
+
+// Clamp whatever is stored in the jsonb `trips` column back into PastTrip[].
+// Defends the engine + prompt against a hand-edited row ever feeding unknown
+// shapes downstream. PURE. Drops anything missing a destination or month.
+export function validateTrips(raw: unknown): PastTrip[] {
+  if (!Array.isArray(raw)) return []
+  const out: PastTrip[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const r = item as Record<string, unknown>
+    const month = typeof r.month === 'string' ? r.month : undefined
+    const destinationCity =
+      typeof r.destinationCity === 'string' ? r.destinationCity : undefined
+    // Require "YYYY-MM" with a real 01-12 month.
+    const monthOk = !!month && /^\d{4}-(0[1-9]|1[0-2])$/.test(month)
+    if (!monthOk || !destinationCity) continue
+    const trip: PastTrip = { destinationCity, month }
+    if (typeof r.destinationCode === 'string') trip.destinationCode = r.destinationCode
+    if (typeof r.airline === 'string') trip.airline = r.airline
+    if (typeof r.cabin === 'string' && CABINS.has(r.cabin))
+      trip.cabin = r.cabin as PastTrip['cabin']
+    if (typeof r.bookedWithPoints === 'boolean') trip.bookedWithPoints = r.bookedWithPoints
+    out.push(trip)
+  }
+  return out
+}
+
+// Get the user's travel history, scoped to their Auth0 sub. Returns the REAL
+// connected history (trips + derived patterns) when the user has connected Gmail
+// and we've stored trips; otherwise the not-connected empty history. Degrades to
+// EMPTY on any failure — never throws to the page/agent.
 //
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// favoriteRegions is read from the row (stamped at sync time by the persistence
+// layer, which has the city→region join); derivePatterns stays region-map-free.
 export async function getTravelHistory(userId: string): Promise<TravelHistory> {
-  // TODO: fetch + parse real trips for `userId` from Gmail MCP or AwardWallet,
-  // then: return { connected: true, trips, patterns: derivePatterns(trips), note }.
-  return EMPTY_TRAVEL_HISTORY
+  // Seam gated off, or no userId → not connected.
+  if (!isGmailHistoryEnabled() || !userId) return EMPTY_TRAVEL_HISTORY
+  try {
+    const db = supabaseAdmin()
+    if (!db) return EMPTY_TRAVEL_HISTORY
+    const { data, error } = await db
+      .from(TABLE)
+      .select('connected, trips')
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (error || !data || !data.connected) return EMPTY_TRAVEL_HISTORY
+
+    const stored = (data.trips ?? {}) as { trips?: unknown; favoriteRegions?: unknown }
+    const trips = validateTrips(stored.trips)
+    if (!trips.length) {
+      // Connected, but nothing parsed yet (e.g. empty inbox). Report connected so
+      // the UI shows disconnect, but with no trips the agent has nothing to cite.
+      return {
+        connected: true,
+        trips: [],
+        patterns: { usualMonths: [], favoriteRegions: [], typicalCabin: undefined, tripsPerYear: undefined },
+        note: 'Gmail connected — no past trips found yet.',
+      }
+    }
+    const favoriteRegions = Array.isArray(stored.favoriteRegions)
+      ? stored.favoriteRegions.filter((r): r is string => typeof r === 'string')
+      : []
+    const patterns = { ...derivePatterns(trips), favoriteRegions }
+    return {
+      connected: true,
+      trips,
+      patterns,
+      note: `Gmail connected — learning from ${trips.length} past trip${trips.length === 1 ? '' : 's'}.`,
+    }
+  } catch {
+    return EMPTY_TRAVEL_HISTORY
+  }
 }
 
 // Render a travel history as a compact, prompt-ready summary. Returns '' when

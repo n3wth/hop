@@ -3,21 +3,53 @@ import {
   getTravelHistory,
   derivePatterns,
   travelHistorySummary,
+  validateTrips,
   EMPTY_TRAVEL_HISTORY,
   type PastTrip,
 } from '@/lib/travel-history'
 
-// The seam is a STUB today: getTravelHistory must report not-connected with an
-// empty history. derivePatterns is the pure logic that will run over REAL trips
-// once Gmail is wired — tested now so it's ready.
+// The Gmail seam is GATED OFF by default (env.isGmailHistoryEnabled requires a
+// flag + Google creds). With it off, getTravelHistory must report not-connected
+// with an empty history before touching Supabase. derivePatterns + validateTrips
+// are pure and tested directly.
 
-describe('getTravelHistory() — placeholder stub', () => {
-  it('returns the not-connected empty history (no Gmail call yet)', async () => {
+describe('getTravelHistory() — gated off / not connected', () => {
+  it('returns the not-connected empty history when the seam is disabled', async () => {
     const h = await getTravelHistory('auth0|user')
     expect(h.connected).toBe(false)
     expect(h.trips).toEqual([])
     expect(h.patterns.usualMonths).toEqual([])
     expect(h).toEqual(EMPTY_TRAVEL_HISTORY)
+  })
+})
+
+describe('validateTrips() — clamps stored jsonb', () => {
+  it('keeps valid trips and drops malformed ones', () => {
+    const raw = [
+      { destinationCity: 'Tokyo', destinationCode: 'NRT', month: '2024-02', cabin: 'business', bookedWithPoints: true },
+      { destinationCity: 'Bad', month: '2024-13' }, // bad month → dropped
+      { month: '2024-02' }, // no city → dropped
+      { destinationCity: 'NoMonth' }, // no month → dropped
+      { destinationCity: 'Rome', month: '2024-07', cabin: 'spaceship' }, // bad cabin → kept, cabin dropped
+      'garbage',
+      null,
+    ]
+    const out = validateTrips(raw)
+    expect(out).toHaveLength(2)
+    expect(out[0]).toEqual({
+      destinationCity: 'Tokyo',
+      destinationCode: 'NRT',
+      month: '2024-02',
+      cabin: 'business',
+      bookedWithPoints: true,
+    })
+    expect(out[1]).toEqual({ destinationCity: 'Rome', month: '2024-07' })
+  })
+
+  it('returns [] for non-array input', () => {
+    expect(validateTrips(undefined)).toEqual([])
+    expect(validateTrips({})).toEqual([])
+    expect(validateTrips(null)).toEqual([])
   })
 })
 

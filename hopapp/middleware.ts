@@ -21,6 +21,11 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    // Skip the MCP transport endpoints (api/mcp, api/sse, api/message): MCP
+    // clients authenticate with a Bearer hop token (lib/api-tokens), not the
+    // Auth0/Supabase session cookies this middleware refreshes. Running session
+    // middleware there is pointless and could mutate cookies on a stateless,
+    // cross-origin transport. All OTHER /api/* routes still pass through.
+    '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|api/mcp|api/sse|api/message|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 }

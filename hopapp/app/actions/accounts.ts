@@ -171,6 +171,33 @@ export async function disconnectAwardWallet(): Promise<Result> {
   return { ok: true }
 }
 
+// --- Gmail travel-history seam ---------------------------------------------
+
+// Disconnect Gmail: revokes our token upstream + deletes the stored trips and
+// refresh token. Gated by the Auth0 session and scoped to the user's sub.
+export async function disconnectGmailHistory(): Promise<Result> {
+  const auth = await requireUser()
+  if ('error' in auth) return { ok: false, error: auth.error }
+
+  const { disconnectGmail } = await import('@/lib/travel-history-sync')
+  const cleared = await disconnectGmail(auth.userId)
+  if (!cleared) return { ok: false, error: "Couldn't disconnect — try again" }
+
+  revalidateBalances()
+  return { ok: true }
+}
+
+// Re-read confirmation emails and refresh the stored trips on demand.
+export async function resyncGmailHistory(): Promise<Result> {
+  const auth = await requireUser()
+  if ('error' in auth) return { ok: false, error: auth.error }
+
+  const { syncTravelHistory } = await import('@/lib/travel-history-sync')
+  const count = await syncTravelHistory(auth.userId)
+  revalidateBalances()
+  return { ok: true, note: `Synced ${count} trip${count === 1 ? '' : 's'} from Gmail.` }
+}
+
 // Pages whose output depends on the user's balances.
 function revalidateBalances(): void {
   revalidatePath('/account')

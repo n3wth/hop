@@ -8,6 +8,44 @@ type Json = string | number | boolean | null | { [key: string]: Json | undefined
 interface HopDatabase {
   public: {
     Tables: {
+      hop_travel_history: {
+        // One row per user. The Gmail travel-history seam (lib/travel-history.ts).
+        // PRIVACY: we store ONLY normalized trip facts (trips jsonb of PastTrip[])
+        // — never raw email bodies. google_refresh_token is the long-lived token
+        // we use to re-read confirmation emails on demand; clearing the row
+        // (disconnect) revokes our access locally. Scoped by Auth0 user_id.
+        Row: {
+          user_id: string
+          connected: boolean
+          google_refresh_token: string | null
+          google_email: string | null
+          trips: Json | null
+          last_synced_at: string | null
+          connected_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          user_id: string
+          connected?: boolean
+          google_refresh_token?: string | null
+          google_email?: string | null
+          trips?: Json | null
+          last_synced_at?: string | null
+          connected_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          connected?: boolean
+          google_refresh_token?: string | null
+          google_email?: string | null
+          trips?: Json | null
+          last_synced_at?: string | null
+          connected_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+
       hop_user_prefs: {
         // travel_prefs: jsonb of the user's natural-language flight constraints
         // (lib/prefs-model.TravelPrefs). See ALTER TABLE in lib/prefs.ts notes.
@@ -175,6 +213,34 @@ interface HopDatabase {
           min_cabin?: string | null
           last_notified_offer?: string | null
           active?: boolean
+        }
+        Relationships: []
+      }
+      hop_api_tokens: {
+        // One row per minted "Add to Claude" token. token_hash is the SHA-256 of
+        // the plaintext (the plaintext is never stored). last_four is a display
+        // hint. See CREATE TABLE in lib/api-tokens.ts notes.
+        Row: {
+          id: string
+          user_id: string
+          token_hash: string
+          last_four: string
+          name: string | null
+          created_at: string | null
+          last_used_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          token_hash: string
+          last_four: string
+          name?: string | null
+          created_at?: string | null
+          last_used_at?: string | null
+        }
+        Update: {
+          name?: string | null
+          last_used_at?: string | null
         }
         Relationships: []
       }

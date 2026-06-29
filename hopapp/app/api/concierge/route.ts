@@ -27,6 +27,7 @@ import {
 } from '@/lib/destinations'
 import { valuationsByName } from '@/lib/valuations'
 import { effectiveBalanceFor } from '@/lib/transfers'
+import { POINTS_THRESHOLD_CPP } from '@/lib/search'
 import { buildConciergeTools } from '@/lib/concierge-tools'
 import type { Balance } from '@/lib/types'
 import { auth0 } from '@/lib/auth0'
@@ -462,8 +463,10 @@ export function enrichSuggestions(
     const eff = effectiveBalanceFor(d.bestProgram, balances)
     const youHave = eff?.amount
     const affordable = youHave != null ? youHave >= milesNeeded : undefined
+    // Same threshold as the real engine (lib/search) so cards never contradict
+    // the MCP verdict()/assembleSearch call for the same destination.
     const verdict: ConciergeSuggestion['verdict'] =
-      affordable === false ? 'save' : cpp != null && cpp >= 1.5 ? 'points' : 'cash'
+      affordable === false ? 'save' : cpp != null && cpp >= POINTS_THRESHOLD_CPP ? 'points' : 'cash'
     return {
       ...s,
       milesNeeded,
