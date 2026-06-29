@@ -30,6 +30,7 @@ import {
   type HopUIMessage,
   type ConciergeRequestContext,
 } from '@/lib/concierge-transport'
+import { useNavTheme } from './NavTheme'
 import {
   Conversation,
   ConversationContent,
@@ -144,6 +145,13 @@ export default function Concierge({
   // Has the assistant produced at least one turn? Gates the static follow-up
   // chips — they only make sense once there's an answer to follow up on.
   const hasAssistantTurn = messages.some((m) => m.role === 'assistant')
+
+  // Tell the TopNav whether it's floating over a dark hero (landing) or the
+  // cream thread surface so it renders the right text colors.
+  const { setSurface } = useNavTheme()
+  useEffect(() => {
+    setSurface(hasThread ? 'over-light' : 'over-dark')
+  }, [hasThread, setSurface])
 
   // Inline-confirm state for the destructive "start over" (the persisted thread
   // is DELETEd for signed-in users — never silently wipe it on a single tap).

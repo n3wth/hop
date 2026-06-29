@@ -7,6 +7,7 @@ import Icon from './Icon'
 import FlyingBunny from './FlyingBunny'
 import AccountMenu from './AccountMenu'
 import { SearchForm, type SearchState } from './SearchBar'
+import { useNavTheme } from './NavTheme'
 
 export interface TopNavProps {
   from?: string
@@ -137,6 +138,7 @@ export default function TopNav({
   pointsTotal,
   hideSearch = false,
 }: TopNavProps) {
+  const { surface } = useNavTheme()
   const pathname = usePathname()
 
   // Default seeded dates are relative to today (depart ≈ +10d, return ≈ +3d
@@ -184,6 +186,9 @@ export default function TopNav({
   const isActive = (href: string) => pathname === href
 
   const c = scrolled // collapsed
+  // White text only when the page behind the transparent nav is dark AND we're
+  // still at the top (once scrolled the frosted-glass bg makes dark text legible).
+  const light = surface === 'over-dark' && !c
 
   return (
     <>
@@ -228,8 +233,12 @@ export default function TopNav({
                     aria-current={isActive(l.href) ? 'page' : undefined}
                     className={
                       isActive(l.href)
-                        ? 'rounded-full bg-sunk px-3.5 py-2 text-[14px] font-semibold text-text'
-                        : 'rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hover:text-text'
+                        ? light
+                          ? 'rounded-full bg-white/15 px-3.5 py-2 text-[14px] font-semibold text-white'
+                          : 'rounded-full bg-sunk px-3.5 py-2 text-[14px] font-semibold text-text'
+                        : light
+                          ? 'rounded-full px-3.5 py-2 text-[14px] font-semibold text-white/75 transition-colors hover:bg-white/10 hover:text-white'
+                          : 'rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hover:text-text'
                     }
                   >
                     {l.label}
@@ -247,7 +256,7 @@ export default function TopNav({
                 aria-label="Open menu"
                 aria-expanded={menuOpen}
                 onClick={() => setMenuOpen(true)}
-                className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full border border-border bg-surface text-text2 transition-colors hover:bg-sunk md:hidden"
+                className={`grid h-10 w-10 flex-shrink-0 place-items-center rounded-full border transition-colors md:hidden ${light ? 'border-white/30 bg-white/10 text-white hover:bg-white/20' : 'border-border bg-surface text-text2 hover:bg-sunk'}`}
               >
                 <Icon name="menu" size={20} />
               </button>
@@ -289,12 +298,12 @@ export default function TopNav({
                   <a
                     href="/account"
                     title="Your points"
-                    className="hidden items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-2 transition-colors hover:bg-sunk lg:flex"
+                    className={`hidden items-center gap-1.5 rounded-full border px-3.5 py-2 transition-colors lg:flex ${light ? 'border-white/30 bg-white/10 hover:bg-white/20' : 'border-border bg-surface hover:bg-sunk'}`}
                   >
-                    <span className="font-display text-[14px] font-semibold tabular-nums text-text">
+                    <span className={`font-display text-[14px] font-semibold tabular-nums ${light ? 'text-white' : 'text-text'}`}>
                       {compactPoints(pointsTotal)}
                     </span>
-                    <span className="text-[12px] font-medium text-text3">pts</span>
+                    <span className={`text-[12px] font-medium ${light ? 'text-white/60' : 'text-text3'}`}>pts</span>
                   </a>
                 ) : null}
                 <AccountMenu user={user} />
@@ -302,7 +311,7 @@ export default function TopNav({
             ) : (
               <a
                 href={signInHref}
-                className="rounded-full border border-border bg-surface px-5 py-2.5 text-[14px] font-semibold text-text transition-colors hover:bg-sunk"
+                className={`rounded-full border px-5 py-2.5 text-[14px] font-semibold transition-colors ${light ? 'border-white/30 bg-white/10 text-white hover:bg-white/20' : 'border-border bg-surface text-text hover:bg-sunk'}`}
               >
                 Sign in
               </a>
