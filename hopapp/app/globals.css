@@ -1,5 +1,8 @@
 @import "tailwindcss";
 @import "flag-icons/css/flag-icons.min.css";
+/* Streamdown renders the concierge's streamed markdown — scan its classes so v4
+   doesn't purge them. */
+@source "../node_modules/streamdown/dist/index.js";
 
 /* hop design tokens — editorial direction (docs/design/CHOSEN-editorial.html).
    Verdict hero, boarding-pass pick, value-ranked alternatives, dark wallet.
@@ -91,6 +94,19 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-attachment: fixed;
+}
+
+/* Global keyboard focus indicator (WCAG 2.4.7). Flat: outline only, no glow.
+   The app applies outline-none broadly, so this restores a consistent visible
+   ring for keyboard users across every interactive control. Mouse/touch focus
+   (:focus without :focus-visible) stays quiet. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+:focus:not(:focus-visible) {
+  outline: none;
 }
 
 /* Bricolage Grotesque utility for headline type */

@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { Streamdown } from 'streamdown'
 import Icon from './Icon'
 import FlyingBunny from './FlyingBunny'
 
@@ -448,9 +449,12 @@ function Answer({
           </button>
         </div>
 
-        <p className="whitespace-pre-line text-[16px] leading-[1.65] text-text">
+        <Streamdown
+          className="hop-md text-[16px] leading-[1.65] text-text"
+          parseIncompleteMarkdown
+        >
           {result.answer}
-        </p>
+        </Streamdown>
 
         {suggestions.length > 0 && (
           <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
