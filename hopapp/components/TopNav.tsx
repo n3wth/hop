@@ -15,6 +15,8 @@ export interface TopNavProps {
   depart?: string
   ret?: string
   adults?: number
+  /** Auth0 session, passed from the server. Null when signed out. */
+  user?: { initial: string; name?: string } | null
 }
 
 // Crafted easing — decelerate, ~280ms. One curve drives the whole morph so the
@@ -39,6 +41,7 @@ export default function TopNav({
   depart = '2026-07-09',
   ret = '2026-07-12',
   adults = 1,
+  user = null,
 }: TopNavProps) {
   const initial: SearchState = useMemo(
     () => ({ from: fromCode, to: toCode, depart, ret, adults }),
@@ -118,14 +121,27 @@ export default function TopNav({
           {/* spacer pushes the account to the far right (desktop only) */}
           <div className="hidden flex-1 md:block" />
 
-          {/* account — right, scales down on collapse; hidden on mobile to save space */}
+          {/* account — Auth0: avatar+logout when signed in, Sign in when out */}
           <div
             className="hidden flex-shrink-0 items-center sm:flex"
             style={{ transform: c ? 'scale(0.86)' : 'scale(1)', transformOrigin: 'right center', transition: `transform ${DUR} ${EASE}` }}
           >
-            <div className="grid h-9 w-9 place-items-center rounded-full bg-brand font-display text-[15px] font-bold text-white sm:h-[42px] sm:w-[42px] sm:text-[16px]">
-              O
-            </div>
+            {user ? (
+              <a
+                href="/auth/logout"
+                title={`${user.name ?? 'Signed in'} — log out`}
+                className="grid h-9 w-9 place-items-center rounded-full bg-brand font-display text-[15px] font-bold text-white transition-colors hover:bg-brand-deep sm:h-[42px] sm:w-[42px] sm:text-[16px]"
+              >
+                {user.initial}
+              </a>
+            ) : (
+              <a
+                href="/auth/login"
+                className="rounded-full border border-border bg-surface px-5 py-2.5 text-[14px] font-semibold text-text transition-colors hover:bg-sunk"
+              >
+                Sign in
+              </a>
+            )}
           </div>
         </div>
       </header>

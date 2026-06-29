@@ -45,8 +45,27 @@ export async function assembleSearch(params: SearchParams): Promise<SearchResult
   // MOCK is truthy only for "1"/"true"/"yes" — "0"/"false"/"" all mean live.
   const useMock = /^(1|true|yes)$/i.test(process.env.MOCK ?? '')
   if (useMock) {
-    cashOptions = mockCash()
-    awardOptions = mockAwards()
+    // Echo the searched route/date into the fixtures so the cards reflect the
+    // query (the fixtures are authored for SFO→LAX; rewrite their route fields).
+    const route = `${params.from} → ${params.to}`
+    const day = (() => {
+      const [y, m, d] = params.depart.split('-').map(Number)
+      if (!y || !m || !d) return undefined
+      return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        timeZone: 'UTC',
+      })
+    })()
+    const reroute = (o: FlightOption): FlightOption => ({
+      ...o,
+      route,
+      originCode: params.from,
+      destCode: params.to,
+      date: day ?? o.date,
+    })
+    cashOptions = mockCash().map(reroute)
+    awardOptions = mockAwards().map(reroute)
     balances = mockBalances()
   } else {
     const [cashRes, awardsRes, balancesRes] = await Promise.all([

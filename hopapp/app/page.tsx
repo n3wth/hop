@@ -1,6 +1,7 @@
 import type { SearchParams } from '@/lib/types'
 import { assembleSearch } from '@/lib/search'
 import { cityForCode } from '@/lib/airports'
+import { auth0 } from '@/lib/auth0'
 import AppShell from '@/components/AppShell'
 import RouteBar from '@/components/RouteBar'
 import VerdictRail from '@/components/VerdictRail'
@@ -63,6 +64,16 @@ export default async function Home({
   const params = parseParams(await searchParams)
   const result = await assembleSearch(params)
 
+  // Auth0 session → header avatar (null when signed out).
+  const session = await auth0.getSession()
+  const su = session?.user
+  const user = su
+    ? {
+        initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
+        name: su.name ?? su.email ?? undefined,
+      }
+    : null
+
   const who =
     params.adults === 1 ? '1 adult' : `${params.adults} adults`
 
@@ -77,6 +88,7 @@ export default async function Home({
       depart={params.depart}
       ret={params.return ?? ''}
       adults={params.adults}
+      user={user}
     >
       {/* plain trip context — route + facts, not fake masthead metadata */}
       <RouteBar result={result} />
