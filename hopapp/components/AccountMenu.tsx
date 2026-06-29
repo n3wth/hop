@@ -39,7 +39,7 @@ export default function AccountMenu({ user }: { user: AccountUser }) {
         aria-expanded={open}
         aria-label="Account menu"
         title="Account"
-        className="grid h-10 w-10 cursor-pointer place-items-center overflow-hidden rounded-full bg-brand font-display text-[15px] font-semibold text-white ring-offset-2 transition-colors hover:bg-brand-deep focus-visible:ring-2 focus-visible:ring-brand"
+        className="grid h-10 w-10 cursor-pointer place-items-center overflow-hidden rounded-full bg-brand font-display text-[15px] font-semibold text-white ring-offset-2 hop-interactive hop-press hover:bg-brand-deep hover:shadow-[0_2px_8px_rgba(13,110,110,0.25)] focus-visible:ring-2 focus-visible:ring-brand"
       >
         {user.picture && imgOk ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -58,7 +58,7 @@ export default function AccountMenu({ user }: { user: AccountUser }) {
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 top-[calc(100%+10px)] z-50 w-60 overflow-hidden rounded-[14px] border border-border bg-surface"
+          className="hop-popover hop-popover-origin-top-right absolute right-0 top-[calc(100%+10px)] z-50 w-60 overflow-hidden rounded-[14px] border border-border bg-surface shadow-[0_12px_32px_-8px_rgba(20,32,31,0.18)]"
         >
           <div className="border-b border-hair px-4 py-3">
             <div className="truncate text-[14px] font-semibold text-text">
@@ -71,7 +71,7 @@ export default function AccountMenu({ user }: { user: AccountUser }) {
           <a
             href="/account"
             role="menuitem"
-            className="block px-4 py-[11px] text-[14px] font-medium text-text2 transition-colors hover:bg-sunk hover:text-text"
+            className="hop-menu-item hop-interactive block px-4 py-[11px] text-[14px] font-medium text-text2 hover:bg-sunk hover:text-text"
           >
             Account
           </a>
@@ -80,28 +80,28 @@ export default function AccountMenu({ user }: { user: AccountUser }) {
           <a
             href="/account#watches"
             role="menuitem"
-            className="block px-4 py-[11px] text-[14px] font-medium text-text2 transition-colors hover:bg-sunk hover:text-text"
+            className="hop-menu-item hop-interactive block px-4 py-[11px] text-[14px] font-medium text-text2 hover:bg-sunk hover:text-text"
           >
             Standing orders
           </a>
           <a
             href="/account#whatif"
             role="menuitem"
-            className="block px-4 py-[11px] text-[14px] font-medium text-text2 transition-colors hover:bg-sunk hover:text-text"
+            className="hop-menu-item hop-interactive block px-4 py-[11px] text-[14px] font-medium text-text2 hover:bg-sunk hover:text-text"
           >
             What if…
           </a>
           <a
             href="/account#trips"
             role="menuitem"
-            className="block px-4 py-[11px] text-[14px] font-medium text-text2 transition-colors hover:bg-sunk hover:text-text"
+            className="hop-menu-item hop-interactive block px-4 py-[11px] text-[14px] font-medium text-text2 hover:bg-sunk hover:text-text"
           >
             Trips
           </a>
           <a
             href="/auth/logout"
             role="menuitem"
-            className="block border-t border-hair px-4 py-[11px] text-[14px] font-medium text-text2 transition-colors hover:bg-sunk hover:text-text"
+            className="hop-menu-item hop-interactive block border-t border-hair px-4 py-[11px] text-[14px] font-medium text-text2 hover:bg-sunk hover:text-text"
           >
             Log out
           </a>
