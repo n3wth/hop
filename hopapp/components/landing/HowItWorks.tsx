@@ -40,7 +40,7 @@ const STEPS: Step[] = [
 export default function HowItWorks() {
   return (
     <section>
-      <div className="flex flex-col gap-2 sm:max-w-[52ch]">
+      <div className="mx-auto flex max-w-[54ch] flex-col items-center gap-2 text-center">
         <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
           How hop works
         </span>

@@ -13,7 +13,7 @@ export default async function InspirationTeaser() {
 
   return (
     <section>
-      <div className="flex flex-col gap-2 sm:max-w-[54ch]">
+      <div className="mx-auto flex max-w-[58ch] flex-col items-center gap-2 text-center">
         <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
           Imagine where your points could go
         </span>
