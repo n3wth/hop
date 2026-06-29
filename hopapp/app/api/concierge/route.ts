@@ -135,16 +135,35 @@ export function buildPrompt(
 
 // --- Anthropic client -------------------------------------------------------
 
-function makeClient(): { client: Anthropic; extraHeaders?: Record<string, string> } | null {
+interface ClientSetup {
+  client: Anthropic
+  // Model id to use with THIS client. The Vercel AI Gateway namespaces models
+  // (e.g. 'anthropic/claude-sonnet-4-6'); the direct Anthropic API does not.
+  model: string
+  extraHeaders?: Record<string, string>
+}
+
+function makeClient(): ClientSetup | null {
+  // 1) Vercel AI Gateway — preferred in prod. One key, model fallbacks, ZDR.
+  //    The Anthropic SDK speaks to it directly via baseURL + the gateway key.
+  const gatewayKey = process.env.AI_GATEWAY_API_KEY
+  if (gatewayKey) {
+    return {
+      client: new Anthropic({ apiKey: gatewayKey, baseURL: 'https://ai-gateway.vercel.sh' }),
+      model: `anthropic/${MODEL}`,
+    }
+  }
+  // 2) Direct Anthropic API key.
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (apiKey) {
-    return { client: new Anthropic({ apiKey }) }
+    return { client: new Anthropic({ apiKey }), model: MODEL }
   }
+  // 3) Claude Code OAuth token (dev only; rate-limited). Needs the beta header.
   const authToken = process.env.CLAUDE_CODE_OAUTH_TOKEN
   if (authToken) {
-    // OAuth bearer tokens require the oauth beta header on /v1/messages.
     return {
       client: new Anthropic({ authToken }),
+      model: MODEL,
       extraHeaders: { 'anthropic-beta': 'oauth-2025-04-20' },
     }
   }
@@ -261,7 +280,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const message = await setup.client.messages.create(
       {
-        model: MODEL,
+        model: setup.model,
         max_tokens: 1024,
         system,
         messages: [{ role: 'user', content: user }],
