@@ -474,14 +474,10 @@ body {
   transition: transform 80ms ease;
 }
 
-/* ── Menu item hover slide ───────────────────────────────────────────────
-   A whisper of rightward drift on hover for menu/list items — the text
-   shifts 2px right, giving a subtle "selected" feel without decoration. */
+/* ── Menu item hover ────────────────────────────────────────────────────
+   Clean background-color transition only — no horizontal drift. */
 .hop-menu-item {
-  transition: padding-left 180ms var(--ease-premium), background-color 120ms ease;
-}
-.hop-menu-item:hover {
-  padding-left: calc(var(--hop-item-px, 16px) + 2px);
+  transition: background-color 120ms ease;
 }
 
 /* ── Calendar day interaction ────────────────────────────────────────────
