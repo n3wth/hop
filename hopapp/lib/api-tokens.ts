@@ -118,6 +118,37 @@ export async function revokeToken(userId: string, tokenId: string): Promise<bool
   })
 }
 
+// Rename a token by id, scoped to its owner so a user can only rename their OWN
+// tokens. The name is trimmed; an empty/blank name clears it back to null. Names
+// are capped to keep the UI tidy. Returns the updated row info, or null if no
+// row matched (wrong owner / unknown id) or the DB isn't reachable.
+const MAX_NAME_LEN = 60
+
+export async function renameToken(
+  userId: string,
+  tokenId: string,
+  name: string,
+): Promise<ApiTokenInfo | null> {
+  return withDb<ApiTokenInfo | null>(null, async (db) => {
+    const trimmed = name.trim().slice(0, MAX_NAME_LEN)
+    const { data, error } = await db
+      .from(TABLE)
+      .update({ name: trimmed || null })
+      .eq('user_id', userId)
+      .eq('id', tokenId)
+      .select('id, name, last_four, created_at, last_used_at')
+      .maybeSingle()
+    if (error || !data) return null
+    return {
+      id: data.id,
+      name: data.name,
+      lastFour: data.last_four,
+      createdAt: data.created_at,
+      lastUsedAt: data.last_used_at,
+    }
+  })
+}
+
 // Resolve a PLAINTEXT bearer token to its owner's Auth0 sub, or null if unknown.
 // This is the MCP server's auth primitive: hash the presented token, look up the
 // row, return the user_id. Best-effort updates last_used_at for the UI.

@@ -6,6 +6,7 @@ import {
   looksLikeToken,
   mintToken,
   listTokens,
+  renameToken,
   revokeToken,
   userIdForToken,
 } from '@/lib/api-tokens'
@@ -65,6 +66,10 @@ describe('DB-backed token fns degrade gracefully without Supabase', () => {
 
   it('revokeToken -> false, never throws', async () => {
     await expect(revokeToken('auth0|test', 'some-id')).resolves.toBe(false)
+  })
+
+  it('renameToken -> null, never throws', async () => {
+    await expect(renameToken('auth0|test', 'some-id', 'Laptop')).resolves.toBeNull()
   })
 
   it('userIdForToken short-circuits invalid tokens before any DB call', async () => {

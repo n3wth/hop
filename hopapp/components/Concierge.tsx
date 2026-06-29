@@ -23,6 +23,7 @@ import FlyingBunny from './FlyingBunny'
 import ConciergeHero, { type ConciergeHeroPhoto } from './ConciergeHero'
 import { conciergeHeroCopy } from '@/lib/concierge-hero'
 import { A2UIBlocks } from './concierge/A2UIBlock'
+import type { A2UIBlock } from '@/lib/a2ui'
 import {
   ConciergeTransport,
   type HopUIMessage,
@@ -182,27 +183,39 @@ export default function Concierge({
   }, [])
 
   if (!hasThread) {
+    // Empty state: the warm guided hero, centered in the full-height stage so it
+    // reads as an immersive front door rather than a panel pinned to the top.
     return (
-      <Landing
-        input={input}
-        setInput={setInput}
-        onSubmit={onSubmit}
-        onStarter={send}
-        status={status}
-        photos={photos}
-        galleryCodes={galleryCodes}
-        totalPoints={totalPoints}
-        signedIn={signedIn}
-      />
+      <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto py-6">
+        <div className="hop-rise w-full" style={{ ['--hop-delay' as string]: '40ms' }}>
+          <Landing
+            input={input}
+            setInput={setInput}
+            onSubmit={onSubmit}
+            onStarter={send}
+            status={status}
+            photos={photos}
+            galleryCodes={galleryCodes}
+            totalPoints={totalPoints}
+            signedIn={signedIn}
+          />
+        </div>
+      </div>
     )
   }
 
+  // Thread state: the conversation IS the surface. The stage is a full-height
+  // flex column — a slim identity rail on top, the message area as the SINGLE
+  // natural scroll region (no nested card, no double scrollbar), and the composer
+  // pinned to the viewport floor. Prose is centered at a readable measure; the
+  // scroll region itself spans full width so the top-fade and scroll affordance
+  // read as part of the app, not a widget.
   return (
-    <div className="flex h-[clamp(520px,76vh,820px)] flex-col gap-3">
-      {/* thread header: identity + start over + what-hop-remembers */}
-      <div className="flex items-center justify-between">
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* identity rail — flush with the app, not card chrome */}
+      <div className="hop-ask-measure flex flex-shrink-0 items-center justify-between pb-3 pt-1">
         <div className="flex items-center gap-2">
-          <FlyingBunny size={26} carve="var(--color-bg)" />
+          <FlyingBunny size={24} carve="var(--color-bg)" />
           <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-brand">
             hop concierge
           </span>
@@ -211,17 +224,17 @@ export default function Concierge({
           {signedIn ? (
             <a
               href="/account"
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-paper px-3 py-1.5 text-[12px] font-medium text-text2 transition-colors hover:border-brand hover:text-brand"
+              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] font-medium text-text3 transition-colors hover:text-brand"
               title="See and edit what hop remembers about you"
             >
               <Icon name="loyalty" size={13} />
-              What hop remembers
+              <span className="hidden sm:inline">What hop remembers</span>
             </a>
           ) : null}
           <button
             type="button"
             onClick={startOver}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-paper px-3 py-1.5 text-[12px] font-medium text-text2 transition-colors hover:border-brand hover:text-brand"
+            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] font-medium text-text3 transition-colors hover:text-brand"
           >
             <Icon name="lightbulb" size={13} />
             Start over
@@ -229,38 +242,49 @@ export default function Concierge({
         </div>
       </div>
 
-      {/* the conversation — auto-scrolls, scroll-up to read history */}
-      <Conversation className="min-h-0 rounded-[20px] border border-border bg-bg px-3 py-4 sm:px-5">
-        <ConversationContent>
-          {messages.map((m) => (
-            <Turn key={m.id} message={m} onChip={send} hasBalances={hasBalances} />
-          ))}
-          {/* a fresh assistant turn that hasn't streamed text yet → thinking */}
-          {busy && needsThinking(messages) ? <ThinkingTurn /> : null}
-          {error ? <ErrorTurn onRetry={() => send(lastUserText(messages))} /> : null}
-        </ConversationContent>
-        <ConversationScrollButton />
-      </Conversation>
-
-      {/* follow-up chips — deliberation shortcuts; composer stays primary */}
-      <Suggestions>
-        {FOLLOW_UPS.map((f) => (
-          <Suggestion key={f} suggestion={f} onClick={send} />
-        ))}
-      </Suggestions>
-
-      {/* persistent composer */}
-      <PromptInput onSubmit={onSubmit}>
-        <Icon name="lightbulb" size={20} className="mb-1.5 flex-shrink-0 text-brand" />
-        <PromptInputTextarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onEnter={() => send(input)}
-          placeholder="Reply, or ask something new…"
-          aria-label="Message hop"
+      {/* the conversation — the ONLY scroll region. Full-bleed scroll, prose
+          centered at a calm measure. A soft top veil dissolves content under the
+          identity rail instead of a hard clip. */}
+      <div className="relative min-h-0 flex-1">
+        <div
+          aria-hidden
+          className="hop-ask-veil pointer-events-none absolute inset-x-0 top-0 z-10 h-6"
         />
-        <PromptInputSubmit status={status} onStop={stop} disabled={!input.trim()} />
-      </PromptInput>
+        <Conversation className="h-full">
+          <ConversationContent className="hop-ask-measure pb-4 pt-2">
+            {messages.map((m) => (
+              <Turn key={m.id} message={m} onChip={send} hasBalances={hasBalances} />
+            ))}
+            {/* a fresh assistant turn that hasn't streamed text yet → thinking */}
+            {busy && needsThinking(messages) ? <ThinkingTurn /> : null}
+            {error ? <ErrorTurn onRetry={() => send(lastUserText(messages))} /> : null}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
+      </div>
+
+      {/* pinned dock: follow-up chips + persistent composer, aligned to the
+          reading measure. Lives at the viewport floor; the thread scrolls behind
+          it. A hairline separates the live composer from the scrolling history. */}
+      <div className="hop-ask-measure flex-shrink-0 border-t border-hair pt-3">
+        <Suggestions className="pb-2.5">
+          {FOLLOW_UPS.map((f) => (
+            <Suggestion key={f} suggestion={f} onClick={send} />
+          ))}
+        </Suggestions>
+
+        <PromptInput onSubmit={onSubmit}>
+          <Icon name="lightbulb" size={20} className="mb-1.5 flex-shrink-0 text-brand" />
+          <PromptInputTextarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onEnter={() => send(input)}
+            placeholder="Reply, or ask something new…"
+            aria-label="Message hop"
+          />
+          <PromptInputSubmit status={status} onStop={stop} disabled={!input.trim()} />
+        </PromptInput>
+      </div>
     </div>
   )
 }
@@ -268,8 +292,14 @@ export default function Concierge({
 // --- One conversation turn ---------------------------------------------------
 
 // Render a single message. USER → a brand-tint bubble. ASSISTANT → hop byline,
-// then its parts IN ORDER: streamed markdown (<Response>), tool-activity cards
-// (<Tool>), and server-validated a2ui blocks rendered inside the turn.
+// then the turn anatomy REORDERED FOR DISPLAY regardless of stream arrival order:
+//   1. TOOL ACTIVITY — the agent reasoning aloud as it works (search / weather /
+//      pricing), rendered FIRST as a compact inline rail.
+//   2. The streamed markdown answer (<Response>) the tools informed.
+//   3. Server-validated a2ui blocks (cards/choices) appended below the prose.
+// The AI SDK delivers parts in stream order (text tokens often arrive before a
+// tool frame resolves), so we partition by kind and lay them out by meaning —
+// tools never appear after the prose they fed.
 function Turn({
   message,
   onChip,
@@ -290,34 +320,52 @@ function Turn({
     )
   }
 
+  // Partition the parts by kind, preserving each kind's own internal order, then
+  // render tools → text → a2ui. Display order is decoupled from arrival order.
+  const tools: { key: string; step: { tool: string; state: ToolState; detail?: string } }[] = []
+  const texts: { key: string; text: string }[] = []
+  const a2ui: { key: string; blocks: A2UIBlock[] }[] = []
+
+  message.parts.forEach((part, i) => {
+    if (part.type === 'text') {
+      if (part.text) texts.push({ key: `t${i}`, text: part.text })
+    } else if (part.type === 'data-tool') {
+      const frame = part.data
+      tools.push({
+        key: part.id ?? `tool${i}`,
+        step: { tool: frame.tool, state: frame.state as ToolState, detail: frame.detail },
+      })
+    } else if (part.type === 'data-a2ui') {
+      const blocks = part.data?.blocks ?? []
+      if (blocks.length) a2ui.push({ key: part.id ?? `a${i}`, blocks })
+    }
+  })
+
   return (
     <Message from="assistant">
       <AssistantByline />
       <MessageContent>
-        {message.parts.map((part, i) => {
-          if (part.type === 'text') {
-            return part.text ? <Response key={i}>{part.text}</Response> : null
-          }
-          if (part.type === 'data-tool') {
-            const frame = part.data
-            return (
-              <ToolActivity
-                key={part.id ?? i}
-                step={{ tool: frame.tool, state: frame.state as ToolState, detail: frame.detail }}
-                hasBalances={hasBalances}
-              />
-            )
-          }
-          if (part.type === 'data-a2ui') {
-            const blocks = part.data?.blocks ?? []
-            return blocks.length ? (
-              <div key={part.id ?? i} className="mt-1">
-                <A2UIBlocks blocks={blocks} onChip={onChip} hasBalances={hasBalances} />
-              </div>
-            ) : null
-          }
-          return null
-        })}
+        {/* 1 — tool activity FIRST: the agent reasoning as it works. A compact
+            inline rail, not a card-on-card dump. */}
+        {tools.length ? (
+          <div className="hop-tool-rail flex flex-col gap-1.5">
+            {tools.map((t) => (
+              <ToolActivity key={t.key} step={t.step} hasBalances={hasBalances} />
+            ))}
+          </div>
+        ) : null}
+
+        {/* 2 — the streamed answer the tools informed */}
+        {texts.map((t) => (
+          <Response key={t.key}>{t.text}</Response>
+        ))}
+
+        {/* 3 — a2ui blocks (cards / choices), appended below the prose */}
+        {a2ui.map((a) => (
+          <div key={a.key} className="mt-1">
+            <A2UIBlocks blocks={a.blocks} onChip={onChip} hasBalances={hasBalances} />
+          </div>
+        ))}
       </MessageContent>
     </Message>
   )

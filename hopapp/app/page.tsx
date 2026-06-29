@@ -1,6 +1,6 @@
 import { auth0 } from '@/lib/auth0'
 import { mockBalances } from '@/lib/mock'
-import { getPrefs } from '@/lib/prefs'
+import { getPrefs, type UserPrefs } from '@/lib/prefs'
 import { getUserBalances } from '@/lib/accounts'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
@@ -48,16 +48,24 @@ export default async function Home() {
       }
     : null
 
+  // The three remaining data sources are independent — fetch them concurrently
+  // so the home renders in one round-trip instead of three sequential ones.
+  //   - balances: unified per-user (manual + AwardWallet, merged)
+  //   - heroBackdrop: canonical Unsplash photo for the agent hero teaser
+  //   - prefs: home airport that seeds the default From
+  // Each degrades gracefully on its own; none can crash the page.
+  const [real, heroBackdropRaw, prefs] = await Promise.all([
+    su?.sub ? getUserBalances(su.sub) : Promise.resolve([]),
+    conciergeBackdrop(),
+    su?.sub ? getPrefs(su.sub) : Promise.resolve({} as UserPrefs),
+  ])
+
   // Balances power both the program count and the personalized destinations.
-  // Live AwardWallet when configured, mock fixtures otherwise — never crashes
-  // the home if the upstream call fails.
+  // Mock fixtures ONLY in local dev (MOCK=1) — a real signed-in user with no
+  // programs sees a genuine empty/onboarding state, never fabricated balances.
   let programs = 0
   let totalPoints = 0
   if (user) {
-    // Unified per-user balances (manual + AwardWallet, merged). Mock fixtures
-    // ONLY in local dev (MOCK=1) — a real signed-in user with no programs sees
-    // a genuine empty/onboarding state, never fabricated "synced" balances.
-    const real = su?.sub ? await getUserBalances(su.sub) : []
     const useMock = real.length === 0 && /^(1|true|yes)$/i.test(process.env.MOCK ?? '')
     const balances = real.length > 0 ? real : useMock ? mockBalances() : []
     programs = balances.length
@@ -66,12 +74,10 @@ export default async function Home() {
 
   const first = user?.name?.trim().split(' ')[0]
 
-  // One canonical photographic backdrop for the agent hero teaser, matching the
-  // /ask landing's imagery. Never crashes the home if the image call fails.
-  const heroBackdrop = (await conciergeBackdrop()) ?? undefined
+  // Never crashes the home if the image call fails.
+  const heroBackdrop = heroBackdropRaw ?? undefined
 
   // Home airport (Supabase pref) seeds the default From + gates the set-home prompt.
-  const prefs = su?.sub ? await getPrefs(su.sub) : {}
   const homeSeed: SearchState = prefs.homeAirport
     ? { ...SEED, from: prefs.homeAirport }
     : SEED

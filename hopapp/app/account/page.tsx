@@ -120,7 +120,7 @@ export default async function AccountPage({
 
   return (
     <AppShell user={user}>
-      <div className="mx-auto max-w-[820px] pb-4 pt-8 sm:pt-12">
+      <div className="mx-auto max-w-[820px] pb-4 pt-8 sm:pt-12 xl:max-w-[1200px]">
         {/* profile hero — teal plane, matches the editorial system */}
         <section
           className="overflow-hidden rounded-[20px] text-[#eafaf7] lg:rounded-[24px]"
@@ -181,10 +181,16 @@ export default async function AccountPage({
           ))}
         </nav>
 
-        {/* ── GROUP 1 — YOUR TRAVEL PROFILE ──────────────────────────────────
+        {/* On wide screens the groups sit side-by-side so the page fills the
+            width and the power features aren't buried below a long scroll: left
+            = what hop knows about you, right = what hop does + developer access.
+            Below xl it collapses back to the single readable column. */}
+        <div className="mt-12 grid grid-cols-1 items-start gap-x-12 xl:grid-cols-2">
+        {/* ── COLUMN A — GROUP 1 — YOUR TRAVEL PROFILE ───────────────────────
             What hop knows about you: the programs you hold and where you've
             flown. These describe your identity, so they sit together. */}
-        <div className="mt-12 text-[11px] font-semibold uppercase tracking-[0.18em] text-text3">
+        <div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text3">
           Your travel profile
         </div>
 
@@ -246,11 +252,16 @@ export default async function AccountPage({
             trips={travelHistory?.trips ?? []}
           />
         </section>
+        </div>
+        {/* ── COLUMN B — GROUP 2 + GROUP 3 ───────────────────────────────────
+            What hop does for you, plus developer access. On xl this column sits
+            beside the travel profile; below xl it stacks under it. */}
+        <div className="mt-14 xl:mt-0">
 
         {/* ── GROUP 2 — WHAT HOP DOES FOR YOU ────────────────────────────────
             The active tools: watch a route, or ask what a different stack would
             unlock. A larger gap above encodes the group break. */}
-        <div className="mt-14 text-[11px] font-semibold uppercase tracking-[0.18em] text-text3">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text3">
           What hop does for you
         </div>
 
@@ -319,6 +330,8 @@ export default async function AccountPage({
             </div>
           </details>
         </section>
+        </div>
+        </div>
 
         <SiteFooter />
       </div>

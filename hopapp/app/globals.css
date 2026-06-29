@@ -371,3 +371,54 @@ body {
 .legal-prose h2:first-child {
   margin-top: 0;
 }
+
+/* ── /ask immersive chat surface ──────────────────────────────────────────
+   The concierge thread is the PRIMARY surface on /ask: it fills the viewport
+   below the sticky TopNav, owns the only scroll region (the message area), and
+   pins the composer to the bottom. No nested card-on-bg, no double scrollbar.
+   --hop-nav mirrors the TopNav's expanded height (76px). dvh keeps the mobile
+   browser chrome from clipping the pinned composer. */
+:root {
+  --hop-nav: 76px;
+}
+
+/* Full-height stage that sits flush under the nav. Cancels AppShell's pb-24 so
+   the composer lands exactly at the viewport floor with no trailing gap. */
+.hop-ask-stage {
+  height: calc(100dvh - var(--hop-nav));
+  margin-bottom: -6rem; /* neutralizes AppShell's pb-24 (96px) */
+}
+
+/* A calm reading measure for the thread — centered within the full-bleed stage
+   so prose never runs edge-to-edge on wide screens. The message area scrolls;
+   the byline/composer rails stay put. */
+.hop-ask-measure {
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
+}
+
+/* A whisper-soft top fade so streamed content dissolves under the nav rather
+   than hard-clipping. Pointer-transparent; color only, no motion. */
+.hop-ask-veil {
+  background: linear-gradient(
+    to bottom,
+    var(--color-bg) 0%,
+    color-mix(in srgb, var(--color-bg) 0%, transparent) 100%
+  );
+}
+
+/* The live tool rail — a compact, inline trace of the agent reasoning that
+   renders ABOVE the prose it informs. Flat hairline-left spine, brand tokens,
+   no card chrome. Each step is a quiet line, not a spinner dump. */
+.hop-tool-rail {
+  border-left: 1.5px solid var(--color-hair);
+  padding-left: 0.875rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hop-ask-stage {
+    /* still full-height; nothing animates here, but keep parity with the
+       project-wide reduced-motion contract. */
+  }
+}

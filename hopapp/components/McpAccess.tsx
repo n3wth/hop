@@ -1,15 +1,28 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import Icon from './Icon'
 import type { ApiTokenInfo } from '@/lib/api-tokens'
 
-// "Add to Claude" — mint/revoke a hop API token and copy the MCP server URL +
-// setup instructions. The token links this hop account to the MCP server so its
-// tools (price_trip, verdict, sweet_spots, transfer_paths) can read THIS user's
-// real balances. Flat, on-brand, no emojis. Server endpoints: /api/mcp-token.
+// "Use hop from your LLM (MCP)" — mint/rename/revoke a hop API token, pick your
+// MCP client, and copy the exact connect instructions for THAT client. The token
+// links this hop account to the MCP server so its tools (price_trip, verdict,
+// sweet_spots, transfer_paths) can read THIS user's real balances. Flat, on-brand,
+// no emojis. Server endpoints: /api/mcp-token (GET/POST/PATCH/DELETE).
 
 type Props = { initialTokens: ApiTokenInfo[] }
+
+// The selectable MCP-capable clients. Each renders its OWN connect snippet from
+// the live server URL + the user's token (or a placeholder until one is minted).
+type ClientId = 'claude-desktop' | 'claude-code' | 'cursor' | 'chatgpt' | 'generic'
+
+const CLIENTS: { id: ClientId; label: string }[] = [
+  { id: 'claude-desktop', label: 'Claude Desktop' },
+  { id: 'claude-code', label: 'Claude Code' },
+  { id: 'cursor', label: 'Cursor' },
+  { id: 'chatgpt', label: 'ChatGPT' },
+  { id: 'generic', label: 'Any MCP client' },
+]
 
 function CopyButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false)
@@ -33,9 +46,39 @@ function CopyButton({ value, label }: { value: string; label: string }) {
   )
 }
 
+// A labelled, copyable config block. `kind` switches the eyebrow label between a
+// filename (JSON), a shell command, or a plain hint.
+function ConfigBlock({
+  label,
+  body,
+  copyValue,
+  copyLabel,
+}: {
+  label: string
+  body: string
+  copyValue: string
+  copyLabel: string
+}) {
+  return (
+    <div className="mt-3 rounded-[12px] border border-border bg-sunk px-4 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text2">
+          {label}
+        </div>
+        <CopyButton value={copyValue} label={copyLabel} />
+      </div>
+      <pre className="mt-2 overflow-x-auto font-mono text-[12.5px] leading-[1.5] text-text">{body}</pre>
+    </div>
+  )
+}
+
 export default function McpAccess({ initialTokens }: Props) {
   const [tokens, setTokens] = useState<ApiTokenInfo[]>(initialTokens)
   const [fresh, setFresh] = useState<string | null>(null) // plaintext shown once
+  const [client, setClient] = useState<ClientId>('claude-desktop')
+  const [mintName, setMintName] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
   const [pending, startTransition] = useTransition()
 
   // The MCP server URL is the streamable-HTTP endpoint on THIS origin. Computed
@@ -43,17 +86,23 @@ export default function McpAccess({ initialTokens }: Props) {
   const mcpUrl =
     typeof window !== 'undefined' ? `${window.location.origin}/api/mcp` : '/api/mcp'
 
+  // The token to thread through the snippets: the freshly minted plaintext if we
+  // just made one, else a clear placeholder the user swaps for their own.
+  const token = fresh ?? '<your-hop-token>'
+
   function mint() {
+    const name = mintName.trim()
     startTransition(async () => {
       const res = await fetch('/api/mcp-token', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name: 'Claude' }),
+        body: JSON.stringify({ name: name || 'Token' }),
       })
       const data = await res.json().catch(() => null)
       if (data?.ok && data.token) {
         setFresh(data.token as string)
         setTokens((t) => [data.info as ApiTokenInfo, ...t])
+        setMintName('')
       }
     })
   }
@@ -68,9 +117,98 @@ export default function McpAccess({ initialTokens }: Props) {
     })
   }
 
+  function startRename(t: ApiTokenInfo) {
+    setEditingId(t.id)
+    setEditName(t.name || '')
+  }
+
+  function saveRename(id: string) {
+    const name = editName
+    startTransition(async () => {
+      const res = await fetch('/api/mcp-token', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ id, name }),
+      })
+      const data = await res.json().catch(() => null)
+      if (data?.ok && data.info) {
+        const info = data.info as ApiTokenInfo
+        setTokens((t) => t.map((x) => (x.id === id ? info : x)))
+      }
+      setEditingId(null)
+      setEditName('')
+    })
+  }
+
+  // Per-client snippet + copy payload, recomputed when the client or token change.
+  const snippet = useMemo(() => {
+    const jsonConfig = JSON.stringify(
+      {
+        mcpServers: {
+          hop: { url: mcpUrl, headers: { Authorization: `Bearer ${token}` } },
+        },
+      },
+      null,
+      2,
+    )
+    switch (client) {
+      case 'claude-desktop':
+        return {
+          help:
+            'Open Claude Desktop > Settings > Developer > Edit Config, then merge this into claude_desktop_config.json and restart Claude.',
+          label: 'claude_desktop_config.json',
+          body: jsonConfig,
+          copyValue: jsonConfig,
+          copyLabel: 'Copy config',
+        }
+      case 'claude-code': {
+        const cmd = `claude mcp add --transport http hop ${mcpUrl} \\\n  --header "Authorization: Bearer ${token}"`
+        return {
+          help: 'Run this in your terminal. It registers hop as an HTTP MCP server for Claude Code.',
+          label: 'terminal',
+          body: cmd,
+          copyValue: cmd,
+          copyLabel: 'Copy command',
+        }
+      }
+      case 'cursor':
+        return {
+          help:
+            'Cursor > Settings > MCP > Add new server, or merge this into ~/.cursor/mcp.json, then reload.',
+          label: '~/.cursor/mcp.json',
+          body: jsonConfig,
+          copyValue: jsonConfig,
+          copyLabel: 'Copy config',
+        }
+      case 'chatgpt': {
+        const body = `Server URL\n${mcpUrl}\n\nAuthentication\nBearer ${token}`
+        return {
+          help:
+            'In ChatGPT (where MCP / connectors are enabled), add a custom connector with this URL and a Bearer token.',
+          label: 'connector settings',
+          body,
+          copyValue: mcpUrl,
+          copyLabel: 'Copy URL',
+        }
+      }
+      case 'generic':
+      default: {
+        const body = `Server URL\n${mcpUrl}\n\nTransport\nstreamable HTTP\n\nAuth header\nAuthorization: Bearer ${token}`
+        return {
+          help:
+            'Point any MCP client at the server URL over streamable HTTP and send your token in the Authorization header.',
+          label: 'any MCP client',
+          body,
+          copyValue: mcpUrl,
+          copyLabel: 'Copy URL',
+        }
+      }
+    }
+  }, [client, mcpUrl, token])
+
   return (
     <div className="mt-4 rounded-[16px] border border-border bg-surface px-6 py-6">
-      {/* server URL + add-to-claude config */}
+      {/* server URL */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text2">
@@ -82,42 +220,46 @@ export default function McpAccess({ initialTokens }: Props) {
       </div>
 
       <p className="mt-4 text-[13.5px] leading-[1.55] text-text2">
-        Add hop&apos;s verdict engine to Claude (or any MCP client). Mint a token below,
-        then add the server. Without a token the tools still work — they just
-        won&apos;t know your balances.
+        Add hop&apos;s verdict engine to your favourite LLM. Pick your client below for
+        the exact setup, then mint a token. Without a token the tools still work —
+        they just won&apos;t know your balances.
       </p>
 
-      {/* Add-to-Claude config block */}
-      <div className="mt-3 rounded-[12px] border border-border bg-sunk px-4 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text2">
-            claude_desktop_config.json
-          </div>
-          <CopyButton
-            value={JSON.stringify(
-              {
-                mcpServers: {
-                  hop: {
-                    url: mcpUrl,
-                    headers: { Authorization: `Bearer ${fresh ?? '<your-hop-token>'}` },
-                  },
-                },
-              },
-              null,
-              2,
-            )}
-            label="Copy config"
-          />
+      {/* client selector */}
+      <div className="mt-4">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text2">
+          Your MCP client
         </div>
-        <pre className="mt-2 overflow-x-auto font-mono text-[12.5px] leading-[1.5] text-text">{`{
-  "mcpServers": {
-    "hop": {
-      "url": "${mcpUrl}",
-      "headers": { "Authorization": "Bearer ${fresh ?? '<your-hop-token>'}" }
-    }
-  }
-}`}</pre>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {CLIENTS.map((c) => {
+            const active = c.id === client
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setClient(c.id)}
+                aria-pressed={active}
+                className={
+                  active
+                    ? 'rounded-[10px] border border-brand bg-brand-light px-3.5 py-1.5 text-[12.5px] font-semibold text-brand-deep'
+                    : 'rounded-[10px] border border-border bg-surface px-3.5 py-1.5 text-[12.5px] font-semibold text-text2 transition-colors hover:text-text'
+                }
+              >
+                {c.label}
+              </button>
+            )
+          })}
+        </div>
       </div>
+
+      {/* per-client config */}
+      <p className="mt-4 text-[12.5px] leading-[1.5] text-text2">{snippet.help}</p>
+      <ConfigBlock
+        label={snippet.label}
+        body={snippet.body}
+        copyValue={snippet.copyValue}
+        copyLabel={snippet.copyLabel}
+      />
 
       {/* freshly minted plaintext — shown once */}
       {fresh ? (
@@ -134,45 +276,106 @@ export default function McpAccess({ initialTokens }: Props) {
         </div>
       ) : null}
 
-      {/* mint */}
-      <div className="mt-4">
+      {/* mint — with a name */}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <input
+          type="text"
+          value={mintName}
+          onChange={(e) => setMintName(e.target.value)}
+          placeholder="Token name (e.g. Laptop)"
+          maxLength={60}
+          className="min-w-0 flex-1 rounded-[12px] border border-border bg-sunk px-3.5 py-2.5 text-[13.5px] text-text placeholder:text-text3 focus:border-brand focus:outline-none"
+        />
         <button
           type="button"
           onClick={mint}
           disabled={pending}
-          className="inline-flex items-center gap-2 rounded-[12px] bg-brand px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:opacity-60"
+          className="inline-flex flex-shrink-0 items-center gap-2 rounded-[12px] bg-brand px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:opacity-60"
         >
           <Icon name="add" size={17} />
           Mint a token
         </button>
       </div>
 
-      {/* existing tokens */}
+      {/* existing tokens — with inline rename */}
       {tokens.length > 0 ? (
         <ul className="mt-5 divide-y divide-border border-t border-border">
           {tokens.map((t) => (
             <li key={t.id} className="flex items-center justify-between gap-3 py-3">
-              <div className="min-w-0">
-                <div className="truncate text-[13.5px] font-semibold text-text">
-                  {t.name || 'Token'}{' '}
-                  <span className="font-mono text-[12.5px] font-normal text-text2">
-                    ••••{t.lastFour}
-                  </span>
-                </div>
-                <div className="text-[12px] text-text2">
-                  {t.lastUsedAt
-                    ? `Last used ${new Date(t.lastUsedAt).toLocaleDateString()}`
-                    : 'Never used'}
-                </div>
+              <div className="min-w-0 flex-1">
+                {editingId === t.id ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      maxLength={60}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveRename(t.id)
+                        if (e.key === 'Escape') {
+                          setEditingId(null)
+                          setEditName('')
+                        }
+                      }}
+                      className="min-w-0 flex-1 rounded-[10px] border border-border bg-sunk px-3 py-1.5 text-[13.5px] text-text focus:border-brand focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => saveRename(t.id)}
+                      disabled={pending}
+                      className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-[10px] bg-brand px-3 py-1.5 text-[12.5px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:opacity-60"
+                    >
+                      <Icon name="check" size={15} />
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingId(null)
+                        setEditName('')
+                      }}
+                      className="inline-flex flex-shrink-0 items-center rounded-[10px] border border-border px-3 py-1.5 text-[12.5px] font-semibold text-text2 transition-colors hover:text-text"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="truncate text-[13.5px] font-semibold text-text">
+                      {t.name || 'Token'}{' '}
+                      <span className="font-mono text-[12.5px] font-normal text-text2">
+                        ••••{t.lastFour}
+                      </span>
+                    </div>
+                    <div className="text-[12px] text-text2">
+                      {t.lastUsedAt
+                        ? `Last used ${new Date(t.lastUsedAt).toLocaleDateString()}`
+                        : 'Never used'}
+                    </div>
+                  </>
+                )}
               </div>
-              <button
-                type="button"
-                onClick={() => revoke(t.id)}
-                disabled={pending}
-                className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-[10px] border border-border px-3 py-1.5 text-[12.5px] font-semibold text-text2 transition-colors hover:text-text disabled:opacity-60"
-              >
-                Revoke
-              </button>
+              {editingId === t.id ? null : (
+                <div className="flex flex-shrink-0 items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => startRename(t)}
+                    disabled={pending}
+                    className="inline-flex items-center rounded-[10px] border border-border px-3 py-1.5 text-[12.5px] font-semibold text-text2 transition-colors hover:text-text disabled:opacity-60"
+                  >
+                    Rename
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => revoke(t.id)}
+                    disabled={pending}
+                    className="inline-flex items-center rounded-[10px] border border-border px-3 py-1.5 text-[12.5px] font-semibold text-text2 transition-colors hover:text-text disabled:opacity-60"
+                  >
+                    Revoke
+                  </button>
+                </div>
+              )}
             </li>
           ))}
         </ul>

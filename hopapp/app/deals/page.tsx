@@ -30,12 +30,13 @@ export default async function DealsPage() {
   const deals = topValue(24)
   const { depart, ret } = defaultDates()
 
-  // Batch-fetch destination photography (cached per query, day-long revalidate).
-  // Null entries fall back to a solid brand-tint tile in the card.
-  const photos = await destinationImages(deals.map((d) => imageQuery(d)))
-
-  // Auth0 session → consistent header avatar (null when signed out).
-  const session = await auth0.getSession()
+  // Destination photography and the Auth0 session are independent — resolve
+  // them concurrently. Photos are cached per query (day-long revalidate); null
+  // entries fall back to a solid brand-tint tile in the card.
+  const [photos, session] = await Promise.all([
+    destinationImages(deals.map((d) => imageQuery(d))),
+    auth0.getSession(),
+  ])
   const su = session?.user
   const user = su
     ? {
@@ -56,7 +57,7 @@ export default async function DealsPage() {
 
   return (
     <AppShell user={user} pointsTotal={pointsTotal} hideSearch>
-      <div className="mx-auto max-w-[1180px]">
+      <div className="mx-auto max-w-[1180px] xl:max-w-[1340px] 2xl:max-w-[1500px]">
         {/* editorial header — centered over the full-width feed */}
         <header className="mx-auto max-w-[60ch] pt-10 text-center sm:pt-14">
           <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
@@ -103,7 +104,7 @@ export default async function DealsPage() {
         </div>
 
         {/* the feed */}
-        <section className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+        <section className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
           {deals.map((dest, i) => (
             <DealCard
               key={dest.code}

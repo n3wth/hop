@@ -3,7 +3,6 @@ import { mockBalances } from '@/lib/mock'
 import { getUserBalances } from '@/lib/accounts'
 import { getPrefs } from '@/lib/prefs'
 import AppShell from '@/components/AppShell'
-import SiteFooter from '@/components/SiteFooter'
 import Concierge, { type ConciergePhoto, type ConciergeInitialMessage } from '@/components/Concierge'
 import { destinations, topValue, imageQuery } from '@/lib/destinations'
 import { destinationImages } from '@/lib/images'
@@ -89,23 +88,24 @@ export default async function AskPage({
   }
   const galleryCodes = topValue(6).map((d) => d.code)
 
+  // The concierge IS the page on /ask: a full-height immersive stage flush under
+  // the sticky TopNav. The empty state shows the warm guided hero centered in the
+  // stage; the first message turns the stage into the immersive thread (single
+  // scroll region, pinned composer). No marketing footer competes with the chat —
+  // the surface is the product. Concierge owns the per-state layout internally.
   return (
     <AppShell user={user} pointsTotal={totalPoints} hideSearch>
-      <div className="mx-auto flex max-w-[980px] flex-col gap-8 pt-4 sm:pt-8">
-        <div className="hop-rise" style={{ ['--hop-delay' as string]: '40ms' }}>
-          <Concierge
-            totalPoints={totalPoints}
-            programs={programs}
-            homeAirport={homeAirport}
-            photos={photos}
-            galleryCodes={galleryCodes}
-            signedIn={!!user}
-            initialMessages={initialMessages}
-            initialQuery={initialQuery}
-          />
-        </div>
-
-        <SiteFooter />
+      <div className="hop-ask-stage flex flex-col">
+        <Concierge
+          totalPoints={totalPoints}
+          programs={programs}
+          homeAirport={homeAirport}
+          photos={photos}
+          galleryCodes={galleryCodes}
+          signedIn={!!user}
+          initialMessages={initialMessages}
+          initialQuery={initialQuery}
+        />
       </div>
     </AppShell>
   )
