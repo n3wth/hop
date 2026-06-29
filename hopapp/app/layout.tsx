@@ -7,6 +7,7 @@ import {
   DEFAULT_DESCRIPTION,
   TEAL,
 } from '@/lib/seo'
+import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
 // Display headlines: Bricolage Grotesque via next/font/google — self-hosted, preloaded.
@@ -100,7 +101,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">
+        {children}
+        <Analytics />
+      </body>
     </html>
   )
 }
