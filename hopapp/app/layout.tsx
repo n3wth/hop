@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Bricolage_Grotesque, Fraunces } from 'next/font/google'
+import { Bricolage_Grotesque, Fraunces, Geist } from 'next/font/google'
 import {
   SITE_URL,
   SITE_NAME,
@@ -24,6 +24,14 @@ const fraunces = Fraunces({
   weight: ['600', '700'],
   style: ['italic'],
   variable: '--font-wordmark',
+  display: 'swap',
+})
+
+// Body/UI: Geist Sans via next/font/google — self-hosted, preloaded, no external requests.
+const geistSans = Geist({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-geist-sans',
   display: 'swap',
 })
 
@@ -91,15 +99,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${bricolage.variable} ${fraunces.variable}`}>
-      <head>
-        {/* Body/UI: General Sans (Fontshare — not on Google/next-font). */}
-        <link rel="preconnect" href="https://api.fontshare.com" />
-        <link
-          href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={`${bricolage.variable} ${fraunces.variable} ${geistSans.variable}`}>
+      <head />
       <body className="font-sans">{children}</body>
     </html>
   )

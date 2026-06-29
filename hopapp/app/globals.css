@@ -60,7 +60,7 @@
   --ease-premium: cubic-bezier(0.2, 0, 0, 1);
 
   --font-display: var(--font-bricolage), "Bricolage Grotesque", system-ui, sans-serif;
-  --font-sans: "General Sans", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: var(--font-geist-sans), "Geist", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-wordmark-stack: var(--font-wordmark), "Fraunces", Georgia, serif;
 
   --spacing-sq: 76px;
