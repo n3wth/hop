@@ -8,13 +8,27 @@ import {
   addManualBalance,
   updateManualBalance,
   removeManualBalance,
+  findManualByProgram,
 } from '@/lib/accounts'
+import { canonicalizeProgram } from '@/lib/programs'
 
 // Server Actions for the signed-in user's balance sources. Every action is gated
 // by the Auth0 session and scoped to session.user.sub so one user can never touch
 // another's data. Returns a simple result for the client forms. Never throws.
 
-type Result = { ok: boolean; error?: string }
+// `note` carries a human-readable confirmation when an action did something the
+// user should know about (e.g. it folded a duplicate into an existing program).
+type Result = { ok: boolean; error?: string; note?: string }
+
+// Fold free-text onto the canonical registry so "amex" / "membership rewards" /
+// typos all persist as ONE program identity. Returns the canonical display name
+// and kind when we recognize it; otherwise keeps the user's trimmed input so we
+// never lose a program we simply don't know about yet (degrade gracefully).
+function canonicalizeEntry(input: string): { name: string; kind?: string } {
+  const def = canonicalizeProgram(input)
+  if (def) return { name: def.name, kind: def.kind }
+  return { name: input.trim() }
+}
 
 const MAX_PROGRAM_LEN = 80
 const MAX_AW_ID_LEN = 64
@@ -44,14 +58,37 @@ export async function addProgram(
   const auth = await requireUser()
   if ('error' in auth) return { ok: false, error: auth.error }
 
-  const name = (program ?? '').trim()
-  if (!name) return { ok: false, error: 'Enter a program' }
-  if (name.length > MAX_PROGRAM_LEN) return { ok: false, error: 'That name is too long' }
+  const raw = (program ?? '').trim()
+  if (!raw) return { ok: false, error: 'Enter a program' }
+  if (raw.length > MAX_PROGRAM_LEN) return { ok: false, error: 'That name is too long' }
 
   const balance = parseBalance(balanceRaw)
   if (balance == null) return { ok: false, error: 'Enter a valid balance' }
 
-  const id = await addManualBalance(auth.userId, name, balance)
+  // Canonicalize so the stored name is the one true program identity.
+  const { name, kind } = canonicalizeEntry(raw)
+
+  // Dedupe: if the user already holds this program (by canonical identity), fold
+  // the new balance into the existing row instead of creating a duplicate, and
+  // tell them what happened.
+  const existing = await findManualByProgram(auth.userId, name)
+  if (existing) {
+    const merged = existing.balance + balance
+    if (merged > MAX_BALANCE) return { ok: false, error: 'That balance is too large' }
+    const ok = await updateManualBalance(auth.userId, existing.id, {
+      program: name,
+      balance: merged,
+      kind,
+    })
+    if (!ok) return { ok: false, error: "Couldn't add — try again" }
+    revalidateBalances()
+    return {
+      ok: true,
+      note: `Added to your existing ${name} — now ${merged.toLocaleString()}.`,
+    }
+  }
+
+  const id = await addManualBalance(auth.userId, name, balance, kind)
   if (!id) return { ok: false, error: "Couldn't add — try again" }
 
   revalidateBalances()
@@ -67,14 +104,25 @@ export async function editProgram(
   if ('error' in auth) return { ok: false, error: auth.error }
 
   if (!id) return { ok: false, error: 'Missing program' }
-  const name = (program ?? '').trim()
-  if (!name) return { ok: false, error: 'Enter a program' }
-  if (name.length > MAX_PROGRAM_LEN) return { ok: false, error: 'That name is too long' }
+  const raw = (program ?? '').trim()
+  if (!raw) return { ok: false, error: 'Enter a program' }
+  if (raw.length > MAX_PROGRAM_LEN) return { ok: false, error: 'That name is too long' }
 
   const balance = parseBalance(balanceRaw)
   if (balance == null) return { ok: false, error: 'Enter a valid balance' }
 
-  const ok = await updateManualBalance(auth.userId, id, { program: name, balance })
+  // Canonicalize the edited name onto the registry.
+  const { name, kind } = canonicalizeEntry(raw)
+
+  // Guard against an edit that collides with a DIFFERENT existing program — keep
+  // each canonical identity to a single row. The user can remove one and re-add
+  // to merge intentionally.
+  const collision = await findManualByProgram(auth.userId, name)
+  if (collision && collision.id !== id) {
+    return { ok: false, error: `You already have ${name}. Edit that row instead.` }
+  }
+
+  const ok = await updateManualBalance(auth.userId, id, { program: name, balance, kind })
   if (!ok) return { ok: false, error: "Couldn't save — try again" }
 
   revalidateBalances()

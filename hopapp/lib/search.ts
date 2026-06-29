@@ -12,7 +12,7 @@ import type {
   SearchResult,
 } from '@/lib/types'
 import { cpp, tier, rankOptions } from '@/lib/cpp'
-import { transfersTo } from '@/lib/transfers'
+import { transfersTo, effectiveBalanceFor } from '@/lib/transfers'
 import { cashBookingUrl, pointsBookingUrl } from '@/lib/booking'
 import { searchCash } from '@/lib/duffel'
 import { searchAwards } from '@/lib/seatsaero'
@@ -25,15 +25,14 @@ function isAward(option: FlightOption): boolean {
   return option.kind === 'award' || option.kind === 'transfer'
 }
 
-// Match a user's balance to an award option's program (tolerant substring match).
+// Does the user hold this award option's OWN program directly? Canonical match
+// via lib/programs.ts (not substring) so "Alaska" matches "Alaska Mileage Plan".
+// Returns ONLY a direct holding — transfer reachability is handled separately by
+// transfersTo() so the UI can distinguish "book points" from "transfer".
 function youHaveFor(option: FlightOption, balances: Balance[]): number | undefined {
-  const program = option.program?.toLowerCase().trim()
-  if (!program) return undefined
-  const hit = balances.find((b) => {
-    const p = b.program.toLowerCase()
-    return p.includes(program) || program.includes(p)
-  })
-  return hit?.balance
+  if (!option.program) return undefined
+  const eff = effectiveBalanceFor(option.program, balances)
+  return eff?.via.kind === 'direct' ? eff.amount : undefined
 }
 
 // Optionally accepts pre-resolved per-user balances (manual + AwardWallet merged

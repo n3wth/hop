@@ -15,6 +15,8 @@ import {
   type Destination,
 } from '@/lib/destinations'
 import { valuationsByName } from '@/lib/valuations'
+import { effectiveBalanceFor } from '@/lib/transfers'
+import type { Balance } from '@/lib/types'
 
 export const runtime = 'nodejs'
 
@@ -49,7 +51,10 @@ export interface ConciergeSuggestion {
   cashUsd?: number // typical one-way cash
   cpp?: number // cents per point at this redemption
   bestProgram?: string // program that books it well
-  youHave?: number // user's balance in that program (if known)
+  youHave?: number // EFFECTIVE balance toward that program (direct OR transferable)
+  // How `youHave` is reached: a direct holding, or a transfer from a bank
+  // currency (with ratio). Lets the card narrate "via Amex MR (1:1)".
+  youHaveVia?: { kind: 'direct'; program: string } | { kind: 'transfer'; source: string; ratio: string }
   affordable?: boolean // can the user book it with points they hold now?
   verdict?: 'points' | 'cash' | 'save' // the one-glance call
 }
@@ -257,28 +262,22 @@ export function parseConciergeJson(raw: string): ConciergeResponse {
 // Enrich the AI's picks with VERDICT FACTS computed server-side from the
 // destinations dataset + the user's real balances. The model chose the city and
 // wrote the reason; hop fills in the numbers — so a card never shows a figure the
-// model invented. Loosely matches the suggestion's bestProgram to a balance the
-// user holds (tolerant substring/code match) to decide affordability + verdict.
+// model invented. Counts a held balance toward a destination if the user holds
+// the booking program DIRECTLY *or* holds a transferable bank currency that
+// transfers to it (ratio applied) — via lib/transfers.effectiveBalanceFor +
+// lib/programs canonicalization. So an Amex MR holder is "affordable" for a trip
+// bookable via ANA, not "you have: none".
 function enrichSuggestions(
   suggestions: ConciergeSuggestion[],
   context?: ConciergeContext,
 ): ConciergeSuggestion[] {
-  const programs = context?.programs ?? []
-  // Tolerant: does the user hold a program that books this destination? Returns
-  // the held balance, or undefined if we can't confidently match.
-  const heldFor = (bestProgram: string): number | undefined => {
-    const target = bestProgram.toLowerCase()
-    let best: number | undefined
-    for (const p of programs) {
-      const name = p.program.toLowerCase()
-      // match either direction on a meaningful token (program names vary in form)
-      const token = target.split(/[\s/]+/).find((t) => t.length >= 4 && name.includes(t))
-      if (token || name.includes(target) || target.includes(name)) {
-        best = Math.max(best ?? 0, p.balance)
-      }
-    }
-    return best
-  }
+  // ConciergeProgram -> Balance so transfers.ts can canonicalize + walk the graph.
+  // (code is unknown here; canonicalizeProgram resolves from the program name.)
+  const balances: Balance[] = (context?.programs ?? []).map((p) => ({
+    program: p.program,
+    code: '',
+    balance: p.balance,
+  }))
 
   return suggestions.map((s) => {
     const d = destinationByCode(s.code)
@@ -286,7 +285,9 @@ function enrichSuggestions(
     const milesNeeded = d.typicalAwardMiles
     const cashUsd = d.typicalCashUSD
     const cpp = computeCpp(d)
-    const youHave = heldFor(d.bestProgram)
+    // Best direct-or-transferable balance toward the booking program.
+    const eff = effectiveBalanceFor(d.bestProgram, balances)
+    const youHave = eff?.amount
     const affordable = youHave != null ? youHave >= milesNeeded : undefined
     // Verdict: strong CPP → points; weak CPP → cash; can't afford yet → save.
     const verdict: ConciergeSuggestion['verdict'] =
@@ -298,6 +299,7 @@ function enrichSuggestions(
       cpp,
       bestProgram: d.bestProgram,
       youHave,
+      youHaveVia: eff?.via,
       affordable,
       verdict,
     }

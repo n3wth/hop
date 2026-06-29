@@ -155,6 +155,14 @@ function balanceIsSource(balance: Balance, sourceId: string): boolean {
   return false
 }
 
+// Resolve a balance row to its canonical program id. Tries the free-text program
+// name first, then the monogram code. Returns undefined when neither resolves.
+function balanceProgramId(balance: Balance): string | undefined {
+  const fromProgram = canonicalizeProgram(balance.program)?.id
+  if (fromProgram) return fromProgram
+  return balance.code ? canonicalizeProgram(balance.code)?.id : undefined
+}
+
 // --- Public API -------------------------------------------------------------
 
 // Backward-compatible: which of the user's balances can REACH targetProgram via
@@ -222,6 +230,73 @@ export function partnersOf(sourceId: string): TransferEdge[] {
 // The set of source currency ids the graph knows about.
 export function transferSourceIds(): string[] {
   return Object.keys(GRAPH)
+}
+
+// --- Effective balance (direct-or-transferable) -----------------------------
+
+// The best balance a user has TOWARD a target program, and how it's reached.
+// `amount` is denominated in the TARGET program's currency (transfer ratio
+// already applied). `via` records the path so the UI can narrate it.
+export interface EffectiveBalance {
+  // Best reachable amount in the TARGET program's currency (direct or post-transfer).
+  amount: number
+  // How that amount is reached: a direct holding, or a transfer from a bank currency.
+  via:
+    | { kind: 'direct'; program: string }
+    | { kind: 'transfer'; source: string; ratio: string }
+}
+
+// Given a target program (free-text — an award option's program, a destination's
+// bestProgram, …) and the user's balances, return the best direct-or-transferable
+// balance in the TARGET currency and the path used. The engine — not the LLM —
+// decides reachability and applies the ratio, so "you have" never lies.
+//
+// Resolution:
+//   1. DIRECT hold of the target program -> the full balance counts (kind direct).
+//   2. Else the best TRANSFER: any held source currency with a GRAPH edge to the
+//      target. partnerPoints = sourceBalance * edge.multiplier; the edge.minimum
+//      (when present) must be met. Ties broken by the largest resulting amount.
+// Returns undefined when the target is unknown or the user can't reach it.
+export function effectiveBalanceFor(
+  targetProgram: string,
+  balances: Balance[],
+): EffectiveBalance | undefined {
+  const target = canonicalizeProgram(targetProgram)
+  if (!target) return undefined
+
+  // 1. Direct hold wins outright — no transfer needed, the full balance counts.
+  let directAmount = 0
+  for (const b of balances) {
+    if (b.balance > 0 && balanceProgramId(b) === target.id) {
+      directAmount = Math.max(directAmount, b.balance)
+    }
+  }
+  if (directAmount > 0) {
+    return { amount: directAmount, via: { kind: 'direct', program: target.name } }
+  }
+
+  // 2. Best transfer path. Walk every held source currency's edges; if one reaches
+  //    the target, apply the multiplier (respecting any minimum) and keep the largest.
+  let best: EffectiveBalance | undefined
+  for (const b of balances) {
+    if (b.balance <= 0) continue
+    const srcId = balanceProgramId(b)
+    if (!srcId) continue
+    const edges = GRAPH[srcId]
+    if (!edges) continue
+    const edge = edges.find((e) => e.to === target.id)
+    if (!edge) continue
+    // Respect the per-transfer minimum: too small a balance can't move at all.
+    if (edge.minimum != null && b.balance < edge.minimum) continue
+    const amount = Math.floor(b.balance * edge.multiplier)
+    if (amount <= 0) continue
+    if (!best || amount > best.amount) {
+      // Label the source with the user's OWN balance string ("Amex MR"), not the
+      // canonical name — it's what they'll recognize on their card.
+      best = { amount, via: { kind: 'transfer', source: b.program, ratio: edge.ratio } }
+    }
+  }
+  return best
 }
 
 // --- SOURCES (verified 2026-06) ---------------------------------------------

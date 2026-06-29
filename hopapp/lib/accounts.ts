@@ -1,5 +1,6 @@
 import type { Balance } from '@/lib/types'
 import { deriveCode, getBalances } from '@/lib/awardwallet'
+import { canonicalizeProgram } from '@/lib/programs'
 import { supabaseAdmin } from '@/utils/supabase/admin'
 
 // Per-user balance sources persisted in Supabase via the service-role client
@@ -93,6 +94,25 @@ export async function getManualBalances(userId: string): Promise<ManualBalance[]
   } catch {
     return []
   }
+}
+
+// Find an existing manual program that resolves to the SAME canonical identity
+// as `program` (so "amex" and "Membership Rewards" collide on amex-mr). Falls
+// back to a normalized exact-name match when the input doesn't canonicalize.
+// Returns the matching row, or null if the user has no equivalent program yet.
+export async function findManualByProgram(
+  userId: string,
+  program: string,
+): Promise<ManualBalance | null> {
+  const target = canonicalizeProgram(program)
+  const rows = await getManualBalances(userId)
+  if (target) {
+    return rows.find((r) => canonicalizeProgram(r.program)?.id === target.id) ?? null
+  }
+  // No canonical match — compare on a loose normalized name so an exact retype
+  // of an unknown program still dedupes.
+  const norm = program.trim().toLowerCase()
+  return rows.find((r) => r.program.trim().toLowerCase() === norm) ?? null
 }
 
 // Add a program. Code is derived from the name when not supplied. Returns the

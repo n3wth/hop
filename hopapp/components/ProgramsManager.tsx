@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useId, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import type { Balance } from '@/lib/types'
 import type { ManualBalance } from '@/lib/accounts'
 import {
@@ -12,35 +12,18 @@ import {
   disconnectAwardWallet,
 } from '@/app/actions/accounts'
 import BrandIcon from './BrandIcon'
+import ProgramPicker from './ProgramPicker'
 import Icon from './Icon'
 
 // "Your programs" — manual-first balance management on /account.
 //
-// PRIMARY: a fast add form (program + balance, with a datalist of common
-// programs) and an editable list of saved programs. 20-seconds-to-value, no
+// PRIMARY: a fast add form (a smart program picker over the canonical registry +
+// balance) and an editable list of saved programs. 20-seconds-to-value, no
 // external signup. SECONDARY: an honest "Auto-sync with AwardWallet" option.
-// Flat, on-brand, no emojis. Server Actions do the writes; router.refresh()
-// re-runs the page so merged balances land everywhere.
-
-// Common loyalty programs for the add-form datalist. Names match the monogram
-// overrides in lib/awardwallet.ts so the brand chip resolves on save.
-const COMMON_PROGRAMS = [
-  'United MileagePlus',
-  'Delta SkyMiles',
-  'American AAdvantage',
-  'Alaska Atmos',
-  'Southwest Rapid Rewards',
-  'JetBlue TrueBlue',
-  'Amex Membership Rewards',
-  'Chase Ultimate Rewards',
-  'Capital One Miles',
-  'Bilt Rewards',
-  'World of Hyatt',
-  'Marriott Bonvoy',
-  'Hilton Honors',
-  'British Airways Avios',
-  'Air Canada Aeroplan',
-]
+// Flat, on-brand, no emojis. The picker (components/ProgramPicker.tsx) filters
+// lib/programs.ts by name+aliases and fills the canonical name; the server
+// canonicalizes + dedupes on save. router.refresh() re-runs the page so merged
+// balances land everywhere.
 
 export default function ProgramsManager({
   manual,
@@ -135,12 +118,7 @@ function ProgramRow({ program, first }: { program: ManualBalance; first: boolean
     return (
       <li className={`px-5 py-4 sm:px-6 ${first ? '' : 'border-t border-border'}`}>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            aria-label="Program"
-            className="flex-1 rounded-[10px] border border-border bg-paper px-3 py-2 text-[14px] font-semibold text-text outline-none transition-colors focus:border-brand"
-          />
+          <ProgramPicker value={name} onChange={setName} onEnterEmpty={save} disabled={pending} />
           <input
             value={balance}
             onChange={(e) => setBalance(e.target.value.replace(/[^0-9,]/g, ''))}
@@ -221,11 +199,12 @@ function ProgramRow({ program, first }: { program: ManualBalance; first: boolean
 
 function AddProgramForm({ hasRows }: { hasRows: boolean }) {
   const router = useRouter()
-  const listId = useId()
   const [program, setProgram] = useState('')
   const [balance, setBalance] = useState('')
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  // Confirmation when the server folded this into an existing program (dedupe).
+  const [note, setNote] = useState<string | null>(null)
 
   function add() {
     if (!program.trim()) {
@@ -237,11 +216,13 @@ function AddProgramForm({ hasRows }: { hasRows: boolean }) {
       return
     }
     setError(null)
+    setNote(null)
     start(async () => {
       const res = await addProgram(program, balance)
       if (res.ok) {
         setProgram('')
         setBalance('')
+        setNote(res.note ?? null)
         router.refresh()
       } else {
         setError(res.error ?? 'Could not add')
@@ -252,28 +233,23 @@ function AddProgramForm({ hasRows }: { hasRows: boolean }) {
   return (
     <div className={`px-5 py-4 sm:px-6 ${hasRows ? 'border-t border-border bg-sunk' : ''}`}>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <input
+        <ProgramPicker
           value={program}
-          list={listId}
-          onChange={(e) => {
-            setProgram(e.target.value)
+          onChange={(next) => {
+            setProgram(next)
             if (error) setError(null)
+            if (note) setNote(null)
           }}
-          placeholder="Program (e.g. United MileagePlus)"
-          aria-label="Program"
-          autoComplete="off"
-          className="flex-1 rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[14px] font-semibold text-text outline-none transition-colors focus:border-brand"
+          onEnterEmpty={add}
+          error={!!error}
+          disabled={pending}
         />
-        <datalist id={listId}>
-          {COMMON_PROGRAMS.map((p) => (
-            <option key={p} value={p} />
-          ))}
-        </datalist>
         <input
           value={balance}
           onChange={(e) => {
             setBalance(e.target.value.replace(/[^0-9,]/g, ''))
             if (error) setError(null)
+            if (note) setNote(null)
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
@@ -298,6 +274,7 @@ function AddProgramForm({ hasRows }: { hasRows: boolean }) {
         </button>
       </div>
       {error ? <p className="mt-1.5 text-[12.5px] font-medium text-weak">{error}</p> : null}
+      {note ? <p className="mt-1.5 text-[12.5px] font-medium text-brand">{note}</p> : null}
     </div>
   )
 }

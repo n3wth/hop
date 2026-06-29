@@ -5,6 +5,7 @@ import {
   sourcePointsFor,
   partnersOf,
   transferSourceIds,
+  effectiveBalanceFor,
   type TransferEdge,
 } from '../transfers'
 import type { Balance } from '@/lib/types'
@@ -132,6 +133,79 @@ describe('sourcePointsFor()', () => {
     const edge: TransferEdge = { to: 'united', ratio: '1:1', multiplier: 1 }
     expect(sourcePointsFor(edge, 0)).toBe(0)
     expect(sourcePointsFor(edge, -100)).toBe(0)
+  })
+})
+
+describe('effectiveBalanceFor()', () => {
+  it('returns undefined for a program the registry cannot resolve', () => {
+    const balances = [makeBalance('Amex MR', 'AX', 50000)]
+    expect(effectiveBalanceFor('Some Random Airline', balances)).toBeUndefined()
+  })
+
+  it('counts a DIRECT hold at full balance', () => {
+    // User holds Delta SkyMiles directly toward a Delta redemption.
+    const balances = [makeBalance('Delta SkyMiles', 'DL', 42000)]
+    const eff = effectiveBalanceFor('Delta SkyMiles', balances)
+    expect(eff).toEqual({
+      amount: 42000,
+      via: { kind: 'direct', program: 'Delta SkyMiles' },
+    })
+  })
+
+  it('prefers a DIRECT hold over a transfer path', () => {
+    // Holds Avios directly AND Amex MR (which transfers to Avios). Direct wins.
+    const balances = [
+      makeBalance('British Airways Avios', 'BA', 12000),
+      makeBalance('Amex MR', 'AX', 99000),
+    ]
+    const eff = effectiveBalanceFor('British Airways Avios', balances)
+    expect(eff?.via.kind).toBe('direct')
+    expect(eff?.amount).toBe(12000)
+  })
+
+  it('counts a TRANSFER-partner hold via Amex MR, ratio applied (1:1)', () => {
+    // No direct ANA; Amex MR transfers to ANA 1:1. amount = balance * 1.
+    const balances = [makeBalance('Amex MR', 'AX', 50000)]
+    const eff = effectiveBalanceFor('ANA Mileage Club', balances)
+    expect(eff).toEqual({
+      amount: 50000,
+      via: { kind: 'transfer', source: 'Amex MR', ratio: '1:1' },
+    })
+  })
+
+  it('applies a non-1:1 transfer ratio (Amex -> Hilton 1:2)', () => {
+    // Amex MR -> Hilton is 1:2 (multiplier 2): 50k Amex lands 100k Hilton.
+    const balances = [makeBalance('Amex MR', 'AX', 50000)]
+    const eff = effectiveBalanceFor('Hilton Honors', balances)
+    expect(eff?.via).toEqual({ kind: 'transfer', source: 'Amex MR', ratio: '1:2' })
+    expect(eff?.amount).toBe(100000)
+  })
+
+  it('keeps the LARGEST resulting amount across multiple transfer sources', () => {
+    // BA Avios is reachable from both Amex (50k) and Chase (30k), both 1:1.
+    const balances = [
+      makeBalance('Amex MR', 'AX', 50000),
+      makeBalance('Chase UR', 'UR', 30000),
+    ]
+    const eff = effectiveBalanceFor('British Airways Avios', balances)
+    expect(eff?.amount).toBe(50000)
+    expect(eff?.via).toEqual({ kind: 'transfer', source: 'Amex MR', ratio: '1:1' })
+  })
+
+  it('returns undefined when no held currency reaches the target', () => {
+    // American is only a Citi partner; an Amex-only holder can't reach it.
+    const balances = [makeBalance('Amex MR', 'AX', 50000)]
+    expect(effectiveBalanceFor('American AAdvantage', balances)).toBeUndefined()
+  })
+
+  it('returns undefined for empty balances', () => {
+    expect(effectiveBalanceFor('ANA Mileage Club', [])).toBeUndefined()
+  })
+
+  it('ignores a transfer source below the edge minimum', () => {
+    // Amex -> Qantas requires 500; 400 Amex can't move at all.
+    const balances = [makeBalance('Amex MR', 'AX', 400)]
+    expect(effectiveBalanceFor('Qantas Frequent Flyer', balances)).toBeUndefined()
   })
 })
 
