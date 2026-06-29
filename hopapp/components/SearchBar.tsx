@@ -166,7 +166,7 @@ function AirportField({
         <ul
           id={listId}
           role="listbox"
-          className="absolute left-0 top-[calc(100%+10px)] z-[80] max-h-[280px] w-[260px] overflow-auto rounded-xl border border-border bg-surface py-1 shadow-[0_12px_32px_-8px_rgba(20,32,31,0.22)]"
+          className="hop-popover hop-popover-origin-top-left absolute left-0 top-[calc(100%+10px)] z-[80] max-h-[280px] w-[260px] overflow-auto rounded-xl border border-border bg-surface py-1 shadow-[0_12px_32px_-8px_rgba(20,32,31,0.18)]"
         >
           {results.map((a, i) => (
             <li key={a.code} role="option" aria-selected={i === active}>
@@ -177,8 +177,8 @@ function AirportField({
                   e.preventDefault()
                   choose(a.code)
                 }}
-                className={`flex w-full items-baseline gap-2.5 px-3.5 py-2 text-left ${
-                  i === active ? 'bg-sunk' : 'bg-surface'
+                className={`hop-interactive flex w-full items-baseline gap-2.5 px-3.5 py-2 text-left ${
+                  i === active ? 'bg-sunk' : 'bg-surface hover:bg-sunk'
                 }`}
               >
                 <span className="w-9 flex-shrink-0 font-display text-[13px] font-bold tracking-tight text-brand">
@@ -269,11 +269,11 @@ function MonthGrid({
                 type="button"
                 disabled={disabled}
                 onClick={() => onPick(d)}
-                className={`grid h-8 w-8 cursor-pointer place-items-center rounded-full text-[12.5px] font-medium transition-colors ${
+                className={`hop-calendar-day grid h-8 w-8 cursor-pointer place-items-center rounded-full text-[12.5px] font-medium ${
                   disabled
-                    ? 'cursor-not-allowed text-text3/50 hover:bg-transparent'
+                    ? 'cursor-not-allowed text-text3/50'
                     : selected
-                      ? 'bg-brand font-semibold text-white'
+                      ? 'bg-brand font-semibold text-white shadow-[0_0_0_2px_rgba(13,110,110,0.2)]'
                       : inRange
                         ? 'bg-brand-light text-brand-deep hover:bg-brand-mint-deep'
                         : 'text-text hover:bg-brand-light hover:text-brand-deep'
@@ -330,7 +330,7 @@ function CalendarPop({ depart, ret, oneWay, onOneWayChange, onChange, children }
     <div ref={ref} className="relative">
       {children(open, () => setOpen((o) => !o))}
       {open && (
-        <div className="absolute left-0 top-[calc(100%+10px)] z-[60] rounded-xl border border-border bg-surface p-4">
+        <div className="hop-popover hop-popover-origin-top-left absolute left-0 top-[calc(100%+10px)] z-[60] rounded-xl border border-border bg-surface p-4 shadow-[0_12px_32px_-8px_rgba(20,32,31,0.18)]">
           {/* trip-type lives here (Google-Flights style), not in the search row */}
           <div className="mb-3 flex justify-center border-b border-hair pb-3">
             <TripTypeToggle oneWay={oneWay} onChange={onOneWayChange} />
@@ -340,7 +340,7 @@ function CalendarPop({ depart, ret, oneWay, onOneWayChange, onChange, children }
               type="button"
               aria-label="Previous month"
               onClick={() => shift(-1)}
-              className="grid h-7 w-7 place-items-center rounded-full text-text2 hover:bg-sunk"
+              className="hop-interactive hop-press grid h-7 w-7 place-items-center rounded-full text-text2 hover:bg-sunk"
             >
               <span className="-scale-x-100">
                 <Icon name="expand_more" size={18} className="-rotate-90" />
@@ -350,7 +350,7 @@ function CalendarPop({ depart, ret, oneWay, onOneWayChange, onChange, children }
               type="button"
               aria-label="Next month"
               onClick={() => shift(1)}
-              className="grid h-7 w-7 place-items-center rounded-full text-text2 hover:bg-sunk"
+              className="hop-interactive hop-press grid h-7 w-7 place-items-center rounded-full text-text2 hover:bg-sunk"
             >
               <Icon name="expand_more" size={18} className="-rotate-90" />
             </button>
@@ -417,7 +417,7 @@ function WhoPop({
     <div ref={ref} className="relative">
       {children(open, () => setOpen((o) => !o))}
       {open && (
-        <div className="absolute right-0 top-[calc(100%+10px)] z-[60] w-[220px] rounded-xl border border-border bg-surface p-4">
+        <div className="hop-popover hop-popover-origin-top-right absolute right-0 top-[calc(100%+10px)] z-[60] w-[220px] rounded-xl border border-border bg-surface p-4 shadow-[0_12px_32px_-8px_rgba(20,32,31,0.18)]">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-[13.5px] font-semibold text-text">Adults</div>
@@ -429,7 +429,7 @@ function WhoPop({
                 aria-label="Fewer adults"
                 disabled={adults <= 1}
                 onClick={() => onChange(Math.max(1, adults - 1))}
-                className="grid h-8 w-8 place-items-center rounded-full border border-border text-text disabled:cursor-not-allowed disabled:text-text3 enabled:hover:bg-sunk"
+                className="hop-stepper-btn hop-interactive grid h-8 w-8 place-items-center rounded-full border border-border text-text disabled:cursor-not-allowed disabled:text-text3 enabled:hover:bg-sunk enabled:hover:border-brand-mint-deep"
               >
                 <span className="text-[18px] leading-none">−</span>
               </button>
@@ -441,7 +441,7 @@ function WhoPop({
                 aria-label="More adults"
                 disabled={adults >= 9}
                 onClick={() => onChange(Math.min(9, adults + 1))}
-                className="grid h-8 w-8 place-items-center rounded-full border border-border text-text disabled:cursor-not-allowed disabled:text-text3 enabled:hover:bg-sunk"
+                className="hop-stepper-btn hop-interactive grid h-8 w-8 place-items-center rounded-full border border-border text-text disabled:cursor-not-allowed disabled:text-text3 enabled:hover:bg-sunk enabled:hover:border-brand-mint-deep"
               >
                 <span className="text-[18px] leading-none">+</span>
               </button>
@@ -501,8 +501,8 @@ function TripTypeToggle({
         type="button"
         aria-pressed={!oneWay}
         onClick={() => onChange(false)}
-        className={`rounded-full px-3.5 py-1.5 ${
-          !oneWay ? 'bg-brand text-white' : 'text-text2'
+        className={`hop-toggle-option rounded-full px-3.5 py-1.5 ${
+          !oneWay ? 'bg-brand text-white' : 'text-text2 hover:text-text'
         }`}
       >
         Round trip
@@ -511,8 +511,8 @@ function TripTypeToggle({
         type="button"
         aria-pressed={oneWay}
         onClick={() => onChange(true)}
-        className={`rounded-full px-3.5 py-1.5 ${
-          oneWay ? 'bg-brand text-white' : 'text-text2'
+        className={`hop-toggle-option rounded-full px-3.5 py-1.5 ${
+          oneWay ? 'bg-brand text-white' : 'text-text2 hover:text-text'
         }`}
       >
         One way
@@ -724,14 +724,6 @@ export function SearchForm({
         excludeCode={s.to}
         inputClassName="w-[112px] bg-transparent text-[15px] font-semibold text-text outline-none"
       />
-      <button
-        type="button"
-        aria-label="Swap origin and destination"
-        onClick={swapFromTo}
-        className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full text-brand transition-colors hover:bg-sunk"
-      >
-        <Icon name="swap_horiz" size={20} />
-      </button>
       <AirportField
         label="To"
         code={s.to}

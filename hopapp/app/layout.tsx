@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
-import { Bricolage_Grotesque, Fraunces } from 'next/font/google'
+import { Bricolage_Grotesque, Fraunces, Geist } from 'next/font/google'
+import { Suspense } from 'react'
 import {
   SITE_URL,
   SITE_NAME,
@@ -8,6 +9,8 @@ import {
   TEAL,
 } from '@/lib/seo'
 import { Analytics } from '@vercel/analytics/next'
+import { PostHogClientProvider } from '@/components/PostHogProvider'
+import { PostHogPageView } from '@/components/PostHogPageView'
 import './globals.css'
 
 // Display headlines: Bricolage Grotesque via next/font/google — self-hosted, preloaded.
@@ -25,6 +28,14 @@ const fraunces = Fraunces({
   weight: ['600', '700'],
   style: ['italic'],
   variable: '--font-wordmark',
+  display: 'swap',
+})
+
+// Body/UI: Geist Sans via next/font/google — self-hosted, preloaded, no external requests.
+const geistSans = Geist({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-geist-sans',
   display: 'swap',
 })
 
@@ -92,7 +103,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${bricolage.variable} ${fraunces.variable}`}>
+    <html lang="en" className={`${bricolage.variable} ${fraunces.variable} ${geistSans.variable}`}>
       <head>
         {/* Body/UI: General Sans (Fontshare — not on Google/next-font). */}
         <link rel="preconnect" href="https://api.fontshare.com" />
@@ -102,8 +113,12 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans">
-        {children}
-        <Analytics />
+        <PostHogClientProvider>
+          <Suspense fallback={null}>
+            <PostHogPageView />
+          </Suspense>
+          {children}
+        </PostHogClientProvider>
       </body>
     </html>
   )

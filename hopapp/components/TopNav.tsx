@@ -189,13 +189,13 @@ export default function TopNav({
           {hideSearch ? (
             <>
               <nav className="-ml-4 hidden items-center gap-1 md:flex sm:-ml-5 lg:-ml-7">
-                <a href="/search" className="rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hover:text-text">
+                <a href="/search" className="hop-nav-link rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hover:text-text">
                   Search
                 </a>
-                <a href="/deals" className="rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hover:text-text">
+                <a href="/deals" className="hop-nav-link rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hover:text-text">
                   Deals
                 </a>
-                <a href="/ask" className="rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hover:text-text">
+                <a href="/ask" className="hop-nav-link rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hover:text-text">
                   Ask
                 </a>
               </nav>
@@ -265,7 +265,7 @@ export default function TopNav({
             ) : (
               <a
                 href="/auth/login"
-                className="rounded-full border border-border bg-surface px-5 py-2.5 text-[14px] font-semibold text-text transition-colors hover:bg-sunk"
+                className="hop-interactive hop-press rounded-full border border-border bg-surface px-5 py-2.5 text-[14px] font-semibold text-text hover:bg-sunk hover:border-brand-mint-deep"
               >
                 Sign in
               </a>
@@ -324,13 +324,13 @@ export default function TopNav({
             </button>
           </div>
           <nav className="flex flex-col gap-1 p-4">
-            <a href="/search" onClick={() => setMenuOpen(false)} className="rounded-[12px] px-4 py-3 text-[16px] font-semibold text-text transition-colors hover:bg-sunk">
+            <a href="/search" onClick={() => setMenuOpen(false)} className="hop-menu-item hop-interactive rounded-[12px] px-4 py-3 text-[16px] font-semibold text-text hover:bg-sunk">
               Search
             </a>
-            <a href="/deals" onClick={() => setMenuOpen(false)} className="rounded-[12px] px-4 py-3 text-[16px] font-semibold text-text transition-colors hover:bg-sunk">
+            <a href="/deals" onClick={() => setMenuOpen(false)} className="hop-menu-item hop-interactive rounded-[12px] px-4 py-3 text-[16px] font-semibold text-text hover:bg-sunk">
               Deals
             </a>
-            <a href="/ask" onClick={() => setMenuOpen(false)} className="rounded-[12px] px-4 py-3 text-[16px] font-semibold text-text transition-colors hover:bg-sunk">
+            <a href="/ask" onClick={() => setMenuOpen(false)} className="hop-menu-item hop-interactive rounded-[12px] px-4 py-3 text-[16px] font-semibold text-text hover:bg-sunk">
               Ask
             </a>
           </nav>

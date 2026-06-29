@@ -60,7 +60,7 @@
   --ease-premium: cubic-bezier(0.2, 0, 0, 1);
 
   --font-display: var(--font-bricolage), "Bricolage Grotesque", system-ui, sans-serif;
-  --font-sans: "General Sans", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: var(--font-geist-sans), "Geist", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-wordmark-stack: var(--font-wordmark), "Fraunces", Georgia, serif;
 
   --spacing-sq: 76px;
@@ -96,17 +96,16 @@ body {
   background-attachment: fixed;
 }
 
-/* Global keyboard focus indicator (WCAG 2.4.7). Flat: outline only, no glow.
-   The app applies outline-none broadly, so this restores a consistent visible
-   ring for keyboard users across every interactive control. Mouse/touch focus
-   (:focus without :focus-visible) stays quiet. */
+/* Global keyboard focus indicator (WCAG 2.4.7). Uses box-shadow instead of
+   outline so the ring follows border-radius on rounded elements. Subtle:
+   a single 1.5px brand ring with no offset — visible but not shouting. */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: 2px;
-  border-radius: inherit;
+  outline: none;
+  box-shadow: 0 0 0 1.5px var(--color-brand);
 }
 :focus:not(:focus-visible) {
   outline: none;
+  box-shadow: none;
 }
 
 /* Bricolage Grotesque utility for headline type */
@@ -421,4 +420,101 @@ body {
     /* still full-height; nothing animates here, but keep parity with the
        project-wide reduced-motion contract. */
   }
+}
+
+/* ── Popover enter/exit animations ────────────────────────────────────────
+   Shared by AccountMenu, airport typeahead, calendar, WhoPop, and any future
+   popover. Scale+opacity enter (spring-like ease-out), fade-only exit so the
+   popover doesn't scale back down on close (it's removed from DOM). The
+   transform-origin is set per-popover via a utility class. */
+@keyframes hop-popover-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.hop-popover {
+  animation: hop-popover-enter 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Origin utilities — set the anchor point so the popover scales FROM the
+   trigger element. */
+.hop-popover-origin-top-right {
+  transform-origin: top right;
+}
+.hop-popover-origin-top-left {
+  transform-origin: top left;
+}
+.hop-popover-origin-top-center {
+  transform-origin: top center;
+}
+
+/* ── Interactive surface: hover → press → selected ───────────────────────
+   A three-tier interaction model applied across the app:
+   1. Rest: surface / paper / transparent
+   2. Hover: sunk (warm cream tint) — instant, no transition needed
+   3. Press/active: brand-light (mint tint) — instant feedback
+   4. Selected/active: brand-light with brand text
+
+   The `hop-interactive` class bundles the base transition so every
+   interactive surface gets consistent 120ms color transitions. */
+.hop-interactive {
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+/* Press state — a quick scale-down on :active for tactile feedback.
+   Subtle (0.97), transform-only, no layout shift. */
+.hop-press:active:not(:disabled) {
+  transform: scale(0.97);
+  transition: transform 80ms ease;
+}
+
+/* ── Menu item hover ────────────────────────────────────────────────────
+   Clean background-color transition only — no horizontal drift. */
+.hop-menu-item {
+  transition: background-color 120ms ease;
+}
+
+/* ── Calendar day interaction ────────────────────────────────────────────
+   Days get a gentle scale-up on hover (not just color change) so the
+   calendar feels tactile. The selected day gets a subtle ring. */
+.hop-calendar-day {
+  transition: background-color 120ms ease, color 120ms ease, transform 120ms var(--ease-premium), box-shadow 120ms ease;
+}
+.hop-calendar-day:hover:not(:disabled) {
+  transform: scale(1.12);
+}
+.hop-calendar-day:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+/* ── Toggle pill (round-trip / one-way) ──────────────────────────────────
+   The active pill slides via translateX on a pseudo-element, but as a
+   simpler approach we use a background-color transition + a subtle
+   text-shadow on the active label for depth. */
+.hop-toggle-option {
+  transition: background-color 180ms var(--ease-premium), color 180ms var(--ease-premium), box-shadow 180ms var(--ease-premium);
+}
+.hop-toggle-option[aria-pressed="true"] {
+  box-shadow: 0 1px 3px rgba(13, 110, 110, 0.18);
+}
+
+/* ── Stepper button (WhoPop +/-) ─────────────────────────────────────────
+   The +/- buttons get a satisfying press-down. */
+.hop-stepper-btn {
+  transition: background-color 120ms ease, border-color 120ms ease, transform 100ms var(--ease-premium);
+}
+.hop-stepper-btn:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+/* ── Nav link hover ──────────────────────────────────────────────────────
+   Clean color transition only — no underline. */
+.hop-nav-link {
+  transition: color 150ms ease;
 }

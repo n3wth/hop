@@ -2,6 +2,8 @@
 // left, utility links on the right. Flat, color-only hover, no movement. No
 // stacked columns, no copyright line — keeps it low and clean.
 
+import FeedbackSurvey from './FeedbackSurvey'
+
 const links: { href: string; label: string }[] = [
   { href: '/search', label: 'Search' },
   { href: '/deals', label: 'Deals' },
@@ -16,17 +18,20 @@ export default function SiteFooter() {
       <div className="leading-[1.5]">
         Your personal travel agent that reads your points and tells you the verdict.
       </div>
-      <nav aria-label="Footer" className="flex flex-wrap items-center gap-x-6 gap-y-2">
-        {links.map((link) => (
-          <a
-            key={link.label}
-            href={link.href}
-            className="text-text2 transition-colors hover:text-text"
-          >
-            {link.label}
-          </a>
-        ))}
-      </nav>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <FeedbackSurvey context="footer" compact />
+        <nav aria-label="Footer" className="flex flex-wrap items-center gap-x-6 gap-y-2">
+          {links.map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              className="text-text2 transition-colors hover:text-text"
+            >
+              {link.label}
+            </a>
+          ))}
+        </nav>
+      </div>
     </footer>
   )
 }
