@@ -9,6 +9,8 @@ import HeroSearch from '@/components/landing/HeroSearch'
 import SampleVerdict from '@/components/landing/SampleVerdict'
 import HowItWorks from '@/components/landing/HowItWorks'
 import ConnectBand from '@/components/landing/ConnectBand'
+import InspirationTeaser from '@/components/landing/InspirationTeaser'
+import SignedInHome from '@/components/landing/SignedInHome'
 
 // A sensible default search to seed the hero form. Picking it pre-fills the
 // fields so the very first action — a real search — is one tap away.
@@ -21,10 +23,15 @@ const SEED: SearchState = {
   oneWay: false,
 }
 
-// hop's landing — the front door. A bold editorial hero states the thesis
-// (decide points vs cash in one search), the search is the primary action, a
-// sample verdict shows the output, and an honest "how it works" earns trust.
-// Auth-aware: signed-out nudges to connect; signed-in greets with programs synced.
+// hop's home — auth-aware, two genuinely different experiences:
+//
+// SIGNED OUT → the marketing front door. Editorial hero + centered search,
+//   a sample verdict, a teaser of inspiration to sell the dream, how-it-works,
+//   and a connect-your-points CTA.
+//
+// SIGNED IN → a personalized dashboard (NOT the marketing page). Greets by name,
+//   surfaces where their actual points can take them, then search, concierge,
+//   and program management.
 export default async function Home() {
   const session = await auth0.getSession()
   const su = session?.user
@@ -37,31 +44,45 @@ export default async function Home() {
       }
     : null
 
-  // Program count for the signed-in greeting. Live AwardWallet when configured,
-  // mock fixtures otherwise — never crashes the landing if the call fails.
+  // Balances power both the program count and the personalized destinations.
+  // Live AwardWallet when configured, mock fixtures otherwise — never crashes
+  // the home if the upstream call fails.
   let programs = 0
+  let totalPoints = 0
   if (user) {
     const res = await getBalances().catch(() => ({ ok: false as const }))
-    programs = res.ok ? res.data.length : mockBalances().length
+    const balances = res.ok ? res.data : mockBalances()
+    programs = balances.length
+    totalPoints = balances.reduce((sum, b) => sum + b.balance, 0)
   }
 
+  const first = user?.name?.trim().split(' ')[0]
+
+  // ── SIGNED IN — personalized dashboard ───────────────────────────────────
+  if (user) {
+    return (
+      <AppShell user={user} pointsTotal={totalPoints} hideSearch>
+        <div className="mx-auto max-w-[1180px]">
+          <SignedInHome
+            first={first}
+            programs={programs}
+            totalPoints={totalPoints}
+            seed={SEED}
+          />
+        </div>
+        <div className="mx-auto max-w-[1180px]">
+          <SiteFooter />
+        </div>
+      </AppShell>
+    )
+  }
+
+  // ── SIGNED OUT — marketing front door ────────────────────────────────────
   return (
-    <AppShell
-      from="San Francisco"
-      to="New York"
-      dates="Jul 9 – 12"
-      who="1 adult"
-      fromCode={SEED.from}
-      toCode={SEED.to}
-      depart={SEED.depart}
-      ret={SEED.ret}
-      adults={SEED.adults}
-      user={user}
-      hideSearch
-    >
+    <AppShell user={null} hideSearch>
       <div className="mx-auto flex max-w-[1180px] flex-col gap-16 pt-6 sm:gap-20 sm:pt-12 lg:gap-24 lg:pt-16">
         {/* ── HERO ───────────────────────────────────────────────────────── */}
-        <section className="flex flex-col items-center pt-6 text-center sm:pt-10">
+        <section className="flex min-h-[58vh] flex-col items-center justify-center pt-4 text-center sm:min-h-[64vh] sm:pt-8">
           <span
             className="hop-rise inline-flex items-center gap-2 rounded-full border border-border bg-paper px-4 py-1.5 text-[12px] font-semibold uppercase tracking-[0.16em] text-brand"
             style={{ ['--hop-delay' as string]: '40ms' }}
@@ -111,11 +132,14 @@ export default async function Home() {
         {/* ── A TASTE OF THE OUTPUT ──────────────────────────────────────── */}
         <SampleVerdict />
 
+        {/* ── SELL THE DREAM ─────────────────────────────────────────────── */}
+        <InspirationTeaser />
+
         {/* ── HOW IT WORKS ───────────────────────────────────────────────── */}
         <HowItWorks />
 
-        {/* ── CONNECT / GREET ────────────────────────────────────────────── */}
-        <ConnectBand user={user} programs={programs} />
+        {/* ── CONNECT CTA ────────────────────────────────────────────────── */}
+        <ConnectBand user={null} programs={0} />
       </div>
 
       <div className="mx-auto max-w-[1180px]">
