@@ -82,6 +82,54 @@ export default function TopNav({
     return () => io.disconnect()
   }, [])
 
+  // The mobile search sheet is a full-viewport fixed z-[70] layer. It must never
+  // outlive the mobile context: once the viewport reaches md (where the sheet is
+  // display:none and the pill that opens it disappears) a stuck-open sheet would
+  // sit invisibly over the header and swallow every nav click. Close it on any
+  // resize to desktop, and on Escape, so it can never get stranded over the nav.
+  useEffect(() => {
+    if (!mobileOpen) return
+    const mq = window.matchMedia('(min-width: 768px)')
+    const close = () => setMobileOpen(false)
+    if (mq.matches) {
+      close()
+      return
+    }
+    mq.addEventListener('change', close)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      mq.removeEventListener('change', close)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [mobileOpen])
+
+  // The mobile search sheet is a full-viewport fixed z-[70] layer. It must never
+  // outlive the mobile context: once the viewport reaches md (where the sheet is
+  // display:none and the pill that opens it disappears) a stuck-open sheet would
+  // sit invisibly over the header and swallow every nav click. Close it on any
+  // resize to desktop, and on Escape, so it can never get stranded.
+  useEffect(() => {
+    if (!mobileOpen) return
+    const mq = window.matchMedia('(min-width: 768px)')
+    const close = () => setMobileOpen(false)
+    if (mq.matches) {
+      close()
+      return
+    }
+    mq.addEventListener('change', close)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      mq.removeEventListener('change', close)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [mobileOpen])
+
   const c = scrolled // collapsed
 
   return (
@@ -195,7 +243,12 @@ export default function TopNav({
 
       {/* MOBILE expanded search — solid sheet (no translucency), opens from the pill */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-[70] flex flex-col bg-bg md:hidden">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Edit search"
+          className="fixed inset-0 z-[70] flex flex-col bg-bg md:hidden"
+        >
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <span className="font-display text-[17px] font-bold text-text">Edit search</span>
             <button
