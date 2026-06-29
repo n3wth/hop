@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useRef, useState } from 'react'
 import Icon from './Icon'
-import Logo from './Logo'
+import FlyingBunny from './FlyingBunny'
 
 export interface TopNavProps {
   from?: string
@@ -23,7 +23,7 @@ const DUR = '280ms'
 const LogoLockup = memo(function LogoLockup() {
   return (
     <>
-      <Logo size={46} carve="var(--color-bg)" className="text-brand" />
+      <FlyingBunny size={46} carve="var(--color-bg)" />
       <span className="font-display text-[28px] font-bold tracking-[-0.04em] text-text">hop</span>
     </>
   )
@@ -122,10 +122,10 @@ export default function TopNav({
           transition: `height ${DUR} ${EASE}, background ${DUR} ${EASE}, border-color ${DUR} ${EASE}`,
         }}
       >
-        <div className="mx-auto flex h-full max-w-[1440px] items-center justify-between px-16">
-          {/* logo — pinned left, scales down on collapse */}
+        <div className="mx-auto flex h-full max-w-[1440px] items-center gap-9 px-16">
+          {/* logo — left, scales down on collapse */}
           <div
-            className="flex flex-shrink-0 items-center gap-3"
+            className="flex flex-shrink-0 items-center gap-[11px]"
             style={{
               transform: c ? 'scale(0.84)' : 'scale(1)',
               transformOrigin: 'left center',
@@ -135,8 +135,9 @@ export default function TopNav({
             <LogoLockup />
           </div>
 
-          {/* search — one element that contracts from full fields to a pill */}
-          <div className="flex flex-1 justify-center px-6">
+          {/* search — grouped next to the logo (not orphaned center); one
+              element that contracts from full fields to a pill */}
+          <div className="flex min-w-0 flex-shrink-0">
             <form
               className="flex items-center rounded-full border border-border bg-surface"
               style={{
@@ -192,7 +193,10 @@ export default function TopNav({
             </form>
           </div>
 
-          {/* account — pinned right, scales down on collapse */}
+          {/* spacer pushes the account to the far right — logo|search ——— avatar */}
+          <div className="flex-1" />
+
+          {/* account — right, scales down on collapse */}
           <div
             className="flex flex-shrink-0 items-center"
             style={{ transform: c ? 'scale(0.86)' : 'scale(1)', transformOrigin: 'right center', transition: `transform ${DUR} ${EASE}` }}

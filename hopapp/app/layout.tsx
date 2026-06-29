@@ -1,8 +1,27 @@
 import type { Metadata } from 'next'
+import { Bricolage_Grotesque, Fraunces } from 'next/font/google'
 import './globals.css'
 
+// Display headlines: Bricolage Grotesque via next/font/google — self-hosted, preloaded.
+const bricolage = Bricolage_Grotesque({
+  subsets: ['latin'],
+  weight: ['600', '700'],
+  variable: '--font-bricolage',
+  display: 'swap',
+})
+
+// Wordmark: Fraunces italic — modern characterful serif that leans forward,
+// echoing the leaping bunny's upward motion. One designed lockup, not icon+label.
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  weight: ['600', '700'],
+  style: ['italic'],
+  variable: '--font-wordmark',
+  display: 'swap',
+})
+
 export const metadata: Metadata = {
-  title: 'hop — the verdict',
+  title: 'hop',
   description: 'Points vs cash flight optimizer',
 }
 
@@ -12,18 +31,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${bricolage.variable} ${fraunces.variable}`}>
       <head>
-        {/* Display + wordmark: Bricolage Grotesque (Google Fonts — not on
-            Fontshare). Body/UI: General Sans (Fontshare). Loaded by <link>
-            since next/font has no Fontshare provider. */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        {/* Body/UI: General Sans (Fontshare — not on Google/next-font). */}
         <link rel="preconnect" href="https://api.fontshare.com" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&display=swap"
-          rel="stylesheet"
-        />
         <link
           href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap"
           rel="stylesheet"

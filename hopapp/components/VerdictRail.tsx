@@ -1,7 +1,10 @@
 import type { FlightOption, SearchResult } from '@/lib/types'
+import { POINTS_THRESHOLD_CPP } from '@/lib/search'
 import Icon from './Icon'
 import Logo from './Logo'
 import BrandIcon from './BrandIcon'
+import SeeTheMath from './SeeTheMath'
+import CountUp from './CountUp'
 
 export interface VerdictRailProps {
   result: SearchResult
@@ -42,12 +45,19 @@ export default function VerdictRail({ result }: VerdictRailProps) {
           Best value
         </span>
 
-        <h1 className="font-display text-[64px] font-semibold leading-[0.98] tracking-[-0.025em] text-white">
+        <h1 className="hop-rise font-display text-[64px] font-semibold leading-[0.98] tracking-[-0.025em] text-white" style={{ ['--hop-delay' as string]: '60ms' }}>
           {usingPoints ? (
             <>
               Use your <span className="text-[#ffe7b0]">{airlineShort}&nbsp;{unit}.</span>
               <br />
-              Save <span className="text-[#6ff0d2]">${fmt(save)}</span> vs cash.
+              Save{' '}
+              <CountUp
+                className="text-[#6ff0d2] tabular-nums"
+                value={save}
+                format={(n) => `$${Math.round(n).toLocaleString()}`}
+                delayMs={420}
+              />{' '}
+              vs cash.
             </>
           ) : (
             <>

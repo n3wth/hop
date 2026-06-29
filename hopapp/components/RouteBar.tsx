@@ -10,8 +10,21 @@ const CITY_NAMES: Record<string, string> = {
   LAX: 'Los Angeles',
 }
 
-// Editorial route line: origin/dest codes with a flight arc, plus a one-line
-// factual summary of the search. Pure read-out — every token informs the trip.
+// A right-aligned stat: bold value over a small caption, so the summary carries
+// real weight against the route codes instead of one thin run-on line.
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="flex flex-col items-end leading-none">
+      <span className="font-display text-[18px] font-semibold tabular-nums tracking-[-0.01em] text-text">
+        {value}
+      </span>
+      <span className="mt-[5px] text-[11px] uppercase tracking-[0.06em] text-text3">{label}</span>
+    </div>
+  )
+}
+
+// Editorial route line: origin/dest codes with a flight arc, balanced by a
+// weighted stat group on the right. Pure read-out — every token informs the trip.
 export default function RouteBar({ result }: RouteBarProps) {
   const { from, to, adults } = result.params
   const ways = result.options.length
@@ -41,11 +54,15 @@ export default function RouteBar({ result }: RouteBarProps) {
         </div>
       </div>
 
-      <div className="text-[13px] tracking-[0.04em] text-text2">
-        <b className="font-semibold text-text">
-          {ways} {ways === 1 ? 'way' : 'ways'} to fly
-        </b>{' '}
-        · {adults} {adults === 1 ? 'adult' : 'adults'} · round trip · scanned {programs} programs
+      {/* right-side stat group — structured + weighted to balance the route codes */}
+      <div className="flex items-center gap-7">
+        <Stat value={String(ways)} label={ways === 1 ? 'way to fly' : 'ways to fly'} />
+        <span className="h-9 w-px bg-border" />
+        <Stat value={String(adults)} label={adults === 1 ? 'traveler' : 'travelers'} />
+        <span className="h-9 w-px bg-border" />
+        <Stat value="RT" label="round trip" />
+        <span className="h-9 w-px bg-border" />
+        <Stat value={String(programs)} label="programs" />
       </div>
     </div>
   )

@@ -19,7 +19,7 @@ import { searchAwards } from '@/lib/seatsaero'
 import { getBalances } from '@/lib/awardwallet'
 import { mockCash, mockAwards, mockBalances } from '@/lib/mock'
 
-const POINTS_THRESHOLD_CPP = 2.5
+export const POINTS_THRESHOLD_CPP = 2.5
 
 function isAward(option: FlightOption): boolean {
   return option.kind === 'award' || option.kind === 'transfer'

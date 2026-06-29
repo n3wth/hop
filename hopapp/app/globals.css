@@ -52,8 +52,9 @@
   --radius-lg: 20px;
   --radius-hero: 28px;
 
-  --font-display: "Bricolage Grotesque", system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-bricolage), "Bricolage Grotesque", system-ui, sans-serif;
   --font-sans: "General Sans", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-wordmark-stack: var(--font-wordmark), "Fraunces", Georgia, serif;
 
   --spacing-sq: 76px;
 }
@@ -77,8 +78,112 @@ body {
   font-feature-settings: "ss01" on, "cv01" on;
 }
 
-/* Bricolage Grotesque utility for headline + wordmark type */
+/* Bricolage Grotesque utility for headline type */
 .font-display {
   font-family: var(--font-display);
   letter-spacing: -0.02em;
+}
+
+/* Wordmark: Fraunces italic, leaning forward to echo the bunny's leap. */
+.wordmark {
+  font-family: var(--font-wordmark-stack);
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ── Entrance micro-interactions ──────────────────────────────────────────
+   Restrained SOLID rise-in (no translucency — transform only), ~360ms ease-out,
+   with a small stagger. Premium, not bouncy. Runs once on initial load.
+   prefers-reduced-motion disables all of it below. */
+@keyframes hop-rise-in {
+  from {
+    transform: translateY(10px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.hop-rise {
+  animation: hop-rise-in 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--hop-delay, 0ms);
+}
+
+/* Bunny motion is scroll-driven (see FlyingBunny) — it lifts with scroll
+   momentum like gravity, then springs back to rest when scrolling stops.
+   Transform-only, no opacity. Not a continuous loop. */
+
+/* Value bars grow from 0 to their target width once, on load. The target width
+   is supplied inline as --hop-bar-w; the animation eases out to it. */
+@keyframes hop-bar-grow {
+  from {
+    width: 0;
+  }
+  to {
+    width: var(--hop-bar-w, 0%);
+  }
+}
+
+.hop-bar {
+  width: var(--hop-bar-w, 0%);
+  animation: hop-bar-grow 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--hop-delay, 120ms);
+}
+
+/* Expanding detail panel — height only (no opacity fade; nothing translucent).
+   CSS grid 0fr → 1fr so height is content-driven without measuring in JS. */
+.hop-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hop-collapse > * {
+  overflow: hidden;
+  min-height: 0;
+}
+.hop-collapse[data-open='true'] {
+  grid-template-rows: 1fr;
+}
+
+/* Shimmer for skeleton placeholders — a soft sheen sweeping across the warm
+   cream/sunk surface. Subtle, not garish. */
+@keyframes hop-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.hop-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-sunk);
+}
+.hop-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--color-bg) 60%, #fff) 55%,
+    transparent
+  );
+  animation: hop-shimmer 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hop-rise,
+  .hop-bar {
+    animation: none;
+    opacity: 1;
+    width: var(--hop-bar-w, 0%);
+  }
+  .hop-collapse {
+    transition: none;
+  }
+  .hop-skeleton::after {
+    animation: none;
+  }
 }

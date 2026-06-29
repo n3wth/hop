@@ -1,3 +1,6 @@
+'use client'
+
+import { useId, useState } from 'react'
 import type { CppTier, FlightOption } from '@/lib/types'
 import Icon from './Icon'
 import BrandIcon from './BrandIcon'
@@ -8,6 +11,8 @@ export interface ResultRowProps {
   rank?: number
   /** Max cpp across the alternatives, to scale value bars relatively. */
   maxCpp?: number
+  /** 0-based position, for the entrance stagger. */
+  index?: number
 }
 
 // Value chip color by tier — semantic, not all-teal.
@@ -53,9 +58,19 @@ function actionLabel(option: FlightOption): string {
   return 'Book with miles'
 }
 
+function durationText(min?: number): string {
+  if (min == null) return ''
+  return `${Math.floor(min / 60)}h ${min % 60}m`
+}
+
 // Editorial alternative card. Ranked, with a value bar so the best deal reads
-// instantly, a semantic value chip, and one factual assessment line.
-export default function ResultRow({ option, rank, maxCpp }: ResultRowProps) {
+// instantly, a semantic value chip, and one factual assessment line. Clicking
+// the card expands the full detail in place (itinerary, transfer steps, fare,
+// booking CTA) with a smooth height grow — no vertical lift.
+export default function ResultRow({ option, rank, maxCpp, index = 0 }: ResultRowProps) {
+  const [open, setOpen] = useState(false)
+  const panelId = useId()
+
   const isCash = option.kind === 'cash'
   const cpp = option.cpp
   const cppText = cpp != null ? `${cpp.toFixed(1)}¢` : null
@@ -71,69 +86,189 @@ export default function ResultRow({ option, rank, maxCpp }: ResultRowProps) {
 
   const unit = option.program?.toLowerCase().includes('southwest') ? 'pts' : 'mi'
 
+  const [routeFrom, routeTo] = option.route.split('→').map((s) => s.trim())
+  const origin = option.originCode ?? routeFrom
+  const dest = option.destCode ?? routeTo
+  const dur = durationText(option.durationMin)
+  const stopLabel =
+    option.stops === 0 || option.direct
+      ? 'nonstop'
+      : option.stops != null
+        ? `${option.stops} stop${option.stops > 1 ? 's' : ''}`
+        : ''
+
+  const detailFacts = [option.cabin, option.aircraft, option.fareBrand].filter(Boolean)
+  const transfers = option.transferFrom ?? []
+
   return (
     <article
-      className="flex min-h-[268px] flex-col rounded-[20px] border-[1.5px] border-border bg-paper px-[22px] pb-[22px] pt-6 transition-colors hover:border-brand-mint-deep"
+      className="hop-rise flex flex-col rounded-[20px] border-[1.5px] border-border bg-paper transition-colors hover:border-brand-mint-deep data-[open=true]:border-brand-mint-deep"
+      data-open={open}
+      style={{ ['--hop-delay' as string]: `${120 + index * 70}ms` }}
     >
-      <div className="flex items-start justify-between">
-        <BrandIcon code={option.airlineCode} name={option.airline} size={46} />
-        <span className="font-display text-[14px] font-semibold text-text3">
-          {rankLabel(option, rank)}
-        </span>
-      </div>
-
-      <div className="mt-[18px] font-display text-[19px] font-semibold leading-[1.1] text-text">
-        {option.airline}
-      </div>
-      <div className="mt-[5px] text-[12.5px] tracking-[0.02em] text-text3">
-        {option.direct ? 'Direct · ' : ''}
-        {option.route}
-        {option.durationMin != null
-          ? ` · ${Math.floor(option.durationMin / 60)}h ${option.durationMin % 60}m`
-          : ''}
-      </div>
-
-      <div className="mt-auto pt-[18px]">
-        <div className="font-display text-[30px] font-semibold leading-none tracking-[-0.01em] text-text">
-          {isCash
-            ? `$${option.cashPrice?.toLocaleString() ?? '—'}`
-            : option.miles?.toLocaleString() ?? '—'}
-          <small className="text-[14px] font-medium text-text3">
-            {isCash ? ' rt' : ` ${unit}`}
-          </small>
+      {/* summary — the whole top is the toggle */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls={panelId}
+        className="flex min-h-[268px] flex-1 cursor-pointer flex-col px-[22px] pb-[22px] pt-6 text-left"
+      >
+        <div className="flex items-start justify-between">
+          <BrandIcon code={option.airlineCode} name={option.airline} size={46} />
+          <span className="font-display text-[14px] font-semibold text-text3">
+            {rankLabel(option, rank)}
+          </span>
         </div>
 
-        <div className="mt-[10px] flex items-center gap-2">
-          {cppText ? (
-            <span className={`rounded-[7px] px-[9px] py-1 text-[11.5px] font-semibold ${CHIP[option.tier]}`}>
-              {cppText} / pt
-            </span>
-          ) : option.earn != null ? (
-            <span className="rounded-[7px] bg-sunk px-[9px] py-1 text-[11.5px] font-semibold text-text2">
-              earns ~${option.earn.toFixed(2)}
-            </span>
-          ) : null}
+        <div className="mt-[18px] font-display text-[19px] font-semibold leading-[1.1] text-text">
+          {option.airline}
+        </div>
+        <div className="mt-[5px] text-[12.5px] tracking-[0.02em] text-text3">
+          {option.direct ? 'Direct · ' : ''}
+          {option.route}
+          {option.durationMin != null ? ` · ${dur}` : ''}
         </div>
 
-        {/* value bar — visual ranking */}
-        <div className="mt-[14px] h-[6px] overflow-hidden rounded-full bg-border">
+        <div className="mt-auto pt-[18px]">
+          <div className="font-display text-[30px] font-semibold leading-none tracking-[-0.01em] text-text">
+            {isCash
+              ? `$${option.cashPrice?.toLocaleString() ?? '—'}`
+              : option.miles?.toLocaleString() ?? '—'}
+            <small className="text-[14px] font-medium text-text3">
+              {isCash ? ' rt' : ` ${unit}`}
+            </small>
+          </div>
+
+          <div className="mt-[10px] flex items-center gap-2">
+            {cppText ? (
+              <span className={`rounded-[7px] px-[9px] py-1 text-[11.5px] font-semibold ${CHIP[option.tier]}`}>
+                {cppText} / pt
+              </span>
+            ) : option.earn != null ? (
+              <span className="rounded-[7px] bg-sunk px-[9px] py-1 text-[11.5px] font-semibold text-text2">
+                earns ~${option.earn.toFixed(2)}
+              </span>
+            ) : null}
+          </div>
+
+          {/* value bar — visual ranking, grows from 0 on load */}
+          <div className="mt-[14px] h-[6px] overflow-hidden rounded-full bg-border">
+            <span
+              className="hop-bar block h-full rounded-full"
+              style={{
+                ['--hop-bar-w' as string]: `${barPct}%`,
+                ['--hop-delay' as string]: `${260 + index * 70}ms`,
+                background: barColor,
+              }}
+            />
+          </div>
+        </div>
+
+        <p className="mt-3 flex items-center justify-between gap-2 text-[12.5px] leading-[1.45] text-text2">
+          <span>{assessment(option)}</span>
           <span
-            className="block h-full rounded-full"
-            style={{ width: `${barPct}%`, background: barColor }}
-          />
+            className="flex-shrink-0 text-text3 transition-transform duration-300"
+            style={{ transform: open ? 'rotate(180deg)' : 'none' }}
+          >
+            <Icon name="expand_more" size={18} />
+          </span>
+        </p>
+      </button>
+
+      {/* expandable detail — smooth height grow, no vertical lift */}
+      <div className="hop-collapse px-[22px]" data-open={open} id={panelId} role="region">
+        <div>
+          <div className="border-t border-border pb-[20px] pt-[16px]">
+            {/* itinerary */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-shrink-0">
+                <div className="font-display text-[20px] font-semibold leading-none text-text">
+                  {origin}
+                </div>
+                {option.departTime ? (
+                  <div className="mt-[3px] text-[12px] text-text3">{option.departTime}</div>
+                ) : null}
+              </div>
+
+              <div className="flex flex-1 flex-col items-center gap-[2px]">
+                <div className="flex w-full items-center gap-[6px] text-brand">
+                  <span className="h-px flex-1 bg-border" />
+                  <Icon name="flight" size={16} className="rotate-90" />
+                  <span className="h-px flex-1 bg-border" />
+                </div>
+                <div className="text-[11px] text-text3">
+                  {dur}
+                  {dur && stopLabel ? ' · ' : ''}
+                  {stopLabel}
+                </div>
+              </div>
+
+              <div className="flex-shrink-0 text-right">
+                <div className="font-display text-[20px] font-semibold leading-none text-text">
+                  {dest}
+                </div>
+                {option.arriveTime ? (
+                  <div className="mt-[3px] text-[12px] text-text3">{option.arriveTime}</div>
+                ) : null}
+              </div>
+            </div>
+
+            {/* flight facts: flight no · operated by */}
+            {(option.flightNo || option.operatedBy) && (
+              <div className="mt-[14px] text-[12px] text-text2">
+                {option.flightNo}
+                {option.operatedBy ? ` · operated by ${option.operatedBy}` : ''}
+              </div>
+            )}
+
+            {/* cabin · aircraft · fare brand */}
+            {detailFacts.length > 0 && (
+              <div className="mt-[6px] flex flex-wrap gap-[6px]">
+                {detailFacts.map((f) => (
+                  <span
+                    key={f}
+                    className="rounded-[6px] bg-sunk px-[8px] py-[3px] text-[11px] font-medium text-text2"
+                  >
+                    {f}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* transfer steps */}
+            {option.kind === 'transfer' && transfers.length > 0 && (
+              <div className="mt-[14px] rounded-[10px] bg-brand-tint px-[12px] py-[10px]">
+                <div className="mb-[6px] text-[11px] font-semibold uppercase tracking-[0.08em] text-brand">
+                  How to book
+                </div>
+                <ol className="space-y-[5px] text-[12.5px] leading-[1.45] text-text2">
+                  {transfers.map((t, i) => (
+                    <li key={t.source} className="flex gap-[8px]">
+                      <span className="flex-shrink-0 font-semibold text-brand">{i + 1}.</span>
+                      <span>
+                        Transfer{option.miles != null ? ` ${option.miles.toLocaleString()}` : ''}{' '}
+                        <b className="font-semibold text-text">{t.source}</b>
+                        {t.ratio ? ` (${t.ratio})` : ''} →{' '}
+                        <b className="font-semibold text-text">{option.program}</b>, then book.
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {/* booking CTA */}
+            <a
+              href={option.bookingUrl}
+              onClick={(e) => e.stopPropagation()}
+              className="mt-[16px] flex w-full items-center justify-center gap-[6px] rounded-[11px] border-[1.5px] border-text bg-transparent px-3 py-[11px] text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
+            >
+              {actionLabel(option)}
+              <Icon name="swap_horiz" size={15} className={option.kind === 'transfer' ? '' : 'hidden'} />
+            </a>
+          </div>
         </div>
-      </div>
-
-      <p className="mt-3 text-[12.5px] leading-[1.45] text-text2">{assessment(option)}</p>
-
-      <div className="mt-4">
-        <a
-          href={option.bookingUrl}
-          className="flex w-full items-center justify-center gap-[6px] rounded-[11px] border-[1.5px] border-text bg-transparent px-3 py-[11px] text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
-        >
-          {actionLabel(option)}
-          <Icon name="swap_horiz" size={15} className="hidden" />
-        </a>
       </div>
     </article>
   )
