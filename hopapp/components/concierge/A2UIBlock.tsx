@@ -1,0 +1,376 @@
+'use client'
+
+// A2UIBlock — the CLIENT-OWNED renderer for the agent-to-UI spec (lib/a2ui.ts).
+// The agent emits a typed, CLOSED-union block; THIS file decides how each block
+// LOOKS. The model never sends HTML, classes, or colors — only structured fields
+// — so every block here is guaranteed on-brand (brand tokens only) and flat (no
+// shadows/gradients-as-decoration/glows; hover = color only). Economics shown on
+// verdict_card / compare come from `econ`, which the SERVER stamped from hop's
+// engine — never from the model.
+//
+// Unknown/invalid blocks never reach here: parseA2UI() drops them. As a final
+// belt-and-suspenders, the switch returns null for anything unexpected.
+
+import Icon from '../Icon'
+import type {
+  A2UIBlock,
+  A2UIEconomics,
+  VerdictCardBlock,
+  CompareBlock,
+  TimingBlock,
+  WeatherBlock,
+  WebNoteBlock,
+  PromptChipsBlock,
+  ProfileConfirmBlock,
+  ConnectGmailBlock,
+} from '@/lib/a2ui'
+
+// A destination block links into a real hop search seeded to that city.
+function searchHref(code: string): string {
+  return `/search?to=${encodeURIComponent(code)}`
+}
+
+// Render a list of blocks. Each block is self-contained + on-brand.
+export function A2UIBlocks({
+  blocks,
+  onChip,
+}: {
+  blocks: A2UIBlock[]
+  onChip?: (prompt: string) => void
+}) {
+  if (!blocks.length) return null
+  return (
+    <div className="flex flex-col gap-3">
+      {blocks.map((b, i) => (
+        <A2UIBlockView key={`${b.type}-${i}`} block={b} onChip={onChip} />
+      ))}
+    </div>
+  )
+}
+
+// Render ONE block. The switch is exhaustive over the closed union.
+export function A2UIBlockView({
+  block,
+  onChip,
+}: {
+  block: A2UIBlock
+  onChip?: (prompt: string) => void
+}) {
+  switch (block.type) {
+    case 'verdict_card':
+      return <VerdictCard b={block} />
+    case 'compare':
+      return <Compare b={block} />
+    case 'timing':
+      return <Timing b={block} />
+    case 'weather':
+      return <Weather b={block} />
+    case 'web_note':
+      return <WebNote b={block} />
+    case 'prompt_chips':
+      return <PromptChips b={block} onChip={onChip} />
+    case 'profile_confirm':
+      return <ProfileConfirm b={block} />
+    case 'connect_gmail':
+      return <ConnectGmail b={block} />
+    default:
+      // Never reached for a valid union member — defensive only.
+      return null
+  }
+}
+
+// ── Shared bits ──────────────────────────────────────────────────────────────
+
+// The one-glance verdict pill. Solid fill, brand tokens, no emoji.
+function VerdictPill({ verdict, cpp }: { verdict: A2UIEconomics['verdict']; cpp?: number }) {
+  const label =
+    verdict === 'points' ? 'Use points' : verdict === 'cash' ? 'Pay cash' : 'Save toward'
+  const bg = verdict === 'points' ? '#0d6e6e' : verdict === 'cash' ? '#5a5750' : '#9a6a2e'
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white"
+      style={{ background: bg }}
+    >
+      {label}
+      {verdict === 'points' && cpp != null ? (
+        <span className="tabular-nums">· {cpp.toFixed(1)}¢</span>
+      ) : null}
+    </span>
+  )
+}
+
+// The engine-computed facts row (points / you-have / value). Renders nothing if
+// econ is absent (destination not in the dataset) — degrades to reason-only.
+function EconFacts({ econ }: { econ?: A2UIEconomics }) {
+  if (!econ) return null
+  return (
+    <dl className="mt-3 flex flex-col gap-1.5 border-t border-border pt-3 text-[12px]">
+      <div className="flex items-baseline justify-between">
+        <dt className="text-text3">Points</dt>
+        <dd className="font-display font-semibold tabular-nums text-text">
+          {Math.round(econ.milesNeeded / 1000)}k
+          <span className="ml-1 font-sans font-normal text-text3">{econ.bestProgram}</span>
+        </dd>
+      </div>
+      {econ.youHave != null ? (
+        <div className="flex items-baseline justify-between">
+          <dt className="text-text3">You have</dt>
+          <dd
+            className={`font-display font-semibold tabular-nums ${econ.affordable ? 'text-brand' : 'text-text2'}`}
+          >
+            {econ.youHave.toLocaleString('en-US')}
+            {econ.affordable ? (
+              <span className="ml-1 font-sans font-normal text-brand">enough</span>
+            ) : null}
+          </dd>
+        </div>
+      ) : null}
+      {econ.cpp != null ? (
+        <div className="flex items-baseline justify-between">
+          <dt className="text-text3">Value</dt>
+          <dd className="font-display font-semibold tabular-nums text-text">
+            {econ.cpp.toFixed(1)}¢/pt
+          </dd>
+        </div>
+      ) : null}
+    </dl>
+  )
+}
+
+// ── verdict_card ─────────────────────────────────────────────────────────────
+
+function VerdictCard({ b }: { b: VerdictCardBlock }) {
+  const econ = b.econ
+  const city = econ?.city ?? b.code
+  return (
+    <a
+      href={searchHref(b.code)}
+      className="group flex flex-col rounded-[16px] border border-border bg-surface p-4 transition-colors hover:border-brand"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-baseline gap-2">
+          <span className="font-display text-[18px] font-semibold leading-tight text-text">
+            {city}
+          </span>
+          <span className="rounded-full bg-sunk px-1.5 py-0.5 font-display text-[10px] font-semibold uppercase tracking-[0.08em] text-text2">
+            {b.code}
+          </span>
+        </div>
+        {econ ? <VerdictPill verdict={econ.verdict} cpp={econ.cpp} /> : null}
+      </div>
+
+      <p className="mt-2 text-[13px] leading-[1.5] text-text2">{b.reason}</p>
+
+      {/* personalization chips — only present when the server kept them */}
+      {b.fitsDays != null || b.cabin ? (
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {b.fitsDays != null ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-sunk px-2 py-0.5 text-[11px] font-medium text-text2">
+              <Icon name="schedule" size={12} className="text-brand" />
+              Fits your {b.fitsDays} days
+            </span>
+          ) : null}
+          {b.cabin ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-sunk px-2 py-0.5 text-[11px] font-medium capitalize text-text2">
+              <Icon name="workspace_premium" size={12} className="text-brand" />
+              {b.cabin}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+
+      <EconFacts econ={econ} />
+
+      <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand">
+        See the search
+        <Icon name="swap_horiz" size={14} />
+      </span>
+    </a>
+  )
+}
+
+// ── compare ──────────────────────────────────────────────────────────────────
+
+function Compare({ b }: { b: CompareBlock }) {
+  return (
+    <div className="rounded-[16px] border border-border bg-surface p-4">
+      <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
+        <Icon name="swap_horiz" size={14} className="text-brand" />
+        Side by side
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <CompareSide side={b.left} />
+        <CompareSide side={b.right} />
+      </div>
+      {b.takeaway ? (
+        <p className="mt-3 border-t border-border pt-3 text-[13px] leading-[1.5] text-text2">
+          {b.takeaway}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+function CompareSide({ side }: { side: CompareBlock['left'] }) {
+  const econ = side.econ
+  const city = econ?.city ?? side.code
+  return (
+    <a
+      href={searchHref(side.code)}
+      className="group flex flex-col rounded-[12px] border border-border bg-paper p-3 transition-colors hover:border-brand"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-display text-[15px] font-semibold leading-tight text-text">{city}</span>
+        {econ ? <VerdictPill verdict={econ.verdict} cpp={econ.cpp} /> : null}
+      </div>
+      <p className="mt-1.5 text-[12px] leading-[1.5] text-text2">{side.reason}</p>
+      <EconFacts econ={econ} />
+    </a>
+  )
+}
+
+// ── timing ───────────────────────────────────────────────────────────────────
+
+function Timing({ b }: { b: TimingBlock }) {
+  const fill = (level: TimingBlock['weeks'][number]['level']) =>
+    level === 'low' ? 'var(--color-brand)' : level === 'mid' ? 'var(--color-brand-light)' : 'var(--color-hair)'
+  const labelFor = (level: TimingBlock['weeks'][number]['level']) =>
+    level === 'low' ? 'Cheapest' : level === 'mid' ? 'Mid' : 'Pricey'
+  return (
+    <div className="rounded-[16px] border border-border bg-surface p-4">
+      <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
+        <Icon name="schedule" size={14} className="text-brand" />
+        When to go · {b.place}
+      </div>
+      <div className="flex items-end gap-1.5">
+        {b.weeks.map((w, i) => {
+          const h = w.level === 'low' ? 18 : w.level === 'mid' ? 30 : 44
+          return (
+            <div key={`${w.label}-${i}`} className="flex flex-1 flex-col items-center gap-1.5">
+              <span
+                className="w-full rounded-[4px]"
+                style={{ height: h, background: fill(w.level) }}
+                title={labelFor(w.level)}
+                aria-label={`${w.label}: ${labelFor(w.level)}`}
+              />
+              <span className="text-center text-[10px] leading-tight text-text3">{w.label}</span>
+            </div>
+          )
+        })}
+      </div>
+      {b.note ? <p className="mt-3 text-[12px] leading-[1.5] text-text2">{b.note}</p> : null}
+    </div>
+  )
+}
+
+// ── weather ──────────────────────────────────────────────────────────────────
+
+function Weather({ b }: { b: WeatherBlock }) {
+  const hasTemp = b.highC != null || b.lowC != null
+  return (
+    <div className="rounded-[16px] border border-border bg-surface p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
+          <Icon name="info" size={14} className="text-brand" />
+          {b.place} · {b.month}
+        </div>
+        {hasTemp ? (
+          <span className="font-display text-[15px] font-semibold tabular-nums text-text">
+            {b.lowC != null ? `${Math.round(b.lowC)}°` : ''}
+            {b.lowC != null && b.highC != null ? '–' : ''}
+            {b.highC != null ? `${Math.round(b.highC)}°C` : ''}
+          </span>
+        ) : null}
+      </div>
+      <p className="mt-2 text-[13px] leading-[1.5] text-text2">{b.summary}</p>
+    </div>
+  )
+}
+
+// ── web_note ─────────────────────────────────────────────────────────────────
+
+function WebNote({ b }: { b: WebNoteBlock }) {
+  return (
+    <div className="rounded-[16px] border border-border bg-surface p-4">
+      <p className="text-[13px] leading-[1.55] text-text2">{b.text}</p>
+      <div className="mt-2 flex items-center gap-1.5 text-[11px] text-text3">
+        <Icon name="search" size={12} className="text-brand" />
+        {b.url ? (
+          <a
+            href={b.url}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="font-medium text-text3 underline-offset-2 transition-colors hover:text-brand hover:underline"
+          >
+            {b.source}
+          </a>
+        ) : (
+          <span className="font-medium">{b.source}</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── prompt_chips ─────────────────────────────────────────────────────────────
+
+function PromptChips({ b, onChip }: { b: PromptChipsBlock; onChip?: (p: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {b.chips.map((chip) => (
+        <button
+          key={chip}
+          type="button"
+          onClick={() => onChip?.(chip)}
+          disabled={!onChip}
+          className="rounded-full border border-border bg-surface px-3.5 py-1.5 text-[13px] font-medium text-text2 transition-colors hover:border-brand hover:text-brand disabled:cursor-default disabled:hover:border-border disabled:hover:text-text2"
+        >
+          {chip}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ── profile_confirm ──────────────────────────────────────────────────────────
+
+function ProfileConfirm({ b }: { b: ProfileConfirmBlock }) {
+  return (
+    <div className="flex items-center gap-2.5 rounded-[16px] border border-border bg-sunk p-3.5">
+      <Icon name="check_circle" size={18} className="flex-shrink-0 text-brand" />
+      <span className="text-[13px] leading-[1.5] text-text2">
+        <span className="font-semibold text-text">Got it.</span> {b.fact}
+      </span>
+    </div>
+  )
+}
+
+// ── connect_gmail ────────────────────────────────────────────────────────────
+
+function ConnectGmail({ b }: { b: ConnectGmailBlock }) {
+  return (
+    <div className="flex flex-col gap-2.5 rounded-[16px] border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start gap-2.5">
+        <Icon name="loyalty" size={18} className="mt-0.5 flex-shrink-0 text-brand" />
+        <span className="text-[13px] leading-[1.5] text-text2">
+          <span className="font-semibold text-text">Connect Gmail</span>
+          {b.reason ? ` ${b.reason}` : ' so hop can learn from your past trips.'}
+        </span>
+      </div>
+      <button
+        type="button"
+        disabled
+        aria-disabled
+        title="Coming soon"
+        className="flex flex-shrink-0 cursor-not-allowed items-center gap-1.5 self-start rounded-full border border-border bg-sunk px-3.5 py-1.5 text-[12px] font-semibold text-text3 sm:self-auto"
+      >
+        Connect
+        <span className="rounded-full bg-paper px-1.5 py-px text-[10px] uppercase tracking-wide text-text3">
+          Soon
+        </span>
+      </button>
+    </div>
+  )
+}
+
+export default A2UIBlocks

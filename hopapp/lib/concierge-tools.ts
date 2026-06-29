@@ -12,6 +12,9 @@ import { z } from 'zod'
 import { computeCpp, destinationByCode } from '@/lib/destinations'
 import { effectiveBalanceFor } from '@/lib/transfers'
 import type { Balance } from '@/lib/types'
+import { CABINS } from '@/lib/prefs-model'
+import { TRAVEL_PARTIES, validateProfile, type TravelProfile } from '@/lib/travel-profile-model'
+import { saveProfileFact } from '@/lib/travel-profile'
 
 // --- price_trip economics (DETERMINISTIC — hop's engine, never the LLM) -------
 
@@ -211,11 +214,57 @@ export async function fetchWeather(place: string, monthIndex: number): Promise<W
 
 // --- AI SDK tool definitions --------------------------------------------------
 
+// --- save_profile_fact (MEMORY — persists durable personal facts) ------------
+
+// Validation schema for the patch the model may write. Mirrors TravelProfile,
+// but EVERY field is re-clamped by validateProfile before it touches the DB — so
+// even though zod gates the shape, a model can never inject unknown fields or
+// out-of-range values. Tool input is intentionally permissive (optional) so the
+// model can record just the one fact it learned.
+const profilePatchSchema = z.object({
+  vacationDays: z.number().int().min(0).max(365).optional()
+    .describe('Annual vacation days the user has to spend.'),
+  travelParty: z.enum(TRAVEL_PARTIES).optional()
+    .describe('Who the user usually travels with.'),
+  cabin: z.enum(CABINS).optional()
+    .describe('Preferred cabin for long trips.'),
+  dietary: z.array(z.string()).optional()
+    .describe('Dietary needs, e.g. ["vegetarian"]. Added to existing list.'),
+  accessibility: z.array(z.string()).optional()
+    .describe('Accessibility needs, e.g. ["step-free"]. Added to existing list.'),
+  lovedDestinations: z.array(z.string()).optional()
+    .describe('Places the user loves. Added to existing list.'),
+  avoidedDestinations: z.array(z.string()).optional()
+    .describe('Places the user wants to avoid. Added to existing list.'),
+})
+
+// Build the save_profile_fact tool, scoped to a user. Returns the merged profile
+// so the model can confirm what it remembered. When `userId` is absent
+// (signed-out), the tool validates + echoes the patch but does NOT persist —
+// memory is session-only for anonymous users. Pure-ish: only side effect is the
+// DB upsert via saveProfileFact (which itself never throws).
+export function buildSaveProfileFactTool(userId: string | undefined) {
+  return tool({
+    description:
+      "Remember a DURABLE personal fact the user states about themselves for future trips (vacation days, who they travel with, preferred cabin, dietary or accessibility needs, destinations they love or want to avoid). Call this whenever the user reveals such a fact. Do NOT use it for one-off search constraints. Only record facts the user actually stated — never guess.",
+    inputSchema: profilePatchSchema,
+    execute: async (patch): Promise<{ saved: boolean; profile: TravelProfile }> => {
+      const clean = validateProfile(patch)
+      if (!userId) return { saved: false, profile: clean }
+      const profile = await saveProfileFact(userId, clean)
+      return { saved: true, profile }
+    },
+  })
+}
+
 // Build the concierge's tool set. `balances` is closed over so price_trip runs
 // the engine against the CURRENT user's points without the model ever seeing or
 // inventing them. web_search is a provider-executed gateway tool (Parallel).
-export function buildConciergeTools(balances: PriceTripBalance[]) {
+// `userId` (optional) enables the save_profile_fact memory tool — when signed
+// out, the tool still validates but persists nothing (session-only memory).
+export function buildConciergeTools(balances: PriceTripBalance[], userId?: string) {
   return {
+    save_profile_fact: buildSaveProfileFactTool(userId),
     // Live world-context: events, seasonality, why fares move at a given time.
     web_search: gateway.tools.parallelSearch({}),
 

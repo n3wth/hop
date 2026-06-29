@@ -4,6 +4,21 @@ import { useRef, useState } from 'react'
 import { Streamdown } from 'streamdown'
 import Icon from './Icon'
 import FlyingBunny from './FlyingBunny'
+import { A2UIBlocks } from './concierge/A2UIBlock'
+import { parseA2UI, type A2UIBlock } from '@/lib/a2ui'
+
+// Mirrors A2UI_SENTINEL in app/api/concierge/route.ts — the marker that splits
+// the streamed prose from the trailing, server-validated block envelope.
+const A2UI_SENTINEL = ' A2UI '
+
+// Split a streamed chunk into the visible prose and any (possibly partial)
+// trailing a2ui envelope JSON. Pure. The prose is everything before the FIRST
+// sentinel; the envelope is whatever follows it.
+function splitA2UI(raw: string): { prose: string; envelope: string } {
+  const i = raw.indexOf(A2UI_SENTINEL)
+  if (i === -1) return { prose: raw, envelope: '' }
+  return { prose: raw.slice(0, i), envelope: raw.slice(i + A2UI_SENTINEL.length) }
+}
 
 // --- API contract (mirrors app/api/concierge/route.ts) ----------------------
 
@@ -24,6 +39,9 @@ interface Suggestion {
 interface ConciergeResponse {
   answer: string
   suggestions?: Suggestion[]
+  // Server-validated, engine-reconciled generative-UI blocks (a2ui). Rendered by
+  // components/concierge/A2UIBlock. Economics inside come from hop's engine.
+  blocks?: A2UIBlock[]
 }
 
 // A lightweight, serializable photo record passed from the server page so the
@@ -69,6 +87,21 @@ function searchHref(code: string): string {
   return `/search?to=${encodeURIComponent(code)}`
 }
 
+// Parse the trailing envelope JSON into validated blocks. The envelope may be
+// PARTIAL mid-stream (the JSON not yet fully arrived) — JSON.parse throws then,
+// so we swallow it and wait for more. Once complete, parseA2UI re-validates the
+// closed union client-side too (defense in depth; the server already validated +
+// reconciled economics). Never throws.
+function blocksFromEnvelope(envelope: string): A2UIBlock[] | undefined {
+  const s = envelope.trim()
+  if (!s) return undefined
+  try {
+    return parseA2UI(JSON.parse(s))
+  } catch {
+    return undefined // partial JSON — keep prior blocks until it completes
+  }
+}
+
 // hop's concierge. LANDING state is an immersive, app-like front door: a warm
 // focal prompt, a prominent central input, evocative chips, and a backdrop of
 // real destination photography to set the mood. After an ask, the dark panel
@@ -87,6 +120,12 @@ export default function Concierge({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  // MULTI-TURN memory (client side). Prior turns of this conversation, sent to
+  // /api/concierge so the agent answers in context. For signed-in users the
+  // server also merges its PERSISTED thread; for signed-out users this ref is
+  // the only memory (session-only). Held in a ref so it survives re-renders
+  // without re-triggering the stream.
+  const threadRef = useRef<Array<{ role: 'user' | 'assistant'; content: string }>>([])
 
   // Before the first ask we show the immersive landing; once asked, we switch
   // to the results view (a compact ask bar + the answer).
@@ -105,6 +144,8 @@ export default function Concierge({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           question: trimmed,
+          // Prior turns so the agent has context (multi-turn memory).
+          messages: threadRef.current.length ? threadRef.current : undefined,
           context:
             totalPoints != null || homeAirport || programs?.length
               ? { totalPoints, programs, homeAirport }
@@ -116,23 +157,46 @@ export default function Concierge({
       // rich suggestion cards land in a later stage). Read it incrementally so
       // the answer types out live; fall back to a one-shot read if no stream.
       const reader = res.body?.getReader()
+      // The full stream is `prose + A2UI_SENTINEL + {"blocks":[...]}`. We type out
+      // the prose live and, once the envelope arrives, render validated blocks.
+      let proseAnswer = ''
       if (reader) {
         const decoder = new TextDecoder()
-        let answer = ''
+        let raw = ''
         setLoading(false) // first delta replaces the "thinking" state
         for (;;) {
           const { value, done } = await reader.read()
           if (done) break
-          answer += decoder.decode(value, { stream: true })
-          setResult({ answer })
+          raw += decoder.decode(value, { stream: true })
+          const { prose, envelope } = splitA2UI(raw)
+          proseAnswer = prose
+          // Keep prior blocks while the envelope JSON is still partial.
+          setResult((prev) => ({
+            answer: prose,
+            blocks: blocksFromEnvelope(envelope) ?? prev?.blocks,
+          }))
         }
-        answer += decoder.decode()
-        setResult({ answer })
+        raw += decoder.decode()
+        const { prose, envelope } = splitA2UI(raw)
+        proseAnswer = prose
+        setResult((prev) => ({
+          answer: prose,
+          blocks: blocksFromEnvelope(envelope) ?? prev?.blocks,
+        }))
       } else {
-        const answer = await res.text()
-        setResult({ answer })
+        const raw = await res.text()
+        const { prose, envelope } = splitA2UI(raw)
+        proseAnswer = prose
+        setResult({ answer: prose, blocks: blocksFromEnvelope(envelope) })
         setLoading(false)
       }
+      // Record this turn so the next ask carries context (multi-turn memory). Only
+      // the prose is threaded — the block spec is presentation, not conversation.
+      threadRef.current = [
+        ...threadRef.current,
+        { role: 'user', content: trimmed },
+        { role: 'assistant', content: proseAnswer },
+      ]
     } catch {
       setError(true)
       setLoading(false)
@@ -154,6 +218,9 @@ export default function Concierge({
     setError(false)
     setAsked('')
     setQuestion('')
+    // Start a fresh conversation: drop the client thread (signed-in users still
+    // have their persisted thread, surfaced on next load via the server merge).
+    threadRef.current = []
     inputRef.current?.focus()
   }
 
@@ -204,7 +271,13 @@ export default function Concierge({
       ) : error ? (
         <ErrorNote onRetry={() => void ask(asked)} />
       ) : result ? (
-        <Answer question={asked} result={result} photos={photos} onReset={reset} />
+        <Answer
+          question={asked}
+          result={result}
+          photos={photos}
+          onReset={reset}
+          onChip={(p) => void ask(p)}
+        />
       ) : null}
     </div>
   )
@@ -332,6 +405,28 @@ function Landing({
             </button>
           ))}
         </div>
+
+        {/* Gmail travel-history seam (placeholder). Connecting Gmail will let hop
+            learn from past trips; the parsing seam is stubbed (lib/travel-history.ts)
+            so this is a disabled "coming soon" affordance for now. */}
+        <div
+          className="hop-rise mt-4 flex justify-center"
+          style={{ ['--hop-delay' as string]: '300ms' }}
+        >
+          <button
+            type="button"
+            disabled
+            aria-disabled
+            title="Coming soon — let hop learn from your past trips"
+            className="flex cursor-not-allowed items-center gap-1.5 rounded-full border border-[#2c6f6b] bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-[#9fd6cd]"
+          >
+            <Icon name="loyalty" size={14} className="flex-shrink-0" />
+            Connect Gmail to learn from past trips
+            <span className="rounded-full bg-[#0a5757] px-1.5 py-px text-[10px] uppercase tracking-wide text-[#d8f1ec]">
+              Soon
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* inspiring thumbnail strip — sets the mood at the base of the panel */}
@@ -420,13 +515,16 @@ function Answer({
   result,
   photos,
   onReset,
+  onChip,
 }: {
   question: string
   result: ConciergeResponse
   photos: Record<string, ConciergePhoto>
   onReset: () => void
+  onChip: (p: string) => void
 }) {
   const suggestions = result.suggestions ?? []
+  const blocks = result.blocks ?? []
   return (
     <div className="flex flex-col gap-4">
       {question ? <AskedLine question={question} /> : null}
@@ -455,6 +553,15 @@ function Answer({
         >
           {result.answer}
         </Streamdown>
+
+        {/* AGENT-TO-UI: server-validated, engine-reconciled generative blocks.
+            What makes the answer feel tailored — verdict cards, comparisons,
+            timing, weather, cited notes, follow-up chips, profile confirms. */}
+        {blocks.length > 0 && (
+          <div className="mt-5">
+            <A2UIBlocks blocks={blocks} onChip={onChip} />
+          </div>
+        )}
 
         {suggestions.length > 0 && (
           <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">

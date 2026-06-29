@@ -15,17 +15,45 @@ interface HopDatabase {
           user_id: string
           home_airport: string | null
           travel_prefs: Json | null
+          // travel_profile: jsonb of the user's DURABLE personal travel facts
+          // (lib/travel-profile-model.TravelProfile). See ALTER TABLE in
+          // lib/travel-profile.ts notes.
+          travel_profile: Json | null
           updated_at: string | null
         }
         Insert: {
           user_id: string
           home_airport?: string | null
           travel_prefs?: Json | null
+          travel_profile?: Json | null
           updated_at?: string | null
         }
         Update: {
           home_airport?: string | null
           travel_prefs?: Json | null
+          travel_profile?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      hop_conversations: {
+        // One persisted concierge thread per user (latest wins). messages is a
+        // jsonb array of { role, content }. See CREATE TABLE in
+        // lib/conversations.ts notes.
+        Row: {
+          id: string
+          user_id: string
+          messages: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          messages?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          messages?: Json | null
           updated_at?: string | null
         }
         Relationships: []
