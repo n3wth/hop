@@ -113,21 +113,25 @@ function Notice({
   cta?: { href: string; label: string }
 }) {
   return (
-    <div className="mt-2 flex items-start gap-4 rounded-[16px] border border-border bg-surface px-6 py-7">
-      <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
-        <Icon name={icon} size={22} />
-      </span>
-      <div className="min-w-0">
-        <div className="font-display text-[17px] font-semibold text-text">{title}</div>
-        <p className="mt-1 max-w-[54ch] text-[14px] leading-[1.55] text-text2">{body}</p>
-        {cta ? (
-          <a
-            href={cta.href}
-            className="mt-4 inline-flex items-center gap-2 rounded-[11px] border-[1.5px] border-text bg-transparent px-4 py-[9px] text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
-          >
-            {cta.label}
-          </a>
-        ) : null}
+    <div className="mx-auto mt-2 max-w-[560px]">
+      <div className="flex items-start gap-4 rounded-[18px] border border-border bg-surface px-6 py-7 sm:px-7">
+        <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
+          <Icon name={icon} size={22} />
+        </span>
+        <div className="min-w-0">
+          <div className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
+            {title}
+          </div>
+          <p className="mt-1.5 max-w-[54ch] text-[14px] leading-[1.55] text-text2">{body}</p>
+          {cta ? (
+            <a
+              href={cta.href}
+              className="mt-5 inline-flex items-center gap-2 rounded-[11px] border-[1.5px] border-text bg-transparent px-4 py-[9px] text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
+            >
+              {cta.label}
+            </a>
+          ) : null}
+        </div>
       </div>
     </div>
   )

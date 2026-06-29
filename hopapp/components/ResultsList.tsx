@@ -39,7 +39,10 @@ export default function ResultsList({ result }: ResultsListProps) {
             className="mb-[2px] flex flex-shrink-0 items-center gap-1.5 text-[13px] font-semibold text-text2 transition-colors hover:text-text"
           >
             {expanded ? 'Collapse all' : 'Expand all'}
-            <span className="transition-transform duration-300" style={{ transform: expanded ? 'rotate(180deg)' : 'none' }}>
+            <span
+              className="transition-transform duration-300 motion-reduce:transition-none"
+              style={{ transform: expanded ? 'rotate(180deg)' : 'none' }}
+            >
               <Icon name="expand_more" size={16} />
             </span>
           </button>

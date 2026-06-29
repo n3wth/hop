@@ -86,7 +86,7 @@ export default async function AccountPage({
             </span>
             <div className="min-w-0 flex-1">
               <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9fe0d6]">
-                Signed in
+                Your account
               </div>
               <h1 className="mt-1 truncate font-display text-[26px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[30px]">
                 {name}
@@ -97,7 +97,7 @@ export default async function AccountPage({
             </div>
             <a
               href="/auth/logout"
-              className="inline-flex flex-shrink-0 items-center gap-2 self-start rounded-[12px] bg-white px-5 py-3 text-[14px] font-semibold text-[#073e3e] transition-colors hover:bg-[#fffdf6] sm:self-center"
+              className="inline-flex flex-shrink-0 items-center gap-2 self-start rounded-[12px] border border-white/25 px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-white/10 sm:self-center"
             >
               Log out
             </a>
@@ -106,16 +106,13 @@ export default async function AccountPage({
 
         {/* your programs — manual balances (primary) + optional AwardWallet sync */}
         <section className="mt-10">
-          <div className="flex items-center justify-between">
+          <div>
             <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
               Your programs
             </h2>
-            <a
-              href="/search"
-              className="text-[13px] font-semibold text-brand transition-colors hover:text-brand-deep"
-            >
-              New search
-            </a>
+            <p className="mt-1 text-[13.5px] text-text2">
+              The points and miles hop uses to tell you when to pay with points instead of cash.
+            </p>
           </div>
           {awNote ? (
             <p

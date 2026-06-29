@@ -51,13 +51,20 @@ export default async function LoginPage() {
           </div>
 
           {/* actions */}
-          <div className="mt-8 space-y-3">
+          <div className="mt-8">
             <a
               href="/auth/login"
               className="flex h-[52px] w-full items-center justify-center rounded-[14px] bg-brand text-[15px] font-semibold text-[#eafaf7] transition-colors hover:bg-brand-deep"
             >
               Continue
             </a>
+
+            <div className="my-5 flex items-center gap-3 text-[12px] text-text3">
+              <span className="h-px flex-1 bg-hair" aria-hidden />
+              New to hop?
+              <span className="h-px flex-1 bg-hair" aria-hidden />
+            </div>
+
             <a
               href="/auth/login?screen_hint=signup"
               className="flex h-[52px] w-full items-center justify-center rounded-[14px] border border-border bg-surface text-[15px] font-semibold text-text transition-colors hover:bg-sunk"
@@ -67,9 +74,16 @@ export default async function LoginPage() {
           </div>
 
           {/* legal-ish footnote */}
-          <p className="mx-auto mt-7 max-w-[36ch] text-center text-[12px] leading-[1.5] text-text3">
-            Secure sign-in handled by hop. We only use your account to save your
-            searches and trips.
+          <p className="mx-auto mt-8 max-w-[38ch] text-center text-[12px] leading-[1.6] text-text3">
+            Secure sign-in handled by hop. By continuing you agree to our{' '}
+            <Link href="/terms" className="text-text2 underline-offset-2 transition-colors hover:text-text hover:underline">
+              Terms
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy" className="text-text2 underline-offset-2 transition-colors hover:text-text hover:underline">
+              Privacy Policy
+            </Link>
+            .
           </p>
         </div>
       </div>

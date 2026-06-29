@@ -63,7 +63,7 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
   return (
     <section className="overflow-hidden rounded-[22px] text-[#eef3f1]" style={{ background: 'var(--color-text)' }}>
       {/* no restating header — the balances + total speak for themselves */}
-      <div className="px-4 pt-[10px] sm:px-[30px]">
+      <div className="px-4 pt-[14px] sm:px-[30px] sm:pt-[18px]">
         {balances.map((b, i) => {
           const active = isActive(b, pick)
           const pct = Math.max(5, Math.round((b.balance / max) * 100))
@@ -86,13 +86,16 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
                 </div>
               </div>
 
-              {/* value bar — desktop only (no room on mobile) */}
-              <div className="hidden h-[8px] overflow-hidden rounded-full bg-white/10 lg:block">
+              {/* value bar — desktop only (no room on mobile). Grows from 0 to its
+                  share on load (hop-bar), staggered down the list. Inactive bars
+                  stay quiet so the active mint bar reads as the one being spent. */}
+              <div className="hidden h-[8px] overflow-hidden rounded-full bg-white/[0.08] lg:block">
                 <span
-                  className="block h-full rounded-full"
+                  className="hop-bar block h-full rounded-full"
                   style={{
-                    width: `${pct}%`,
-                    background: active ? 'var(--color-mint-bright)' : 'rgba(255,255,255,0.32)',
+                    ['--hop-bar-w' as string]: `${pct}%`,
+                    ['--hop-delay' as string]: `${160 + i * 70}ms`,
+                    background: active ? 'var(--color-mint-bright)' : 'rgba(255,255,255,0.26)',
                   }}
                 />
               </div>

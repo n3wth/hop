@@ -74,6 +74,18 @@ function timeOf(iso?: string): string {
   })
 }
 
+function dateOf(iso?: string): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  })
+}
+
 const CARD_STYLES = {
   input: {
     default: {
@@ -84,10 +96,19 @@ const CARD_STYLES = {
       'font-size': '15px',
       padding: '11px 13px',
     },
-    focus: { border: '1.5px solid #0d6e6e', outline: 'none' },
+    focus: {
+      border: '1.5px solid #0d6e6e',
+      outline: 'none',
+      'box-shadow': '0 0 0 3px rgba(13, 110, 110, 0.12)',
+    },
   },
-  label: { color: '#4a5a58', 'font-size': '13px', 'font-weight': '600' },
-  inputErrorMessage: { color: '#b4242a', 'font-size': '12px' },
+  label: {
+    color: '#4a5a58',
+    'font-size': '12.5px',
+    'font-weight': '600',
+    'letter-spacing': '0.01em',
+  },
+  inputErrorMessage: { color: '#a8513a', 'font-size': '12px' },
 }
 
 export default function CheckoutForm({
@@ -227,16 +248,21 @@ export default function CheckoutForm({
         </p>
 
         {/* passengers */}
-        <div className="mt-8 space-y-6">
+        <div className="mt-8 space-y-5">
           {passengers.map((p, i) => (
             <section key={i} className="rounded-[18px] border border-border bg-surface p-6 sm:p-7">
-              <div className="mb-5 flex items-center gap-2.5">
-                <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-light text-[13px] font-semibold text-brand">
+              <div className="mb-6 flex items-center gap-3 border-b border-hair pb-4">
+                <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-brand-light text-[13px] font-semibold tabular-nums text-brand">
                   {i + 1}
                 </span>
-                <h2 className="font-display text-[17px] font-semibold text-text">
+                <h2 className="font-display text-[17px] font-semibold tracking-[-0.01em] text-text">
                   {count > 1 ? `Traveler ${i + 1}` : 'Traveler'}
                 </h2>
+                {i === 0 ? (
+                  <span className="ml-auto text-[12px] font-medium text-text3">
+                    As shown on passport
+                  </span>
+                ) : null}
               </div>
 
               <div className="grid grid-cols-12 gap-x-4 gap-y-5">
@@ -304,12 +330,18 @@ export default function CheckoutForm({
         </div>
 
         {/* payment */}
-        <section className="mt-6 rounded-[16px] border border-border bg-surface p-5 sm:p-6">
-          <div className="mb-4 flex items-center gap-2">
-            <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-light text-brand">
+        <section className="mt-5 rounded-[18px] border border-border bg-surface p-6 sm:p-7">
+          <div className="mb-6 flex items-center gap-3 border-b border-hair pb-4">
+            <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-brand-light text-brand">
               <Icon name="lock" size={15} />
             </span>
-            <h2 className="font-display text-[16px] font-semibold text-text">Payment</h2>
+            <h2 className="font-display text-[17px] font-semibold tracking-[-0.01em] text-text">
+              Payment
+            </h2>
+            <span className="ml-auto flex items-center gap-1.5 text-[12px] font-medium text-text3">
+              <Icon name="shield" size={13} className="text-brand" />
+              Encrypted
+            </span>
           </div>
 
           {clientKey ? (
@@ -331,25 +363,32 @@ export default function CheckoutForm({
               type="button"
               onClick={ensureClientKey}
               disabled={busy}
-              className="flex w-full items-center justify-center gap-2 rounded-[11px] border-[1.5px] border-border bg-paper px-4 py-3 text-[14px] font-semibold text-text2 transition-colors hover:border-brand-mint-deep disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-[11px] border-[1.5px] border-border bg-paper px-4 py-3.5 text-[14px] font-semibold text-text2 transition-colors hover:border-brand hover:text-text disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Icon name="credit_card" size={16} />
+              {stage === 'starting' ? (
+                <span className="h-[16px] w-[16px] animate-spin rounded-full border-2 border-text3/40 border-t-text2 motion-reduce:animate-none" />
+              ) : (
+                <Icon name="credit_card" size={16} />
+              )}
               {stage === 'starting' ? 'Loading secure form…' : 'Add card details'}
             </button>
           )}
 
-          <p className="mt-3 flex items-center gap-1.5 text-[12px] text-text3">
-            <Icon name="shield" size={13} />
-            Card details are handled directly by Duffel in a secure form. Test mode — no real charge.
+          <p className="mt-4 flex items-start gap-1.5 text-[12px] leading-[1.5] text-text3">
+            <Icon name="info" size={13} className="mt-px flex-shrink-0" />
+            <span>
+              Card details go straight to Duffel&apos;s PCI-compliant form — hop never sees your
+              number. Test mode, so no real charge.
+            </span>
           </p>
         </section>
 
         {error ? (
           <div
             role="alert"
-            className="mt-5 flex items-start gap-2 rounded-[12px] border border-[#e7c9c9] bg-[#fbf0f0] px-4 py-3 text-[13.5px] text-[#8a2b2b]"
+            className="mt-5 flex items-start gap-2.5 rounded-[12px] border border-weak/20 bg-weak-bg px-4 py-3.5 text-[13.5px] leading-[1.5] text-weak"
           >
-            <Icon name="error" size={16} className="mt-[1px] flex-shrink-0" />
+            <Icon name="error" size={16} className="mt-px flex-shrink-0" />
             <span>{error}</span>
           </div>
         ) : null}
@@ -358,21 +397,29 @@ export default function CheckoutForm({
           type="button"
           onClick={onPay}
           disabled={busy}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-[13px] bg-brand px-6 py-4 text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:opacity-70"
+          aria-busy={busy}
+          className="mt-6 flex w-full items-center justify-center gap-2.5 rounded-[13px] bg-brand px-6 py-4 text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:opacity-70"
         >
           {busy ? (
-            <span className="h-[18px] w-[18px] animate-spin rounded-full border-2 border-white/40 border-t-white" />
+            <span className="h-[18px] w-[18px] animate-spin rounded-full border-2 border-white/30 border-t-white motion-reduce:animate-none" />
           ) : (
-            <Icon name="check_circle" size={18} />
+            <Icon name="lock" size={17} />
           )}
           {busy ? stageLabel[stage] : `Pay ${total}`}
         </button>
+
+        <p className="mt-3 text-center text-[12px] text-text3">
+          By booking you agree to the airline&apos;s fare rules. Confirmation sent to your email.
+        </p>
       </div>
 
       {/* RIGHT — itinerary summary */}
       <aside className="lg:sticky lg:top-24 lg:self-start">
-        <div className="rounded-[18px] border border-border bg-paper p-5">
-          <div className="flex items-center gap-3 border-b border-border pb-4">
+        <div className="rounded-[18px] border border-border bg-paper p-6">
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-text3">
+            Your itinerary
+          </div>
+          <div className="flex items-center gap-3 border-b border-border pb-5 pt-3">
             <BrandIcon code={offer.airlineCode} name={offer.airline} size={40} />
             <div className="min-w-0">
               <div className="truncate text-[15px] font-semibold text-text">{offer.airline}</div>
@@ -380,37 +427,71 @@ export default function CheckoutForm({
             </div>
           </div>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-5 py-5">
             {offer.segments.map((s, i) => (
-              <div key={i} className="flex items-center justify-between gap-3 text-[13px]">
-                <div>
-                  <div className="font-display text-[16px] font-semibold leading-none text-text">
-                    {s.origin ?? '—'}
+              <div key={i}>
+                {dateOf(s.departingAt) ? (
+                  <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-text3">
+                    {dateOf(s.departingAt)}
                   </div>
-                  <div className="mt-1 text-[11px] text-text3">{timeOf(s.departingAt)}</div>
-                </div>
-                <div className="flex flex-1 flex-col items-center text-brand">
-                  <Icon name="flight" size={15} className="rotate-90" />
-                  {s.flightNumber ? (
-                    <span className="mt-0.5 text-[10px] text-text3">{s.flightNumber}</span>
-                  ) : null}
-                </div>
-                <div className="text-right">
-                  <div className="font-display text-[16px] font-semibold leading-none text-text">
-                    {s.destination ?? '—'}
+                ) : null}
+                <div className="flex items-center justify-between gap-3 text-[13px]">
+                  <div className="w-[64px]">
+                    <div className="font-display text-[17px] font-semibold leading-none tracking-[-0.01em] text-text">
+                      {s.origin ?? '—'}
+                    </div>
+                    <div className="mt-1.5 text-[11px] tabular-nums text-text3">
+                      {timeOf(s.departingAt)}
+                    </div>
                   </div>
-                  <div className="mt-1 text-[11px] text-text3">{timeOf(s.arrivingAt)}</div>
+                  <div className="flex flex-1 flex-col items-center">
+                    <div className="flex w-full items-center gap-1.5 text-brand">
+                      <span className="h-px flex-1 bg-border" />
+                      <Icon name="flight" size={14} className="rotate-90" />
+                      <span className="h-px flex-1 bg-border" />
+                    </div>
+                    {s.flightNumber ? (
+                      <span className="mt-1 text-[10px] tabular-nums text-text3">
+                        {s.flightNumber}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="w-[64px] text-right">
+                    <div className="font-display text-[17px] font-semibold leading-none tracking-[-0.01em] text-text">
+                      {s.destination ?? '—'}
+                    </div>
+                    <div className="mt-1.5 text-[11px] tabular-nums text-text3">
+                      {timeOf(s.arrivingAt)}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="flex items-center justify-between border-t border-border pt-4">
-            <span className="text-[13px] text-text2">Total</span>
-            <span className="font-display text-[22px] font-semibold tracking-[-0.01em] text-text">
-              {total}
-            </span>
+          <div className="space-y-2.5 border-t border-border pt-5">
+            <div className="flex items-center justify-between text-[13px]">
+              <span className="text-text2">
+                Fare{count > 1 ? ` × ${count} travelers` : ''}
+              </span>
+              <span className="tabular-nums text-text2">{total}</span>
+            </div>
+            <div className="flex items-center justify-between text-[13px]">
+              <span className="text-text2">Taxes &amp; fees</span>
+              <span className="text-text3">Included</span>
+            </div>
+            <div className="flex items-center justify-between border-t border-hair pt-3">
+              <span className="text-[13px] font-semibold text-text">Total due</span>
+              <span className="font-display text-[22px] font-semibold tabular-nums tracking-[-0.01em] text-text">
+                {total}
+              </span>
+            </div>
           </div>
+
+          <p className="mt-5 flex items-center justify-center gap-1.5 border-t border-hair pt-4 text-[11.5px] font-medium text-text3">
+            <Icon name="lock" size={12} className="text-brand" />
+            Secure checkout
+          </p>
         </div>
       </aside>
     </div>
@@ -430,7 +511,7 @@ function Field({
 }) {
   return (
     <label className={`flex flex-col gap-1.5 ${className ?? ''}`}>
-      <span className="text-[12.5px] font-semibold text-text2">{label}</span>
+      <span className="text-[12.5px] font-semibold tracking-[0.01em] text-text2">{label}</span>
       {children}
     </label>
   )
@@ -456,7 +537,7 @@ function Input({
       placeholder={placeholder}
       autoComplete={autoComplete}
       onChange={(e) => onChange(e.target.value)}
-      className="rounded-[11px] border-[1.5px] border-border bg-paper px-3 py-[10px] text-[14.5px] text-text outline-none transition-colors focus:border-brand"
+      className="rounded-[11px] border-[1.5px] border-border bg-paper px-3 py-[10px] text-[14.5px] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand focus:ring-[3px] focus:ring-brand/15"
     />
   )
 }
@@ -477,7 +558,7 @@ function Select({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full cursor-pointer appearance-none rounded-[11px] border-[1.5px] border-border bg-paper px-3 py-[10px] pr-9 text-[14.5px] text-text outline-none transition-colors focus:border-brand"
+        className="w-full cursor-pointer appearance-none rounded-[11px] border-[1.5px] border-border bg-paper px-3 py-[10px] pr-9 text-[14.5px] text-text outline-none transition-colors focus:border-brand focus:ring-[3px] focus:ring-brand/15"
       >
         {options.map(([v, label]) => (
           <option key={v} value={v}>

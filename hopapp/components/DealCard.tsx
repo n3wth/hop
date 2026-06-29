@@ -54,7 +54,7 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
   return (
     <a
       href={href}
-      className="group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-colors hover:border-brand"
+      className="group flex min-w-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-colors hover:border-brand"
     >
       {/* ── photo header ─────────────────────────────────────────────────── */}
       <div
@@ -62,15 +62,13 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
         style={{ background: 'var(--color-brand-deep)' }}
       >
         {photo ? (
-          // ~360-400px card in a 3-up grid — the small thumb is sized right; the
-          // 1080px regular ships ~3-4x the bytes per card for no visible gain.
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={photo.thumb}
             alt={photo.alt}
-            width={400}
-            height={250}
             loading="lazy"
+            width={640}
+            height={400}
             className="h-full w-full object-cover"
           />
         ) : (
@@ -89,11 +87,12 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
           }}
         />
 
-        {/* best-find ribbon */}
+        {/* best-find ribbon — light surface w/ brand text: reads on photo + on
+            the dark fallback, and stays distinct from the gold cpp chip */}
         {isTopFind && (
           <span
-            className="absolute left-3 top-3 inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em]"
-            style={{ background: 'var(--color-gold-soft)', color: 'var(--color-amber)' }}
+            className="absolute left-3 top-3 inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]"
+            style={{ background: 'var(--color-paper)', color: 'var(--color-brand)' }}
           >
             Best find
           </span>
@@ -101,21 +100,21 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
 
         {/* cpp chip */}
         <span
-          className="absolute right-3 top-3 flex flex-col items-end rounded-[12px] border px-2.5 py-1.5 text-right"
+          className="absolute right-3 top-3 flex items-baseline gap-1 rounded-full border px-3 py-1.5"
           style={{ background: chip.bg, borderColor: chip.bd }}
           title="cents per point — how much value each mile pulls"
         >
           <span
-            className="font-display text-[18px] font-semibold leading-none tabular-nums"
+            className="font-display text-[17px] font-semibold leading-none tabular-nums"
             style={{ color: chip.fg }}
           >
             {value?.toFixed(1)}
           </span>
           <span
-            className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.08em]"
+            className="text-[10px] font-semibold uppercase tracking-[0.06em]"
             style={{ color: chip.fg }}
           >
-            cents / pt
+            cpp
           </span>
         </span>
 
@@ -137,40 +136,39 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
       </div>
 
       {/* ── body ─────────────────────────────────────────────────────────── */}
-      <div className="flex flex-1 flex-col p-5 sm:p-5">
+      <div className="flex flex-1 flex-col p-5">
         <p className="text-[14px] leading-snug text-text2">{dest.vibe}</p>
-        <p className="mt-1 text-[13px] font-medium text-text3">from {fromCode}</p>
 
         {/* the economics: miles needed, cash you'd skip, best program */}
-        <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-hair pt-4">
+        <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3.5 border-t border-hair pt-4">
           <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-text3">Miles</div>
-            <div className="mt-0.5 font-display text-[18px] font-semibold tabular-nums text-text">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">Miles</div>
+            <div className="mt-1 font-display text-[19px] font-semibold leading-none tabular-nums text-text">
               {compactMiles(dest.typicalAwardMiles)}
             </div>
           </div>
           <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-text3">vs. cash</div>
-            <div className="mt-0.5 font-display text-[18px] font-semibold tabular-nums text-text">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">vs. cash</div>
+            <div className="mt-1 font-display text-[19px] font-semibold leading-none tabular-nums text-text">
               {cashCompare}
             </div>
           </div>
           <div className="col-span-2">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-text3">Book it with</div>
-            <div className="mt-0.5 truncate text-[14px] font-semibold text-brand">{dest.bestProgram}</div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">Book it with</div>
+            <div className="mt-1 truncate text-[14px] font-semibold leading-tight text-brand">{dest.bestProgram}</div>
           </div>
         </div>
 
-        {/* CTA */}
-        <div className="mt-auto flex items-center justify-between pt-5">
+        {/* CTA — single confident action; arrow nudges via color on hover */}
+        <div className="mt-auto flex items-center justify-between gap-3 pt-5">
           <span className="text-[14px] font-semibold text-text transition-colors group-hover:text-brand">
-            See the math
+            from {fromCode} · See the math
           </span>
           <span
             aria-hidden
-            className="text-[14px] font-semibold text-text3 transition-colors group-hover:text-brand"
+            className="flex-shrink-0 text-[15px] font-semibold text-text3 transition-colors group-hover:text-brand"
           >
-            Search this →
+            →
           </span>
         </div>
 

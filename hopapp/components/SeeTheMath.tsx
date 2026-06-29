@@ -41,11 +41,11 @@ export default function SeeTheMath({ pick, cheapestCash, threshold, unit }: SeeT
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls={panelId}
-        className="inline-flex items-center gap-[8px] rounded-[14px] border-[1.5px] border-[#bfe9e1]/40 px-7 py-4 text-[15px] font-medium text-[#bfe9e1] transition-colors hover:border-[#bfe9e1] hover:text-white"
+        className="inline-flex items-center gap-[8px] rounded-[14px] border-[1.5px] border-white/20 px-7 py-4 text-[15px] font-medium text-[#bfe9e1] transition-colors hover:border-white/45 hover:text-white"
       >
         See the math
         <span
-          className="transition-transform duration-300"
+          className="transition-transform duration-300 motion-reduce:transition-none"
           style={{ transform: open ? 'rotate(180deg)' : 'none' }}
         >
           <Icon name="expand_more" size={18} />

@@ -151,12 +151,25 @@ export default function VerdictRail({ result, destPhoto }: VerdictRailProps) {
               alt={destPhoto.alt}
               className="pointer-events-none absolute inset-0 h-full w-full object-cover"
             />
+            {/* top scrim — a whisper of brand-ink at the very top edge so the
+                photo settles into the teal field instead of reading as a pasted
+                rectangle. Integration, not decoration; the upper photo stays vivid. */}
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2"
+              className="pointer-events-none absolute inset-x-0 top-0 h-[22%]"
               style={{
                 background:
-                  'linear-gradient(to bottom, rgba(7,62,62,0) 0%, rgba(7,62,62,0.55) 55%, rgba(7,62,62,0.85) 100%)',
+                  'linear-gradient(to bottom, rgba(7,62,62,0.42) 0%, rgba(7,62,62,0) 100%)',
+              }}
+            />
+            {/* bottom scrim — sits under the boarding pass for legibility. Anchored
+                deep enough that the pass reads with authority against the photo. */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-[56%]"
+              style={{
+                background:
+                  'linear-gradient(to bottom, rgba(7,62,62,0) 0%, rgba(7,62,62,0.58) 52%, rgba(7,62,62,0.9) 100%)',
               }}
             />
           </>

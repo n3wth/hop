@@ -86,7 +86,9 @@ export default function ResultRow({ option, rank, maxCpp, index = 0, open, onTog
     : cpp != null && maxCpp
       ? Math.max(10, Math.round((cpp / maxCpp) * 100))
       : 0
-  const barColor = isCash ? 'var(--color-text2)' : BAR[option.tier]
+  // Cash has no cpp to rank, so its bar reads as a neutral, recessive baseline
+  // (ink-faint) rather than a heavy dark strip that competes with real value.
+  const barColor = isCash ? 'var(--color-text3)' : BAR[option.tier]
 
   const unit = option.program?.toLowerCase().includes('southwest') ? 'pts' : 'mi'
 
@@ -120,7 +122,7 @@ export default function ResultRow({ option, rank, maxCpp, index = 0, open, onTog
       >
         <div className="flex items-start justify-between">
           <BrandIcon code={option.airlineCode} name={option.airline} size={46} />
-          <span className="font-display text-[14px] font-semibold text-text3">
+          <span className="mt-[3px] font-display text-[12px] font-semibold uppercase tracking-[0.06em] text-text3">
             {rankLabel(option, rank)}
           </span>
         </div>
@@ -172,15 +174,21 @@ export default function ResultRow({ option, rank, maxCpp, index = 0, open, onTog
           </div>
         </div>
 
-        <p className="mt-3 flex items-center justify-between gap-2 text-[12.5px] leading-[1.45] text-text2">
-          <span>{assessment(option)}</span>
+        <div className="mt-[14px] flex items-center justify-between gap-3 border-t border-hair pt-[12px]">
+          <span className="text-[12.5px] leading-[1.45] text-text2">{assessment(option)}</span>
           <span
-            className="flex-shrink-0 text-text3 transition-transform duration-300"
-            style={{ transform: open ? 'rotate(180deg)' : 'none' }}
+            aria-hidden
+            className="flex flex-shrink-0 items-center gap-[3px] text-[11px] font-semibold text-text3"
           >
-            <Icon name="expand_more" size={18} />
+            {open ? 'Less' : 'Details'}
+            <span
+              className="transition-transform duration-300 motion-reduce:transition-none"
+              style={{ transform: open ? 'rotate(180deg)' : 'none' }}
+            >
+              <Icon name="expand_more" size={16} />
+            </span>
           </span>
-        </p>
+        </div>
       </button>
 
       {/* expandable detail — smooth height grow, no vertical lift */}

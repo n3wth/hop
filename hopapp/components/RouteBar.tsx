@@ -54,11 +54,11 @@ export default function RouteBar({ result }: RouteBarProps) {
       {/* right-side stat group — structured + weighted to balance the route codes */}
       <div className="flex items-center gap-7">
         <Stat value={String(ways)} label={ways === 1 ? 'way to fly' : 'ways to fly'} />
-        <span className="h-9 w-px bg-border" />
+        <span className="h-9 w-px bg-hair" />
         <Stat value={String(adults)} label={adults === 1 ? 'traveler' : 'travelers'} />
-        <span className="h-9 w-px bg-border" />
+        <span className="h-9 w-px bg-hair" />
         <Stat value={oneWay ? 'OW' : 'RT'} label={oneWay ? 'one way' : 'round trip'} />
-        <span className="h-9 w-px bg-border" />
+        <span className="h-9 w-px bg-hair" />
         <Stat value={String(programs)} label="programs" />
       </div>
     </div>

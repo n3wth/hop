@@ -157,7 +157,7 @@ function ProgramRow({ program, first }: { program: ManualBalance; first: boolean
 
   return (
     <li
-      className={`group grid grid-cols-[40px_1fr_auto] items-center gap-4 px-5 py-4 sm:px-6 ${
+      className={`grid grid-cols-[40px_1fr_auto] items-center gap-4 px-5 py-4 sm:px-6 ${
         first ? '' : 'border-t border-border'
       }`}
     >
@@ -168,11 +168,11 @@ function ProgramRow({ program, first }: { program: ManualBalance; first: boolean
           <div className="mt-[2px] truncate text-[12.5px] text-text3">{program.status}</div>
         ) : null}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 sm:gap-4">
         <span className="font-display text-[15px] font-semibold tabular-nums text-text">
           {program.balance.toLocaleString()}
         </span>
-        <span className="flex items-center gap-0.5">
+        <span className="flex items-center gap-0.5 border-l border-hair pl-2 sm:pl-3">
           <button
             type="button"
             onClick={() => setEditing(true)}
@@ -189,7 +189,7 @@ function ProgramRow({ program, first }: { program: ManualBalance; first: boolean
             aria-label={`Remove ${program.program}`}
             className="rounded-[8px] px-2 py-1.5 text-[12.5px] font-semibold text-text3 transition-colors hover:text-weak disabled:opacity-60"
           >
-            {pending ? '…' : 'Remove'}
+            {pending ? 'Removing…' : 'Remove'}
           </button>
         </span>
       </div>
@@ -316,10 +316,10 @@ function AwardWalletSection({
     return (
       <section className="overflow-hidden rounded-[16px] border border-border bg-surface">
         <div className="flex items-center justify-between gap-3 px-5 py-3.5 sm:px-6">
-          <span className="text-[13px] font-semibold text-text2">
-            Auto-syncing with AwardWallet
+          <span className="min-w-0 truncate text-[13px] font-semibold text-text2">
+            Synced with AwardWallet
             <span className="ml-2 font-normal text-text3">
-              {balances.length} live {balances.length === 1 ? 'program' : 'programs'}
+              {balances.length} {balances.length === 1 ? 'program' : 'programs'} live
             </span>
           </span>
           <div className="flex items-center gap-1.5">
@@ -365,8 +365,7 @@ function AwardWalletSection({
         <div className="min-w-0">
           <div className="text-[14px] font-semibold text-text">Auto-sync with AwardWallet</div>
           <p className="mt-0.5 text-[13px] leading-[1.5] text-text2">
-            Already use AwardWallet? Connect it to keep balances current automatically.
-            Requires an AwardWallet account.
+            Already on AwardWallet? Connect it to keep these balances current on their own.
           </p>
         </div>
         <a

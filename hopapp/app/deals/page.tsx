@@ -61,10 +61,10 @@ export default async function DealsPage() {
           <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
             Sweet spots
           </span>
-          <h1 className="mx-auto mt-3 max-w-[18ch] text-balance font-display text-[38px] font-semibold leading-[1.05] tracking-[-0.02em] text-text sm:text-[52px]">
+          <h1 className="mx-auto mt-3 max-w-[18ch] text-balance font-display text-[34px] font-semibold leading-[1.05] tracking-[-0.02em] text-text sm:text-[52px]">
             Where your miles go furthest
           </h1>
-          <p className="mx-auto mt-4 max-w-[54ch] text-pretty text-[16px] leading-relaxed text-text2 sm:text-[17px]">
+          <p className="mx-auto mt-4 max-w-[50ch] text-pretty px-2 text-[16px] leading-relaxed text-text2 sm:px-0 sm:text-[17px]">
             The redemptions where points beat cash by the widest margin, ranked
             by cents per point. Every one is a route you can book.
           </p>
