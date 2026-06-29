@@ -109,11 +109,21 @@ export async function assembleSearch(
 
   const cashUrl = cashBookingUrl(params)
 
+  // Native in-app checkout when enabled (HOP_ENABLE_CHECKOUT + a Duffel offer id
+  // on the option). Otherwise cash deep-links out to the affiliate (Kiwi).
+  const checkoutEnabled = /^(1|true|yes)$/i.test(process.env.HOP_ENABLE_CHECKOUT ?? '')
+  const cashBookUrl = (o: FlightOption): string => {
+    if (checkoutEnabled && typeof o.id === 'string' && o.id.startsWith('off_')) {
+      return `/book?offer=${encodeURIComponent(o.id)}`
+    }
+    return o.bookingUrl || cashUrl
+  }
+
   // Annotate cash options.
   const cash: FlightOption[] = cashOptions.map((o) => ({
     ...o,
     tier: 'muted',
-    bookingUrl: o.bookingUrl || cashUrl,
+    bookingUrl: cashBookUrl(o),
     action: 'book-cash',
   }))
 

@@ -52,9 +52,12 @@ export default async function Home() {
   let programs = 0
   let totalPoints = 0
   if (user) {
-    // Unified per-user balances (manual + AwardWallet, merged). Empty → mock.
+    // Unified per-user balances (manual + AwardWallet, merged). Mock fixtures
+    // ONLY in local dev (MOCK=1) — a real signed-in user with no programs sees
+    // a genuine empty/onboarding state, never fabricated "synced" balances.
     const real = su?.sub ? await getUserBalances(su.sub) : []
-    const balances = real.length > 0 ? real : mockBalances()
+    const useMock = real.length === 0 && /^(1|true|yes)$/i.test(process.env.MOCK ?? '')
+    const balances = real.length > 0 ? real : useMock ? mockBalances() : []
     programs = balances.length
     totalPoints = balances.reduce((sum, b) => sum + b.balance, 0)
   }

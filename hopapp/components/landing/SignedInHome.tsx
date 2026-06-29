@@ -35,17 +35,28 @@ export default async function SignedInHome({
     <div className="flex flex-col gap-14 pt-4 sm:gap-16 sm:pt-8 lg:gap-20">
       {/* ── GREETING ─────────────────────────────────────────────────────── */}
       <section className="hop-rise" style={{ ['--hop-delay' as string]: '40ms' }}>
-        <span className="inline-flex items-center gap-2 rounded-full border border-border bg-paper px-3.5 py-1.5 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-brand">
-          <Icon name="check_circle" size={13} />
-          {programs} {programs === 1 ? 'program' : 'programs'} synced ·{' '}
-          {totalPoints.toLocaleString()} points
-        </span>
+        {programs > 0 ? (
+          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-paper px-3.5 py-1.5 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-brand">
+            <Icon name="check_circle" size={13} />
+            {programs} {programs === 1 ? 'program' : 'programs'} ·{' '}
+            {totalPoints.toLocaleString()} points
+          </span>
+        ) : (
+          <a
+            href="/account"
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-paper px-3.5 py-1.5 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-brand transition-colors hover:bg-sunk"
+          >
+            <Icon name="loyalty" size={13} />
+            Add your programs to get started
+          </a>
+        )}
         <h1 className="mt-4 font-display text-[36px] font-semibold leading-[1.02] tracking-[-0.03em] text-text sm:text-[52px] lg:text-[60px]">
           {first ? `Welcome back, ${first}.` : 'Welcome back.'}
         </h1>
         <p className="mt-3 max-w-[56ch] text-[16px] leading-[1.55] text-text2 sm:text-[18px]">
-          Here&apos;s where your points can take you — and what each trip is
-          really worth.
+          {programs > 0
+            ? "Here's where your points can take you — and what each trip is really worth."
+            : 'Add your loyalty programs and hop will show you exactly where your points can take you — and whether to book with miles or cash.'}
         </p>
       </section>
 

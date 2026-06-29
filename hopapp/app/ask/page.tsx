@@ -33,10 +33,13 @@ export default async function AskPage() {
   let programs: { program: string; balance: number }[] | undefined
   let homeAirport: string | undefined
   if (user) {
-    // Unified per-user balances (manual + AwardWallet, merged). Empty → mock.
+    // Unified per-user balances (manual + AwardWallet, merged). Mock ONLY in
+    // local dev (MOCK=1); a real user with no programs has none — the concierge
+    // simply answers untethered rather than citing fabricated balances.
     const real = su?.sub ? await getUserBalances(su.sub) : []
-    const balances = real.length > 0 ? real : mockBalances()
-    totalPoints = balances.reduce((sum, b) => sum + b.balance, 0)
+    const useMock = real.length === 0 && /^(1|true|yes)$/i.test(process.env.MOCK ?? '')
+    const balances = real.length > 0 ? real : useMock ? mockBalances() : []
+    totalPoints = balances.length > 0 ? balances.reduce((sum, b) => sum + b.balance, 0) : undefined
     programs = balances.map((b) => ({ program: b.program, balance: b.balance }))
     const prefs = su?.sub ? await getPrefs(su.sub) : {}
     homeAirport = prefs.homeAirport
