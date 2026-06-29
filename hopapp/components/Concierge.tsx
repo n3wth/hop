@@ -110,11 +110,30 @@ export default function Concierge({
               : undefined,
         }),
       })
-      const data = (await res.json()) as ConciergeResponse
-      setResult(data)
+
+      // The endpoint streams the answer as plain text (agentic + tool-using;
+      // rich suggestion cards land in a later stage). Read it incrementally so
+      // the answer types out live; fall back to a one-shot read if no stream.
+      const reader = res.body?.getReader()
+      if (reader) {
+        const decoder = new TextDecoder()
+        let answer = ''
+        setLoading(false) // first delta replaces the "thinking" state
+        for (;;) {
+          const { value, done } = await reader.read()
+          if (done) break
+          answer += decoder.decode(value, { stream: true })
+          setResult({ answer })
+        }
+        answer += decoder.decode()
+        setResult({ answer })
+      } else {
+        const answer = await res.text()
+        setResult({ answer })
+        setLoading(false)
+      }
     } catch {
       setError(true)
-    } finally {
       setLoading(false)
     }
   }

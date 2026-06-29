@@ -1,12 +1,23 @@
-// POST /api/concierge — Claude-powered travel concierge grounded in the user's
-// points balances and hop's destinations dataset. Answers "where should I go"
-// and "points or cash" questions, warmly and concretely, with NO hallucinated
-// flight prices — every suggestion is framed from lib/destinations.ts.
+// POST /api/concierge — hop's AGENTIC, STREAMING, TOOL-USING travel concierge.
 //
-// Always responds 200. Auth, parse, and API failures all degrade to a friendly
-// fallback answer; this handler never throws or 500s.
+// Powered by the Vercel AI SDK (streamText) routed through the AI Gateway. The
+// concierge streams its answer live AND can call tools mid-thought:
+//   • web_search  — live world-context (events, seasonality, why fares move)
+//   • get_weather — typical/seasonal weather for a place + month (open-meteo)
+//   • price_trip  — hop's REAL deterministic engine (computeCpp +
+//                   destinationByCode + effectiveBalanceFor). THIS is how the
+//                   agent quotes miles/CPP/affordability — the LLM never invents
+//                   those numbers; it reads them from hop's engine exposed as a tool.
+//
+// The response is a streamed text body (toTextStreamResponse) so the answer can
+// type out live. If the gateway/tools/streaming are unavailable or fail, the
+// handler degrades to the curated fallback — served as the SAME text stream — so
+// /ask keeps working and this endpoint NEVER 500s.
+//
+// NOTE: buildPrompt / destinationsSummary / parseConciergeJson / enrichSuggestions
+// are preserved (pure, unit-tested) and still used by the fallback path.
 
-import Anthropic from '@anthropic-ai/sdk'
+import { streamText, stepCountIs, gateway } from 'ai'
 import {
   destinations,
   affordableWith,
@@ -16,6 +27,7 @@ import {
 } from '@/lib/destinations'
 import { valuationsByName } from '@/lib/valuations'
 import { effectiveBalanceFor } from '@/lib/transfers'
+import { buildConciergeTools } from '@/lib/concierge-tools'
 import type { Balance } from '@/lib/types'
 
 export const runtime = 'nodejs'
@@ -64,7 +76,9 @@ export interface ConciergeResponse {
   suggestions?: ConciergeSuggestion[]
 }
 
-const MODEL = 'claude-sonnet-4-6'
+// Gateway model. Default is Claude via the AI Gateway (paid credits, verified
+// working incl. tool-calling). Override with AI_GATEWAY_MODEL.
+const GATEWAY_MODEL = process.env.AI_GATEWAY_MODEL || 'anthropic/claude-sonnet-4-6'
 
 // --- Prompt assembly (pure, unit-tested in lib/__tests__/concierge.test.ts) -
 
@@ -150,76 +164,40 @@ export function buildPrompt(
   return { system, user }
 }
 
-// --- Anthropic client -------------------------------------------------------
-
-// Gateway model. Override with AI_GATEWAY_MODEL — set to 'anthropic/claude-sonnet-4-6'
-// once paid AI Gateway credits are added (Claude is restricted on the free tier).
-// Default is a capable model available without paid credits.
-const GATEWAY_MODEL = process.env.AI_GATEWAY_MODEL || 'deepseek/deepseek-v3'
-
-// Produce the concierge's raw text answer from whichever provider is configured.
-// Returns null when no provider is available or the call fails — the caller then
-// serves the graceful fallback. NEVER throws.
-async function callConcierge(system: string, user: string): Promise<string | null> {
-  // 1) Vercel AI Gateway (preferred in prod) — OpenAI-compatible endpoint, so it
-  //    works for any gateway model (DeepSeek on the free tier; Claude with credits).
-  const gatewayKey = process.env.AI_GATEWAY_API_KEY
-  if (gatewayKey) {
-    try {
-      const res = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          authorization: `Bearer ${gatewayKey}`,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: GATEWAY_MODEL,
-          max_tokens: 1024,
-          messages: [
-            { role: 'system', content: system },
-            { role: 'user', content: user },
-          ],
-        }),
-        signal: AbortSignal.timeout(20_000),
-      })
-      if (!res.ok) return null
-      const json = (await res.json()) as {
-        choices?: Array<{ message?: { content?: string } }>
-      }
-      return json.choices?.[0]?.message?.content?.trim() || null
-    } catch {
-      return null
-    }
-  }
-
-  // 2) Direct Anthropic API key, or 3) Claude Code OAuth token (dev; rate-limited).
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  const authToken = process.env.CLAUDE_CODE_OAUTH_TOKEN
-  if (!apiKey && !authToken) return null
-  try {
-    const client = apiKey ? new Anthropic({ apiKey }) : new Anthropic({ authToken })
-    const message = await client.messages.create(
-      { model: MODEL, max_tokens: 1024, system, messages: [{ role: 'user', content: user }] },
-      {
-        timeout: 20_000,
-        ...(authToken ? { headers: { 'anthropic-beta': 'oauth-2025-04-20' } } : {}),
-      },
-    )
-    return extractText(message) || null
-  } catch {
-    return null
-  }
+// System prompt for the AGENTIC streaming path. Same grounding rules as
+// buildPrompt, but tuned for prose streaming + tool use instead of JSON.
+function buildAgenticSystem(context?: ConciergeContext): string {
+  return [
+    "You are hop's AI travel concierge. hop helps people turn loyalty points into great trips.",
+    'Recommend WHERE to go and whether to use POINTS or CASH. Be warm, concrete, and concise — full of wanderlust but practical. No emoji spam, no hype.',
+    '',
+    'You have tools. USE THEM:',
+    '- price_trip(code): hop\'s DETERMINISTIC engine. ALWAYS call this before stating ANY miles, cents-per-point, or affordability number. NEVER invent those numbers — read them from this tool. Pass the IATA code of a hop destination.',
+    '- get_weather(place, month): typical/seasonal weather. Use when climate or timing matters.',
+    '- web_search(objective): live world-context — events, seasonality, why fares move at a given time. Use sparingly for things the dataset can\'t tell you.',
+    '',
+    'Hard rules:',
+    '- Suggest ONLY destinations in the dataset below (match by IATA code).',
+    '- NEVER invent flight prices, fares, miles, CPP, or award availability. Numbers come from price_trip; live facts come from web_search/get_weather.',
+    "- Prefer destinations the user can actually afford with the points they hold.",
+    '- After tool calls, weave the real figures into a flowing 1-4 sentence answer. Mention how many points a trip needs and which program books it.',
+    '',
+    'Points valuations (cents per point):',
+    valuationsSummary(),
+    '',
+    "The user's points balances:",
+    balancesSummary(context),
+    '',
+    context?.homeAirport
+      ? `The user flies from ${context.homeAirport.toUpperCase()}. Favor trips that make sense from there and mention it naturally.`
+      : "The user hasn't set a home airport. Keep suggestions origin-agnostic, or gently suggest they set one.",
+    '',
+    'Destinations dataset (code · city · region · vibe [tags] · ~award miles one-way · best program · ~value):',
+    destinationsSummary(),
+  ].join('\n')
 }
 
-// --- Response parsing --------------------------------------------------------
-
-function extractText(message: Anthropic.Message): string {
-  return message.content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map((b) => b.text)
-    .join('')
-    .trim()
-}
+// --- Response parsing (fallback path) ---------------------------------------
 
 // Parse the model's JSON defensively. Falls back to { answer: raw } on failure.
 export function parseConciergeJson(raw: string): ConciergeResponse {
@@ -264,15 +242,11 @@ export function parseConciergeJson(raw: string): ConciergeResponse {
 // wrote the reason; hop fills in the numbers — so a card never shows a figure the
 // model invented. Counts a held balance toward a destination if the user holds
 // the booking program DIRECTLY *or* holds a transferable bank currency that
-// transfers to it (ratio applied) — via lib/transfers.effectiveBalanceFor +
-// lib/programs canonicalization. So an Amex MR holder is "affordable" for a trip
-// bookable via ANA, not "you have: none".
-function enrichSuggestions(
+// transfers to it (ratio applied) — via lib/transfers.effectiveBalanceFor.
+export function enrichSuggestions(
   suggestions: ConciergeSuggestion[],
   context?: ConciergeContext,
 ): ConciergeSuggestion[] {
-  // ConciergeProgram -> Balance so transfers.ts can canonicalize + walk the graph.
-  // (code is unknown here; canonicalizeProgram resolves from the program name.)
   const balances: Balance[] = (context?.programs ?? []).map((p) => ({
     program: p.program,
     code: '',
@@ -285,11 +259,9 @@ function enrichSuggestions(
     const milesNeeded = d.typicalAwardMiles
     const cashUsd = d.typicalCashUSD
     const cpp = computeCpp(d)
-    // Best direct-or-transferable balance toward the booking program.
     const eff = effectiveBalanceFor(d.bestProgram, balances)
     const youHave = eff?.amount
     const affordable = youHave != null ? youHave >= milesNeeded : undefined
-    // Verdict: strong CPP → points; weak CPP → cash; can't afford yet → save.
     const verdict: ConciergeSuggestion['verdict'] =
       affordable === false ? 'save' : cpp != null && cpp >= 1.5 ? 'points' : 'cash'
     return {
@@ -307,14 +279,13 @@ function enrichSuggestions(
 }
 
 // A graceful, on-brand fallback when we can't reach the model at all.
-function fallbackAnswer(question: string, context?: ConciergeContext): ConciergeResponse {
+export function fallbackAnswer(question: string, context?: ConciergeContext): ConciergeResponse {
   const total = context?.totalPoints
   let picks: Destination[] = []
   if (total !== undefined && total > 0) {
     picks = affordableWith(total).slice(0, 3)
   }
   if (!picks.length) {
-    // Best-value handful regardless of balance.
     picks = [...destinations]
       .sort((a, b) => (computeCpp(b) ?? 0) - (computeCpp(a) ?? 0))
       .slice(0, 3)
@@ -332,6 +303,25 @@ function fallbackAnswer(question: string, context?: ConciergeContext): Concierge
   }
 }
 
+// Render a ConciergeResponse as a plain-text stream so the curated fallback
+// flows through the SAME response shape the agentic path uses. The /ask client
+// reads the body as text either way.
+function textStreamFromAnswer(r: ConciergeResponse): Response {
+  const enriched = r.suggestions?.length ? enrichSuggestions(r.suggestions, undefined) : r.suggestions
+  const lines = [r.answer]
+  for (const s of enriched ?? []) {
+    const bits: string[] = [`${s.city} (${s.code})`]
+    if (s.milesNeeded != null) bits.push(`~${Math.round(s.milesNeeded / 1000)}k mi`)
+    if (s.bestProgram) bits.push(`via ${s.bestProgram}`)
+    lines.push(`\n• ${bits.join(' · ')} — ${s.reason}`)
+  }
+  const body = lines.join('')
+  return new Response(body, {
+    status: 200,
+    headers: { 'content-type': 'text/plain; charset=utf-8' },
+  })
+}
+
 // --- Handler ----------------------------------------------------------------
 
 export async function POST(request: Request): Promise<Response> {
@@ -339,39 +329,48 @@ export async function POST(request: Request): Promise<Response> {
   try {
     body = (await request.json()) as ConciergeRequest
   } catch {
-    return Response.json(
-      { answer: 'I didn’t catch that — try asking me where to go with your points.' },
-      { status: 200 },
-    )
+    return new Response('I didn’t catch that — try asking me where to go with your points.', {
+      status: 200,
+      headers: { 'content-type': 'text/plain; charset=utf-8' },
+    })
   }
 
   const question = typeof body?.question === 'string' ? body.question : ''
   const context = body?.context
 
   if (!question.trim()) {
-    return Response.json(
-      {
-        answer:
-          'Ask me anything about where to go with your points — like "somewhere warm for a long weekend" or "is it better to use points or cash to Tokyo?"',
-      } satisfies ConciergeResponse,
-      { status: 200 },
+    return new Response(
+      'Ask me anything about where to go with your points — like "somewhere warm for a long weekend" or "is it better to use points or cash to Tokyo?"',
+      { status: 200, headers: { 'content-type': 'text/plain; charset=utf-8' } },
     )
   }
 
-  const { system, user } = buildPrompt(question, context)
-
-  // Attach server-computed verdict facts to whatever suggestions a response
-  // carries, so every card the user sees is grounded in real numbers.
-  const withVerdicts = (r: ConciergeResponse): ConciergeResponse =>
-    r.suggestions?.length ? { ...r, suggestions: enrichSuggestions(r.suggestions, context) } : r
+  // No gateway key → no agentic streaming. Degrade to the curated fallback,
+  // served as a text stream so /ask keeps working.
+  if (!process.env.AI_GATEWAY_API_KEY) {
+    return textStreamFromAnswer(fallbackAnswer(question, context))
+  }
 
   try {
-    const text = await callConcierge(system, user)
-    if (!text) {
-      return Response.json(withVerdicts(fallbackAnswer(question, context)), { status: 200 })
-    }
-    return Response.json(withVerdicts(parseConciergeJson(text)), { status: 200 })
-  } catch {
-    return Response.json(withVerdicts(fallbackAnswer(question, context)), { status: 200 })
+    const tools = buildConciergeTools(context?.programs ?? [])
+    const result = streamText({
+      model: gateway(GATEWAY_MODEL),
+      system: buildAgenticSystem(context),
+      prompt: question.trim(),
+      tools,
+      // Agentic loop: let the model call tools, then continue with the results.
+      stopWhen: stepCountIs(5),
+      // Never throw to the page — on a streaming error, surface a friendly line.
+      onError({ error }) {
+        console.error('[concierge] stream error', error)
+      },
+    })
+
+    // Stream the answer as live text (tool-call/tool-result events drive the
+    // model but only its prose deltas are emitted to this text stream).
+    return result.toTextStreamResponse()
+  } catch (err) {
+    console.error('[concierge] setup failed, serving fallback', err)
+    return textStreamFromAnswer(fallbackAnswer(question, context))
   }
 }
