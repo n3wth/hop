@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, useState } from 'react'
+import { useId } from 'react'
 import type { CppTier, FlightOption } from '@/lib/types'
 import Icon from './Icon'
 import BrandIcon from './BrandIcon'
@@ -13,6 +13,9 @@ export interface ResultRowProps {
   maxCpp?: number
   /** 0-based position, for the entrance stagger. */
   index?: number
+  /** Controlled expand state — all rows expand/collapse together via the toolbar. */
+  open: boolean
+  onToggle: () => void
 }
 
 // Value chip color by tier — semantic, not all-teal.
@@ -67,8 +70,7 @@ function durationText(min?: number): string {
 // instantly, a semantic value chip, and one factual assessment line. Clicking
 // the card expands the full detail in place (itinerary, transfer steps, fare,
 // booking CTA) with a smooth height grow — no vertical lift.
-export default function ResultRow({ option, rank, maxCpp, index = 0 }: ResultRowProps) {
-  const [open, setOpen] = useState(false)
+export default function ResultRow({ option, rank, maxCpp, index = 0, open, onToggle }: ResultRowProps) {
   const panelId = useId()
 
   const isCash = option.kind === 'cash'
@@ -109,10 +111,10 @@ export default function ResultRow({ option, rank, maxCpp, index = 0 }: ResultRow
       {/* summary — the whole top is the toggle */}
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={onToggle}
         aria-expanded={open}
         aria-controls={panelId}
-        className="flex min-h-[268px] flex-1 cursor-pointer flex-col px-[22px] pb-[22px] pt-6 text-left"
+        className="flex flex-1 cursor-pointer flex-col px-[22px] pb-[22px] pt-6 text-left"
       >
         <div className="flex items-start justify-between">
           <BrandIcon code={option.airlineCode} name={option.airline} size={46} />
@@ -121,16 +123,19 @@ export default function ResultRow({ option, rank, maxCpp, index = 0 }: ResultRow
           </span>
         </div>
 
-        <div className="mt-[18px] font-display text-[19px] font-semibold leading-[1.1] text-text">
-          {option.airline}
-        </div>
-        <div className="mt-[5px] text-[12.5px] tracking-[0.02em] text-text3">
-          {option.direct ? 'Direct · ' : ''}
-          {option.route}
-          {option.durationMin != null ? ` · ${dur}` : ''}
+        {/* fixed-height name+route block so price/value/bar align across cards */}
+        <div className="mt-[18px] min-h-[58px]">
+          <div className="font-display text-[19px] font-semibold leading-[1.1] text-text">
+            {option.airline}
+          </div>
+          <div className="mt-[5px] text-[12.5px] tracking-[0.02em] text-text3">
+            {option.direct ? 'Direct · ' : ''}
+            {option.route}
+            {option.durationMin != null ? ` · ${dur}` : ''}
+          </div>
         </div>
 
-        <div className="mt-auto pt-[18px]">
+        <div className="pt-[18px]">
           <div className="font-display text-[30px] font-semibold leading-none tracking-[-0.01em] text-text">
             {isCash
               ? `$${option.cashPrice?.toLocaleString() ?? '—'}`
