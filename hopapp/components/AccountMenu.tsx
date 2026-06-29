@@ -75,6 +75,29 @@ export default function AccountMenu({ user }: { user: AccountUser }) {
           >
             Account
           </a>
+          {/* Deep links to the power features so they're reachable without
+              scrolling the whole /account page (each is an anchor there). */}
+          <a
+            href="/account#watches"
+            role="menuitem"
+            className="block px-4 py-[11px] text-[14px] font-medium text-text2 transition-colors hover:bg-sunk hover:text-text"
+          >
+            Standing orders
+          </a>
+          <a
+            href="/account#whatif"
+            role="menuitem"
+            className="block px-4 py-[11px] text-[14px] font-medium text-text2 transition-colors hover:bg-sunk hover:text-text"
+          >
+            What if…
+          </a>
+          <a
+            href="/account#trips"
+            role="menuitem"
+            className="block px-4 py-[11px] text-[14px] font-medium text-text2 transition-colors hover:bg-sunk hover:text-text"
+          >
+            Trips
+          </a>
           <a
             href="/auth/logout"
             role="menuitem"

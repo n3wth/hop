@@ -6,6 +6,7 @@ import { hasEnv, isGmailHistoryEnabled } from '@/lib/env'
 import { getTravelHistory } from '@/lib/travel-history'
 import { isGmailConnected } from '@/lib/travel-history-sync'
 import AppShell from '@/components/AppShell'
+import Icon from '@/components/Icon'
 import SiteFooter from '@/components/SiteFooter'
 import ProgramsManager from '@/components/ProgramsManager'
 import GmailHistory from '@/components/GmailHistory'
@@ -98,6 +99,19 @@ export default async function AccountPage({
   // "Add to Claude" MCP tokens for this user (list = no secrets).
   const mcpTokens = u.sub ? await listTokens(u.sub) : []
 
+  // Merged held programs (manual + AwardWallet) so Counterfactual's presets are
+  // about THIS user's real stack — "+50k of your largest", a swap of their two
+  // biggest holdings — instead of static programs they may not hold. Dedup by
+  // program, keeping the larger balance.
+  const programBalances = (() => {
+    const m = new Map<string, { program: string; balance: number }>()
+    for (const b of [...manual, ...awBalances]) {
+      const cur = m.get(b.program)
+      if (!cur || b.balance > cur.balance) m.set(b.program, { program: b.program, balance: b.balance })
+    }
+    return [...m.values()]
+  })()
+
   const sp = await searchParams
   const awFlag = sp.aw
   const awNote = awFlag ? AW_NOTES[awFlag] : undefined
@@ -146,8 +160,36 @@ export default async function AccountPage({
           </div>
         </section>
 
+        {/* in-page nav — the account is long once populated; anchor jumps give it
+            real IA so the power features (watches, what-if, trips, Claude) aren't
+            reachable only by scrolling past everything. Color-only hover. */}
+        <nav className="mt-8 flex flex-wrap gap-2 border-b border-hair pb-5">
+          {[
+            { href: '#programs', label: 'Programs' },
+            { href: '#trips', label: 'Trips' },
+            { href: '#watches', label: 'Watches' },
+            { href: '#whatif', label: 'What-if' },
+            { href: '#claude', label: 'Claude' },
+          ].map((a) => (
+            <a
+              key={a.href}
+              href={a.href}
+              className="rounded-full border border-border bg-paper px-3.5 py-1.5 text-[12.5px] font-semibold text-text2 transition-colors hover:border-brand hover:text-brand"
+            >
+              {a.label}
+            </a>
+          ))}
+        </nav>
+
+        {/* ── GROUP 1 — YOUR TRAVEL PROFILE ──────────────────────────────────
+            What hop knows about you: the programs you hold and where you've
+            flown. These describe your identity, so they sit together. */}
+        <div className="mt-12 text-[11px] font-semibold uppercase tracking-[0.18em] text-text3">
+          Your travel profile
+        </div>
+
         {/* your programs — manual balances (primary) + optional AwardWallet sync */}
-        <section className="mt-10">
+        <section id="programs" className="mt-6 scroll-mt-24">
           <div>
             <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
               Your programs
@@ -176,41 +218,9 @@ export default async function AccountPage({
           />
         </section>
 
-        {/* standing orders — the verdict that watches */}
-        <section className="mt-10">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
-              Standing orders
-            </h2>
-            <a
-              href="/search"
-              className="text-[13px] font-semibold text-brand transition-colors hover:text-brand-deep"
-            >
-              New search
-            </a>
-          </div>
-          <p className="mt-1 text-[13.5px] text-text2">
-            Watch a route in plain English. hop re-runs its verdict on a schedule
-            and tells you only when points beat cash on your terms.
-          </p>
-          <StandingOrders orders={orders} alerts={alerts} unseen={unseen} cronLive={cronLive} />
-        </section>
-
-        {/* counterfactual you — "what if I had a different points portfolio?" */}
-        <section className="mt-10">
-          <div>
-            <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
-              What if…
-            </h2>
-            <p className="mt-1 text-[13.5px] text-text2">
-              Travel&apos;s first financial mirror — see what a different points stack would unlock.
-            </p>
-          </div>
-          <Counterfactual />
-        </section>
-
-        {/* trips — Gmail travel-history seam (explicit consent) */}
-        <section className="mt-10">
+        {/* trips — Gmail travel-history seam (explicit consent). Lives in the
+            travel-profile group: like programs, it's what hop knows about you. */}
+        <section id="trips" className="mt-10 scroll-mt-24">
           <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
             Trips
           </h2>
@@ -237,18 +247,77 @@ export default async function AccountPage({
           />
         </section>
 
-        {/* add to claude — MCP access tokens */}
-        <section className="mt-10">
+        {/* ── GROUP 2 — WHAT HOP DOES FOR YOU ────────────────────────────────
+            The active tools: watch a route, or ask what a different stack would
+            unlock. A larger gap above encodes the group break. */}
+        <div className="mt-14 text-[11px] font-semibold uppercase tracking-[0.18em] text-text3">
+          What hop does for you
+        </div>
+
+        {/* standing orders — the verdict that watches */}
+        <section id="watches" className="mt-6 scroll-mt-24">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
+              Standing orders
+            </h2>
+            <a
+              href="/search"
+              className="text-[13px] font-semibold text-brand transition-colors hover:text-brand-deep"
+            >
+              New search
+            </a>
+          </div>
+          <p className="mt-1 text-[13.5px] text-text2">
+            Watch a route in plain English. hop re-runs its verdict on a schedule
+            and tells you only when points beat cash on your terms.
+          </p>
+          <StandingOrders orders={orders} alerts={alerts} unseen={unseen} cronLive={cronLive} />
+        </section>
+
+        {/* counterfactual you — "what if I had a different points portfolio?" */}
+        <section id="whatif" className="mt-10 scroll-mt-24">
           <div>
             <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
-              Use hop from Claude
+              What if…
             </h2>
             <p className="mt-1 text-[13.5px] text-text2">
-              Mint a token to call hop&apos;s points-vs-cash engine from Claude or any
-              MCP client.
+              Travel&apos;s first financial mirror — see what a different points stack would unlock.
             </p>
           </div>
-          <McpAccess initialTokens={mcpTokens} />
+          <Counterfactual programs={programBalances} />
+        </section>
+
+        {/* ── GROUP 3 — DEVELOPERS ───────────────────────────────────────────
+            Power-user plumbing. Collapsed by default so the heavy config block
+            doesn't dominate the page for the common visitor (color-only summary,
+            no motion — flat-design safe). */}
+        <div className="mt-14 text-[11px] font-semibold uppercase tracking-[0.18em] text-text3">
+          Developers
+        </div>
+
+        {/* add to claude — MCP access tokens (collapsed) */}
+        <section id="claude" className="mt-6 scroll-mt-24">
+          <details className="group/mcp rounded-[16px] border border-border bg-surface">
+            <summary className="flex cursor-pointer list-none items-center gap-2.5 px-5 py-4 transition-colors hover:bg-sunk [&::-webkit-details-marker]:hidden">
+              <div className="min-w-0 flex-1">
+                <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
+                  Use hop from Claude (MCP)
+                </h2>
+                <p className="mt-1 text-[13.5px] text-text2">
+                  Mint a token to call hop&apos;s points-vs-cash engine from Claude or any
+                  MCP client.
+                </p>
+              </div>
+              <Icon
+                name="expand_more"
+                size={20}
+                className="flex-shrink-0 text-text3 transition-transform group-open/mcp:rotate-180"
+              />
+            </summary>
+            <div className="border-t border-hair px-5 py-5">
+              <McpAccess initialTokens={mcpTokens} />
+            </div>
+          </details>
         </section>
 
         <SiteFooter />

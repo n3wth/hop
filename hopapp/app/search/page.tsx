@@ -121,6 +121,11 @@ export default async function Search({
   ])
   const result = await assembleSearch(params, userBalances, prefs?.travelPrefs)
 
+  // The verdict's ownership voice ("You have the miles") is only honest when
+  // these balances are this signed-in user's own connected programs. Signed out
+  // (or signed in with nothing connected) → value-demonstration framing instead.
+  const hasRealBalances = !!userBalances && userBalances.length > 0
+
   // Destination photo for the verdict hero — the place you're heading, behind
   // the boarding pass (replaces the redundant bunny). Query the CITY skyline/
   // landscape, never the airport code (which surfaces terminals, not beauty).
@@ -155,7 +160,7 @@ export default async function Search({
       <RouteBar result={result} />
 
       {/* the verdict hero */}
-      <VerdictRail result={result} destPhoto={destPhoto} />
+      <VerdictRail result={result} destPhoto={destPhoto} hasRealBalances={hasRealBalances} />
 
       {/* other ways to fly */}
       <ResultsList result={result} />

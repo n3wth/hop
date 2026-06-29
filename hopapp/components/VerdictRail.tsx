@@ -11,6 +11,12 @@ export interface VerdictRailProps {
   /** Destination photo (server-fetched from the pick's destCode). When present
       it fills the hero behind the boarding pass instead of the bunny mark. */
   destPhoto?: { url: string; alt: string } | null
+  /** True only when these balances are the SIGNED-IN user's own (real). Drives
+      the ownership voice: "You have the miles" + "Book with X miles" are only
+      honest when hop is reading this visitor's connected programs. Signed-out
+      (or no real balances) → a value-demonstration framing + sign-in CTA, never
+      a claim that the stranger owns the points. */
+  hasRealBalances?: boolean
 }
 
 function fmt(n: number | undefined): string {
@@ -24,15 +30,25 @@ function milesUnit(pick: FlightOption | undefined): string {
 
 // Editorial verdict hero — the magazine cover. Teal plane: headline + factual
 // subline + stat strip on the left; bunny + boarding-pass pick card on the right.
-export default function VerdictRail({ result, destPhoto }: VerdictRailProps) {
+export default function VerdictRail({ result, destPhoto, hasRealBalances = false }: VerdictRailProps) {
   const { pick, summary, verdict, cashOption } = result
   const usingPoints = verdict === 'use-points'
   const unit = milesUnit(pick)
+  // The ownership voice ("You have the miles", "Book with X miles") is honest
+  // ONLY when these balances are the signed-in user's own. For a signed-out
+  // visitor the points belong to no one we know — so a points-winning verdict is
+  // framed as a value demonstration ("Alaska miles are worth X¢ here") with a
+  // sign-in CTA, never a claim that the stranger holds the miles.
+  const owns = usingPoints && hasRealBalances
   // "Book cash" must link to the actual cheapest CASH option — on a pay-cash
   // verdict `pick` may still be a weak award row, so don't use pick.bookingUrl.
-  const ctaHref = usingPoints
-    ? (pick?.bookingUrl ?? '#')
-    : (cashOption?.bookingUrl ?? pick?.bookingUrl ?? '#')
+  // When points win but we can't claim ownership, the primary CTA routes to
+  // sign-in instead of a book deep-link.
+  const ctaHref = !usingPoints
+    ? (cashOption?.bookingUrl ?? pick?.bookingUrl ?? '#')
+    : owns
+      ? (pick?.bookingUrl ?? '#')
+      : '/auth/login'
 
   const save = summary.saveVsCash ?? 0
   const cpp = summary.bestCpp
@@ -58,7 +74,15 @@ export default function VerdictRail({ result, destPhoto }: VerdictRailProps) {
               className="hop-rise font-display text-[27px] font-semibold leading-[1.05] tracking-[-0.02em] text-white sm:text-[34px] lg:text-[40px]"
               style={{ ['--hop-delay' as string]: '60ms' }}
             >
-              Use your <span className="text-[#ffe7b0]">{airlineShort}&nbsp;{unit}</span> and save
+              {owns ? (
+                <>
+                  Use your <span className="text-[#ffe7b0]">{airlineShort}&nbsp;{unit}</span> and save
+                </>
+              ) : (
+                <>
+                  <span className="text-[#ffe7b0]">{airlineShort}&nbsp;{unit}</span> win here — by
+                </>
+              )}
             </h1>
 
             {/* The hero moment — the dollar value, oversized and confident. The
@@ -89,7 +113,7 @@ export default function VerdictRail({ result, destPhoto }: VerdictRailProps) {
           </h1>
         )}
 
-        {usingPoints ? (
+        {usingPoints && owns ? (
           <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-[#c7ece5]" style={{ ['--hop-delay' as string]: '140ms' }}>
             <b className="font-semibold text-white">
               {fmt(miles)} {unit}
@@ -98,6 +122,14 @@ export default function VerdictRail({ result, destPhoto }: VerdictRailProps) {
             <b className="font-semibold text-white">{cpp != null ? `${cpp.toFixed(1)}¢` : '—'} each</b>{' '}
             — the best redemption across your {result.balances.length} programs. Cash is{' '}
             <b className="font-semibold text-white">${fmt(cash)}</b>. You have the {unit}.
+          </p>
+        ) : usingPoints ? (
+          <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-[#c7ece5]" style={{ ['--hop-delay' as string]: '140ms' }}>
+            On this route, {airlineShort} {unit} are worth{' '}
+            <b className="font-semibold text-white">{cpp != null ? `${cpp.toFixed(1)}¢` : '—'} each</b>{' '}
+            — <b className="font-semibold text-white">{fmt(miles)} {unit}</b> instead of{' '}
+            <b className="font-semibold text-white">${fmt(cash)}</b> cash. Sign in to check your
+            balances and see if your {unit} cover it.
           </p>
         ) : (
           <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-[#c7ece5]" style={{ ['--hop-delay' as string]: '140ms' }}>
@@ -113,7 +145,11 @@ export default function VerdictRail({ result, destPhoto }: VerdictRailProps) {
             className="inline-flex items-center gap-[10px] rounded-[14px] bg-white px-7 py-4 text-[16px] font-semibold text-[#073e3e] transition-colors hover:bg-[#fffdf6]"
           >
             <Icon name="check_circle" size={19} />
-            {usingPoints ? `Book with ${airlineShort} ${unit}` : 'Book cash'}
+            {!usingPoints
+              ? 'Book cash'
+              : owns
+                ? `Book with ${airlineShort} ${unit}`
+                : `Sign in to see if your ${unit} win`}
           </a>
           {/* See the math — sits to the RIGHT of Book; its panel expands below. */}
           {pick ? (

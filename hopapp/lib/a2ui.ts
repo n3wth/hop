@@ -512,6 +512,7 @@ export function a2uiGuidance(profile: TravelProfile | undefined, hasHistory: boo
     '- profile_confirm { type, fact } — after save_profile_fact, echo the durable fact you remembered.',
     '- connect_gmail { type, reason? } — invite the user to connect Gmail so hop can learn from past trips.',
     '- counterfactual { type, mutation:{op:"add"|"set"|"swap", program?, amount?, from?, to?} } — when the user asks "what if I had a different points portfolio?". Author ONLY the mutation intent (use program brand names as the user said them); hop runs its engine to fill what unlocks and the dollar value. Use "add" for more of a program, "set" for an exact target, "swap" for holding one program instead of another (from/to).',
+    'PROACTIVE COUNTERFACTUAL: when price_trip shows affordable===false for a destination the traveler is clearly drawn to, do not just say "save toward it" — emit a counterfactual block with op:"add" proposing the SMALLEST realistic top-up of a transferable program the traveler ALREADY holds that would cross the line (hop computes what else that unlocks and the dollar value). When TWO destinations are both a stretch and both in play, prefer a compare block instead.',
     'Rules: pick the block TYPE that fits; never emit HTML, styles, or block types not listed; omit the spec entirely if prose alone is best. Never author counterfactual unlock counts or dollar values — hop computes them.',
   ]
 

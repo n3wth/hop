@@ -52,14 +52,40 @@ type ApiResponse =
   | { ok: true; result: CounterfactualResult }
   | { ok: false; reason: string }
 
-// Quick-start prompts so the surface is discoverable without typing.
-const SUGGESTIONS = [
-  'What if I had 50k more Chase UR',
+// A held program, for deriving portfolio-aware presets.
+export interface CounterfactualProgram {
+  program: string
+  balance: number
+}
+
+// Generic fallback when the user holds nothing — every preset must still be a
+// real, runnable question.
+const FALLBACK_SUGGESTIONS = [
+  'What if I had 50k Chase UR',
+  'What if I had 100k Amex MR',
   'What if I held Alaska instead of Delta',
-  'What if I had 100k Amex',
 ]
 
-export default function Counterfactual() {
+// Derive presets from THIS user's real stack so the mirror reflects them, not a
+// stranger: "+50k of your largest program", "double your largest", and a swap of
+// their two biggest holdings. Falls back to generic prompts with no programs.
+function suggestionsFor(programs: CounterfactualProgram[]): string[] {
+  const held = programs.filter((p) => p && p.program && p.balance > 0)
+  if (held.length === 0) return FALLBACK_SUGGESTIONS
+  const sorted = [...held].sort((a, b) => b.balance - a.balance)
+  const top = sorted[0]
+  const out = [`What if I had 50k more ${top.program}`, `What if I doubled my ${top.program}`]
+  if (sorted[1]) out.push(`What if I held ${sorted[1].program} instead of ${top.program}`)
+  return out
+}
+
+export default function Counterfactual({
+  programs = [],
+}: {
+  /** The signed-in user's real balances, so presets reflect THIS portfolio. */
+  programs?: CounterfactualProgram[]
+}) {
+  const SUGGESTIONS = suggestionsFor(programs)
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<CounterfactualResult | null>(null)

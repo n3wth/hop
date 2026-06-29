@@ -114,13 +114,29 @@ export function toolIcon(step: ToolActivityStep): IconName {
   return TOOL_COPY[step.tool]?.icon ?? 'lightbulb'
 }
 
+// Strip the verb prefix ("Pricing "/"Searching "/"Checking ") and the trailing
+// " against your points" / " for …" so a detail like "Pricing HNL against your
+// points" collapses to just the place ("HNL"). Keeps the collapsed header self-
+// identifying when several identical tool rows stack. Text only — brand-safe.
+export function shortDetail(detail: string): string {
+  return detail
+    .replace(/^(pricing|searching|checking|saving|remembering)\s+/i, '')
+    .replace(/\s+against your points$/i, '')
+    .replace(/\s+with your points$/i, '')
+    .trim()
+}
+
 // A ready-made tool card for one activity step. Collapsed by default; expands to
 // the optional detail line. Used inside an assistant turn.
 export function ToolActivity({ step, children }: { step: ToolActivityStep; children?: ReactNode }) {
   const hasDetail = !!step.detail || !!children
+  // Surface the per-call detail in the collapsed header so stacked rows
+  // (e.g. three price_trip calls) are legible without expanding each one.
+  const suffix = step.detail ? shortDetail(step.detail) : ''
+  const title = suffix ? `${toolTitle(step)} · ${suffix}` : toolTitle(step)
   return (
     <Tool>
-      <ToolHeader title={toolTitle(step)} icon={toolIcon(step)} state={step.state} />
+      <ToolHeader title={title} icon={toolIcon(step)} state={step.state} />
       {hasDetail ? (
         <ToolContent>
           {step.detail ? <p className="leading-[1.5]">{step.detail}</p> : null}
