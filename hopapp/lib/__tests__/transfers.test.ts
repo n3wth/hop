@@ -202,6 +202,17 @@ describe('effectiveBalanceFor()', () => {
     expect(effectiveBalanceFor('ANA Mileage Club', [])).toBeUndefined()
   })
 
+  it('never counts a DIRECT bank holding as bookable award miles', () => {
+    // A bank string canonicalizes to a transferable currency. Holding it
+    // directly must NOT report a direct award balance — a bank is a source,
+    // never a booking program (guards against false unlocks).
+    const balances = [makeBalance('Amex MR', 'AX', 50000)]
+    const eff = effectiveBalanceFor('Amex Membership Rewards', balances)
+    // No outbound edge to itself, so the only would-be path (a direct hold)
+    // is suppressed and the result is unreachable.
+    expect(eff).toBeUndefined()
+  })
+
   it('ignores a transfer source below the edge minimum', () => {
     // Amex -> Qantas requires 500; 400 Amex can't move at all.
     const balances = [makeBalance('Amex MR', 'AX', 400)]

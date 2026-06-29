@@ -6,8 +6,12 @@ import { hasEnv } from '@/lib/env'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import ProgramsManager from '@/components/ProgramsManager'
+import StandingOrders from '@/components/StandingOrders'
+import Counterfactual from '@/components/Counterfactual'
 import Icon from '@/components/Icon'
 import type { Balance } from '@/lib/types'
+import { listStandingOrders } from '@/lib/standing-orders'
+import { listAlerts, countUnseenAlerts } from '@/lib/standing-order-alerts'
 
 // Human-readable note for the AwardWallet handshake outcome (?aw=… flag the
 // OAuth start/callback routes set on their redirect back to /account).
@@ -58,6 +62,17 @@ export default async function AccountPage({
     else awReason = res.reason
   }
   const awUnconfigured = !hasEnv('AWARDWALLET_CONNECT_URL')
+
+  // Standing orders + the alerts the cron has recorded. Degrade to empty on any
+  // failure (every lib fn is try/caught) so the page never breaks.
+  const [orders, alerts, unseen] = await Promise.all([
+    u.sub ? listStandingOrders(u.sub) : Promise.resolve([]),
+    u.sub ? listAlerts(u.sub) : Promise.resolve([]),
+    u.sub ? countUnseenAlerts(u.sub) : Promise.resolve(0),
+  ])
+  // The scheduled runner only re-checks when its flag is on — surface that
+  // honestly so the user knows whether watches are live yet.
+  const cronLive = /^(1|true|yes)$/i.test(process.env.STANDING_ORDERS_CRON_ENABLED ?? '')
 
   const awFlag = (await searchParams).aw
   const awNote = awFlag ? AW_NOTES[awFlag] : undefined
@@ -134,11 +149,11 @@ export default async function AccountPage({
           />
         </section>
 
-        {/* saved searches */}
+        {/* standing orders — the verdict that watches */}
         <section className="mt-10">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
-              Saved searches
+              Standing orders
             </h2>
             <a
               href="/search"
@@ -147,11 +162,24 @@ export default async function AccountPage({
               New search
             </a>
           </div>
-          <EmptyCard
-            icon="loyalty"
-            title="No saved searches yet"
-            body="Save a route from the results page and hop will keep watching its value — we'll flag it when points beat cash."
-          />
+          <p className="mt-1 text-[13.5px] text-text2">
+            Watch a route in plain English. hop re-runs its verdict on a schedule
+            and tells you only when points beat cash on your terms.
+          </p>
+          <StandingOrders orders={orders} alerts={alerts} unseen={unseen} cronLive={cronLive} />
+        </section>
+
+        {/* counterfactual you — "what if I had a different points portfolio?" */}
+        <section className="mt-10">
+          <div>
+            <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
+              What if…
+            </h2>
+            <p className="mt-1 text-[13.5px] text-text2">
+              Travel&apos;s first financial mirror — see what a different points stack would unlock.
+            </p>
+          </div>
+          <Counterfactual />
         </section>
 
         {/* trips */}

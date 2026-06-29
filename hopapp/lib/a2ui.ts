@@ -29,6 +29,9 @@ import {
   type PriceTripResult,
 } from '@/lib/concierge-tools'
 import type { TravelProfile } from '@/lib/travel-profile-model'
+import { runCounterfactual, type Mutation } from '@/lib/counterfactual'
+import { validateMutation } from '@/lib/counterfactual-parser'
+import type { Balance } from '@/lib/types'
 
 // --- Field caps (mirror travel-profile-model's defensive posture) -------------
 
@@ -51,6 +54,7 @@ export const A2UI_BLOCK_TYPES = [
   'prompt_chips',
   'profile_confirm',
   'connect_gmail',
+  'counterfactual',
 ] as const
 export type A2UIBlockType = (typeof A2UI_BLOCK_TYPES)[number]
 
@@ -150,6 +154,32 @@ export interface ConnectGmailBlock {
   reason?: string // why it would help, e.g. "to learn which airlines you fly"
 }
 
+// counterfactual — COUNTERFACTUAL YOU inline. The model authors only the MUTATION
+// INTENT (op + program names + amount) — the SAME structured shape parseMutation
+// produces — and hop runs its deterministic engine (runCounterfactual) against the
+// user's real balances to fill `result`. The model NEVER authors the unlock/dollar
+// numbers; reconcileEconomics stamps them, mirroring verdict_card's guarantee.
+export interface CounterfactualMutationSpec {
+  op: 'add' | 'set' | 'swap'
+  program?: string // for add/set
+  amount?: number // for add/set
+  from?: string // for swap
+  to?: string // for swap
+}
+// Engine-derived summary stamped server-side. Never model-authored.
+export interface A2UICounterfactual {
+  label: string // normalized mutation label, e.g. "+50,000 Chase Ultimate Rewards"
+  unlockedCount: number
+  dollarValue: number
+  unlocked: Array<{ code: string; city: string; countryCode: string; cpp: number | undefined }>
+}
+export interface CounterfactualBlock {
+  type: 'counterfactual'
+  mutation: CounterfactualMutationSpec
+  // Stamped server-side from runCounterfactual. Never trust a model-supplied value.
+  result?: A2UICounterfactual
+}
+
 export type A2UIBlock =
   | VerdictCardBlock
   | CompareBlock
@@ -159,6 +189,7 @@ export type A2UIBlock =
   | PromptChipsBlock
   | ProfileConfirmBlock
   | ConnectGmailBlock
+  | CounterfactualBlock
 
 // --- Small total helpers (never throw) ----------------------------------------
 
@@ -295,6 +326,21 @@ export function validateBlock(raw: unknown): A2UIBlock | null {
       return block
     }
 
+    case 'counterfactual': {
+      // Accept ONLY a mutation that survives the same clamp the parser uses, then
+      // re-shape it back into the block's spec form. result is left undefined here
+      // — it's stamped by reconcileEconomics from the engine.
+      const m = r.mutation
+      if (!m || typeof m !== 'object') return null
+      const valid = validateMutation(m)
+      if (!valid) return null
+      const spec: CounterfactualMutationSpec =
+        valid.op === 'swap'
+          ? { op: 'swap', from: valid.from, to: valid.to }
+          : { op: valid.op, program: valid.program, amount: valid.amount }
+      return { type: 'counterfactual', mutation: spec }
+    }
+
     default:
       // Exhaustiveness guard — a new type in the union without a case here is a
       // compile error. At runtime an unknown type was already dropped by isType.
@@ -403,6 +449,32 @@ export function reconcileEconomics(
     return 'error' in res ? undefined : econFromPriceTrip(res)
   }
 
+  // Counterfactual runs the SAME engine (runCounterfactual) over the user's real
+  // balances. Map PriceTripBalance -> Balance so transfers.ts can canonicalize.
+  const asBalances: Balance[] = balances
+    .filter((b) => b && typeof b.program === 'string' && Number.isFinite(b.balance))
+    .map((b) => ({ program: b.program, code: '', balance: b.balance }))
+  const counterfactual = (spec: CounterfactualBlock['mutation']): A2UICounterfactual | undefined => {
+    const mutation: Mutation | null =
+      spec.op === 'swap'
+        ? spec.from && spec.to
+          ? { op: 'swap', from: spec.from, to: spec.to }
+          : null
+        : spec.program != null && spec.amount != null
+          ? { op: spec.op, program: spec.program, amount: spec.amount }
+          : null
+    if (!mutation) return undefined
+    const res = runCounterfactual(asBalances, mutation)
+    return {
+      label: res.mutation.label,
+      unlockedCount: res.unlockedCount,
+      dollarValue: res.dollarValue,
+      unlocked: res.unlocked
+        .slice(0, 6)
+        .map((d) => ({ code: d.code, city: d.city, countryCode: d.countryCode, cpp: d.cpp })),
+    }
+  }
+
   return blocks.map((b) => {
     if (b.type === 'verdict_card') {
       return { ...b, econ: price(b.code) }
@@ -413,6 +485,9 @@ export function reconcileEconomics(
         left: { ...b.left, econ: price(b.left.code) },
         right: { ...b.right, econ: price(b.right.code) },
       }
+    }
+    if (b.type === 'counterfactual') {
+      return { ...b, result: counterfactual(b.mutation) }
     }
     return b
   })
@@ -436,7 +511,8 @@ export function a2uiGuidance(profile: TravelProfile | undefined, hasHistory: boo
     '- prompt_chips { type, chips:[string] } — 2-4 natural follow-up taps.',
     '- profile_confirm { type, fact } — after save_profile_fact, echo the durable fact you remembered.',
     '- connect_gmail { type, reason? } — invite the user to connect Gmail so hop can learn from past trips.',
-    'Rules: pick the block TYPE that fits; never emit HTML, styles, or block types not listed; omit the spec entirely if prose alone is best.',
+    '- counterfactual { type, mutation:{op:"add"|"set"|"swap", program?, amount?, from?, to?} } — when the user asks "what if I had a different points portfolio?". Author ONLY the mutation intent (use program brand names as the user said them); hop runs its engine to fill what unlocks and the dollar value. Use "add" for more of a program, "set" for an exact target, "swap" for holding one program instead of another (from/to).',
+    'Rules: pick the block TYPE that fits; never emit HTML, styles, or block types not listed; omit the spec entirely if prose alone is best. Never author counterfactual unlock counts or dollar values — hop computes them.',
   ]
 
   // Personalization nudges — tuned to THIS user's profile + history.

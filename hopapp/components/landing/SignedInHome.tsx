@@ -2,6 +2,7 @@ import Icon from '@/components/Icon'
 import HeroSearch from '@/components/landing/HeroSearch'
 import DestinationGrid from '@/components/landing/DestinationGrid'
 import AgentComposer from '@/components/landing/AgentComposer'
+import LedgerDream from '@/components/landing/LedgerDream'
 import HomeAirportPrompt from '@/components/HomeAirportPrompt'
 import {
   affordableWith,
@@ -150,6 +151,13 @@ export default async function SignedInHome({
           </aside>
         )}
       </section>
+
+      {/* ── THE LEDGER DREAM — a cinematic "Dream of the Week" ───────────── */}
+      {/* The single most aspirational-yet-affordable redemption built FROM their
+          real points stack, with the engine's transparent "how you afford it"
+          proof and a live AI narration. A highlight, placed right under their
+          points so the dream sits next to the wealth that funds it. */}
+      <LedgerDream />
 
       {/* ── SET HOME AIRPORT (only until they've set one) ────────────────── */}
       {!hasHomeAirport ? <HomeAirportPrompt /> : null}

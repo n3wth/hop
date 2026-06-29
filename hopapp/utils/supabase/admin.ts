@@ -139,6 +139,82 @@ interface HopDatabase {
         }
         Relationships: []
       }
+      hop_standing_orders: {
+        // One watch per row. params is jsonb of SearchParams (lib/types).
+        // eligible_programs is a text[] (empty = any program). See CREATE TABLE
+        // in lib/standing-orders.ts notes.
+        Row: {
+          id: string
+          user_id: string
+          params: Json | null
+          min_cpp: number | string
+          seats: number
+          eligible_programs: string[] | null
+          min_cabin: string | null
+          last_notified_offer: string | null
+          active: boolean
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          params: Json
+          min_cpp: number
+          seats?: number
+          eligible_programs?: string[]
+          min_cabin?: string | null
+          last_notified_offer?: string | null
+          active?: boolean
+          created_at?: string | null
+        }
+        Update: {
+          params?: Json
+          min_cpp?: number
+          seats?: number
+          eligible_programs?: string[]
+          min_cabin?: string | null
+          last_notified_offer?: string | null
+          active?: boolean
+        }
+        Relationships: []
+      }
+      hop_standing_order_alerts: {
+        // One alert per verdict crossing. pick is jsonb of the qualifying
+        // FlightOption. See CREATE TABLE in lib/standing-order-alerts.ts notes.
+        Row: {
+          id: string
+          standing_order_id: string
+          user_id: string
+          route: string
+          pick: Json | null
+          cpp: number | string
+          fingerprint: string
+          delivered: boolean
+          seen: boolean
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          standing_order_id: string
+          user_id: string
+          route: string
+          pick: Json
+          cpp: number
+          fingerprint: string
+          delivered?: boolean
+          seen?: boolean
+          created_at?: string | null
+        }
+        Update: {
+          route?: string
+          pick?: Json
+          cpp?: number
+          fingerprint?: string
+          delivered?: boolean
+          seen?: boolean
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

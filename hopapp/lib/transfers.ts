@@ -52,6 +52,8 @@ const GRAPH: Record<string, TransferEdge[]> = {
     { to: 'cathay', ratio: '5:4', multiplier: 0.8, minimum: 1000, note: '1,000 Amex points = 800 Asia Miles' },
     { to: 'emirates', ratio: '5:4', multiplier: 0.8, minimum: 1000, note: '1,000 Amex points = 800 Skywards miles' },
     { to: 'jetblue', ratio: '1:0.8', multiplier: 0.8, minimum: 250, note: '1,000 Amex points = 800 TrueBlue points' },
+    { to: 'aeromexico', ratio: '1:1.6', multiplier: 1.6, minimum: 1000, note: '1,000 Amex points = 1,600 Aeromexico Rewards points' },
+    { to: 'iberia', ratio: '1:1', multiplier: 1, minimum: 1000 },
     { to: 'marriott', ratio: '1:1', multiplier: 1, minimum: 1000 },
     { to: 'hilton', ratio: '1:2', multiplier: 2, minimum: 1000, note: '1,000 Amex points = 2,000 Hilton points' },
   ],
@@ -70,6 +72,7 @@ const GRAPH: Record<string, TransferEdge[]> = {
     { to: 'krisflyer', ratio: '1:1', multiplier: 1, minimum: 1000 },
     { to: 'virgin-atlantic', ratio: '1:1', multiplier: 1, minimum: 1000 },
     { to: 'qatar', ratio: '1:1', multiplier: 1, minimum: 1000 },
+    { to: 'iberia', ratio: '1:1', multiplier: 1, minimum: 1000 },
     { to: 'hyatt', ratio: '1:1', multiplier: 1, minimum: 1000, note: 'Sapphire Preferred moves to 4:3 (phased through 2026); confirm your card' },
     { to: 'marriott', ratio: '1:1', multiplier: 1, minimum: 1000 },
     { to: 'ihg', ratio: '1:1', multiplier: 1, minimum: 1000 },
@@ -100,6 +103,7 @@ const GRAPH: Record<string, TransferEdge[]> = {
   'capital-one': [
     { to: 'aeroplan', ratio: '1:1', multiplier: 1, minimum: 1000 },
     { to: 'avios-ba', ratio: '1:1', multiplier: 1, minimum: 1000 },
+    { to: 'iberia', ratio: '1:1', multiplier: 1, minimum: 1000 },
     { to: 'flying-blue', ratio: '1:1', multiplier: 1, minimum: 1000 },
     { to: 'krisflyer', ratio: '1:1', multiplier: 1, minimum: 1000 },
     { to: 'virgin-atlantic', ratio: '1:1', multiplier: 1, minimum: 1000 },
@@ -122,6 +126,7 @@ const GRAPH: Record<string, TransferEdge[]> = {
     { to: 'southwest', ratio: '1:1', multiplier: 1, minimum: 1000 },
     { to: 'aeroplan', ratio: '1:1', multiplier: 1, minimum: 1000 },
     { to: 'avios-ba', ratio: '1:1', multiplier: 1, minimum: 1000 },
+    { to: 'iberia', ratio: '1:1', multiplier: 1, minimum: 1000 },
     { to: 'flying-blue', ratio: '1:1', multiplier: 1, minimum: 1000 },
     { to: 'virgin-atlantic', ratio: '1:1', multiplier: 1, minimum: 1000 },
     { to: 'emirates', ratio: '1:1', multiplier: 1, minimum: 1000 },
@@ -264,15 +269,23 @@ export function effectiveBalanceFor(
   const target = canonicalizeProgram(targetProgram)
   if (!target) return undefined
 
-  // 1. Direct hold wins outright — no transfer needed, the full balance counts.
-  let directAmount = 0
-  for (const b of balances) {
-    if (b.balance > 0 && balanceProgramId(b) === target.id) {
-      directAmount = Math.max(directAmount, b.balance)
+  // A transferable bank currency is a SOURCE, never a booking program. If the
+  // target canonicalized to a bank (e.g. an airline string that no registry
+  // needle matched fell through to the leading bank token), a "direct hold" of
+  // that bank is NOT bookable award miles — counting it would surface an
+  // economically false unlock. Only its outbound transfers are valid, so skip
+  // the direct branch and let the transfer pass decide.
+  if (!target.transferable) {
+    // 1. Direct hold wins outright — no transfer needed, the full balance counts.
+    let directAmount = 0
+    for (const b of balances) {
+      if (b.balance > 0 && balanceProgramId(b) === target.id) {
+        directAmount = Math.max(directAmount, b.balance)
+      }
     }
-  }
-  if (directAmount > 0) {
-    return { amount: directAmount, via: { kind: 'direct', program: target.name } }
+    if (directAmount > 0) {
+      return { amount: directAmount, via: { kind: 'direct', program: target.name } }
+    }
   }
 
   // 2. Best transfer path. Walk every held source currency's edges; if one reaches

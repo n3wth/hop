@@ -5,6 +5,7 @@ import {
   topValue,
   computeCpp,
 } from '@/lib/destinations'
+import { canonicalizeProgram } from '@/lib/programs'
 
 describe('destinations dataset', () => {
   it('has a curated spread of ~24 destinations', () => {
@@ -16,6 +17,18 @@ describe('destinations dataset', () => {
       const c = computeCpp(d)
       expect(c, `${d.city} cpp`).toBeTypeOf('number')
       expect(c as number).toBeGreaterThan(0)
+    }
+  })
+
+  it('every bestProgram canonicalizes to a concrete airline/hotel, never a bank or undefined', () => {
+    // A bank id (transferable currency) or an unresolved string would make
+    // effectiveBalanceFor surface a direct bank balance as bookable award miles
+    // (a false unlock) or silently zero the destination out. Both are forbidden.
+    for (const d of destinations) {
+      const c = canonicalizeProgram(d.bestProgram)
+      expect(c, `${d.city} bestProgram "${d.bestProgram}" did not canonicalize`).toBeDefined()
+      expect(c!.transferable, `${d.city} bestProgram resolved to bank currency ${c!.id}`).toBe(false)
+      expect(['airline', 'hotel'], `${d.city} bestProgram kind`).toContain(c!.kind)
     }
   })
 

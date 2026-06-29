@@ -23,6 +23,7 @@ import type {
   PromptChipsBlock,
   ProfileConfirmBlock,
   ConnectGmailBlock,
+  CounterfactualBlock,
 } from '@/lib/a2ui'
 
 // A destination block links into a real hop search seeded to that city.
@@ -73,6 +74,8 @@ export function A2UIBlockView({
       return <ProfileConfirm b={block} />
     case 'connect_gmail':
       return <ConnectGmail b={block} />
+    case 'counterfactual':
+      return <Counterfactual b={block} />
     default:
       // Never reached for a valid union member — defensive only.
       return null
@@ -369,6 +372,56 @@ function ConnectGmail({ b }: { b: ConnectGmailBlock }) {
           Soon
         </span>
       </button>
+    </div>
+  )
+}
+
+// ── counterfactual ───────────────────────────────────────────────────────────
+
+// COUNTERFACTUAL YOU, inline. The unlock count + dollar value + cities come from
+// `result`, which the SERVER stamped by running hop's deterministic engine over
+// the user's real balances — never the model. Renders nothing useful if result is
+// absent (mutation didn't resolve to a known program).
+function Counterfactual({ b }: { b: CounterfactualBlock }) {
+  const r = b.result
+  if (!r) return null
+  return (
+    <div className="rounded-[16px] border border-border bg-surface p-4">
+      <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
+        <Icon name="swap_horiz" size={14} className="text-brand" />
+        What if · {r.label}
+      </div>
+      {r.unlockedCount > 0 ? (
+        <p className="font-display text-[15px] font-semibold leading-snug tracking-[-0.01em] text-text">
+          Unlocks {r.unlockedCount} {r.unlockedCount === 1 ? 'trip' : 'trips'} worth about{' '}
+          <span className="tabular-nums text-brand">${r.dollarValue.toLocaleString('en-US')}</span> in
+          cash flights.
+        </p>
+      ) : (
+        <p className="text-[13px] leading-[1.5] text-text2">
+          No new trips cross the line with that change.
+        </p>
+      )}
+      {r.unlocked.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {r.unlocked.map((d) => (
+            <a
+              key={d.code}
+              href={searchHref(d.code)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-paper px-2.5 py-1 text-[12px] font-medium text-text2 transition-colors hover:border-brand hover:text-brand"
+            >
+              <span
+                className={`fi fi-${d.countryCode} h-[11px] w-[15px] flex-shrink-0 rounded-[1px]`}
+                aria-hidden
+              />
+              {d.city}
+              {d.cpp != null ? (
+                <span className="tabular-nums text-text3">{d.cpp.toFixed(1)}¢</span>
+              ) : null}
+            </a>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }

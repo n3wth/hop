@@ -50,6 +50,12 @@ const BASELINE_CPP: Record<string, number> = {
   qantas: 1.3,
   cathay: 1.3,
   turkish: 1.1,
+  'korean-air': 1.5,
+  iberia: 1.4,
+  aeromexico: 1.1,
+  'royal-air-maroc': 1.0,
+  aegean: 1.2,
+  tap: 1.2,
 
   // Hotels
   hyatt: 1.55,

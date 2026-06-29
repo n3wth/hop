@@ -148,6 +148,7 @@ describe('validateBlock() — closed union, per-block validation', () => {
       prompt_chips: { type: 'prompt_chips', chips: ['a'] },
       profile_confirm: { type: 'profile_confirm', fact: 'f' },
       connect_gmail: { type: 'connect_gmail' },
+      counterfactual: { type: 'counterfactual', mutation: { op: 'add', program: 'amex', amount: 50000 } },
     }
     for (const t of A2UI_BLOCK_TYPES) {
       expect(validateBlock(samples[t])).not.toBeNull()
