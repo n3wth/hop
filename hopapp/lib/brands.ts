@@ -29,6 +29,7 @@ export type BrandSlug =
   | 'amex'
   | 'chase'
   | 'bilt'
+  | 'frontier'
 
 export interface BrandDef {
   // path under /public, or null for a monogram-only brand (e.g. Bilt)
@@ -64,6 +65,7 @@ export const BRANDS: Record<BrandSlug, BrandDef> = {
   amex: { src: '/programs/amex.svg', hue: '#3f7aa6', mono: 'AX' }, // #006FCF muted
   chase: { src: '/programs/chase.svg', hue: '#3f7aa6', mono: 'UR' }, // #117ACA muted
   bilt: { src: null, hue: '#5a5750', mono: 'B' }, // neutral dark, no brand icon
+  frontier: { src: null, hue: '#3f7a5e', mono: 'F9' }, // muted green, monogram-only (no logo)
 }
 
 // IATA code -> slug for carriers/programs we have a real logo (or curated def) for.
@@ -91,6 +93,7 @@ const CODE_TO_SLUG: Record<string, BrandSlug> = {
   AX: 'amex',
   UR: 'chase',
   BR: 'bilt',
+  F9: 'frontier',
 }
 
 // name substring -> slug, ordered most-specific first.
@@ -114,6 +117,7 @@ const NAME_TO_SLUG: Array<[string, BrandSlug]> = [
   ['cathay', 'cathay'],
   ['qantas', 'qantas'],
   ['turkish', 'turkish'],
+  ['frontier', 'frontier'],
   // program names
   ['american express', 'amex'],
   ['membership rewards', 'amex'],
