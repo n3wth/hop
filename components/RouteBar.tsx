@@ -71,7 +71,7 @@ export default function RouteBar({ result, hasRealBalances = false }: RouteBarPr
             <span className="font-display text-[19px] font-semibold tracking-[-0.01em] text-text">
               {from}
             </span>
-            <span className="text-[12px] uppercase tracking-[0.06em] text-text3">
+            <span className="text-[13px] text-text2">
               {cityForCode(from)}
             </span>
           </div>
@@ -82,7 +82,7 @@ export default function RouteBar({ result, hasRealBalances = false }: RouteBarPr
             <span className="font-display text-[19px] font-semibold tracking-[-0.01em] text-text">
               {to}
             </span>
-            <span className="text-[12px] uppercase tracking-[0.06em] text-text3">
+            <span className="text-[13px] text-text2">
               {cityForCode(to)}
             </span>
           </div>

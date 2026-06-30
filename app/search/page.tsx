@@ -275,10 +275,10 @@ export default async function Search({
       user={user}
       pointsTotal={user ? result.balances.reduce((s, b) => s + b.balance, 0) : undefined}
     >
-      {/* The results column is generous on wide screens (the verdict hero, the
-          4-up alternatives, and the wallet all earn the width) but capped so it
-          reads as a premium spread, not edge-to-edge sprawl at 1920+. */}
-      <div className="mx-auto max-w-[1440px] 2xl:max-w-[1560px]">
+      {/* The results column is generous enough for the verdict hero, the 4-up
+          alternatives, and the wallet, but capped tighter so it reads as a
+          composed column — not an edge-to-edge sprawl on wide monitors. */}
+      <div className="mx-auto max-w-[1200px]">
         {/* plain trip context — route + facts, not fake masthead metadata */}
         <RouteBar result={result} hasRealBalances={hasRealBalances} />
 
