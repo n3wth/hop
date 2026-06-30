@@ -126,12 +126,12 @@ export default function ConciergeHero({
       <div
         className={`relative flex flex-1 flex-col items-center px-5 text-center sm:px-10 ${
           full
-            ? 'justify-center pb-6 pt-[calc(var(--hop-nav)+2rem)]'
+            ? 'justify-center py-8'
             : 'py-12 sm:py-16'
         }`}
       >
         <span
-          className="hop-rise inline-flex items-center gap-2 rounded-full bg-[#0a5757] px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-hero-eyebrow"
+          className="hop-rise inline-flex items-center gap-2 rounded-full bg-brand-deep px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-hero-eyebrow"
           style={{ ['--hop-delay' as string]: '40ms' }}
         >
           <Icon name="lightbulb" size={13} />
@@ -176,7 +176,7 @@ export default function ConciergeHero({
               type="submit"
               aria-label="Ask hop"
               disabled={!value.trim() || submitDisabled}
-              className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:bg-[#0a5757] disabled:text-[#5f9b97]"
+              className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:bg-brand-deep disabled:text-hero-label"
             >
               <span className="hidden sm:inline">Ask hop</span>
               <Icon name="flight" size={16} className="rotate-90" />
@@ -195,7 +195,7 @@ export default function ConciergeHero({
               key={p}
               type="button"
               onClick={() => onChip(p)}
-              className={`rounded-full border border-[#2c6f6b] bg-[#0a5757] px-3.5 py-2 text-[13px] font-medium text-hero-body transition-colors hover:border-wallet-active hover:text-hero-white-hover ${full ? 'text-center' : ''}`}
+              className={`rounded-full border border-brand-muted bg-brand-deep px-3.5 py-2 text-[13px] font-medium text-hero-body transition-colors hover:border-wallet-active hover:text-hero-white-hover ${full ? 'text-center' : ''}`}
             >
               {p}
             </button>
@@ -224,19 +224,18 @@ export default function ConciergeHero({
             <button
               type="button"
               disabled
-              aria-disabled
               title="Coming soon — let hop learn from your past trips"
-              className="flex cursor-not-allowed items-center gap-1.5 rounded-full border border-[#2c6f6b] bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-hero-label"
+              className="flex cursor-not-allowed items-center gap-1.5 rounded-full border border-brand-muted bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-hero-label"
             >
               <Icon name="loyalty" size={14} className="flex-shrink-0" />
               Connect Gmail to learn from past trips
-              <span className="rounded-full bg-[#0a5757] px-1.5 py-px text-[10px] uppercase tracking-wide text-hero-body">
+              <span className="rounded-full bg-brand-deep px-1.5 py-px text-[10px] uppercase tracking-wide text-hero-body">
                 Soon
               </span>
             </button>
             <a
               href="/account"
-              className="flex items-center gap-1.5 rounded-full border border-[#2c6f6b] bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-hero-label transition-colors hover:border-wallet-active hover:text-hero-white-hover"
+              className="flex items-center gap-1.5 rounded-full border border-brand-muted bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-hero-label transition-colors hover:border-wallet-active hover:text-hero-white-hover"
             >
               <Icon name="info" size={14} className="flex-shrink-0" />
               What hop remembers

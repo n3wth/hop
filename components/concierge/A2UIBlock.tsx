@@ -124,7 +124,12 @@ function VerdictPill({ verdict, cpp }: { verdict: A2UIEconomics['verdict']; cpp?
     verdict === 'points' ? 'Use points' : verdict === 'cash' ? 'Pay cash' : 'Save toward'
   // Brand teal for the points win (matches VerdictRail), warm ochre for save,
   // muted ink for cash — the same three-state palette the rail uses.
-  const bg = verdict === 'points' ? '#0d6e6e' : verdict === 'cash' ? '#5a5750' : '#9a6a2e'
+  const bg =
+    verdict === 'points'
+      ? 'var(--color-brand)'
+      : verdict === 'cash'
+        ? 'var(--color-cash)'
+        : 'var(--color-warn)'
   return (
     <span
       className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white"
@@ -472,7 +477,6 @@ function ConnectGmail({ b }: { b: ConnectGmailBlock }) {
       <button
         type="button"
         disabled
-        aria-disabled
         title="Coming soon"
         className="flex flex-shrink-0 cursor-not-allowed items-center gap-1.5 self-start rounded-full border border-border bg-sunk px-3.5 py-1.5 text-[12px] font-semibold text-text3 sm:self-auto"
       >

@@ -28,6 +28,7 @@
   --color-brand-light: #e3f1ef; /* mint */
   --color-brand-mint-deep: #cfe6e2;
   --color-brand-tint: #eef7f4;
+  --color-brand-muted: #2c6f6b; /* mid-teal for chip borders/dividers on the dark hero */
 
   --color-good: #0d6e6e; /* strong CPP value reads teal in editorial chips */
   --color-good-bg: #e3f1ef;
@@ -38,6 +39,8 @@
 
   --color-gold: #c98a3c;
   --color-amber: #8f5618; /* darkened to clear AA on gold-soft (Best find badge) */
+  --color-cash: #5a5750; /* cash-verdict ink */
+  --color-warn: #9a6a2e; /* warm ochre — save-verdict + tool error accent (AA on light surfaces) */
 
   /* hero / wallet accents */
   --color-hero-cream: #eafaf7;
@@ -422,12 +425,11 @@ body {
   --hop-nav: 76px;
 }
 
-/* Full-viewport stage — the hero panel fills the screen, with the transparent
-   sticky nav floating over the top. Cancels AppShell's pb-24 so there's no
-   trailing gap below the stage. */
+/* Single-viewport stage — the concierge fills exactly the space below the nav so
+   the page never scrolls vertically: nav (--hop-nav, in flow) + stage = 100dvh.
+   The landing hero sits flush under the nav; the thread scrolls only internally. */
 .hop-ask-stage {
-  height: 100dvh;
-  margin-bottom: -6rem; /* neutralizes AppShell's pb-24 (96px) */
+  height: calc(100dvh - var(--hop-nav));
 }
 
 /* A calm reading measure for the thread — centered within the full-bleed stage
