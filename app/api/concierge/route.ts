@@ -658,10 +658,12 @@ export async function POST(request: Request): Promise<Response> {
         // on is the a2ui spec (or a partial fence). We must NOT flush from there:
         // buffer it and let stripA2UIFence remove it at the end. -1 = no fence yet.
         let fenceAt = -1
-        // Map AI SDK tool-call ids -> our stable frame ids so a 'tool-call'
-        // (running) and its later 'tool-result'/'tool-error' (done) update the
-        // SAME card on the client. Best-effort; tool framing never blocks prose.
-        const toolFrameIds = new Map<string, string>()
+        // Map AI SDK tool-call ids -> our stable frame id + its detail line, so a
+        // 'tool-call' (running) and its later 'tool-result'/'tool-error' (done)
+        // update the SAME card on the client AND the done frame keeps the specific
+        // detail (e.g. "· TYO") instead of collapsing to the generic title.
+        // Best-effort; tool framing never blocks prose.
+        const toolFrameIds = new Map<string, { id: string; detail?: string }>()
         let toolSeq = 0
         const emitFrame = (frame: ToolActivityFrame) => {
           try {
@@ -698,21 +700,19 @@ export async function POST(request: Request): Promise<Response> {
             } else if (part.type === 'tool-call') {
               flushProse(false) // emit ALL prose-so-far before the frame — no mid-word split
               const id = `t${toolSeq++}`
-              toolFrameIds.set(part.toolCallId, id)
-              emitFrame({
-                id,
-                tool: part.toolName,
-                state: 'input-available',
-                detail: toolDetail(part.toolName, part.input, hasBalances),
-              })
+              const detail = toolDetail(part.toolName, part.input, hasBalances)
+              toolFrameIds.set(part.toolCallId, { id, detail })
+              emitFrame({ id, tool: part.toolName, state: 'input-available', detail })
             } else if (part.type === 'tool-result') {
               flushProse(false)
-              const id = toolFrameIds.get(part.toolCallId)
-              if (id) emitFrame({ id, tool: part.toolName, state: 'output-available' })
+              const f = toolFrameIds.get(part.toolCallId)
+              // Re-send the detail so the done card stays specific ("Priced this
+              // route · TYO"), not the bare generic title.
+              if (f) emitFrame({ id: f.id, tool: part.toolName, state: 'output-available', detail: f.detail })
             } else if (part.type === 'tool-error') {
               flushProse(false)
-              const id = toolFrameIds.get(part.toolCallId)
-              if (id) emitFrame({ id, tool: part.toolName, state: 'output-error' })
+              const f = toolFrameIds.get(part.toolCallId)
+              if (f) emitFrame({ id: f.id, tool: part.toolName, state: 'output-error', detail: f.detail })
             }
           }
         } catch (err) {

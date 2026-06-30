@@ -363,37 +363,34 @@ export function parseA2UI(raw: unknown): A2UIBlock[] {
   } else {
     return []
   }
-  const out: A2UIBlock[] = []
+  const valid: A2UIBlock[] = []
   for (const item of arr) {
     const block = validateBlock(item)
-    if (block) out.push(block)
-    if (out.length >= MAX_BLOCKS) break
+    if (block) valid.push(block)
   }
-  return out
+  if (valid.length <= MAX_BLOCKS) return valid
+  // Over the cap: keep the first MAX_BLOCKS, but ALWAYS preserve a prompt_chips
+  // block. It's emitted LAST (per the guidance), so a naive head-slice would drop
+  // the very block that drives the follow-up dock — the bug behind "chips don't
+  // render" on answers with many cards. Swap it into the kept set if it was cut.
+  const kept = valid.slice(0, MAX_BLOCKS)
+  if (!kept.some((b) => b.type === 'prompt_chips')) {
+    const chips = valid.find((b) => b.type === 'prompt_chips')
+    if (chips) kept[kept.length - 1] = chips
+  }
+  return kept
 }
 
-// Extract the FIRST balanced JSON object/array embedded in model text (the model
-// may wrap the spec in prose or ```json fences). Returns parsed JSON or null.
-// Pure + total. Used when the a2ui spec is emitted inline rather than as a tool
-// result.
-export function extractA2UIJson(text: string): unknown {
-  if (typeof text !== 'string') return null
-  const unfenced = text
-    .replace(/```(?:json)?/gi, '')
-    .trim()
-  // Find the first '{' or '[' and scan to its balanced close.
-  const startObj = unfenced.indexOf('{')
-  const startArr = unfenced.indexOf('[')
-  const candidates = [startObj, startArr].filter((i) => i !== -1)
-  if (!candidates.length) return null
-  const start = Math.min(...candidates)
-  const open = unfenced[start]
+// Index of the close that balances the bracket opened at `start`, or -1. Respects
+// string literals + escapes so a brace inside a JSON string never miscounts.
+function balancedEnd(s: string, start: number): number {
+  const open = s[start]
   const close = open === '{' ? '}' : ']'
   let depth = 0
   let inStr = false
   let esc = false
-  for (let i = start; i < unfenced.length; i++) {
-    const ch = unfenced[i]
+  for (let i = start; i < s.length; i++) {
+    const ch = s[i]
     if (inStr) {
       if (esc) esc = false
       else if (ch === '\\') esc = true
@@ -404,16 +401,73 @@ export function extractA2UIJson(text: string): unknown {
     else if (ch === open) depth++
     else if (ch === close) {
       depth--
-      if (depth === 0) {
-        try {
-          return JSON.parse(unfenced.slice(start, i + 1))
-        } catch {
-          return null
-        }
-      }
+      if (depth === 0) return i
     }
   }
-  return null
+  return -1
+}
+
+// Every top-level balanced {..}/[..] region in `s` that parses as JSON. A region
+// that balances but FAILS to parse (e.g. an itinerary's "{arrival}") is stepped
+// over, so the real spec further along is still found. Pure + total.
+function scanJsonValues(s: string): unknown[] {
+  const out: unknown[] = []
+  let i = 0
+  while (i < s.length) {
+    const ch = s[i]
+    if (ch === '{' || ch === '[') {
+      const end = balancedEnd(s, i)
+      if (end !== -1) {
+        try {
+          out.push(JSON.parse(s.slice(i, end + 1)))
+        } catch {
+          // balanced but not valid JSON — skip past it and keep scanning.
+        }
+        i = end + 1
+        continue
+      }
+    }
+    i++
+  }
+  return out
+}
+
+// Does a parsed value look like the a2ui envelope — an object with a `blocks`
+// array, or a bare array of blocks? Used to pick the RIGHT JSON when prose
+// contains other braces.
+function isA2UIEnvelope(v: unknown): boolean {
+  if (Array.isArray(v)) return true
+  return !!v && typeof v === 'object' && Array.isArray((v as { blocks?: unknown }).blocks)
+}
+
+// Extract the a2ui spec JSON embedded in model text. ROBUST to stray braces in
+// prose: it scans every fenced ```json block AND the raw text for balanced JSON,
+// then returns the a2ui-shaped value NEAREST THE END (the spec is emitted last),
+// preferring fenced matches. The old extractor grabbed the FIRST brace and gave
+// up if it didn't parse — so a single "{" in an itinerary lost the whole spec
+// (cards AND follow-up chips). Falls back to the first balanced JSON only when
+// nothing a2ui-shaped is found. Pure + total — garbage in → null out.
+export function extractA2UIJson(text: string): unknown {
+  if (typeof text !== 'string') return null
+  const fenced: unknown[] = []
+  const fence = /```(?:json)?\s*([\s\S]*?)```/gi
+  for (let m = fence.exec(text); m; m = fence.exec(text)) {
+    for (const v of scanJsonValues(m[1])) fenced.push(v)
+  }
+  // Whole text with fence markers stripped (fence bodies stay inline) as fallback.
+  const raw = scanJsonValues(text.replace(/```(?:json)?/gi, ''))
+
+  const lastEnvelope = (arr: unknown[]): unknown => {
+    for (let i = arr.length - 1; i >= 0; i--) if (isA2UIEnvelope(arr[i])) return arr[i]
+    return undefined
+  }
+  const env = lastEnvelope(fenced)
+  if (env !== undefined) return env
+  const envRaw = lastEnvelope(raw)
+  if (envRaw !== undefined) return envRaw
+  // Nothing a2ui-shaped — preserve legacy behavior (first balanced JSON anywhere);
+  // parseA2UI validates/drops it as needed.
+  return fenced[0] ?? raw[0] ?? null
 }
 
 // --- Economics reconciliation (engine is the source of truth) -----------------
