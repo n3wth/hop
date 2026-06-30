@@ -149,7 +149,7 @@ function VerdictPill({ verdict, cpp }: { verdict: A2UIEconomics['verdict']; cpp?
     >
       {label}
       {verdict === 'points' && cpp != null ? (
-        <span className="tabular-nums">· {cpp.toFixed(1)}¢/pt</span>
+        <span className="hop-num">· {cpp.toFixed(1)}¢/pt</span>
       ) : null}
     </span>
   )
@@ -165,7 +165,7 @@ function SavingsLead({ econ }: { econ: A2UIEconomics }) {
     const save = Math.round(econ.cashUsd)
     return (
       <div className="mt-2.5 flex items-baseline gap-1.5">
-        <span className="font-display text-[30px] font-semibold leading-[0.95] tracking-[-0.03em] tabular-nums text-brand">
+        <span className="hop-price text-[30px] leading-[0.95] text-brand">
           ${save.toLocaleString('en-US')}
         </span>
         <span className="font-display text-[13px] font-semibold leading-tight tracking-[-0.01em] text-text2">
@@ -176,7 +176,7 @@ function SavingsLead({ econ }: { econ: A2UIEconomics }) {
   }
   return (
     <div className="mt-2.5 flex items-baseline gap-1.5">
-      <span className="font-display text-[24px] font-semibold leading-[0.95] tracking-[-0.02em] tabular-nums text-text">
+      <span className="hop-price text-[24px] leading-[0.95] text-text">
         ${Math.round(econ.cashUsd).toLocaleString('en-US')}
       </span>
       <span className="text-[12px] font-medium text-text3">cash{econ.verdict === 'save' ? ' · save toward it' : ''}</span>
@@ -193,7 +193,7 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
         {label}
       </div>
       <div
-        className={`font-display text-[15px] font-semibold leading-none tabular-nums ${accent ? 'text-brand' : 'text-text'}`}
+        className={`hop-num text-[15px] font-semibold leading-none ${accent ? 'text-brand' : 'text-text'}`}
       >
         {value}
       </div>
@@ -223,7 +223,7 @@ function EconFacts({ econ, hasBalances }: { econ?: A2UIEconomics; hasBalances: b
       {/* program path — value framing when signed-out, possession when owned */}
       {owns ? (
         <p className="mt-2.5 text-[11.5px] leading-[1.5] text-text2">
-          <b className={`font-semibold tabular-nums ${econ.affordable ? 'text-brand' : 'text-text'}`}>
+          <b className={`hop-num font-semibold ${econ.affordable ? 'text-brand' : 'text-text'}`}>
             {econ.youHave!.toLocaleString('en-US')}
           </b>{' '}
           toward {econ.bestProgram}
@@ -404,7 +404,7 @@ function Weather({ b }: { b: WeatherBlock }) {
           {b.place} · {b.month}
         </div>
         {hasTemp ? (
-          <span className="font-display text-[15px] font-semibold tabular-nums text-text">
+          <span className="hop-num text-[15px] font-semibold text-text">
             {b.lowC != null ? `${Math.round(b.lowC)}°` : ''}
             {b.lowC != null && b.highC != null ? '–' : ''}
             {b.highC != null ? `${Math.round(b.highC)}°C` : ''}
@@ -543,7 +543,7 @@ function Counterfactual({ b, homeAirport }: { b: CounterfactualBlock; homeAirpor
       {r.unlockedCount > 0 ? (
         <p className="font-display text-[15px] font-semibold leading-snug tracking-[-0.01em] text-text">
           Unlocks {r.unlockedCount} {r.unlockedCount === 1 ? 'trip' : 'trips'} worth about{' '}
-          <span className="tabular-nums text-brand">${r.dollarValue.toLocaleString('en-US')}</span> in
+          <span className="hop-num text-brand">${r.dollarValue.toLocaleString('en-US')}</span> in
           cash flights.
         </p>
       ) : (
@@ -565,7 +565,7 @@ function Counterfactual({ b, homeAirport }: { b: CounterfactualBlock; homeAirpor
               />
               {d.city}
               {d.cpp != null ? (
-                <span className="tabular-nums text-text3">{d.cpp.toFixed(1)}¢/pt</span>
+                <span className="hop-num text-text3">{d.cpp.toFixed(1)}¢/pt</span>
               ) : null}
             </a>
           ))}

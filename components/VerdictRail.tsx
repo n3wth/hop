@@ -265,7 +265,7 @@ function HStat({
         {label}
       </div>
       <div
-        className="font-display text-[27px] font-semibold tracking-[-0.01em] tabular-nums"
+        className="hop-price text-[27px]"
         style={{ color: accent ? '#6ff0d2' : '#fff' }}
       >
         {value}

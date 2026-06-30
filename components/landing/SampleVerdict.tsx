@@ -108,7 +108,7 @@ function Stat({
         {label}
       </div>
       <div
-        className="font-display text-[24px] font-semibold tracking-[-0.01em] tabular-nums"
+        className="hop-price text-[24px]"
         style={{ color: accent ? '#6ff0d2' : '#fff' }}
       >
         {value}

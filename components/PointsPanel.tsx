@@ -101,7 +101,7 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
                 />
               </div>
 
-              <div className="text-right font-display text-[15px] font-semibold tabular-nums text-white sm:text-[16px]">
+              <div className="hop-num text-right text-[15px] font-semibold text-white sm:text-[16px]">
                 {b.balance.toLocaleString()}
               </div>
             </div>
@@ -115,7 +115,7 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
           {total.toLocaleString()} across {balances.length}{' '}
           {balances.length === 1 ? 'program' : 'programs'}
         </span>
-        <span className="font-display text-[20px] font-semibold tabular-nums text-white">
+        <span className="hop-price text-[20px] text-white">
           {compact(total)}
         </span>
       </div>

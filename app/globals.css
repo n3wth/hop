@@ -74,8 +74,41 @@
   --font-display: var(--font-bricolage), "Bricolage Grotesque", system-ui, sans-serif;
   --font-sans: "General Sans", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-wordmark-stack: var(--font-wordmark), "Fraunces", Georgia, serif;
+  /* Geist Mono — numbers, prices, cpp values, miles. Tabular by default. */
+  --font-mono: var(--font-geist-mono), "Geist Mono", ui-monospace, "JetBrains Mono", monospace;
 
   --spacing-sq: 76px;
+
+  /* ── Spacing scale — 4px base ─────────────────────────────────────────── */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-14: 56px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* ── Typography scale ─────────────────────────────────────────────────── */
+  --text-2xs: 10px;  /* micro labels, version badges */
+  --text-xs: 11px;   /* eyebrows, chip labels, flags */
+  --text-sm: 12px;   /* captions, meta rows */
+  --text-base: 14px; /* body copy (global default) */
+  --text-md: 15px;   /* emphasized body, button labels */
+  --text-lg: 16px;   /* section intros, large labels */
+  --text-xl: 18px;   /* sub-headlines, card titles */
+  --text-2xl: 20px;  /* small display */
+  --text-3xl: 24px;  /* section heads */
+  --text-4xl: 30px;  /* route bar, key numbers */
+  --text-5xl: 40px;  /* verdict sub-head (mobile) */
+  --text-hero: 64px; /* verdict headline */
 }
 
 * {
@@ -139,6 +172,24 @@ body {
   font-family: var(--font-wordmark-stack);
   font-style: italic;
   font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Number display — Geist Mono with tabular nums so miles, prices, and cpp
+   values never jitter as they update. Used on any element that renders a
+   number users will compare or scan vertically. */
+.hop-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Price / headline number — same mono base but semibold for dollar amounts
+   and large stat figures in the verdict hero and deal cards. */
+.hop-price {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
   letter-spacing: -0.02em;
 }
 

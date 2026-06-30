@@ -57,7 +57,7 @@ export default function SeeTheMath({ pick, cheapestCash, threshold, unit }: SeeT
         <div>
           <div className="mt-[18px] rounded-[16px] border border-white/12 bg-white/[0.04] p-[22px] text-[#dcefe9]">
             {/* the formula, spelled out with this pick's real numbers */}
-            <div className="grid gap-[2px] font-display text-[15px] tabular-nums">
+            <div className="hop-num grid gap-[2px] text-[15px]">
               <MathRow
                 label="Cash price"
                 value={money(cash)}
@@ -134,7 +134,7 @@ function MathRow({
         {hint ? <span className="ml-2 text-[11.5px] font-normal text-[#84b3aa]">{hint}</span> : null}
       </span>
       <span
-        className="flex-shrink-0 font-semibold"
+        className="hop-num flex-shrink-0 font-semibold"
         style={{ color: accent ? '#6ff0d2' : '#fff' }}
       >
         {value}
