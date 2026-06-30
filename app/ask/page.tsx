@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
+import { cookies } from 'next/headers'
 import { auth0 } from '@/lib/auth0'
 import { mockBalances } from '@/lib/mock'
 import { getUserBalances } from '@/lib/accounts'
 import { getPrefs } from '@/lib/prefs'
 import { isGmailHistoryEnabled } from '@/lib/env'
+import { ORIGIN_STORAGE_KEY } from '@/lib/origin-context'
 import { pageMeta } from '@/lib/seo'
 import AppShell from '@/components/AppShell'
 import Concierge, { type ConciergePhoto, type ConciergeInitialMessage } from '@/components/Concierge'
@@ -51,12 +53,19 @@ export default async function AskPage({
       }
     : null
 
+  // Persistent "where from" cookie — the origin the user set anywhere in the app.
+  // It backs the concierge's departure airport when no saved home-airport pref
+  // exists (and even when signed out), so recs stay anchored to where they fly.
+  const cookieStore = await cookies()
+  const cookieOrigin = cookieStore.get(ORIGIN_STORAGE_KEY)?.value?.trim().toUpperCase()
+  const originFallback = cookieOrigin && /^[A-Z]{3}$/.test(cookieOrigin) ? cookieOrigin : undefined
+
   // Context for the concierge — the user's real points (total + per-program) and
   // their home airport (where realistic trips depart from). Live when configured,
   // mock otherwise; only computed when signed in. Never crashes the page.
   let totalPoints: number | undefined
   let programs: { program: string; balance: number }[] | undefined
-  let homeAirport: string | undefined
+  let homeAirport: string | undefined = originFallback
   if (user) {
     // Unified per-user balances (manual + AwardWallet, merged). Mock ONLY in
     // local dev (MOCK=1); a real user with no programs has none — the concierge
@@ -67,7 +76,8 @@ export default async function AskPage({
     totalPoints = balances.length > 0 ? balances.reduce((sum, b) => sum + b.balance, 0) : undefined
     programs = balances.map((b) => ({ program: b.program, balance: b.balance }))
     const prefs = su?.sub ? await getPrefs(su.sub) : {}
-    homeAirport = prefs.homeAirport
+    // Saved pref wins when present; otherwise keep the cookie origin fallback.
+    homeAirport = prefs.homeAirport ?? originFallback
   }
 
   // Resume the signed-in user's persisted concierge thread so /ask picks up

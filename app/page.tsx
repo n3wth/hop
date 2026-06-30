@@ -1,7 +1,9 @@
+import { cookies } from 'next/headers'
 import { auth0 } from '@/lib/auth0'
 import { mockBalances } from '@/lib/mock'
 import { getPrefs, type UserPrefs } from '@/lib/prefs'
 import { getUserBalances } from '@/lib/accounts'
+import { ORIGIN_STORAGE_KEY } from '@/lib/origin-context'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import type { SearchState } from '@/components/SearchBar'
@@ -85,11 +87,17 @@ export default async function Home() {
   // Never crashes the home if the image call fails.
   const heroBackdrop = heroBackdropRaw ?? undefined
 
-  // Home airport (Supabase pref) seeds the default From + gates the set-home prompt.
+  // Home airport (Supabase pref) seeds the default From + gates the set-home
+  // prompt. The persistent "where from" cookie backs the From when there's no
+  // saved pref — but does NOT count as a saved home airport (the prompt to save
+  // one still shows), so the seed and hasHomeAirport stay independent.
+  const cookieStore = await cookies()
+  const cookieOriginRaw = cookieStore.get(ORIGIN_STORAGE_KEY)?.value?.trim().toUpperCase()
+  const cookieOrigin =
+    cookieOriginRaw && /^[A-Z]{3}$/.test(cookieOriginRaw) ? cookieOriginRaw : undefined
   const seed = makeSeed()
-  const homeSeed: SearchState = prefs.homeAirport
-    ? { ...seed, from: prefs.homeAirport }
-    : seed
+  const seedFrom = prefs.homeAirport ?? cookieOrigin
+  const homeSeed: SearchState = seedFrom ? { ...seed, from: seedFrom } : seed
 
   // ── SIGNED IN — personalized dashboard ───────────────────────────────────
   if (user) {

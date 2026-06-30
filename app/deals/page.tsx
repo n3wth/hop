@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers'
 import { topValue, imageQuery } from '@/lib/destinations'
 import { destinationImages } from '@/lib/images'
 import { getUserBalances } from '@/lib/accounts'
@@ -8,6 +9,7 @@ import DealCard from '@/components/DealCard'
 import DegradedNote from '@/components/DegradedNote'
 import SiteFooter from '@/components/SiteFooter'
 import Icon from '@/components/Icon'
+import { ORIGIN_STORAGE_KEY } from '@/lib/origin-context'
 import { pageMeta } from '@/lib/seo'
 import { localISO } from '@/lib/dates'
 
@@ -52,6 +54,11 @@ export default async function DealsPage({
   const params = await searchParams
   const fromParam = normalizeOrigin(params.from)
 
+  // Persistent "where from" cookie — seeds the deal CTAs' origin when there's no
+  // ?from= and no saved home airport, so the feed departs from where they fly.
+  const cookieStore = await cookies()
+  const cookieOrigin = normalizeOrigin(cookieStore.get(ORIGIN_STORAGE_KEY)?.value)
+
   // Destination photography and the Auth0 session are independent — resolve
   // them concurrently. Photos are cached per query (day-long revalidate); null
   // entries fall back to a solid brand-tint tile in the card.
@@ -90,8 +97,9 @@ export default async function DealsPage({
     }
   }
 
-  // Origin precedence: explicit ?from= → saved home airport → SFO.
-  const origin = fromParam ?? normalizeOrigin(homeAirport) ?? DEFAULT_ORIGIN
+  // Origin precedence: explicit ?from= → saved home airport → "where from"
+  // cookie → SFO.
+  const origin = fromParam ?? normalizeOrigin(homeAirport) ?? cookieOrigin ?? DEFAULT_ORIGIN
   const hasDeals = deals.length > 0
 
   return (
