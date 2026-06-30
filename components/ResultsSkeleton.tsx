@@ -1,8 +1,9 @@
-// Shimmer skeleton for the results plane. Mirrors the real layout — RouteBar,
-// verdict hero, the four alternative cards, the wallet — so the loading state
-// reads as the page taking shape, not a spinner. Warm cream/sunk tones, subtle
-// sheen (.hop-skeleton). Shown by app/loading.tsx during navigation/search while
-// the Server Component fetches (live APIs take ~3s).
+// Shimmer skeleton for the results plane. Mirrors the real rendered layout —
+// the same max-width container, RouteBar, verdict hero, the four alternative
+// cards, and the dark wallet — at the SAME breakpoints, so results swap in with
+// no layout shift (the loading state reads as the page taking shape, not a
+// spinner that snaps). Warm cream/sunk tones, subtle sheen (.hop-skeleton).
+// Shown by app/search/loading.tsx while the Server Component fetches (~3s).
 
 function Bar({ w, h = 12, className = '' }: { w: string; h?: number; className?: string }) {
   return (
@@ -10,6 +11,16 @@ function Bar({ w, h = 12, className = '' }: { w: string; h?: number; className?:
       className={`hop-skeleton block rounded-[6px] ${className}`}
       style={{ width: w, height: h }}
     />
+  )
+}
+
+// Right-aligned stat placeholder — value over caption, matching RouteBar's Stat.
+function StatSkeleton() {
+  return (
+    <div className="flex flex-col items-end gap-[6px] leading-none">
+      <Bar w="40px" h={18} />
+      <Bar w="58px" h={10} />
+    </div>
   )
 }
 
@@ -41,12 +52,41 @@ function CardSkeleton() {
 
 export default function ResultsSkeleton() {
   return (
-    <div aria-busy="true" aria-label="Loading flight results">
-      {/* RouteBar placeholder — a single thin facts row */}
-      <div className="mt-2 flex items-center gap-5 border-b border-hair pb-5">
-        <Bar w="180px" h={16} />
-        <Bar w="120px" h={12} />
-        <Bar w="90px" h={12} />
+    // Same width cap as the real results column (app/search/page.tsx) so wide
+    // screens don't reflow when the skeleton is replaced.
+    <div
+      aria-busy="true"
+      aria-label="Loading flight results"
+      className="mx-auto max-w-[1440px] 2xl:max-w-[1560px]"
+    >
+      {/* RouteBar placeholder — codes + flight arc on the left, a weighted stat
+          group on the right. Mirrors RouteBar (pt-4, NO bottom border) so the
+          real route line drops in without a vertical jump. */}
+      <div className="flex items-center justify-between pt-4">
+        <div className="flex items-center gap-[18px]">
+          <div className="flex flex-col gap-[6px]">
+            <Bar w="44px" h={19} />
+            <Bar w="68px" h={11} />
+          </div>
+          <span className="hop-skeleton block h-[24px] w-[24px] rounded-full lg:h-[30px] lg:w-[30px]" />
+          <div className="flex flex-col gap-[6px]">
+            <Bar w="44px" h={19} />
+            <Bar w="68px" h={11} />
+          </div>
+        </div>
+
+        {/* right-side stat group — hidden below lg, matching RouteBar's compact
+            variant which shows a thin facts line instead. */}
+        <div className="hidden items-center gap-7 lg:flex">
+          <StatSkeleton />
+          <span className="h-9 w-px bg-hair" />
+          <StatSkeleton />
+          <span className="h-9 w-px bg-hair" />
+          <StatSkeleton />
+        </div>
+
+        {/* compact facts line — small screens only */}
+        <Bar w="150px" h={12} className="lg:hidden" />
       </div>
 
       {/* Verdict hero placeholder — teal plane. Grid + radius collapse at the
@@ -93,7 +133,7 @@ export default function ResultsSkeleton() {
           <div className="hidden flex-1 place-items-center pt-9 lg:grid">
             <span className="block h-[140px] w-[140px] rounded-full bg-white/10" />
           </div>
-          <div className="mx-5 mb-6 mt-6 space-y-[14px] rounded-[18px] bg-paper p-[22px] sm:mx-[26px] sm:mb-[26px] lg:mt-0">
+          <div className="mx-4 mb-5 mt-5 space-y-[14px] rounded-[18px] bg-paper p-[22px] sm:mx-[26px] sm:mb-[26px] sm:mt-6 lg:mt-0">
             <div className="flex items-center gap-[11px]">
               <span className="hop-skeleton block h-[40px] w-[40px] rounded-[10px]" />
               <div className="flex-1 space-y-[7px]">
@@ -111,39 +151,41 @@ export default function ResultsSkeleton() {
         </aside>
       </section>
 
-      {/* "Other ways to fly" header placeholder */}
+      {/* "Other ways to fly" header placeholder — matches SectionHead's ink
+          underline + the ResultsList expand/collapse toolbar beside it. */}
       <div className="mb-[22px] mt-14 flex items-end justify-between border-b-[1.5px] border-text pb-4">
-        <Bar w="200px" h={22} />
-        <Bar w="100px" h={13} />
+        <Bar w="220px" h={24} />
+        <Bar w="92px" h={13} />
       </div>
 
-      {/* Alternative cards */}
-      <div className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-4">
+      {/* Alternative cards — same grid + gap as ResultsList (mt-[14px] above) */}
+      <div className="mt-[14px] grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
           <CardSkeleton key={i} />
         ))}
       </div>
 
-      {/* Wallet placeholder — dark panel */}
+      {/* Wallet placeholder — dark panel. Padding + the column grid collapse at
+          the same breakpoints as PointsPanel (compact below lg, 4-col at lg). */}
       <div className="mt-14 overflow-hidden rounded-[22px]" style={{ background: 'var(--color-text)' }}>
-        <div className="px-[30px] pt-[10px]">
+        <div className="px-4 pt-[14px] sm:px-[30px] sm:pt-[18px]">
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
-              className={`grid items-center gap-5 py-[18px] ${i > 0 ? 'border-t border-white/[0.07]' : ''}`}
-              style={{ gridTemplateColumns: '46px 1fr 200px 116px' }}
+              className={`grid items-center gap-3 py-[16px] sm:gap-5 sm:py-[18px] [grid-template-columns:40px_1fr_auto] lg:[grid-template-columns:46px_1fr_200px_116px] ${i > 0 ? 'border-t border-white/[0.07]' : ''}`}
             >
-              <span className="block h-[46px] w-[46px] rounded-[12px] bg-white/10" />
+              <span className="block h-[40px] w-[40px] rounded-[12px] bg-white/10 lg:h-[46px] lg:w-[46px]" />
               <div className="space-y-[7px]">
                 <span className="block h-[14px] w-[70%] rounded-[6px] bg-white/10" />
                 <span className="block h-[12px] w-[40%] rounded-[6px] bg-white/[0.07]" />
               </div>
-              <span className="block h-[8px] w-full rounded-full bg-white/10" />
+              {/* value bar — desktop only, matching PointsPanel */}
+              <span className="hidden h-[8px] w-full rounded-full bg-white/10 lg:block" />
               <span className="ml-auto block h-[16px] w-[64px] rounded-[6px] bg-white/10" />
             </div>
           ))}
         </div>
-        <div className="flex items-center justify-between border-t border-white/10 bg-white/[0.03] px-[30px] py-[18px]">
+        <div className="flex items-center justify-between border-t border-white/10 bg-white/[0.03] px-4 py-[16px] sm:px-[30px] sm:py-[18px]">
           <span className="block h-[13px] w-[220px] rounded-[6px] bg-white/10" />
           <span className="block h-[20px] w-[56px] rounded-[6px] bg-white/10" />
         </div>
