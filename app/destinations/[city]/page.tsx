@@ -14,6 +14,9 @@ import { tier, formatValue } from '@/lib/cpp'
 import { destinationImage } from '@/lib/images'
 import { isoOffset } from '@/lib/dates'
 import { sweetSpotsByProgram, type Program } from '@/lib/sweet-spots'
+import { computeSeasonality } from '@/lib/climate'
+import { CLIMATE_NORMALS } from '@/lib/climate-normals'
+import ClimateStrip from '@/components/ClimateStrip'
 
 // Prerender one page per destination code; nothing else is valid.
 export const dynamic = 'force-static'
@@ -102,6 +105,11 @@ export default async function DestinationGuidePage({
   const t = tier(value)
   const related = relatedSweetSpot(dest)
 
+  // Real climate normals (committed ERA5 seed data) → an honest, computed
+  // "when to go". Null falls back to the generic region note below.
+  const normals = CLIMATE_NORMALS[dest.code]
+  const seasonality = normals ? computeSeasonality(normals) : null
+
   // Hero photo (cached, day-long revalidate); null → solid brand-deep banner.
   const photo = await destinationImage(imageQuery(dest))
 
@@ -141,7 +149,10 @@ export default async function DestinationGuidePage({
             name: `When's the best time to visit ${dest.city}?`,
             acceptedAnswer: {
               '@type': 'Answer',
-              text: SEASON_BY_REGION[dest.region] ?? 'Aim for shoulder season for the best mix of weather, crowds, and award availability.',
+              text:
+                seasonality?.summary ??
+                SEASON_BY_REGION[dest.region] ??
+                'Aim for shoulder season for the best mix of weather, crowds, and award availability.',
             },
           },
         ],
@@ -250,10 +261,18 @@ export default async function DestinationGuidePage({
           </p>
         </section>
 
-        {/* WHEN TO GO */}
+        {/* WHEN TO GO — computed from real climate normals; falls back to a
+            generic region note if a destination has no normals on file. */}
         <section className="mt-8">
           <h2 className="text-[12px] font-semibold uppercase tracking-[0.16em] text-brand">When to go</h2>
-          <p className="mt-3 text-[15.5px] leading-relaxed text-text2">{season}</p>
+          {seasonality && normals ? (
+            <>
+              <p className="mt-3 text-[15.5px] leading-relaxed text-text2">{seasonality.summary}</p>
+              <ClimateStrip normals={normals} seasonality={seasonality} />
+            </>
+          ) : (
+            <p className="mt-3 text-[15.5px] leading-relaxed text-text2">{season}</p>
+          )}
         </section>
 
         {/* POINTS PLAY — the structured sweet-spot link (mesh) */}

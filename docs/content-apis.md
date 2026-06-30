@@ -174,12 +174,14 @@ generated. This applies hop's verdict-engine ethos to the *whole trip*, not just
 
 ## 7. What ships now, and the roadmap
 
-**Shipping in this work (the first two proofs):**
-1. **Climate "when to go"** — Open-Meteo ERA5 normals, baked into committed seed data
+The two signature proofs of the approach, in order:
+
+1. **Climate "when to go" — shipped.** Open-Meteo ERA5 normals, baked into committed seed data
    (`lib/climate-normals.ts`), turned into an honest per-city window by a deterministic, tested
-   `lib/climate.ts`. Replaces the generic `SEASON_BY_REGION` prose. *(milestone 2)*
-2. **Computed-number OG cards** — per-destination and per-program `next/og` cards carrying the computed cpp +
-   value tier, in the bunny/value-bar brand language. *(milestone 3)*
+   `lib/climate.ts` and rendered as a flat 12-month strip on `/destinations/[city]`. Replaces the
+   generic `SEASON_BY_REGION` prose.
+2. **Computed-number OG cards — next (follow-up PR).** Per-destination and per-program `next/og` cards
+   carrying the computed cpp + value tier, in the bunny/value-bar brand language.
 
 **Quick wins (each <1 day, keyless, no new infra):**
 - `lib/fx.ts` → Frankfurter on the existing cron; a "how far your dollar goes" line with the ECB source date.
