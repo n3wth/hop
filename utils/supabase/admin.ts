@@ -281,6 +281,34 @@ interface HopDatabase {
         }
         Relationships: []
       }
+      hop_escalations: {
+        // "Request expert booking" leads (roadmap §6 / N-290, Phase 1). One row
+        // per request. user_id is the Auth0 sub when signed in, NULL when the
+        // requester is signed out. trip is free-form jsonb context. See CREATE
+        // TABLE in lib/escalation.ts notes (and the Drizzle migration).
+        Row: {
+          id: string
+          user_id: string | null
+          email: string
+          trip: Json | null
+          status: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          email: string
+          trip?: Json
+          status?: string
+          created_at?: string | null
+        }
+        Update: {
+          email?: string
+          trip?: Json
+          status?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

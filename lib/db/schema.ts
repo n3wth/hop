@@ -115,3 +115,17 @@ export const travelHistory = pgTable('hop_travel_history', {
   connectedAt: tz('connected_at'),
   updatedAt: tz('updated_at'),
 })
+
+// "Request expert booking" leads (roadmap §6 / N-290, Phase 1 — demand
+// validation). One row per request. user_id is the Auth0 sub when signed in and
+// NULL for a signed-out visitor (so it is intentionally nullable, unlike the
+// other hop_* tables). trip is free-form JSON context (route/dates/notes/
+// totalPoints). status defaults to 'new' for manual follow-up. See lib/escalation.ts.
+export const escalations = pgTable('hop_escalations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id'),
+  email: text('email').notNull(),
+  trip: jsonb('trip').notNull().default({}),
+  status: text('status').notNull().default('new'),
+  createdAt: tz('created_at').defaultNow(),
+})
