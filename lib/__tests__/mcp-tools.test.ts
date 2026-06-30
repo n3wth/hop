@@ -10,6 +10,7 @@ import {
 import { destinationByCode, computeCpp, topValue } from '@/lib/destinations'
 import { partnersOf } from '@/lib/transfers'
 import { canonicalizeProgram } from '@/lib/programs'
+import { assembleSearch } from '@/lib/search'
 
 // The MCP tool handlers MUST be a pure passthrough to hop's deterministic engine
 // — they introduce no economics of their own. These tests prove every figure a
@@ -231,6 +232,37 @@ describe('runComparePrograms() — passthrough to assembleSearch (mock fixtures)
     })
     const unitedRows = out.ranked.filter((r) => r.programId === 'united')
     expect(unitedRows.length).toBeLessThanOrEqual(1)
+  })
+
+  // Regression (PR review): compare_programs used to read result.options, which
+  // assembleSearch trims to MAX_AWARDS (6) for display — so a program ranked
+  // below the cut was falsely reported `unavailable`. It now reads the UNTRIMMED
+  // result.allAwards. The mock fixture has <6 award programs, so we assert the
+  // underlying contract: allAwards is the uncapped best-per-program set.
+  it('exposes allAwards as the uncapped superset of the displayed award options', async () => {
+    const result = await assembleSearch(
+      { from: 'SFO', to: 'LHR', depart: '2026-09-01', adults: 1 },
+      [],
+    )
+    expect(Array.isArray(result.allAwards)).toBe(true)
+    const shown = result.options.filter((o) => o.kind === 'award').map((o) => o.program)
+    const all = (result.allAwards ?? []).map((o) => o.program)
+    for (const p of shown) expect(all).toContain(p) // every shown award is in allAwards
+    // allAwards is never shorter than the displayed award rows (it is the pre-cap set).
+    expect((result.allAwards ?? []).length).toBeGreaterThanOrEqual(shown.length)
+  })
+
+  it('returns every mock award program in ranked — none falsely unavailable', async () => {
+    const out = await runComparePrograms({
+      from: 'SFO',
+      to: 'LHR',
+      depart: '2026-09-01',
+      programs: ['United', 'Alaska', 'Southwest', 'Aeroplan'],
+    })
+    const ranked = new Set(out.ranked.map((r) => r.programId))
+    for (const id of ['united', 'alaska', 'southwest', 'aeroplan']) {
+      expect(ranked.has(id), `${id} should be ranked, not unavailable`).toBe(true)
+    }
   })
 })
 

@@ -252,7 +252,10 @@ export async function assembleSearch(
 
   const MAX_AWARDS = 6 // top award/transfer redemptions by value
   const MAX_CASH = 2 // cheapest cash baselines
-  const trimmedAwards = rankOptions(bestAwards).slice(0, MAX_AWARDS)
+  // Full best-per-program awards ranked by cpp; `options` shows only the top
+  // MAX_AWARDS, but `allAwards` (below) carries the whole set for tool consumers.
+  const rankedAwards = rankOptions(bestAwards)
+  const trimmedAwards = rankedAwards.slice(0, MAX_AWARDS)
   const trimmedCash = bestCash
     .sort((a, b) => (a.cashPrice ?? Infinity) - (b.cashPrice ?? Infinity))
     .slice(0, MAX_CASH)
@@ -307,6 +310,7 @@ export async function assembleSearch(
   return {
     params,
     options,
+    allAwards: rankedAwards,
     pick,
     cashOption,
     verdict,

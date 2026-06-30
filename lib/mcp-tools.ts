@@ -286,7 +286,11 @@ export async function runComparePrograms(args: {
   )
 
   const cashComp = result.summary.cheapestCash
-  const bestAward = bestAwardByProgram(result.options)
+  // Source from the UNTRIMMED best-per-program set (`allAwards`), not `options`
+  // (capped at MAX_AWARDS=6 for display) — otherwise a requested program ranked
+  // below the cap would be falsely reported `unavailable`. Falls back to options
+  // only if an older engine result lacks allAwards.
+  const bestAward = bestAwardByProgram(result.allAwards ?? result.options)
 
   type Row = {
     program: string

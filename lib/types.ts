@@ -164,6 +164,12 @@ export type ApiResult<T> = { ok: true; data: T } | { ok: false; reason: string }
 export interface SearchResult {
   params: SearchParams
   options: FlightOption[] // sorted by cpp desc, pick is options[0] when present
+  // The full best-per-program award set, ranked by cpp, BEFORE the display cap
+  // (`options` trims awards to MAX_AWARDS for presentation). Tool consumers that
+  // must reason about EVERY program on a route (e.g. the MCP `compare_programs`)
+  // read this so a program ranked below the cap is never falsely "unavailable".
+  // No natural-language prefs filter is applied — it's the pure computed set.
+  allAwards?: FlightOption[]
   pick?: FlightOption
   // Cheapest cash option (with its real bookingUrl) — the "Book cash" CTA target
   // when the verdict is pay-cash, since `pick` may still be a weak award option.
