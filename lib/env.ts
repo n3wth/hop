@@ -25,6 +25,10 @@ type EnvKey =
   // (lib/email.ts). Absent → the sender no-ops gracefully (alerts stay in-app,
   // `delivered` stays false) and the cron skips delivery entirely. Never logged.
   | 'RESEND_API_KEY'
+  // Shared secret guarding POST /api/support-ingest — the Cloudflare support@
+  // Worker presents it as a Bearer token to file inbound emails as tickets.
+  // Absent → the ingest endpoint rejects EVERY request (no unauthenticated writes).
+  | 'HOP_SUPPORT_INGEST_SECRET'
 
 function read(key: EnvKey): string {
   const value = process.env[key]
@@ -45,6 +49,7 @@ export const env = {
   googleOAuthClientId: () => read('GOOGLE_OAUTH_CLIENT_ID'),
   googleOAuthClientSecret: () => read('GOOGLE_OAUTH_CLIENT_SECRET'),
   resendApiKey: () => read('RESEND_API_KEY'),
+  supportIngestSecret: () => read('HOP_SUPPORT_INGEST_SECRET'),
 }
 
 // True when a key is present without throwing — lets a client degrade
