@@ -1,6 +1,6 @@
 'use client'
 
-import { useId } from 'react'
+import { memo, useId } from 'react'
 import type { CppTier, FlightOption } from '@/lib/types'
 import Icon from './Icon'
 import BrandIcon from './BrandIcon'
@@ -84,7 +84,9 @@ function durationText(min?: number): string {
 // instantly, a semantic value chip, and one factual assessment line. Clicking
 // the card expands the full detail in place (itinerary, transfer steps, fare,
 // booking CTA) with a smooth height grow — no vertical lift.
-export default function ResultRow({ option, rank, maxCpp, index = 0, open, onToggle, oneWay = false }: ResultRowProps) {
+// Memoised: expand/collapse state lives in the parent (ResultsList) and only
+// the toggled card's `open` prop changes, so siblings skip re-rendering.
+const ResultRow = memo(function ResultRow({ option, rank, maxCpp, index = 0, open, onToggle, oneWay = false }: ResultRowProps) {
   const panelId = useId()
 
   const isCash = option.kind === 'cash'
@@ -311,4 +313,6 @@ export default function ResultRow({ option, rank, maxCpp, index = 0, open, onTog
       </div>
     </article>
   )
-}
+})
+
+export default ResultRow
