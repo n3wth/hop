@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The Eve agent scaffold is a separate runtime (its own deps, served by the
+    // `eve` framework — see eve/README.md). It is intentionally NOT part of the
+    // Next.js app's typecheck/lint/build (also excluded in tsconfig.json).
+    "eve/**",
   ]),
 ]);
 
