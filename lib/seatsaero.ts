@@ -113,31 +113,66 @@ function resolveAirlineCode(codes: string[], programCode?: string): string | und
   return codes[0]
 }
 
-// Pick the cheapest AVAILABLE cabin, preferring economy. Returns mileage cost,
-// taxes (minor units / cents), and the operating carrier code list for that cabin.
+// Display label per Seats.aero cabin key — surfaced on the option so the prefs
+// model (lib/prefs-model.cabinRank) and the UI can read the served cabin tier.
+const CABIN_LABEL: Record<string, string> = {
+  Y: 'Economy',
+  W: 'Premium Economy',
+  J: 'Business',
+}
+
+// Map our requested-cabin enum to the Seats.aero cabin key. Seats.aero exposes
+// Y/W/J (no first); 'first' falls through to business as the nearest premium.
+function requestedCabinKey(cabin: SearchParams['cabin']): 'Y' | 'W' | 'J' {
+  switch (cabin) {
+    case 'premium':
+      return 'W'
+    case 'business':
+    case 'first':
+      return 'J'
+    default:
+      return 'Y'
+  }
+}
+
+// Pick an AVAILABLE cabin. With no requested cabin, prefers the cheapest tier
+// (economy first). When a cabin IS requested, that tier is tried first so the
+// served option matches the search; if it isn't available we fall through to
+// the other tiers (never drop the record). Returns mileage cost, taxes (minor
+// units / cents), the operating carrier code list, and the served cabin key.
 function pickCabin(
   rec: SeatsAeroRecord,
-): { miles: number; taxesMinor: number; airlineCodes: string[] } | undefined {
-  const cabins: Array<{
+  requested?: SearchParams['cabin'],
+): { miles: number; taxesMinor: number; airlineCodes: string[]; cabinKey: string } | undefined {
+  const byKey: Record<'Y' | 'W' | 'J', {
     available?: boolean
     miles?: string | number
     taxes?: string | number
     airlines?: string
-  }> = [
-    { available: rec.YAvailable, miles: rec.YMileageCost, taxes: rec.YTotalTaxes, airlines: rec.YAirlines },
-    { available: rec.WAvailable, miles: rec.WMileageCost, taxes: rec.WTotalTaxes, airlines: rec.WAirlines },
-    { available: rec.JAvailable, miles: rec.JMileageCost, taxes: rec.JTotalTaxes, airlines: rec.JAirlines },
-  ]
-  for (const c of cabins) {
+  }> = {
+    Y: { available: rec.YAvailable, miles: rec.YMileageCost, taxes: rec.YTotalTaxes, airlines: rec.YAirlines },
+    W: { available: rec.WAvailable, miles: rec.WMileageCost, taxes: rec.WTotalTaxes, airlines: rec.WAirlines },
+    J: { available: rec.JAvailable, miles: rec.JMileageCost, taxes: rec.JTotalTaxes, airlines: rec.JAirlines },
+  }
+  // Requested cabin first (when set), then the remaining tiers cheapest-first.
+  const order: Array<'Y' | 'W' | 'J'> = requested
+    ? [requestedCabinKey(requested), ...(['Y', 'W', 'J'] as const).filter((k) => k !== requestedCabinKey(requested))]
+    : ['Y', 'W', 'J']
+
+  for (const key of order) {
+    const c = byKey[key]
     const miles = toNumber(c.miles)
     if (c.available && miles > 0) {
-      return { miles, taxesMinor: toNumber(c.taxes), airlineCodes: parseAirlineCodes(c.airlines) }
+      return { miles, taxesMinor: toNumber(c.taxes), airlineCodes: parseAirlineCodes(c.airlines), cabinKey: key }
     }
   }
   // Fall back to any positive mileage cost even if availability flag absent.
-  for (const c of cabins) {
+  for (const key of order) {
+    const c = byKey[key]
     const miles = toNumber(c.miles)
-    if (miles > 0) return { miles, taxesMinor: toNumber(c.taxes), airlineCodes: parseAirlineCodes(c.airlines) }
+    if (miles > 0) {
+      return { miles, taxesMinor: toNumber(c.taxes), airlineCodes: parseAirlineCodes(c.airlines), cabinKey: key }
+    }
   }
   return undefined
 }
@@ -154,7 +189,7 @@ export function normalizeSeatsAeroRecord(
   params: SearchParams,
   index: number,
 ): FlightOption | undefined {
-  const cabin = pickCabin(rec)
+  const cabin = pickCabin(rec, params.cabin)
   if (!cabin) return undefined
 
   const source = rec.Source ?? rec.Route?.Source
@@ -175,6 +210,7 @@ export function normalizeSeatsAeroRecord(
     program: meta.program,
     route: `${origin} → ${destination}`,
     date: displayDate(rec.Date) || displayDate(params.depart),
+    cabin: CABIN_LABEL[cabin.cabinKey],
     miles: cabin.miles,
     taxes,
     // cpp needs a cash comparison the assembler supplies later; leave undefined here.

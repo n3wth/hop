@@ -12,6 +12,11 @@ export interface SearchParams {
   depart: string // ISO date
   return?: string // ISO date (round trip)
   adults: number
+  // Optional passenger mix beyond adults. Absent → adults-only (legacy behavior).
+  children?: number // age 2–11, gets a seat
+  infants?: number // under 2, lap infant (no seat)
+  // Requested cabin. Absent → economy (legacy behavior).
+  cabin?: 'economy' | 'premium' | 'business' | 'first'
 }
 
 // One bookable option, normalized across every upstream source.

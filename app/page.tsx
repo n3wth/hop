@@ -26,6 +26,9 @@ function makeSeed(): SearchState {
     depart: isoOffset(10),
     ret: isoOffset(13),
     adults: 1,
+    children: 0,
+    infants: 0,
+    cabin: 'economy',
     oneWay: false,
   }
 }

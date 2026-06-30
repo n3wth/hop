@@ -6,7 +6,7 @@ import Link from 'next/link'
 import Icon from './Icon'
 import FlyingBunny from './FlyingBunny'
 import AccountMenu from './AccountMenu'
-import { SearchForm, type SearchState } from './SearchBar'
+import { SearchForm, type SearchState, type Cabin } from './SearchBar'
 import { isoOffset } from '@/lib/dates'
 
 export interface TopNavProps {
@@ -19,6 +19,10 @@ export interface TopNavProps {
   depart?: string
   ret?: string
   adults?: number
+  /** Optional passenger mix + cabin so the header search restates the trip. */
+  childrenCount?: number
+  infants?: number
+  cabin?: Cabin
   /** Auth0 session, passed from the server. Null when signed out. */
   user?: { initial: string; name?: string; email?: string; picture?: string } | null
   /** Total points across the user's programs — shown beside the avatar. */
@@ -125,6 +129,9 @@ export default function TopNav({
   depart,
   ret,
   adults = 1,
+  childrenCount = 0,
+  infants = 0,
+  cabin = 'economy',
   user = null,
   pointsTotal,
   hideSearch = false,
@@ -137,8 +144,18 @@ export default function TopNav({
   const seedRet = ret ?? isoOffset(13)
 
   const initial: SearchState = useMemo(
-    () => ({ from: fromCode, to: toCode, depart: seedDepart, ret: seedRet, adults, oneWay: !seedRet }),
-    [fromCode, toCode, seedDepart, seedRet, adults],
+    () => ({
+      from: fromCode,
+      to: toCode,
+      depart: seedDepart,
+      ret: seedRet,
+      adults,
+      children: childrenCount,
+      infants,
+      cabin,
+      oneWay: !seedRet,
+    }),
+    [fromCode, toCode, seedDepart, seedRet, adults, childrenCount, infants, cabin],
   )
 
   const [mobileOpen, setMobileOpen] = useState(false)
