@@ -8,6 +8,7 @@ import {
   TEAL,
 } from '@/lib/seo'
 import StructuredData from '@/components/StructuredData'
+import IconSprite from '@/components/IconSprite'
 import './globals.css'
 
 // Display headlines: Bricolage Grotesque via next/font/google — self-hosted, preloaded.
@@ -105,6 +106,7 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans">
+        <IconSprite />
         <StructuredData />
         {children}
       </body>
