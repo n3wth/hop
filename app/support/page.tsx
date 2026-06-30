@@ -282,7 +282,7 @@ export default async function SupportPage() {
           Contact
         </h2>
         <p>
-          Still stuck? Email <a href="mailto:support@hop.n3wth.com">support@hop.n3wth.com</a> — a real
+          Still stuck? Email <a href="mailto:support@hop.flights">support@hop.flights</a> — a real
           person reads it. Include your account email and, for a booking issue, the booking
           reference; it helps us help you faster. For a quick question about a redemption or where
           your miles go furthest, the <Link href="/ask">concierge</Link> answers on the spot.
