@@ -227,7 +227,7 @@ export default function TopNav({
               links to the other main pages instead of a blank gap. */}
           {hideSearch ? (
             <>
-              <nav className="ml-1 hidden items-center gap-1 md:flex sm:ml-2 lg:ml-4">
+              <nav className="-ml-2 hidden items-center gap-1 md:flex sm:-ml-2 lg:-ml-3">
                 {[
                   { href: '/search', label: 'Search' },
                   { href: '/deals', label: 'Deals' },
