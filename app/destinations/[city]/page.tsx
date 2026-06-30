@@ -17,6 +17,7 @@ import { sweetSpotsByProgram, type Program } from '@/lib/sweet-spots'
 import { computeSeasonality } from '@/lib/climate'
 import { CLIMATE_NORMALS } from '@/lib/climate-normals'
 import ClimateStrip from '@/components/ClimateStrip'
+import Essentials from '@/components/Essentials'
 
 // Prerender one page per destination code; nothing else is valid.
 export const dynamic = 'force-static'
@@ -274,6 +275,9 @@ export default async function DestinationGuidePage({
             <p className="mt-3 text-[15.5px] leading-relaxed text-text2">{season}</p>
           )}
         </section>
+
+        {/* ESSENTIALS — real currency/language/time facts + a computed FX line */}
+        <Essentials code={dest.code} />
 
         {/* POINTS PLAY — the structured sweet-spot link (mesh) */}
         {related && (
