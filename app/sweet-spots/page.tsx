@@ -4,7 +4,8 @@ import SiteFooter from '@/components/SiteFooter'
 import { pageMeta } from '@/lib/seo'
 import { sweetSpotsByProgram, sweetSpots, VERIFY_CAVEAT } from '@/lib/sweet-spots'
 
-// Static SEO guide — no per-request data, so it prerenders.
+// Static SEO guide — no per-request data, so it prerenders. Weekly cron
+// (app/api/cron/revalidate-seo) calls revalidatePath when content changes.
 export const dynamic = 'force-static'
 
 export const metadata = pageMeta({
