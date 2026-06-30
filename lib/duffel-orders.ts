@@ -8,6 +8,7 @@ import type {
   OrderResult,
 } from '@/lib/types'
 import { env, hasEnv } from '@/lib/env'
+import { farePolicyFromConditions } from '@/lib/booking'
 
 // Native cash booking via the Duffel Orders API. SERVER ONLY (reads the secret
 // TEST token). NEVER throws — every function returns ApiResult so the page can
@@ -79,6 +80,8 @@ interface RawOffer {
   passengers?: Array<{ id: string; type?: string }>
   owner?: { name?: string; iata_code?: string }
   slices?: RawSlice[]
+  // Offer-level change/cancel rules. Shape validated in farePolicyFromConditions.
+  conditions?: unknown
 }
 
 function mapSegments(slices: RawSlice[] | undefined): CheckoutSegment[] {
@@ -126,6 +129,7 @@ function toCheckoutOffer(offer: RawOffer): CheckoutOffer {
     route: routeOf(offer.slices),
     segments,
     passengerCount: offer.passengers?.length ?? 1,
+    farePolicy: farePolicyFromConditions(offer.conditions),
   }
 }
 
@@ -266,6 +270,8 @@ interface RawOrder {
   owner?: { name?: string; iata_code?: string }
   passengers?: Array<{ given_name?: string; family_name?: string }>
   slices?: RawSlice[]
+  // Order-level change/cancel rules. Shape validated in farePolicyFromConditions.
+  conditions?: unknown
 }
 
 function toOrderResult(order: RawOrder): OrderResult {
@@ -281,6 +287,7 @@ function toOrderResult(order: RawOrder): OrderResult {
     segments,
     route: routeOf(order.slices),
     airline: order.owner?.name ?? segments[0]?.marketingCarrier ?? 'Airline',
+    farePolicy: farePolicyFromConditions(order.conditions),
   }
 }
 

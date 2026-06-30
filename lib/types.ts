@@ -95,6 +95,7 @@ export interface CheckoutOffer {
   route: string // "SFO → LAX"
   segments: CheckoutSegment[]
   passengerCount: number
+  farePolicy?: FarePolicy // change/cancel rules; absent when the airline gave none
 }
 
 export interface CheckoutSegment {
@@ -104,6 +105,21 @@ export interface CheckoutSegment {
   arrivingAt?: string
   marketingCarrier?: string
   flightNumber?: string
+}
+
+// Whether a fare can be refunded / changed before departure, and the penalty if
+// any — mapped from Duffel's offer/order `conditions`. `allowed` is tri-state:
+// the airline may give no info, in which case it stays undefined (we never
+// guess). When allowed with a fee, `penaltyAmount` carries it in `penaltyCurrency`.
+export interface FareRule {
+  allowed?: boolean // undefined = airline gave no info
+  penaltyAmount?: string // e.g. "100.00" — only meaningful when allowed
+  penaltyCurrency?: string // ISO 4217, e.g. "USD"
+}
+
+export interface FarePolicy {
+  refundable: FareRule
+  changeable: FareRule
 }
 
 // A persisted booking — what /account renders under "Trips".
@@ -131,6 +147,7 @@ export interface OrderResult {
   segments: CheckoutSegment[]
   route: string
   airline: string
+  farePolicy?: FarePolicy // change/cancel rules; absent when the airline gave none
 }
 
 export interface Balance {

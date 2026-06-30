@@ -6,6 +6,7 @@ import { getBookingByOrderId } from '@/lib/bookings'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import Icon from '@/components/Icon'
+import FarePolicyCard from '@/components/checkout/FarePolicyCard'
 
 // Private, per-user confirmation — keep it out of the index. (template adds "· hop".)
 export const metadata: Metadata = {
@@ -182,6 +183,9 @@ function Confirmed({
           </span>
         </div>
       </section>
+
+      {/* change/cancel policy */}
+      <FarePolicyCard policy={order.farePolicy} airline={order.airline} className="mt-4" />
 
       <div className="mt-6 flex flex-wrap gap-3">
         <a
