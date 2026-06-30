@@ -292,7 +292,7 @@ function PickPass({ pick }: { pick: FlightOption }) {
 
   return (
     <div
-      className="relative mx-5 mb-6 mt-6 rounded-[18px] bg-paper text-text sm:mx-[26px] sm:mb-[26px] lg:mt-0"
+      className="relative mx-4 mb-5 mt-5 rounded-[18px] bg-paper text-text sm:mx-[26px] sm:mb-[26px] sm:mt-6 lg:mt-0"
       style={{
         // True perforation: punch two semicircle notches out of the LEFT and
         // RIGHT edges at the dashed line (~50% down) so whatever is behind the
