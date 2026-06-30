@@ -16,6 +16,8 @@ import GmailHistory from '@/components/GmailHistory'
 import McpAccess from '@/components/McpAccess'
 import { listTokens } from '@/lib/api-tokens'
 import { getProfile } from '@/lib/travel-profile'
+import { projectProfile } from '@/lib/memory-view'
+import MemoryKnows from '@/components/MemoryKnows'
 import type { AirlineStatus, TravelProfile } from '@/lib/travel-profile-model'
 import StandingOrders from '@/components/StandingOrders'
 import Counterfactual from '@/components/Counterfactual'
@@ -201,6 +203,7 @@ export default async function AccountPage({
             Color-only hover. */}
         <nav className="mt-8 flex flex-wrap gap-2 border-b border-hair pb-5">
           {[
+            { href: '#knows', label: 'Knows you' },
             { href: '#programs', label: 'Programs' },
             { href: '#status', label: 'Status' },
             { href: '#trips', label: 'Trips' },
@@ -231,8 +234,23 @@ export default async function AccountPage({
           Your travel profile
         </div>
 
+        {/* what hop knows — the glass box over the durable travel_profile. The
+            trust foundation for hop's growing memory: see + forget what it holds. */}
+        <section id="knows" className="mt-6 scroll-mt-24">
+          <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
+            What hop knows about you
+          </h2>
+          <p className="mt-1 text-[13.5px] leading-[1.5] text-text2">
+            The durable facts hop remembers and uses to fit its answers to you.
+            Forget anything you&apos;d rather it didn&apos;t keep.
+          </p>
+          <div className="mt-4">
+            <MemoryKnows facts={projectProfile(profile)} />
+          </div>
+        </section>
+
         {/* your programs — manual balances (primary) + optional AwardWallet sync */}
-        <section id="programs" className="mt-6 scroll-mt-24">
+        <section id="programs" className="mt-10 scroll-mt-24">
           <div>
             <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
               Your programs
