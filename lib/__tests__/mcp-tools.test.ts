@@ -4,9 +4,13 @@ import {
   runSweetSpots,
   runTransferPaths,
   runVerdict,
+  runComparePrograms,
+  runBestCardForProgram,
 } from '@/lib/mcp-tools'
 import { destinationByCode, computeCpp, topValue } from '@/lib/destinations'
 import { partnersOf } from '@/lib/transfers'
+import { canonicalizeProgram } from '@/lib/programs'
+import { assembleSearch } from '@/lib/search'
 
 // The MCP tool handlers MUST be a pure passthrough to hop's deterministic engine
 // — they introduce no economics of their own. These tests prove every figure a
@@ -129,5 +133,167 @@ describe('runVerdict() — passthrough to assembleSearch (mock fixtures)', () =>
     for (const o of out.options) {
       expect(o).not.toHaveProperty('bookingUrl')
     }
+  })
+})
+
+describe('runComparePrograms() — passthrough to assembleSearch (mock fixtures)', () => {
+  let prevMock: string | undefined
+  beforeAll(() => {
+    prevMock = process.env.MOCK
+    process.env.MOCK = '1' // deterministic fixtures, no network
+  })
+  afterAll(() => {
+    if (prevMock === undefined) delete process.env.MOCK
+    else process.env.MOCK = prevMock
+  })
+
+  // The mock award/transfer options cover United, Alaska, Southwest, Aeroplan.
+  it('ranks the named programs by CPP, best first, from engine figures', async () => {
+    const out = await runComparePrograms({
+      from: 'sfo',
+      to: 'lhr',
+      depart: '2026-09-01',
+      programs: ['United', 'Alaska', 'Southwest'],
+    })
+    expect(out.route).toBe('SFO → LHR')
+    expect(out.ranked.length).toBeGreaterThan(0)
+    // Every figure must come from the engine, never invented: each row's cpp
+    // matches the canonical cpp formula over its own miles/cash.
+    for (const r of out.ranked) {
+      if (r.cpp != null && r.cashUsd != null) {
+        const taxes = r.taxes ?? 0
+        const expected = Math.round((((r.cashUsd - taxes) * 100) / r.miles) * 10) / 10
+        expect(r.cpp).toBe(expected)
+      }
+    }
+    // Ranked strictly by cpp desc (undefined sinks).
+    const cpps = out.ranked.map((r) => r.cpp ?? -Infinity)
+    const sorted = [...cpps].sort((a, b) => b - a)
+    expect(cpps).toEqual(sorted)
+  })
+
+  it('flags personalized=false when the CALLER supplied no balances', async () => {
+    // NB: under MOCK the engine grounds award options with mock balances (the
+    // same fixture every tool inherits), so youHave may be populated — but the
+    // `personalized` flag honestly reports that the CALLER passed nothing, which
+    // is the bit a downstream model needs to avoid claiming "YOU can afford it".
+    const out = await runComparePrograms({
+      from: 'SFO',
+      to: 'LHR',
+      depart: '2026-09-01',
+      programs: ['United', 'Alaska'],
+    })
+    expect(out.personalized).toBe(false)
+    // canAfford is either null (no figure) or a boolean derived from youHave —
+    // never invented independently of the engine's youHave.
+    for (const r of out.ranked) {
+      if (r.canAfford !== null) {
+        expect(typeof r.canAfford).toBe('boolean')
+        expect(r.youHave).toBeTypeOf('number')
+        expect(r.canAfford).toBe(r.youHave! >= r.miles)
+      }
+    }
+  })
+
+  it('with a large balance in a reachable program marks it affordable', async () => {
+    // United is directly held with a huge balance → must clear the award miles.
+    const out = await runComparePrograms({
+      from: 'SFO',
+      to: 'LHR',
+      depart: '2026-09-01',
+      programs: ['United'],
+      balances: [{ program: 'United MileagePlus', balance: 5_000_000 }],
+    })
+    expect(out.personalized).toBe(true)
+    const united = out.ranked.find((r) => r.programId === 'united')
+    expect(united).toBeDefined()
+    expect(united!.youHave).toBeGreaterThanOrEqual(united!.miles)
+    expect(united!.canAfford).toBe(true)
+  })
+
+  it('unknown / unavailable programs are reported, never guessed', async () => {
+    const out = await runComparePrograms({
+      from: 'SFO',
+      to: 'LHR',
+      depart: '2026-09-01',
+      programs: ['Definitely Not A Program', 'Qatar'], // Qatar has no mock option here
+    })
+    // The bogus name resolves to nothing; Qatar canonicalizes but has no option.
+    expect(out.unavailable.length).toBeGreaterThan(0)
+    expect(out.unavailable.some((u) => u.programId === null)).toBe(true)
+  })
+
+  it('de-dupes alias inputs for the same canonical program', async () => {
+    const out = await runComparePrograms({
+      from: 'SFO',
+      to: 'LHR',
+      depart: '2026-09-01',
+      programs: ['United', 'united miles', 'MileagePlus'],
+    })
+    const unitedRows = out.ranked.filter((r) => r.programId === 'united')
+    expect(unitedRows.length).toBeLessThanOrEqual(1)
+  })
+
+  // Regression (PR review): compare_programs used to read result.options, which
+  // assembleSearch trims to MAX_AWARDS (6) for display — so a program ranked
+  // below the cut was falsely reported `unavailable`. It now reads the UNTRIMMED
+  // result.allAwards. The mock fixture has <6 award programs, so we assert the
+  // underlying contract: allAwards is the uncapped best-per-program set.
+  it('exposes allAwards as the uncapped superset of the displayed award options', async () => {
+    const result = await assembleSearch(
+      { from: 'SFO', to: 'LHR', depart: '2026-09-01', adults: 1 },
+      [],
+    )
+    expect(Array.isArray(result.allAwards)).toBe(true)
+    const shown = result.options.filter((o) => o.kind === 'award').map((o) => o.program)
+    const all = (result.allAwards ?? []).map((o) => o.program)
+    for (const p of shown) expect(all).toContain(p) // every shown award is in allAwards
+    // allAwards is never shorter than the displayed award rows (it is the pre-cap set).
+    expect((result.allAwards ?? []).length).toBeGreaterThanOrEqual(shown.length)
+  })
+
+  it('returns every mock award program in ranked — none falsely unavailable', async () => {
+    const out = await runComparePrograms({
+      from: 'SFO',
+      to: 'LHR',
+      depart: '2026-09-01',
+      programs: ['United', 'Alaska', 'Southwest', 'Aeroplan'],
+    })
+    const ranked = new Set(out.ranked.map((r) => r.programId))
+    for (const id of ['united', 'alaska', 'southwest', 'aeroplan']) {
+      expect(ranked.has(id), `${id} should be ranked, not unavailable`).toBe(true)
+    }
+  })
+})
+
+describe('runBestCardForProgram() — static earn-card reference (no economics)', () => {
+  it('resolves free-text program names + returns a card with an apply link', () => {
+    const out = runBestCardForProgram({ program: 'Chase UR' })
+    if ('error' in out) throw new Error('expected a card')
+    expect(out.programId).toBe('chase-ur')
+    expect(out.program).toBe(canonicalizeProgram('Chase UR')!.name)
+    expect(out.card).toBeTruthy()
+    expect(out.issuer).toBeTruthy()
+    expect(out.earnRate).toBeTruthy()
+    expect(out.bonus).toBeTruthy()
+    expect(out.applyUrl).toMatch(/^https:\/\//)
+  })
+
+  it('canonicalizes aliases ("united miles" -> United)', () => {
+    const out = runBestCardForProgram({ program: 'united miles' })
+    if ('error' in out) throw new Error('expected a card')
+    expect(out.programId).toBe('united')
+  })
+
+  it('returns an error shape (never throws) for an unknown program', () => {
+    const out = runBestCardForProgram({ program: 'Not A Real Program' })
+    expect('error' in out).toBe(true)
+  })
+
+  it('returns an error shape for a known program with no card mapped yet', () => {
+    // Aegean is a real canonical program but intentionally not in the local map.
+    const out = runBestCardForProgram({ program: 'Aegean' })
+    expect('error' in out).toBe(true)
+    if ('error' in out) expect(out.programId).toBe('aegean')
   })
 })
