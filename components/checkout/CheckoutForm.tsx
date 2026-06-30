@@ -11,6 +11,7 @@ import type { CheckoutOffer, CheckoutPassenger } from '@/lib/types'
 import { startPaymentSession, placeOrder, refreshOffer } from '@/app/actions/checkout'
 import Icon from '@/components/Icon'
 import BrandIcon from '@/components/BrandIcon'
+import FarePolicyCard from '@/components/checkout/FarePolicyCard'
 
 // Native cash checkout — itinerary summary, passenger details, the Duffel hosted
 // card form, and the pay action. Flat, on-brand. The card form runs in a
@@ -587,6 +588,13 @@ export default function CheckoutForm({
           </p>
         </section>
 
+        {/* change/cancel policy — mobile only (the right rail carries it on lg). */}
+        <FarePolicyCard
+          policy={activeOffer.farePolicy}
+          airline={activeOffer.airline}
+          className="mt-5 lg:hidden"
+        />
+
         {error ? (
           <div
             role="alert"
@@ -699,6 +707,12 @@ export default function CheckoutForm({
             Secure checkout
           </p>
         </div>
+
+        <FarePolicyCard
+          policy={activeOffer.farePolicy}
+          airline={activeOffer.airline}
+          className="mt-4"
+        />
       </aside>
     </div>
   )
