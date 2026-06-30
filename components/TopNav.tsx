@@ -203,7 +203,7 @@ export default function TopNav({
       <header
         className="sticky top-0 z-50"
         style={{
-          height: c ? 56 : 76,
+          height: 72,
           background: c ? 'color-mix(in srgb, var(--color-bg) 80%, transparent)' : 'transparent',
           backdropFilter: c ? 'blur(10px) saturate(120%)' : 'none',
           WebkitBackdropFilter: c ? 'blur(10px) saturate(120%)' : 'none',
@@ -211,10 +211,11 @@ export default function TopNav({
           transform: 'translateZ(0)',
           isolation: 'isolate',
           willChange: c ? 'backdrop-filter' : 'auto',
-          transition: `height ${DUR} ${EASE}, background ${DUR} ${EASE}, border-color ${DUR} ${EASE}`,
+          transition: `background ${DUR} ${EASE}, border-color ${DUR} ${EASE}`,
         }}
       >
-        <div className="flex h-full items-center gap-4 px-4 sm:gap-6 sm:px-8 lg:gap-9 lg:px-16">
+        <div className="h-full px-4 sm:px-8 lg:px-16">
+        <div className="mx-auto flex h-full max-w-[1180px] items-center gap-4 sm:gap-6 lg:gap-9">
           {/* logo — left. Stays the SAME size whether at top or scrolled; only its
               vertical position shifts as the header height contracts (76→56px). */}
           <div className="flex flex-shrink-0 items-center gap-[11px]">
@@ -226,7 +227,7 @@ export default function TopNav({
               links to the other main pages instead of a blank gap. */}
           {hideSearch ? (
             <>
-              <nav className="-ml-4 hidden items-center gap-1 md:flex sm:-ml-5 lg:-ml-7">
+              <nav className="ml-1 hidden items-center gap-1 md:flex sm:ml-2 lg:ml-4">
                 {[
                   { href: '/search', label: 'Search' },
                   { href: '/deals', label: 'Deals' },
@@ -238,15 +239,15 @@ export default function TopNav({
                     aria-current={isActive(l.href) ? 'page' : undefined}
                     className={
                       isActive(l.href)
-                        ? 'rounded-full bg-sunk px-3.5 py-2 text-[14px] font-semibold text-text'
-                        : 'rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hover:text-text'
+                        ? 'rounded-full bg-sunk px-3.5 py-2 text-[14px] font-semibold text-text2'
+                        : 'rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk'
                     }
                   >
                     {l.label}
                   </a>
                 ))}
               </nav>
-              <div className="flex-1" />
+              <div className="flex-1 md:hidden" />
               {/* MOBILE affordance — on hideSearch pages the nav links (md:flex)
                   and the account block (sm:flex) are both hidden below their
                   breakpoints, leaving the header with nothing actionable on a
@@ -300,21 +301,21 @@ export default function TopNav({
             </>
           )}
 
-          {/* spacer pushes the account to the far right (desktop only) */}
+          {/* spacer pushes the right cluster to the far edge (desktop only) */}
           <div className="hidden flex-1 md:block" />
 
-          {/* persistent "where from" — sets the departure origin every surface
-              respects. Tucked beside the account block; hidden below md so the
-              phone header stays uncrowded (the menu sheet carries it there). */}
-          <div className="mr-2 hidden flex-shrink-0 md:block lg:mr-3">
+          {/* right cluster — origin + account sit together as one tidy group so
+              the gap between them is a single small step, not the wide header gap. */}
+          <div className="flex items-center gap-1.5 lg:gap-2">
+          {/* persistent "where from" — hidden below md so the phone header stays
+              uncrowded (the menu sheet carries it there). */}
+          <div className="hidden flex-shrink-0 md:block">
             <OriginSelector />
           </div>
 
-          {/* account — Auth0: avatar+logout when signed in, Sign in when out */}
-          <div
-            className="hidden flex-shrink-0 items-center sm:flex"
-            style={{ transform: c ? 'scale(0.86)' : 'scale(1)', transformOrigin: 'right center', transition: `transform ${DUR} ${EASE}` }}
-          >
+          {/* account — Auth0: avatar+logout when signed in, Sign in when out.
+              No scroll scaling — the bar stays still as you scroll. */}
+          <div className="hidden flex-shrink-0 items-center sm:flex">
             {user ? (
               <div className="flex items-center gap-3">
                 {pointsTotal != null ? (
@@ -334,12 +335,14 @@ export default function TopNav({
             ) : (
               <a
                 href={signInHref}
-                className="rounded-full border border-border bg-surface px-5 py-2.5 text-[14px] font-semibold text-text transition-colors hover:bg-sunk"
+                className="rounded-full border border-text2 px-5 py-2.5 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk"
               >
                 Sign in
               </a>
             )}
           </div>
+          </div>
+        </div>
         </div>
       </header>
 

@@ -3,7 +3,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { searchAirports, airportByCode } from '@/lib/airports'
 import { useOrigin } from '@/lib/origin-context'
-import Icon from './Icon'
 
 // Compact "where from" control for the TopNav — a flat pill that states the
 // current origin ("From SFO") and opens a small popover to set or change it.
@@ -86,9 +85,10 @@ export default function OriginSelector() {
         aria-expanded={open}
         aria-label={origin ? `Departure airport: ${origin}. Change` : 'Set your departure airport'}
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-2 text-[13px] font-semibold text-text transition-colors hover:bg-sunk"
+        className={`flex items-center rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk ${
+          open ? 'bg-sunk' : ''
+        }`}
       >
-        <Icon name="flight" size={15} className="flex-shrink-0 text-brand" />
         <span className="tabular-nums">{label}</span>
       </button>
 
