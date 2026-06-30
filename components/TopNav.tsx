@@ -7,6 +7,7 @@ import Icon from './Icon'
 import FlyingBunny from './FlyingBunny'
 import AccountMenu from './AccountMenu'
 import { SearchForm, type SearchState } from './SearchBar'
+import { isoOffset } from '@/lib/dates'
 
 export interface TopNavProps {
   from?: string
@@ -47,15 +48,6 @@ function compactPoints(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
   if (n >= 1_000) return `${Math.round(n / 1_000)}K`
   return String(n)
-}
-
-// YYYY-MM-DD for `today + days`. Seeded search dates are computed RELATIVE to
-// today so a default never silently goes stale (a hardcoded past date would
-// render an un-searchable trip).
-function isoOffset(days: number): string {
-  const d = new Date()
-  d.setDate(d.getDate() + days)
-  return d.toISOString().slice(0, 10)
 }
 
 // One sheet controller for both mobile overlays (search + menu). When open it:

@@ -9,6 +9,7 @@ import DegradedNote from '@/components/DegradedNote'
 import SiteFooter from '@/components/SiteFooter'
 import Icon from '@/components/Icon'
 import { pageMeta } from '@/lib/seo'
+import { localISO } from '@/lib/dates'
 
 // title is the bare child title — the root layout template appends '· hop'.
 export const metadata = pageMeta({
@@ -32,7 +33,7 @@ function normalizeOrigin(raw: string | string[] | undefined): string | undefined
 // Sensible defaults for the CTA seed: depart ~3 weeks out, return a week later.
 // Computed at request time so the links always point at near-future dates.
 function defaultDates(): { depart: string; ret: string } {
-  const iso = (d: Date) => d.toISOString().slice(0, 10)
+  const iso = localISO
   const now = new Date()
   const depart = new Date(now)
   depart.setDate(depart.getDate() + 21)
