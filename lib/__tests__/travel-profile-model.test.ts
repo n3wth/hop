@@ -89,3 +89,84 @@ describe('isEmptyProfile() / profileSummary()', () => {
     expect(s).toContain('first')
   })
 })
+
+describe('airlineStatuses — validation / merge / summary', () => {
+  it('keeps well-formed {program, tier} pairs and trims them', () => {
+    const out = validateProfile({
+      airlineStatuses: [
+        { program: '  United MileagePlus ', tier: ' Gold ' },
+        { program: 'Delta SkyMiles', tier: 'Silver' },
+      ],
+    })
+    expect(out.airlineStatuses).toEqual([
+      { program: 'United MileagePlus', tier: 'Gold' },
+      { program: 'Delta SkyMiles', tier: 'Silver' },
+    ])
+  })
+
+  it('drops entries missing a program or tier, and non-objects', () => {
+    const out = validateProfile({
+      airlineStatuses: [
+        { program: 'United', tier: '' },
+        { program: '', tier: 'Gold' },
+        { program: 'Delta' },
+        'nope',
+        null,
+        { program: 'American AAdvantage', tier: 'Platinum' },
+      ],
+    })
+    expect(out.airlineStatuses).toEqual([{ program: 'American AAdvantage', tier: 'Platinum' }])
+  })
+
+  it('dedupes by program (case-insensitive), last write wins', () => {
+    const out = validateProfile({
+      airlineStatuses: [
+        { program: 'United', tier: 'Silver' },
+        { program: 'united', tier: 'Gold' },
+      ],
+    })
+    expect(out.airlineStatuses).toEqual([{ program: 'united', tier: 'Gold' }])
+  })
+
+  it('caps the status list at 12', () => {
+    const many = Array.from({ length: 30 }, (_, i) => ({ program: `Airline ${i}`, tier: 'Gold' }))
+    expect(validateProfile({ airlineStatuses: many }).airlineStatuses).toHaveLength(12)
+  })
+
+  it('omits airlineStatuses entirely when none are valid', () => {
+    expect(validateProfile({ airlineStatuses: [{ program: 'United' }] }).airlineStatuses).toBeUndefined()
+    expect(validateProfile({ airlineStatuses: 'bad' }).airlineStatuses).toBeUndefined()
+  })
+
+  it('merge overwrites a held tier for the same program, appends new ones', () => {
+    const base: TravelProfile = { airlineStatuses: [{ program: 'United', tier: 'Silver' }] }
+    const patch: TravelProfile = {
+      airlineStatuses: [
+        { program: 'United', tier: 'Gold' },
+        { program: 'Delta', tier: 'Silver' },
+      ],
+    }
+    const merged = mergeProfile(base, patch)
+    expect(merged.airlineStatuses).toEqual([
+      { program: 'United', tier: 'Gold' },
+      { program: 'Delta', tier: 'Silver' },
+    ])
+  })
+
+  it('counts a profile with only statuses as non-empty', () => {
+    expect(isEmptyProfile({ airlineStatuses: [{ program: 'United', tier: 'Gold' }] })).toBe(false)
+    expect(isEmptyProfile({ airlineStatuses: [] })).toBe(true)
+  })
+
+  it('summary renders statuses as "Program: Tier" pairs the concierge can read', () => {
+    const s = profileSummary({
+      airlineStatuses: [
+        { program: 'United', tier: 'Gold' },
+        { program: 'Delta', tier: 'Silver' },
+      ],
+    })
+    expect(s).toContain('Elite status:')
+    expect(s).toContain('United: Gold')
+    expect(s).toContain('Delta: Silver')
+  })
+})
