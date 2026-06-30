@@ -28,7 +28,6 @@ export default function AppleIcon() {
           borderRadius: 40,
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={bunnySrc} width={112} height={113} alt="" />
       </div>
     ),

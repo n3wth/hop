@@ -8,7 +8,7 @@
 // without spinning up the HTTP/MCP transport (see lib/__tests__/mcp-tools.test.ts).
 
 import { z } from 'zod'
-import { computeCpp, destinationByCode, topValue } from '@/lib/destinations'
+import { computeCpp, topValue } from '@/lib/destinations'
 import { priceTrip, type PriceTripBalance } from '@/lib/concierge-tools'
 import { assembleSearch } from '@/lib/search'
 import { canonicalizeProgram, programById, listTransferablePrograms } from '@/lib/programs'

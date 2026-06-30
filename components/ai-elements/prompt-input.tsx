@@ -3,7 +3,6 @@
 import type { ComponentProps, FormEvent, KeyboardEvent } from 'react'
 import { useRef } from 'react'
 import Icon from '../Icon'
-import { Loader } from './loader'
 
 export type ChatStatus = 'submitted' | 'streaming' | 'ready' | 'error'
 
