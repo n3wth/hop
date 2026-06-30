@@ -9,6 +9,7 @@ import AccountMenu from './AccountMenu'
 import OriginSelector from './OriginSelector'
 import { SearchForm, type SearchState, type Cabin } from './SearchBar'
 import { isoOffset } from '@/lib/dates'
+import { PRIMARY_NAV } from '@/lib/seo-routes'
 
 export interface TopNavProps {
   from?: string
@@ -215,7 +216,7 @@ export default function TopNav({
         }}
       >
         <div className="h-full px-4 sm:px-8 lg:px-16">
-        <div className="mx-auto flex h-full max-w-[1180px] items-center gap-4 sm:gap-6 lg:gap-9">
+        <div className="mx-auto flex h-full max-w-[1180px] items-center gap-4 sm:gap-5 lg:gap-7">
           {/* logo — left. Stays the SAME size whether at top or scrolled; only its
               vertical position shifts as the header height contracts (76→56px). */}
           <div className="flex flex-shrink-0 items-center gap-[11px]">
@@ -227,12 +228,8 @@ export default function TopNav({
               links to the other main pages instead of a blank gap. */}
           {hideSearch ? (
             <>
-              <nav className="-ml-2 hidden items-center gap-1 md:flex sm:-ml-2 lg:-ml-3">
-                {[
-                  { href: '/search', label: 'Search' },
-                  { href: '/deals', label: 'Deals' },
-                  { href: '/ask', label: 'Ask' },
-                ].map((l) => (
+              <nav aria-label="Main" className="hidden items-center gap-0.5 md:flex sm:ml-1 lg:ml-2">
+                {PRIMARY_NAV.map((l) => (
                   <a
                     key={l.href}
                     href={l.href}
@@ -406,12 +403,8 @@ export default function TopNav({
             </span>
             <OriginSelector />
           </div>
-          <nav className="flex flex-col gap-1 p-4">
-            {[
-              { href: '/search', label: 'Search' },
-              { href: '/deals', label: 'Deals' },
-              { href: '/ask', label: 'Ask' },
-            ].map((l) => (
+          <nav aria-label="Main" className="flex flex-col gap-1 p-4">
+            {PRIMARY_NAV.map((l) => (
               <a
                 key={l.href}
                 href={l.href}
