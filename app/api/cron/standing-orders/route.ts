@@ -14,10 +14,11 @@
 //
 // SCHEDULE: wire in vercel.json (see report). This handler is the cron target.
 //
-// PUSH DELIVERY TODO: this is the DETECTION + RECORD half. Actual email/web-push
-// delivery needs infra we don't have yet (a transactional email key or a
-// web-push subscription store). When that lands, send here and flip the alert's
-// `delivered` flag. Today the alert is durable + surfaced in-app instead.
+// EMAIL DELIVERY: after recording an alert, we send it by email (Resend) to the
+// watch's notify address and flip `delivered` on success. This is GATED on
+// RESEND_API_KEY — when email is unconfigured the whole delivery step is skipped
+// and the alert stays in-app (durable record), exactly as before. A send failure
+// (or a missing notify address) leaves `delivered=false` so the next run retries.
 //
 // NEVER throws to the platform: every order is evaluated in isolation; one
 // failure can't sink the batch. Always responds 200 (when enabled) with a summary.
@@ -28,9 +29,11 @@ import { getPrefs } from '@/lib/prefs'
 import {
   listActiveStandingOrders,
   recordNotifiedOffer,
+  markAlertDelivered,
 } from '@/lib/standing-orders'
-import { recordAlert } from '@/lib/standing-order-alerts'
+import { recordAlert, type StandingOrderAlert } from '@/lib/standing-order-alerts'
 import { evaluateOrder } from '@/lib/standing-orders-model'
+import { isEmailEnabled, sendAlertEmail } from '@/lib/email'
 import type { TravelPrefs } from '@/lib/prefs-model'
 
 // This route reads per-user data and must never be cached or statically rendered.
@@ -79,9 +82,14 @@ export async function GET(request: Request) {
   const balancesCache = new Map<string, Awaited<ReturnType<typeof getUserBalances>>>()
   const prefsCache = new Map<string, TravelPrefs | undefined>()
 
+  // Resolve the email gate ONCE — when unconfigured we skip every send (no
+  // network, no per-order cost) and alerts stay in-app.
+  const emailEnabled = isEmailEnabled()
+
   let evaluated = 0
   let crossings = 0
   let alertsRecorded = 0
+  let delivered = 0
   const errors: string[] = []
 
   for (const order of orders) {
@@ -110,12 +118,13 @@ export async function GET(request: Request) {
       // Record the durable alert FIRST (the user-facing record), then stamp the
       // dedupe fingerprint so a transient alert-write failure doesn't suppress a
       // retry next tick.
+      const alertCpp = evalResult.cpp ?? evalResult.pick.cpp ?? order.minCpp
       const alertId = await recordAlert({
         userId: uid,
         standingOrderId: order.id,
         params: order.params,
         pick: evalResult.pick,
-        cpp: evalResult.cpp ?? evalResult.pick.cpp ?? order.minCpp,
+        cpp: alertCpp,
         fingerprint: evalResult.fingerprint,
       })
       if (alertId) alertsRecorded++
@@ -124,8 +133,27 @@ export async function GET(request: Request) {
         await recordNotifiedOffer(uid, order.id, evalResult.fingerprint)
       }
 
-      // PUSH DELIVERY TODO: send email/web-push here, then mark the alert
-      // delivered. No-op today (no channel infra) — the in-app surface covers it.
+      // EMAIL DELIVERY (best-effort). Only when: email is configured, the alert
+      // persisted (we have its id to mark delivered), and the watch has a notify
+      // address. A successful send flips `delivered=true`; any failure leaves it
+      // false so the next run retries. Never throws into the batch.
+      if (emailEnabled && alertId && order.notifyEmail) {
+        const alert: StandingOrderAlert = {
+          id: alertId,
+          standingOrderId: order.id,
+          route: evalResult.pick.route || `${order.params.from} → ${order.params.to}`,
+          pick: evalResult.pick,
+          cpp: alertCpp,
+          fingerprint: evalResult.fingerprint,
+          delivered: false,
+          seen: false,
+        }
+        const sent = await sendAlertEmail(order.notifyEmail, alert)
+        if (sent.ok) {
+          const marked = await markAlertDelivered(uid, alertId)
+          if (marked) delivered++
+        }
+      }
     } catch (e) {
       errors.push(`${order.id}: ${e instanceof Error ? e.message : 'error'}`)
     }
@@ -136,6 +164,8 @@ export async function GET(request: Request) {
     evaluated,
     crossings,
     alertsRecorded,
+    delivered,
+    emailEnabled,
     durationMs: Date.now() - startedAt,
     errors: errors.length > 0 ? errors : undefined,
   })

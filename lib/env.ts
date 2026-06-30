@@ -21,6 +21,10 @@ type EnvKey =
   // redirect URI. See the final report's "dashboard config" note.
   | 'GOOGLE_OAUTH_CLIENT_ID'
   | 'GOOGLE_OAUTH_CLIENT_SECRET'
+  // Resend transactional email — powers proactive standing-order alert delivery
+  // (lib/email.ts). Absent → the sender no-ops gracefully (alerts stay in-app,
+  // `delivered` stays false) and the cron skips delivery entirely. Never logged.
+  | 'RESEND_API_KEY'
 
 function read(key: EnvKey): string {
   const value = process.env[key]
@@ -40,6 +44,7 @@ export const env = {
   awardWalletConnectUrl: () => read('AWARDWALLET_CONNECT_URL'),
   googleOAuthClientId: () => read('GOOGLE_OAUTH_CLIENT_ID'),
   googleOAuthClientSecret: () => read('GOOGLE_OAUTH_CLIENT_SECRET'),
+  resendApiKey: () => read('RESEND_API_KEY'),
 }
 
 // True when a key is present without throwing — lets a client degrade
