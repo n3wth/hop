@@ -73,7 +73,7 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
   return (
     <a
       href={href}
-      className="group flex min-w-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-colors hover:border-brand"
+      className="paper-texture group flex min-w-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-colors hover:border-brand"
     >
       {/* ── photo header ─────────────────────────────────────────────────── */}
       <div
@@ -132,7 +132,7 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
           >
             <span
               aria-hidden
-              className="font-display text-[17px] font-semibold leading-none tabular-nums"
+              className="font-display-bold text-[17px] leading-none tabular-nums"
               style={{ color: chip.fg }}
             >
               {value.toFixed(1)}
@@ -154,7 +154,7 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
             aria-hidden
           />
           <div className="min-w-0">
-            <h3 className="truncate font-display text-[24px] font-semibold leading-tight tracking-[-0.01em] text-white">
+            <h3 className="truncate font-display-bold text-[24px] leading-tight tracking-[-0.01em] text-white">
               {dest.city}
             </h3>
             <p className="truncate text-[12px] font-semibold uppercase tracking-[0.08em] text-white/85">
@@ -172,13 +172,13 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
         <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3.5 border-t border-hair pt-4">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">Miles</div>
-            <div className="mt-1 font-display text-[19px] font-semibold leading-none tabular-nums text-text">
+            <div className="mt-1 font-display-bold text-[19px] leading-none tabular-nums text-text">
               {compactMiles(dest.typicalAwardMiles)}
             </div>
           </div>
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">vs. cash</div>
-            <div className="mt-1 font-display text-[19px] font-semibold leading-none tabular-nums text-text">
+            <div className="mt-1 font-display-bold text-[19px] leading-none tabular-nums text-text">
               {cashCompare}
             </div>
           </div>

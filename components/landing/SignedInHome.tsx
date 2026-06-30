@@ -73,8 +73,14 @@ export default async function SignedInHome({
         {/* A short, secondary section header — the agent above already greeted
             the member by name, so we don't repeat "Welcome back". */}
         <div>
-          <h2 className="font-display text-[28px] font-semibold leading-[1.04] tracking-[-0.02em] text-text sm:text-[36px]">
-            {programs > 0 ? 'Your points, working.' : 'Get started.'}
+          <h2 className="font-display-bold text-[28px] leading-[1.04] tracking-[-0.02em] text-text sm:text-[36px]">
+            {programs > 0 ? (
+              <>
+                Your points, <span className="wordmark text-brand">working.</span>
+              </>
+            ) : (
+              'Get started.'
+            )}
           </h2>
           <p className="mt-3 max-w-[52ch] text-[15px] leading-[1.55] text-text2 sm:text-[17px]">
             {programs > 0
@@ -86,11 +92,11 @@ export default async function SignedInHome({
         {/* Summary panel — anchors the right column.
             Flat: a bordered paper card with a sunk stat row, no shadow/lift. */}
         {programs > 0 ? (
-          <aside className="flex flex-col rounded-[20px] border border-border bg-paper p-6 lg:rounded-[24px]">
+          <aside className="paper-texture flex flex-col rounded-[20px] border border-border bg-paper p-6 lg:rounded-[24px]">
             <span className="text-[11.5px] font-semibold uppercase tracking-[0.16em] text-brand">
               Your points
             </span>
-            <p className="mt-2 font-display text-[40px] font-semibold leading-[1] tracking-[-0.02em] text-text tabular-nums sm:text-[46px]">
+            <p className="mt-2 font-display-bold text-[40px] leading-[1] tracking-[-0.02em] text-text tabular-nums sm:text-[46px]">
               {totalPoints.toLocaleString()}
             </p>
             <p className="mt-1 text-[13.5px] leading-[1.5] text-text2">
@@ -102,7 +108,7 @@ export default async function SignedInHome({
                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
                   {personalized ? 'In reach' : 'Worth saving for'}
                 </p>
-                <p className="mt-1 font-display text-[22px] font-semibold leading-none text-text tabular-nums">
+                <p className="mt-1 font-display-bold text-[22px] leading-none text-text tabular-nums">
                   {personalized ? affordable.length : picks.length}
                 </p>
                 <p className="mt-1 text-[12px] leading-[1.4] text-text2">
@@ -113,7 +119,13 @@ export default async function SignedInHome({
                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
                   Best value
                 </p>
-                <p className="mt-1 font-display text-[22px] font-semibold leading-none text-text tabular-nums">
+                {/* The headline value reads in --color-good: this is the member's
+                    strongest redemption, so the tier lives in the type. 700 weight.
+                    AA: good #0d6e6e on sunk #f7f5f0 = 5.55. */}
+                <p
+                  className="mt-1 font-display-bold text-[22px] leading-none tabular-nums"
+                  style={{ color: 'var(--color-good)' }}
+                >
                   {topCpp !== undefined ? `${topCpp.toFixed(1)}¢/pt` : '—'}
                 </p>
                 <p className="mt-1 truncate text-[12px] leading-[1.4] text-text2">
@@ -170,7 +182,7 @@ export default async function SignedInHome({
             <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
               Trips your balances can get you to
             </span>
-            <h2 className="font-display text-[26px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[34px]">
+            <h2 className="font-display-bold text-[26px] leading-[1.08] tracking-[-0.02em] text-text sm:text-[34px]">
               {personalized
                 ? 'Within reach.'
                 : 'Dreams worth saving toward.'}
@@ -200,11 +212,11 @@ export default async function SignedInHome({
           for members who already know the exact route they want. */}
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_360px]">
         {/* Run a real search */}
-        <div className="flex flex-col rounded-[20px] border border-border bg-paper p-6 sm:p-8 lg:rounded-[24px]">
+        <div className="paper-texture flex flex-col rounded-[20px] border border-border bg-paper p-6 sm:p-8 lg:rounded-[24px]">
           <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
             Already know the route?
           </span>
-          <h2 className="mt-2 font-display text-[24px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[30px]">
+          <h2 className="mt-2 font-display-bold text-[24px] leading-[1.08] tracking-[-0.02em] text-text sm:text-[30px]">
             Run a search. Get the verdict.
           </h2>
           <p className="mt-2 max-w-[44ch] text-[14.5px] leading-[1.55] text-text2">
@@ -245,7 +257,7 @@ export default async function SignedInHome({
       </section>
 
       {/* ── MANAGE PROGRAMS ──────────────────────────────────────────────── */}
-      <section className="flex flex-col items-start gap-5 rounded-[20px] border border-border bg-paper p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8 lg:rounded-[24px]">
+      <section className="paper-texture flex flex-col items-start gap-5 rounded-[20px] border border-border bg-paper p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8 lg:rounded-[24px]">
         <div className="flex items-center gap-4">
           <span className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-full bg-brand-light text-brand">
             <Icon name="loyalty" size={24} />

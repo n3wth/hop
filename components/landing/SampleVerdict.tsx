@@ -26,12 +26,12 @@ export default async function SampleVerdict() {
           </span>
         </span>
 
-        <h3 className="font-display text-[26px] font-semibold leading-[1.06] tracking-[-0.02em] text-white sm:text-[32px] lg:text-[38px]">
-          Use <span className="text-gold-soft">Alaska miles</span> and save
+        <h3 className="font-display-bold text-[26px] leading-[1.06] tracking-[-0.02em] text-white sm:text-[32px] lg:text-[38px]">
+          Use <span className="wordmark text-gold-soft">Alaska miles</span> and save
         </h3>
 
         <div className="mt-2 flex items-baseline gap-3">
-          <span className="font-display text-[58px] font-semibold leading-[0.9] tracking-[-0.04em] text-mint-bright tabular-nums sm:text-[80px] lg:text-[96px]">
+          <span className="font-display-bold text-[58px] leading-[0.9] tracking-[-0.04em] text-mint-bright tabular-nums sm:text-[80px] lg:text-[96px]">
             $243
           </span>
           <span className="font-display text-[18px] font-semibold tracking-[-0.01em] text-[#9fe0d6] sm:text-[22px]">
@@ -108,7 +108,7 @@ function Stat({
         {label}
       </div>
       <div
-        className="font-display text-[24px] font-semibold tracking-[-0.01em] tabular-nums"
+        className="font-display-bold text-[24px] tracking-[-0.01em] tabular-nums"
         style={{ color: accent ? '#6ff0d2' : '#fff' }}
       >
         {value}

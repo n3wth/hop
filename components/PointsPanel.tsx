@@ -115,7 +115,7 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
           {total.toLocaleString()} across {balances.length}{' '}
           {balances.length === 1 ? 'program' : 'programs'}
         </span>
-        <span className="font-display text-[20px] font-semibold tabular-nums text-white">
+        <span className="font-display-bold text-[20px] tabular-nums text-white">
           {compact(total)}
         </span>
       </div>

@@ -89,7 +89,7 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
         {usingPoints ? (
           <>
             <h1
-              className="hop-rise font-display text-[24px] font-semibold leading-[1.05] tracking-[-0.02em] text-white sm:text-[34px] lg:text-[40px]"
+              className="hop-rise font-display-bold text-[24px] leading-[1.05] text-white sm:text-[34px] lg:text-[40px]"
               style={{ ['--hop-delay' as string]: '60ms' }}
             >
               {owns ? (
@@ -104,13 +104,14 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
             </h1>
 
             {/* The hero moment — the dollar value, oversized and confident. The
-                count-up lands here. Tight tracking, tabular for a clean tick. */}
+                count-up lands here. Heaviest display weight (700), tight
+                tracking, tabular for a clean tick. */}
             <div
               className="hop-rise mt-[10px] flex items-baseline gap-3 sm:mt-3"
               style={{ ['--hop-delay' as string]: '110ms' }}
             >
               <CountUp
-                className="font-display text-[52px] font-semibold leading-[0.9] tracking-[-0.04em] text-mint-bright tabular-nums sm:text-[88px] lg:text-[128px]"
+                className="font-display-bold text-[52px] leading-[0.9] tracking-[-0.04em] text-mint-bright tabular-nums sm:text-[88px] lg:text-[128px]"
                 value={save}
                 format="usd"
                 delayMs={420}
@@ -122,7 +123,7 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
           </>
         ) : (
           <h1
-            className="hop-rise font-display text-[34px] font-semibold leading-[1.02] tracking-[-0.025em] text-white sm:text-[48px] sm:leading-[1.0] lg:text-[64px] lg:leading-[0.98]"
+            className="hop-rise font-display-bold text-[34px] leading-[1.02] tracking-[-0.025em] text-white sm:text-[48px] sm:leading-[1.0] lg:text-[64px] lg:leading-[0.98]"
             style={{ ['--hop-delay' as string]: '60ms' }}
           >
             Pay <span className="text-gold-soft">cash.</span>
@@ -143,7 +144,8 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
           </p>
         ) : usingPoints ? (
           <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-hero-body" style={{ ['--hop-delay' as string]: '140ms' }}>
-            On this route, {airlineShort} {unit} are worth{' '}
+            On this route, <span className="wordmark text-white">{airlineShort}</span> {unit} are
+            worth{' '}
             <b className="font-semibold text-white">{cpp != null ? formatValue(cpp) : '—'}</b>{' '}
             — <b className="font-semibold text-white">{fmt(miles)} {unit}</b> instead of{' '}
             <b className="font-semibold text-white">${fmt(cash)}</b> cash. Sign in to check your
@@ -265,7 +267,7 @@ function HStat({
         {label}
       </div>
       <div
-        className="font-display text-[27px] font-semibold tracking-[-0.01em] tabular-nums"
+        className="font-display-bold text-[27px] tracking-[-0.01em] tabular-nums"
         style={{ color: accent ? '#6ff0d2' : '#fff' }}
       >
         {value}
@@ -298,7 +300,7 @@ function PickPass({ pick }: { pick: FlightOption }) {
 
   return (
     <div
-      className="relative mx-4 mb-5 mt-5 rounded-[18px] bg-paper text-text sm:mx-[26px] sm:mb-[26px] sm:mt-6 lg:mt-0"
+      className="paper-texture relative mx-4 mb-5 mt-5 rounded-[18px] bg-paper text-text sm:mx-[26px] sm:mb-[26px] sm:mt-6 lg:mt-0"
       style={{
         // True perforation: punch two semicircle notches out of the LEFT and
         // RIGHT edges at the dashed line (~50% down) so whatever is behind the

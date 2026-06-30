@@ -134,6 +134,29 @@ body {
   letter-spacing: -0.02em;
 }
 
+/* Heaviest display weight (Bricolage 700) — reserved for the highest-stakes
+   moments: the verdict hero headline, the headline stat figures (cpp / miles /
+   $ saved), and primary section titles. Subheads stay at 600 (.font-display) so
+   the 700 reads as genuine emphasis, not a flat wall of bold. Same tracking as
+   .font-display so the two weights set together cleanly. */
+.font-display-bold {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Paper-grain depth for card surfaces — the same fractal-noise tile the body
+   canvas uses, dialled DOWN to a whisper (~1.8% grain) and tiled locally so a
+   bordered .paper card feels like a sheet of stock rather than a flat fill. It
+   is a BACKGROUND texture, not a translucent overlay: the card's own solid fill
+   sits underneath via its background color and the noise rides on top. Tactile
+   only — strictly NO shadow / gradient / glow (the house rule). Pair with a
+   surface color (e.g. bg-paper) on the same element. */
+.paper-texture {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.018'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
 /* Wordmark: Fraunces italic, leaning forward to echo the bunny's leap. */
 .wordmark {
   font-family: var(--font-wordmark-stack);

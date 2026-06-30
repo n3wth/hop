@@ -119,7 +119,7 @@ export default function ResultRow({ option, rank, maxCpp, index = 0, open, onTog
 
   return (
     <article
-      className="hop-rise flex flex-col rounded-[20px] border-[1.5px] border-border bg-paper transition-colors hover:border-brand-mint-deep data-[open=true]:border-brand"
+      className="paper-texture hop-rise flex flex-col rounded-[20px] border-[1.5px] border-border bg-paper transition-colors hover:border-brand-mint-deep data-[open=true]:border-brand"
       data-open={open}
       style={{ ['--hop-delay' as string]: `${120 + index * 70}ms` }}
     >
@@ -152,7 +152,14 @@ export default function ResultRow({ option, rank, maxCpp, index = 0, open, onTog
         </div>
 
         <div className="pt-[18px]">
-          <div className="font-display text-[30px] font-semibold leading-none tracking-[-0.01em] text-text">
+          {/* Headline figure: heaviest display weight (700). On a STRONG (green)
+              award the miles count reads in --color-good so the value tier lives
+              in the type itself, not just the chip below. Cash + amber/muted
+              stay ink. AA: good #0d6e6e on paper = 5.79. */}
+          <div
+            className="font-display-bold text-[30px] leading-none tracking-[-0.01em]"
+            style={{ color: !isCash && option.tier === 'green' ? 'var(--color-good)' : 'var(--color-text)' }}
+          >
             {isCash
               ? `$${option.cashPrice?.toLocaleString() ?? '—'}`
               : option.miles?.toLocaleString() ?? '—'}
@@ -190,7 +197,16 @@ export default function ResultRow({ option, rank, maxCpp, index = 0, open, onTog
         </div>
 
         <div className="mt-[14px] flex items-center justify-between gap-3 border-t border-hair pt-[12px]">
-          <span className="text-[12.5px] leading-[1.45] text-text2">{assessment(option)}</span>
+          {/* The assessment carries the WEAK tier in its own color: a low-value
+              (muted) award reads in --color-weak so "skip it" is felt in the
+              type, not only the chip. Cash + workable redemptions stay ink-soft.
+              AA: weak #a8513a on paper = 5.15. */}
+          <span
+            className="text-[12.5px] leading-[1.45]"
+            style={{ color: !isCash && option.tier === 'muted' ? 'var(--color-weak)' : 'var(--color-text2)' }}
+          >
+            {assessment(option)}
+          </span>
           <span
             aria-hidden
             className="flex flex-shrink-0 items-center gap-[3px] text-[11px] font-semibold text-text3"
