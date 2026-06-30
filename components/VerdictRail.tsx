@@ -144,7 +144,7 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
           </p>
         ) : usingPoints ? (
           <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-hero-body" style={{ ['--hop-delay' as string]: '140ms' }}>
-            On this route, <span className="wordmark text-white">{airlineShort}</span> {unit} are
+            On this route, <span className="text-gold-soft">{airlineShort}</span> {unit} are
             worth{' '}
             <b className="font-semibold text-white">{cpp != null ? formatValue(cpp) : '—'}</b>{' '}
             — <b className="font-semibold text-white">{fmt(miles)} {unit}</b> instead of{' '}
