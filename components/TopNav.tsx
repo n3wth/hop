@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Icon from './Icon'
 import FlyingBunny from './FlyingBunny'
 import AccountMenu from './AccountMenu'
+import OriginSelector from './OriginSelector'
 import { SearchForm, type SearchState, type Cabin } from './SearchBar'
 import { isoOffset } from '@/lib/dates'
 
@@ -302,6 +303,13 @@ export default function TopNav({
           {/* spacer pushes the account to the far right (desktop only) */}
           <div className="hidden flex-1 md:block" />
 
+          {/* persistent "where from" — sets the departure origin every surface
+              respects. Tucked beside the account block; hidden below md so the
+              phone header stays uncrowded (the menu sheet carries it there). */}
+          <div className="mr-2 hidden flex-shrink-0 md:block lg:mr-3">
+            <OriginSelector />
+          </div>
+
           {/* account — Auth0: avatar+logout when signed in, Sign in when out */}
           <div
             className="hidden flex-shrink-0 items-center sm:flex"
@@ -387,6 +395,13 @@ export default function TopNav({
             >
               <Icon name="close" size={20} />
             </button>
+          </div>
+          {/* "where from" — reachable on phones where the header selector hides */}
+          <div className="border-b border-border px-4 py-3">
+            <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-text2">
+              Where from
+            </span>
+            <OriginSelector />
           </div>
           <nav className="flex flex-col gap-1 p-4">
             {[

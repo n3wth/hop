@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { cookies } from 'next/headers'
 import type { SearchParams } from '@/lib/types'
 import { assembleSearch } from '@/lib/search'
 import { getUserBalances } from '@/lib/accounts'
@@ -6,6 +7,7 @@ import { getPrefs } from '@/lib/prefs'
 import { cityForCode } from '@/lib/airports'
 import { destinationImage } from '@/lib/images'
 import { auth0 } from '@/lib/auth0'
+import { ORIGIN_STORAGE_KEY } from '@/lib/origin-context'
 import { SITE_URL } from '@/lib/seo'
 import AppShell from '@/components/AppShell'
 import RouteBar from '@/components/RouteBar'
@@ -54,11 +56,18 @@ function parseCount(raw: string | undefined, max: number): number {
 // Parse the raw query into a clean SearchParams, defaulting any missing field
 // and defensively clamping bad input so a nonsensical URL never crashes or runs
 // a broken search. searchParams is a Promise in Next 16 — awaited by the caller.
-function parseParams(q: Record<string, string | string[] | undefined>): SearchParams {
+// `originFallback` (the persistent "where from" cookie) seeds the origin when the
+// query omits one, so a bare /search opens on where the user actually departs.
+function parseParams(
+  q: Record<string, string | string[] | undefined>,
+  originFallback?: string,
+): SearchParams {
   const str = (v: string | string[] | undefined): string | undefined =>
     Array.isArray(v) ? v[0] : v
 
-  const from = str(q.from)?.toUpperCase() || DEFAULT_PARAMS.from
+  const fallbackOrigin =
+    originFallback && /^[A-Z]{3}$/.test(originFallback) ? originFallback : undefined
+  const from = str(q.from)?.toUpperCase() || fallbackOrigin || DEFAULT_PARAMS.from
   let to = str(q.to)?.toUpperCase() || DEFAULT_PARAMS.to
   // Origin and destination must differ — fall back to a sane default destination.
   if (to === from) to = from === DEFAULT_PARAMS.to ? DEFAULT_PARAMS.from : DEFAULT_PARAMS.to
@@ -201,7 +210,10 @@ export default async function Search({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const params = parseParams(await searchParams)
+  // Persistent "where from" cookie seeds the origin when the query omits one.
+  const cookieStore = await cookies()
+  const cookieOrigin = cookieStore.get(ORIGIN_STORAGE_KEY)?.value?.trim().toUpperCase()
+  const params = parseParams(await searchParams, cookieOrigin)
 
   // Auth0 session → header avatar (null when signed out).
   const session = await auth0.getSession()

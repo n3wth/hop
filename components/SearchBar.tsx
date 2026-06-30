@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'next/navigation'
 import Icon from './Icon'
 import { searchAirports, airportByCode, cityForCode } from '@/lib/airports'
+import { useOrigin } from '@/lib/origin-context'
 
 // ── shared helpers ───────────────────────────────────────────────────────────
 
@@ -702,8 +703,12 @@ export function SearchForm({
   scrolled?: boolean
 }) {
   const router = useRouter()
+  const { origin } = useOrigin()
   const [s, setS] = useState<SearchState>(initial)
   const [error, setError] = useState<string | null>(null)
+  // Whether the user has explicitly set the origin field this session. Once true,
+  // the persistent "where from" never clobbers their choice; reset on server re-sync.
+  const [fromTouched, setFromTouched] = useState(false)
 
   // Re-sync local edits when the server sends new params (e.g. after a search
   // navigation). React's "adjust state during render" pattern — keyed on the
@@ -714,12 +719,21 @@ export function SearchForm({
     setSyncedKey(initialKey)
     setS(initial)
     setError(null)
+    setFromTouched(false)
+  }
+
+  // Default the origin from the persistent "where from" when the user hasn't
+  // picked one — so the search starts from where they actually fly out of. Never
+  // clobbers an explicit pick (fromTouched) or collides with the destination.
+  if (origin && !fromTouched && origin !== s.from && origin !== s.to) {
+    setS((p) => ({ ...p, from: origin }))
   }
 
   // Pick an airport for one field, keeping origin ≠ destination by swapping when
   // the chosen code already occupies the other field (the nicest collision UX).
   function pickFrom(c: string) {
     setError(null)
+    setFromTouched(true)
     setS((p) => (c === p.to ? { ...p, from: c, to: p.from } : { ...p, from: c }))
   }
   function pickTo(c: string) {
@@ -736,6 +750,7 @@ export function SearchForm({
   // Reverse the route — swap From/To (and their displayed cities follow state).
   function swapFromTo() {
     setError(null)
+    setFromTouched(true)
     setS((p) => ({ ...p, from: p.to, to: p.from }))
   }
 
