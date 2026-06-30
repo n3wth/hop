@@ -153,7 +153,7 @@ describe('assembleSearch — live path degradation', () => {
     expect(result.degraded).toEqual([])
   })
 
-  it('collects every failing source into degraded', async () => {
+  it('collects failing cash + awards into degraded', async () => {
     vi.spyOn(duffel, 'searchCash').mockResolvedValue({ ok: false, reason: 'cash down' })
     vi.spyOn(seatsaero, 'searchAwards').mockResolvedValue({ ok: false, reason: 'awards down' })
     vi.spyOn(awardwallet, 'getBalances').mockResolvedValue({ ok: false, reason: 'balances down' })
@@ -161,9 +161,43 @@ describe('assembleSearch — live path degradation', () => {
     const result = await assembleSearch(PARAMS)
 
     expect(result.degraded).toEqual(
-      expect.arrayContaining(['cash', 'awards', 'balances']),
+      expect.arrayContaining(['cash', 'awards']),
     )
     expect(result.options).toEqual([])
     expect(result.verdict).toBe('none')
+  })
+
+  // A signed-out / no-program viewer never had a connected wallet to refresh, so
+  // a balances-source failure must NOT read as "couldn't refresh your balances".
+  it('does NOT degrade balances for a signed-out viewer (no per-user balances)', async () => {
+    vi.spyOn(duffel, 'searchCash').mockResolvedValue({ ok: true, data: [] })
+    vi.spyOn(seatsaero, 'searchAwards').mockResolvedValue({ ok: true, data: [] })
+    // Env-global AwardWallet fallback fails — but the viewer is signed out, so
+    // empty balances are EXPECTED, not stale.
+    vi.spyOn(awardwallet, 'getBalances').mockResolvedValue({ ok: false, reason: 'balances down' })
+
+    // No userBalances argument → signed-out / stateless path.
+    const result = await assembleSearch(PARAMS)
+
+    expect(result.degraded).not.toContain('balances')
+    expect(result.balances).toEqual([])
+  })
+
+  // A signed-in user supplies their own (possibly empty) balances; that path is
+  // trusted and never hits the env-global fallback, so it never degrades balances.
+  it('does NOT degrade balances when the caller supplies per-user balances', async () => {
+    vi.spyOn(duffel, 'searchCash').mockResolvedValue({ ok: true, data: [] })
+    vi.spyOn(seatsaero, 'searchAwards').mockResolvedValue({ ok: true, data: [] })
+    // getBalances() must NOT even be consulted when balances are supplied.
+    const getBalancesSpy = vi
+      .spyOn(awardwallet, 'getBalances')
+      .mockResolvedValue({ ok: false, reason: 'balances down' })
+
+    const result = await assembleSearch(PARAMS, [
+      { program: 'Alaska Mileage Plan', code: 'AS', balance: 40000 },
+    ])
+
+    expect(result.degraded).not.toContain('balances')
+    expect(getBalancesSpy).not.toHaveBeenCalled()
   })
 })

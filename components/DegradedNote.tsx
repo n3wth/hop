@@ -4,8 +4,11 @@ export interface DegradedNoteProps {
   degraded: string[]
 }
 
-// Human label per failed source. Balances failing is silent (the wallet just
-// shows what it has); cash/awards failing changes what we can compare, so we say.
+// Human label per failed source. 'balances' is only ever recorded when a
+// signed-in user's OWN connected programs failed to refresh — a signed-out or
+// no-program viewer has nothing to refresh, so empty is expected and this note
+// never fires for them (see lib/search.ts). cash/awards failing changes what we
+// can compare, so we always say.
 const COPY: Record<string, string> = {
   awards: 'Award data is unavailable right now — showing cash only.',
   cash: 'Cash fares are unavailable right now — showing points only.',
