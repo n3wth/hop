@@ -7,7 +7,14 @@
 // for preview deploys; otherwise fall back to prod.
 
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'https://hop.n3wth.com'
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'https://hop.flights'
+
+// Join a path onto the prod origin. The home path collapses to the bare origin
+// (no trailing slash) so canonical/OG urls don't double up on '/'.
+export function absoluteUrl(path = '/'): string {
+  const p = path.startsWith('/') ? path : `/${path}`
+  return p === '/' ? SITE_URL : `${SITE_URL}${p}`
+}
 
 export const SITE_NAME = 'hop'
 
@@ -65,5 +72,43 @@ export function pageMeta({
       title: cardTitle,
       description,
     },
+  }
+}
+
+// Organization + WebSite structured data, as one schema.org @graph. Two nodes
+// sharing the same origin let search engines attach the brand (name, logo, url)
+// and the site to one identity. The WebSite carries a SearchAction so engines
+// can surface the in-site flight search as a sitelinks searchbox. Pure data —
+// no user input ever flows in here, so JSON.stringify alone keeps it XSS-safe.
+export function buildJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': `${SITE_URL}/#organization`,
+        name: SITE_NAME,
+        url: SITE_URL,
+        description: TAGLINE,
+        logo: absoluteUrl('/icon.svg'),
+      },
+      {
+        '@type': 'WebSite',
+        '@id': `${SITE_URL}/#website`,
+        name: SITE_NAME,
+        url: SITE_URL,
+        description: DEFAULT_DESCRIPTION,
+        publisher: { '@id': `${SITE_URL}/#organization` },
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: {
+            '@type': 'EntryPoint',
+            urlTemplate: `${SITE_URL}/search?from={from}&to={to}`,
+          },
+          // schema.org requires query-input to name the template variables.
+          'query-input': ['required name=from', 'required name=to'],
+        },
+      },
+    ],
   }
 }

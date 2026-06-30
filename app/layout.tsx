@@ -5,9 +5,9 @@ import {
   SITE_NAME,
   DEFAULT_TITLE,
   DEFAULT_DESCRIPTION,
-  TAGLINE,
   TEAL,
 } from '@/lib/seo'
+import StructuredData from '@/components/StructuredData'
 import './globals.css'
 
 // Display headlines: Bricolage Grotesque via next/font/google — self-hosted, preloaded.
@@ -36,7 +36,10 @@ export const metadata: Metadata = {
   },
   description: DEFAULT_DESCRIPTION,
   applicationName: SITE_NAME,
+  category: 'travel',
   authors: [{ name: 'hop' }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
   keywords: [
     'points vs cash',
     'award flights',
@@ -86,31 +89,6 @@ export const viewport: Viewport = {
   colorScheme: 'light',
 }
 
-// Organization + WebSite structured data. One graph, two nodes, so search
-// engines can attach the brand (name, logo, url) and the site to the same
-// origin. Pure data — no styling, no scripts beyond the JSON-LD payload.
-const JSON_LD = {
-  '@context': 'https://schema.org',
-  '@graph': [
-    {
-      '@type': 'Organization',
-      '@id': `${SITE_URL}/#organization`,
-      name: SITE_NAME,
-      url: SITE_URL,
-      description: TAGLINE,
-      logo: `${SITE_URL}/icon.svg`,
-    },
-    {
-      '@type': 'WebSite',
-      '@id': `${SITE_URL}/#website`,
-      name: SITE_NAME,
-      url: SITE_URL,
-      description: DEFAULT_DESCRIPTION,
-      publisher: { '@id': `${SITE_URL}/#organization` },
-    },
-  ],
-}
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -125,12 +103,11 @@ export default function RootLayout({
           href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap"
           rel="stylesheet"
         />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
-        />
       </head>
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">
+        <StructuredData />
+        {children}
+      </body>
     </html>
   )
 }
