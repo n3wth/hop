@@ -1,6 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
+import Link from 'next/link'
 import { FOOTER_SECTIONS } from '@/lib/seo-routes'
 
 export default function FooterNav() {
@@ -22,7 +23,7 @@ export default function FooterNav() {
               const active = pathname === linkPath
               return (
                 <li key={link.href}>
-                  <a
+                  <Link
                     href={link.href}
                     aria-current={active ? 'page' : undefined}
                     className={
@@ -32,7 +33,7 @@ export default function FooterNav() {
                     }
                   >
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               )
             })}

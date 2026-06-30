@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { auth0 } from '@/lib/auth0'
 import { isCheckoutEnabled } from '@/lib/env'
 import { getCheckoutOffer, freshOfferForRoute } from '@/lib/duffel-orders'
@@ -67,7 +68,7 @@ export default async function BookPage({
     <AppShell user={user} hideSearch>
       <div className="mx-auto max-w-[1040px] pb-4 pt-8 sm:pt-12">
         {backHref ? (
-          <a
+          <Link
             href={backHref}
             className="mb-5 inline-flex items-center gap-1.5 text-[13.5px] font-medium text-text2 transition-colors hover:text-text"
           >
@@ -81,7 +82,7 @@ export default async function BookPage({
               <path d="m313-440 196 196q12 12 11.5 28T508-188q-12 11-28 11.5T452-188L188-452q-6-6-8.5-13t-2.5-15q0-8 2.5-15t8.5-13l264-264q12-12 28.5-11.5T508-771q11 12 11.5 28T508-715L313-520h447q17 0 28.5 11.5T800-480q0 17-11.5 28.5T760-440H313Z" />
             </svg>
             Back to results
-          </a>
+          </Link>
         ) : null}
         {!isCheckoutEnabled() ? (
           <Notice

@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers'
+import Link from 'next/link'
 import { auth0 } from '@/lib/auth0'
 import { mockBalances } from '@/lib/mock'
 import { getPrefs, type UserPrefs } from '@/lib/prefs'
@@ -133,9 +134,9 @@ export default async function Home() {
           {/* search stays reachable — demoted to a secondary fast-path */}
           <p className="hop-rise mt-5 text-center text-[13.5px] text-text2" style={{ ['--hop-delay' as string]: '300ms' }}>
             Know exactly where you&apos;re going?{' '}
-            <a href="/search" className="font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline">
+            <Link href="/search" className="font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline">
               Search a specific route
-            </a>
+            </Link>
           </p>
         </section>
 

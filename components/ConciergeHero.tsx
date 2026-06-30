@@ -23,6 +23,7 @@
 // hover = color only (no lift), motion is reduced-motion-safe via .hop-rise.
 
 import { useEffect, useRef, type FormEvent } from 'react'
+import Link from 'next/link'
 import Icon from './Icon'
 import { type ConciergeHeroCopy } from '@/lib/concierge-hero'
 
@@ -220,13 +221,13 @@ export default function ConciergeHero({
             {/* No programs yet → invite linking so answers price against real
                 balances. The primary onward action for a fresh signed-in user. */}
             {needsPrograms ? (
-              <a
+              <Link
                 href="/account"
                 className="flex items-center gap-1.5 rounded-full border border-wallet-active bg-wallet-active/15 px-3.5 py-1.5 text-[12px] font-semibold text-hero-white-hover transition-colors hover:bg-wallet-active/25"
               >
                 <Icon name="loyalty" size={14} className="flex-shrink-0" />
                 Add your programs
-              </a>
+              </Link>
             ) : null}
             {/* Gmail seam: live button when configured (env flag + creds), else
                 the honest disabled "Soon" affordance. This block is signed-in
@@ -254,13 +255,13 @@ export default function ConciergeHero({
                 </span>
               </button>
             )}
-            <a
+            <Link
               href="/account"
               className="flex items-center gap-1.5 rounded-full border border-brand-muted bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-hero-label transition-colors hover:border-wallet-active hover:text-hero-white-hover"
             >
               <Icon name="info" size={14} className="flex-shrink-0" />
               What hop remembers
-            </a>
+            </Link>
           </div>
         ) : null}
       </div>

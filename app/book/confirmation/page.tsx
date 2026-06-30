@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { auth0 } from '@/lib/auth0'
 import { getOrder } from '@/lib/duffel-orders'
 import { getBookingByOrderId } from '@/lib/bookings'
@@ -59,12 +60,12 @@ export default async function ConfirmationPage({
                 If you just booked, your confirmation is on the way by email. You can also find this
                 trip on your account page.
               </p>
-              <a
+              <Link
                 href="/account"
                 className="mt-4 inline-flex items-center gap-2 rounded-[11px] border-[1.5px] border-text px-4 py-[9px] text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
               >
                 Go to account
-              </a>
+              </Link>
             </div>
           </div>
         ) : (
@@ -188,18 +189,18 @@ function Confirmed({
       <FarePolicyCard policy={order.farePolicy} airline={order.airline} className="mt-4" />
 
       <div className="mt-6 flex flex-wrap gap-3">
-        <a
+        <Link
           href="/account#trips"
           className="inline-flex items-center gap-2 rounded-[12px] bg-brand px-5 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep"
         >
           View my trips
-        </a>
-        <a
+        </Link>
+        <Link
           href="/search"
           className="inline-flex items-center gap-2 rounded-[12px] border-[1.5px] border-text px-5 py-3 text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
         >
           Book another flight
-        </a>
+        </Link>
       </div>
     </>
   )

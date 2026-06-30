@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 
 export interface AccountUser {
   initial: string
@@ -68,36 +69,40 @@ export default function AccountMenu({ user }: { user: AccountUser }) {
               <div className="mt-[2px] truncate text-[12.5px] text-text3">{user.email}</div>
             ) : null}
           </div>
-          <a
+          <Link
             href="/account"
             role="menuitem"
+            onClick={() => setOpen(false)}
             className="block px-4 py-[11px] text-[14px] font-medium text-text2 transition-colors hover:bg-sunk hover:text-text"
           >
             Programs
-          </a>
+          </Link>
           {/* Deep links to the power features so they're reachable without
               scrolling the whole /account page (each is an anchor there). */}
-          <a
+          <Link
             href="/account#watches"
             role="menuitem"
+            onClick={() => setOpen(false)}
             className="block px-4 py-[11px] text-[14px] font-medium text-text2 transition-colors hover:bg-sunk hover:text-text"
           >
             Standing orders
-          </a>
-          <a
+          </Link>
+          <Link
             href="/account#whatif"
             role="menuitem"
+            onClick={() => setOpen(false)}
             className="block px-4 py-[11px] text-[14px] font-medium text-text2 transition-colors hover:bg-sunk hover:text-text"
           >
             What if…
-          </a>
-          <a
+          </Link>
+          <Link
             href="/account#trips"
             role="menuitem"
+            onClick={() => setOpen(false)}
             className="block px-4 py-[11px] text-[14px] font-medium text-text2 transition-colors hover:bg-sunk hover:text-text"
           >
             Trips
-          </a>
+          </Link>
           <a
             href="/auth/logout"
             role="menuitem"

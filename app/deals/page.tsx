@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers'
+import Link from 'next/link'
 import { topValue, imageQuery } from '@/lib/destinations'
 import { destinationImages } from '@/lib/images'
 import { getUserBalances } from '@/lib/accounts'
@@ -143,13 +144,13 @@ export default async function DealsPage({
               which of these your points can reach.
             </span>
           </div>
-          <a
+          <Link
             href="/ask?q=Which%20of%20these%20sweet%20spots%20fit%20my%20points%3F"
             className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-[var(--radius)] bg-brand px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep"
           >
             <Icon name="flight" size={16} />
             Ask hop
-          </a>
+          </Link>
         </div>
 
         {/* the feed */}

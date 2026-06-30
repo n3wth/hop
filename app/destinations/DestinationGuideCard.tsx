@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { Destination } from '@/lib/destinations'
 import { computeCpp } from '@/lib/destinations'
 import { tier, formatValue } from '@/lib/cpp'
@@ -41,7 +42,7 @@ export default function DestinationGuideCard({
   const chip = CHIP[t]
 
   return (
-    <a
+    <Link
       href={`/destinations/${dest.code.toLowerCase()}`}
       className="group flex min-w-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-colors hover:border-brand"
     >
@@ -125,6 +126,6 @@ export default function DestinationGuideCard({
           </span>
         </div>
       </div>
-    </a>
+    </Link>
   )
 }

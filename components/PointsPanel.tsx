@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { Balance, FlightOption } from '@/lib/types'
 import BrandIcon from './BrandIcon'
 
@@ -49,13 +50,13 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
           Add your loyalty programs and hop will tell you which redemptions your
           points actually unlock — and whether to book with miles or cash.
         </p>
-        <a
+        <Link
           href="/account"
           className="mt-4 inline-flex items-center gap-2 rounded-[12px] bg-white px-5 py-3 text-[14px] font-semibold text-[#0c3a3a] transition-colors hover:bg-hero-cream"
         >
           Add your programs
           <span aria-hidden className="text-[15px] leading-none">→</span>
-        </a>
+        </Link>
       </section>
     )
   }

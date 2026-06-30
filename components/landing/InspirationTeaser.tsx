@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import DestinationGrid from '@/components/landing/DestinationGrid'
 import { topValue, imageQuery } from '@/lib/destinations'
 import { destinationImages } from '@/lib/images'
@@ -37,12 +38,12 @@ export default async function InspirationTeaser() {
       {/* The teaser shows four; the full ranked feed lives on /deals. Give it a
           first-class door instead of leaving /deals reachable only from nav. */}
       <div className="mt-8 flex justify-center">
-        <a
+        <Link
           href="/deals"
           className="text-[15px] font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline"
         >
           See all sweet spots
-        </a>
+        </Link>
       </div>
     </section>
   )

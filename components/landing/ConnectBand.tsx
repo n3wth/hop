@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import Icon from '@/components/Icon'
 
 // Closing call-to-action — auth-aware. Signed out: connect your points.
@@ -57,13 +58,13 @@ export default function ConnectBand({
 
         <div className="flex flex-shrink-0 flex-wrap items-center gap-3">
           {signedIn ? (
-            <a
+            <Link
               href="/account"
               className="inline-flex items-center gap-2 rounded-[14px] border border-white/25 px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep"
             >
               <Icon name="settings" size={18} />
               Manage programs
-            </a>
+            </Link>
           ) : (
             <>
               {/* Two distinct doors, not the same URL twice: signup is primary,

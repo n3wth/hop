@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import Icon from '@/components/Icon'
 import type { DreamCardData } from '@/lib/dream-view'
 
@@ -289,13 +290,13 @@ export default function LedgerDreamCard({
 
           {/* ── CTAs ─────────────────────────────────────────────────────── */}
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <a
+            <Link
               href={v.searchHref}
               className="inline-flex items-center gap-2 rounded-[var(--radius)] bg-brand px-5 py-3 text-[14.5px] font-semibold text-white transition-colors hover:bg-brand-deep"
             >
               <Icon name="flight" size={17} />
               {v.saveToward ? 'See the route' : 'Make it real'}
-            </a>
+            </Link>
             <button
               type="button"
               onClick={dreamAnother}
