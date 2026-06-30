@@ -179,8 +179,10 @@ interface HopDatabase {
       }
       hop_standing_orders: {
         // One watch per row. params is jsonb of SearchParams (lib/types).
-        // eligible_programs is a text[] (empty = any program). See CREATE TABLE
-        // in lib/standing-orders.ts notes.
+        // eligible_programs is a text[] (empty = any program). notify_email is
+        // the destination for proactive alert delivery (seeded from the Auth0
+        // session at create time; null = in-app only). See CREATE TABLE / ALTER
+        // TABLE in lib/standing-orders.ts notes.
         Row: {
           id: string
           user_id: string
@@ -189,6 +191,7 @@ interface HopDatabase {
           seats: number
           eligible_programs: string[] | null
           min_cabin: string | null
+          notify_email: string | null
           last_notified_offer: string | null
           active: boolean
           created_at: string | null
@@ -201,6 +204,7 @@ interface HopDatabase {
           seats?: number
           eligible_programs?: string[]
           min_cabin?: string | null
+          notify_email?: string | null
           last_notified_offer?: string | null
           active?: boolean
           created_at?: string | null
@@ -211,8 +215,29 @@ interface HopDatabase {
           seats?: number
           eligible_programs?: string[]
           min_cabin?: string | null
+          notify_email?: string | null
           last_notified_offer?: string | null
           active?: boolean
+        }
+        Relationships: []
+      }
+      hop_subscriptions: {
+        // One row per user that has a non-default tier. Absent row = 'free'.
+        // Read-only today (no billing — Stripe is N-289). See CREATE TABLE in
+        // lib/subscription.ts notes.
+        Row: {
+          user_id: string
+          tier: string
+          updated_at: string | null
+        }
+        Insert: {
+          user_id: string
+          tier?: string
+          updated_at?: string | null
+        }
+        Update: {
+          tier?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
