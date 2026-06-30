@@ -82,9 +82,13 @@ export default function CountUp({
     }
   }, [value, durationMs, delayMs])
 
+  // The animated number is decorative for AT — a screen reader landing mid
+  // count-up would otherwise read an intermediate (or 0) figure. Hide the
+  // animating value and expose the true final value once, via sr-only.
   return (
     <span className={className} style={style}>
-      {render(display, format, prefix, suffix)}
+      <span aria-hidden="true">{render(display, format, prefix, suffix)}</span>
+      <span className="sr-only">{render(value, format, prefix, suffix)}</span>
     </span>
   )
 }

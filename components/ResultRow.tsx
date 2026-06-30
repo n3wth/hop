@@ -31,6 +31,13 @@ const BAR: Record<CppTier, string> = {
   amber: 'var(--color-amber)',
   muted: 'var(--color-weak)',
 }
+// Plain-language strength word per tier, so the chip's value isn't conveyed by
+// color alone to screen readers (mirrors DealCard's chip label).
+const TIER_WORD: Record<CppTier, string> = {
+  green: 'strong value',
+  amber: 'fair value',
+  muted: 'low value',
+}
 
 function rankLabel(option: FlightOption, rank?: number): string {
   if (option.kind === 'cash') return 'Cash'
@@ -156,8 +163,11 @@ export default function ResultRow({ option, rank, maxCpp, index = 0, open, onTog
 
           <div className="mt-[10px] flex items-center gap-2">
             {cppText ? (
-              <span className={`rounded-[7px] px-[9px] py-1 text-[11.5px] font-semibold ${CHIP[option.tier]}`}>
-                {cppText} / pt
+              <span
+                className={`rounded-[7px] px-[9px] py-1 text-[11.5px] font-semibold ${CHIP[option.tier]}`}
+                aria-label={`${cppText} per point — ${TIER_WORD[option.tier]}`}
+              >
+                <span aria-hidden="true">{cppText} / pt</span>
               </span>
             ) : option.earn != null ? (
               <span className="rounded-[7px] bg-sunk px-[9px] py-1 text-[11.5px] font-semibold text-text2">
