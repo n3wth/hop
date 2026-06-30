@@ -8,6 +8,7 @@ import {
   TEAL,
 } from '@/lib/seo'
 import StructuredData from '@/components/StructuredData'
+import ScrollToTop from '@/components/ScrollToTop'
 import './globals.css'
 
 // Display headlines: Bricolage Grotesque via next/font/google — self-hosted, preloaded.
@@ -114,6 +115,7 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans">
+        <ScrollToTop />
         <StructuredData />
         {children}
       </body>
