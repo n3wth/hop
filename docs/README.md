@@ -13,6 +13,7 @@ This folder stores product, design, and implementation documentation for hop.
 | `design/icons.json` | Material symbol path data used by UI icon rendering. | When icon set changes |
 | `design/hop-logo.svg` | Canonical bunny logo vector. | Rare |
 | `plans/2026-06-28-001-feat-hop-flight-optimizer-plan.md` | Detailed implementation plan for initial optimizer build. | Historical, append-only |
+| `growth-hypothesis.md` | Forward-looking growth/business hypothesis for a funded agent-team month. | When strategy is revisited |
 
 ## Conventions
 
