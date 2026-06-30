@@ -6,6 +6,7 @@ import Logo from './Logo'
 import BrandIcon from './BrandIcon'
 import SeeTheMath from './SeeTheMath'
 import CountUp from './CountUp'
+import CardAffiliateCTA from './CardAffiliateCTA'
 
 export interface VerdictRailProps {
   result: SearchResult
@@ -185,6 +186,11 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
           <HStat label="Cash price" value={`$${fmt(cash)}`} />
           <HStat label="You save" value={`$${fmt(save)}`} accent />
         </div>
+
+        {/* Affiliate CTA — only on a points-winning verdict, never on cash. Maps
+            the winning award's program to the card that earns its currency; renders
+            nothing if no card maps. Clearly labelled "Sponsored". */}
+        {usingPoints ? <CardAffiliateCTA program={pick?.program} unit={unit} /> : null}
       </div>
 
       {/* RIGHT — destination photo filling the panel, boarding-pass pick over it */}
