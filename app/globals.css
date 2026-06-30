@@ -193,28 +193,13 @@ body {
   letter-spacing: -0.02em;
 }
 
-/* ── Entrance micro-interactions ──────────────────────────────────────────
-   Restrained SOLID rise-in (no translucency — transform only). Kept SHORT and
-   low-travel so content reads as instant, not a slow cascade: a 4px settle over
-   ~220ms. Premium, not bouncy. Runs once on initial load.
-   prefers-reduced-motion disables all of it below. */
-@keyframes hop-rise-in {
-  from {
-    transform: translateY(4px);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-
-.hop-rise {
-  animation: hop-rise-in 220ms var(--ease-premium) both;
-  /* Compress the per-element stagger so the hero settles together (fast), not as
-     a slow top-to-bottom cascade. Inline --hop-delay values (up to ~300ms) are
-     scaled down here to ~0.4x via the calc, capping the last element well under
-     200ms. */
-  animation-delay: calc(var(--hop-delay, 0ms) * 0.4);
-}
+/* ── Entrance ──────────────────────────────────────────────────────────────
+   Entrance is intentionally STILL — content appears in place with no on-load
+   movement. (An earlier rise-in translated everything up ~4px on load; it read
+   as the page nudging upward, so it was removed.) `.hop-rise` is kept as an
+   inert class so its many call sites and their inline --hop-delay values don't
+   need touching — it simply has no animation now. The rest of the motion below
+   still honors prefers-reduced-motion. */
 
 /* Bunny motion is scroll-driven (see FlyingBunny) — it lifts with scroll
    momentum like gravity, then springs back to rest when scrolling stops.
@@ -438,7 +423,6 @@ body {
 .hop-dot:nth-child(3) { animation-delay: 0.36s; }
 
 @media (prefers-reduced-motion: reduce) {
-  .hop-rise,
   .hop-bar,
   .hop-bunny-leap,
   .hop-float {
