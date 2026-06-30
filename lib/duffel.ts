@@ -62,6 +62,37 @@ function num(value: string | null | undefined): number {
   return isNaN(n) ? 0 : n
 }
 
+// Map our cabin enum to Duffel's cabin_class. Absent/unknown → economy, which
+// preserves the original hardcoded behavior for callers that don't set a cabin.
+function duffelCabinClass(
+  cabin: SearchParams['cabin'],
+): 'economy' | 'premium_economy' | 'business' | 'first' {
+  switch (cabin) {
+    case 'premium':
+      return 'premium_economy'
+    case 'business':
+      return 'business'
+    case 'first':
+      return 'first'
+    default:
+      return 'economy'
+  }
+}
+
+// Build Duffel's passengers array from the search's passenger mix. Adults are
+// always at least one; children/infants are optional (absent → adults-only).
+// Infants are booked as lap infants (no seat) — `infant_without_seat`.
+function buildPassengers(params: SearchParams): Array<{ type: string }> {
+  const adults = Math.max(1, params.adults || 1)
+  const children = Math.max(0, params.children ?? 0)
+  const infants = Math.max(0, params.infants ?? 0)
+  return [
+    ...Array.from({ length: adults }, () => ({ type: 'adult' })),
+    ...Array.from({ length: children }, () => ({ type: 'child' })),
+    ...Array.from({ length: infants }, () => ({ type: 'infant_without_seat' })),
+  ]
+}
+
 export function normalizeDuffelOffer(
   offer: DuffelOffer,
   params: SearchParams,
@@ -123,10 +154,8 @@ export async function searchCash(params: SearchParams): Promise<ApiResult<Flight
   const body = {
     data: {
       slices,
-      passengers: Array.from({ length: Math.max(1, params.adults || 1) }, () => ({
-        type: 'adult',
-      })),
-      cabin_class: 'economy',
+      passengers: buildPassengers(params),
+      cabin_class: duffelCabinClass(params.cabin),
     },
   }
 

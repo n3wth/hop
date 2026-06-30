@@ -444,13 +444,67 @@ function CalendarPop({ depart, ret, oneWay, onOneWayChange, onChange, children }
 
 // ── Who stepper ──────────────────────────────────────────────────────────────
 
+// One labeled +/− counter row. Shared by every passenger type so adults,
+// children, and infants read and behave identically (flat, bordered pills).
+function StepperRow({
+  label,
+  hint,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string
+  hint: string
+  value: number
+  min: number
+  max: number
+  onChange: (n: number) => void
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <div className="text-[13.5px] font-semibold text-text">{label}</div>
+        <div className="text-[11.5px] text-text3">{hint}</div>
+      </div>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          aria-label={`Fewer ${label.toLowerCase()}`}
+          disabled={value <= min}
+          onClick={() => onChange(Math.max(min, value - 1))}
+          className="grid h-8 w-8 place-items-center rounded-full border border-border text-text disabled:cursor-not-allowed disabled:text-text3 enabled:hover:bg-sunk"
+        >
+          <span className="text-[18px] leading-none">−</span>
+        </button>
+        <span className="w-4 text-center text-[14px] font-semibold tabular-nums text-text">
+          {value}
+        </span>
+        <button
+          type="button"
+          aria-label={`More ${label.toLowerCase()}`}
+          disabled={value >= max}
+          onClick={() => onChange(Math.min(max, value + 1))}
+          className="grid h-8 w-8 place-items-center rounded-full border border-border text-text disabled:cursor-not-allowed disabled:text-text3 enabled:hover:bg-sunk"
+        >
+          <span className="text-[18px] leading-none">+</span>
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function WhoPop({
   adults,
+  childCount,
+  infants,
   onChange,
   children,
 }: {
   adults: number
-  onChange: (n: number) => void
+  childCount: number
+  infants: number
+  onChange: (next: { adults: number; children: number; infants: number }) => void
   children: (open: boolean, toggle: () => void) => ReactNode
 }) {
   const [open, setOpen] = useState(false)
@@ -460,37 +514,98 @@ function WhoPop({
     <div ref={ref} className="relative">
       {children(open, () => setOpen((o) => !o))}
       {open && (
-        <div className="absolute right-0 top-[calc(100%+10px)] z-[60] w-[220px] rounded-xl border border-border bg-surface p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-[13.5px] font-semibold text-text">Adults</div>
-              <div className="text-[11.5px] text-text3">Age 13+</div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                aria-label="Fewer adults"
-                disabled={adults <= 1}
-                onClick={() => onChange(Math.max(1, adults - 1))}
-                className="grid h-8 w-8 place-items-center rounded-full border border-border text-text disabled:cursor-not-allowed disabled:text-text3 enabled:hover:bg-sunk"
-              >
-                <span className="text-[18px] leading-none">−</span>
-              </button>
-              <span className="w-4 text-center text-[14px] font-semibold tabular-nums text-text">
-                {adults}
-              </span>
-              <button
-                type="button"
-                aria-label="More adults"
-                disabled={adults >= 9}
-                onClick={() => onChange(Math.min(9, adults + 1))}
-                className="grid h-8 w-8 place-items-center rounded-full border border-border text-text disabled:cursor-not-allowed disabled:text-text3 enabled:hover:bg-sunk"
-              >
-                <span className="text-[18px] leading-none">+</span>
-              </button>
-            </div>
+        <div className="absolute right-0 top-[calc(100%+10px)] z-[60] w-[260px] rounded-xl border border-border bg-surface p-4">
+          <div className="flex flex-col gap-4">
+            <StepperRow
+              label="Adults"
+              hint="Age 12+"
+              value={adults}
+              min={1}
+              max={9}
+              onChange={(n) => onChange({ adults: n, children: childCount, infants })}
+            />
+            <StepperRow
+              label="Children"
+              hint="Age 2–11"
+              value={childCount}
+              min={0}
+              max={8}
+              onChange={(n) => onChange({ adults, children: n, infants })}
+            />
+            <StepperRow
+              label="Infants"
+              hint="Under 2, on lap"
+              value={infants}
+              min={0}
+              max={8}
+              onChange={(n) => onChange({ adults, children: childCount, infants: n })}
+            />
           </div>
         </div>
+      )}
+    </div>
+  )
+}
+
+// ── Cabin selector ───────────────────────────────────────────────────────────
+
+export const CABIN_OPTIONS = [
+  { value: 'economy', label: 'Economy' },
+  { value: 'premium', label: 'Premium economy' },
+  { value: 'business', label: 'Business' },
+  { value: 'first', label: 'First' },
+] as const
+
+export type Cabin = (typeof CABIN_OPTIONS)[number]['value']
+
+function cabinLabel(c: Cabin): string {
+  return CABIN_OPTIONS.find((o) => o.value === c)?.label ?? 'Economy'
+}
+
+// Cabin picker — same flat popover vocabulary as Who/Dates. A single selected
+// row, brand-tinted, the rest plain. Closes on pick.
+function CabinPop({
+  cabin,
+  onChange,
+  children,
+}: {
+  cabin: Cabin
+  onChange: (c: Cabin) => void
+  children: (open: boolean, toggle: () => void) => ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = usePopover(open, () => setOpen(false))
+
+  return (
+    <div ref={ref} className="relative">
+      {children(open, () => setOpen((o) => !o))}
+      {open && (
+        <ul
+          role="listbox"
+          aria-label="Cabin"
+          className="absolute right-0 top-[calc(100%+10px)] z-[60] w-[220px] overflow-hidden rounded-xl border border-border bg-surface py-1"
+        >
+          {CABIN_OPTIONS.map((o) => {
+            const selected = o.value === cabin
+            return (
+              <li key={o.value} role="option" aria-selected={selected}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(o.value)
+                    setOpen(false)
+                  }}
+                  className={`flex w-full items-center justify-between px-3.5 py-2.5 text-left text-[13.5px] font-semibold ${
+                    selected ? 'bg-sunk text-brand' : 'text-text hover:bg-sunk'
+                  }`}
+                >
+                  {o.label}
+                  {selected && <Icon name="check" size={16} />}
+                </button>
+              </li>
+            )
+          })}
+        </ul>
       )}
     </div>
   )
@@ -504,11 +619,19 @@ export interface SearchState {
   depart: string
   ret: string
   adults: number
+  children: number
+  infants: number
+  cabin: Cabin
   oneWay: boolean
 }
 
-function whoLabel(n: number) {
-  return n === 1 ? '1 adult' : `${n} adults`
+// Compact passenger summary. Adults only → "1 adult"; otherwise sums every
+// traveler so the trigger stays terse, e.g. "3 travelers".
+function whoLabel(s: Pick<SearchState, 'adults' | 'children' | 'infants'>): string {
+  const total = s.adults + s.children + s.infants
+  if (total === 1) return '1 adult'
+  if (s.children === 0 && s.infants === 0) return `${s.adults} adults`
+  return `${total} travelers`
 }
 
 // Today at local midnight, as ISO — the floor for any valid depart/return.
@@ -585,7 +708,7 @@ export function SearchForm({
   // Re-sync local edits when the server sends new params (e.g. after a search
   // navigation). React's "adjust state during render" pattern — keyed on the
   // committed param tuple — avoids the cascading-render cost of an effect.
-  const initialKey = `${initial.from}|${initial.to}|${initial.depart}|${initial.ret}|${initial.adults}|${initial.oneWay}`
+  const initialKey = `${initial.from}|${initial.to}|${initial.depart}|${initial.ret}|${initial.adults}|${initial.children}|${initial.infants}|${initial.cabin}|${initial.oneWay}`
   const [syncedKey, setSyncedKey] = useState(initialKey)
   if (syncedKey !== initialKey) {
     setSyncedKey(initialKey)
@@ -631,6 +754,11 @@ export function SearchForm({
       adults: String(s.adults),
     })
     if (!s.oneWay && s.ret) qs.set('return', s.ret)
+    // Only append non-default passenger/cabin params so an adults-only economy
+    // search keeps the original, backward-compatible URL.
+    if (s.children > 0) qs.set('children', String(s.children))
+    if (s.infants > 0) qs.set('infants', String(s.infants))
+    if (s.cabin !== 'economy') qs.set('cabin', s.cabin)
     onSubmitted?.()
     router.push(`/search?${qs.toString()}`)
     // Same-route (query-only) pushes don't auto-scroll in the App Router, so a
@@ -703,7 +831,11 @@ export function SearchForm({
 
         <WhoPop
           adults={s.adults}
-          onChange={(n) => setS((p) => ({ ...p, adults: n }))}
+          childCount={s.children}
+          infants={s.infants}
+          onChange={(next) =>
+            setS((p) => ({ ...p, adults: next.adults, children: next.children, infants: next.infants }))
+          }
         >
           {(open, toggle) => (
             <button
@@ -716,11 +848,29 @@ export function SearchForm({
                 Who
               </span>
               <span className="text-[15px] font-semibold text-text">
-                {whoLabel(s.adults)}
+                {whoLabel(s)}
               </span>
             </button>
           )}
         </WhoPop>
+
+        <CabinPop cabin={s.cabin} onChange={(c) => setS((p) => ({ ...p, cabin: c }))}>
+          {(open, toggle) => (
+            <button
+              type="button"
+              onClick={toggle}
+              aria-expanded={open}
+              className="flex w-full flex-col items-start rounded-xl border border-border bg-paper p-3 text-left"
+            >
+              <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
+                Cabin
+              </span>
+              <span className="text-[15px] font-semibold text-text">
+                {cabinLabel(s.cabin)}
+              </span>
+            </button>
+          )}
+        </CabinPop>
 
         {error && (
           <p role="alert" className="text-[12.5px] font-medium text-weak">
@@ -814,7 +964,14 @@ export function SearchForm({
 
         <span className="h-[26px] w-px flex-shrink-0 bg-border" />
 
-        <WhoPop adults={s.adults} onChange={(n) => setS((p) => ({ ...p, adults: n }))}>
+        <WhoPop
+          adults={s.adults}
+          childCount={s.children}
+          infants={s.infants}
+          onChange={(next) =>
+            setS((p) => ({ ...p, adults: next.adults, children: next.children, infants: next.infants }))
+          }
+        >
           {(open, toggle) => (
             <button
               type="button"
@@ -825,12 +982,32 @@ export function SearchForm({
               <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
                 Who
               </span>
-              <span className="w-[64px] text-[15px] font-semibold text-text">
-                {whoLabel(s.adults)}
+              <span className="w-[80px] text-[15px] font-semibold text-text">
+                {whoLabel(s)}
               </span>
             </button>
           )}
         </WhoPop>
+
+        <span className="h-[26px] w-px flex-shrink-0 bg-border" />
+
+        <CabinPop cabin={s.cabin} onChange={(c) => setS((p) => ({ ...p, cabin: c }))}>
+          {(open, toggle) => (
+            <button
+              type="button"
+              onClick={toggle}
+              aria-expanded={open}
+              className="flex flex-col justify-center text-left leading-[1.05]"
+            >
+              <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
+                Cabin
+              </span>
+              <span className="w-[88px] text-[15px] font-semibold text-text">
+                {cabinLabel(s.cabin)}
+              </span>
+            </button>
+          )}
+        </CabinPop>
 
       <button
         type="submit"

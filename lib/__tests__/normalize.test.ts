@@ -132,6 +132,43 @@ describe('duffel normalizer', () => {
       expect(result.data[0].cashPrice).toBe(199)
     }
   })
+
+  // Read the JSON body the client POSTs to Duffel from a fetch spy.
+  async function capturedDuffelBody(
+    params: SearchParams,
+  ): Promise<{ cabin_class: string; passengers: Array<{ type: string }> }> {
+    process.env.DUFFEL_API_KEY_LIVE = 'test-key'
+    const fetchSpy = vi.fn(() =>
+      Promise.resolve(new Response(JSON.stringify({ data: { offers: [] } }), { status: 200 })),
+    )
+    vi.stubGlobal('fetch', fetchSpy)
+    await searchCash(params)
+    const init = fetchSpy.mock.calls[0][1] as RequestInit
+    return JSON.parse(init.body as string).data
+  }
+
+  it('defaults to economy and adults-only when cabin/mix are absent (backward compatible)', async () => {
+    const body = await capturedDuffelBody(PARAMS)
+    expect(body.cabin_class).toBe('economy')
+    expect(body.passengers).toEqual([{ type: 'adult' }])
+  })
+
+  it('maps each cabin to Duffel cabin_class', async () => {
+    expect((await capturedDuffelBody({ ...PARAMS, cabin: 'premium' })).cabin_class).toBe('premium_economy')
+    expect((await capturedDuffelBody({ ...PARAMS, cabin: 'business' })).cabin_class).toBe('business')
+    expect((await capturedDuffelBody({ ...PARAMS, cabin: 'first' })).cabin_class).toBe('first')
+    expect((await capturedDuffelBody({ ...PARAMS, cabin: 'economy' })).cabin_class).toBe('economy')
+  })
+
+  it('builds the passenger mix with adults, children, and lap infants', async () => {
+    const body = await capturedDuffelBody({ ...PARAMS, adults: 2, children: 1, infants: 1 })
+    expect(body.passengers).toEqual([
+      { type: 'adult' },
+      { type: 'adult' },
+      { type: 'child' },
+      { type: 'infant_without_seat' },
+    ])
+  })
 })
 
 describe('seats.aero normalizer', () => {
@@ -220,6 +257,49 @@ describe('seats.aero normalizer', () => {
     const rec = { Source: 'united', YAvailable: false, YMileageCost: '0' }
     const opt = normalizeSeatsAeroRecord(rec, PARAMS, 0)
     expect(opt).toBeUndefined()
+  })
+
+  it('keeps the requested cabin when it is available (does not fall to cheaper economy)', () => {
+    // All three cabins available; without a request, economy wins. Requesting
+    // business should serve J, not the cheaper Y.
+    const rec = {
+      Source: 'united',
+      YAvailable: true,
+      YMileageCost: '12000',
+      YTotalTaxes: 560,
+      JAvailable: true,
+      JMileageCost: '25000',
+      JTotalTaxes: 560,
+    }
+    const economy = normalizeSeatsAeroRecord(rec, PARAMS, 0)
+    expect(economy!.miles).toBe(12000)
+    expect(economy!.cabin).toBe('Economy')
+
+    const business = normalizeSeatsAeroRecord(rec, { ...PARAMS, cabin: 'business' }, 0)
+    expect(business!.miles).toBe(25000)
+    expect(business!.cabin).toBe('Business')
+  })
+
+  it('falls through to another cabin when the requested one is unavailable', () => {
+    // Business requested but only economy available — keep the record, serve Y.
+    const rec = { Source: 'united', YAvailable: true, YMileageCost: '9000', YTotalTaxes: 560 }
+    const opt = normalizeSeatsAeroRecord(rec, { ...PARAMS, cabin: 'business' }, 0)
+    expect(opt!.miles).toBe(9000)
+    expect(opt!.cabin).toBe('Economy')
+  })
+
+  it('requesting premium serves the W cabin', () => {
+    const rec = {
+      Source: 'united',
+      YAvailable: true,
+      YMileageCost: '9000',
+      WAvailable: true,
+      WMileageCost: '15000',
+      WTotalTaxes: 560,
+    }
+    const opt = normalizeSeatsAeroRecord(rec, { ...PARAMS, cabin: 'premium' }, 0)
+    expect(opt!.miles).toBe(15000)
+    expect(opt!.cabin).toBe('Premium Economy')
   })
 
   it('returns {ok:false} (does not throw) when fetch fails', async () => {

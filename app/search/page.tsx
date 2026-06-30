@@ -36,6 +36,21 @@ function isValidISO(s: string | undefined): s is string {
   return !!s && /^\d{4}-\d{2}-\d{2}$/.test(s)
 }
 
+const CABINS = ['economy', 'premium', 'business', 'first'] as const
+// Validate the cabin query param against our enum. Unknown/absent → undefined
+// (the engine defaults to economy, the legacy behavior).
+function parseCabin(raw: string | undefined): SearchParams['cabin'] {
+  const c = (raw ?? '').trim().toLowerCase()
+  return (CABINS as readonly string[]).includes(c) ? (c as SearchParams['cabin']) : undefined
+}
+
+// Parse a non-negative passenger count, clamped to [0, max]. Bad input → 0.
+function parseCount(raw: string | undefined, max: number): number {
+  const n = parseInt(raw ?? '', 10)
+  if (!Number.isFinite(n) || n <= 0) return 0
+  return Math.min(max, n)
+}
+
 // Parse the raw query into a clean SearchParams, defaulting any missing field
 // and defensively clamping bad input so a nonsensical URL never crashes or runs
 // a broken search. searchParams is a Promise in Next 16 — awaited by the caller.
@@ -68,7 +83,40 @@ function parseParams(q: Record<string, string | string[] | undefined>): SearchPa
     ? Math.min(9, Math.max(1, adultsRaw))
     : DEFAULT_PARAMS.adults
 
-  return { from, to, depart, return: ret, adults }
+  const children = parseCount(str(q.children), 8)
+  const infants = parseCount(str(q.infants), 8)
+  const cabin = parseCabin(str(q.cabin))
+
+  return {
+    from,
+    to,
+    depart,
+    return: ret,
+    adults,
+    // Omit when zero/absent so the URL stays backward-compatible (adults-only).
+    ...(children > 0 ? { children } : {}),
+    ...(infants > 0 ? { infants } : {}),
+    cabin,
+  }
+}
+
+// Title-case cabin label for the trip-context summary, e.g. "premium" → "Premium".
+const CABIN_LABEL: Record<NonNullable<SearchParams['cabin']>, string> = {
+  economy: 'Economy',
+  premium: 'Premium',
+  business: 'Business',
+  first: 'First',
+}
+
+// Compact passenger + cabin summary for the header trip context, e.g.
+// "2 adults · 1 child · Business". Adults-only economy stays "1 adult".
+function whoSummary(p: SearchParams): string {
+  const parts: string[] = []
+  parts.push(p.adults === 1 ? '1 adult' : `${p.adults} adults`)
+  if (p.children) parts.push(p.children === 1 ? '1 child' : `${p.children} children`)
+  if (p.infants) parts.push(p.infants === 1 ? '1 infant' : `${p.infants} infants`)
+  if (p.cabin && p.cabin !== 'economy') parts.push(CABIN_LABEL[p.cabin])
+  return parts.join(' · ')
 }
 
 // "2026-07-09" → "Jul 9". Parses as UTC so the day never shifts by timezone.
@@ -120,6 +168,11 @@ export async function generateMetadata({
     adults: String(p.adults),
   })
   if (p.return) qs.set('return', p.return)
+  // Only append non-default passenger/cabin params so the legacy adults-only,
+  // economy trip keeps its original canonical URL (no churn for existing links).
+  if (p.children) qs.set('children', String(p.children))
+  if (p.infants) qs.set('infants', String(p.infants))
+  if (p.cabin && p.cabin !== 'economy') qs.set('cabin', p.cabin)
   const canonical = `/search?${qs.toString()}`
 
   const cardTitle = `${title} · hop`
@@ -191,8 +244,7 @@ export default async function Search({
       ? await destinationImage(`${destCity} skyline travel landmark`)
       : null
 
-  const who =
-    params.adults === 1 ? '1 adult' : `${params.adults} adults`
+  const who = whoSummary(params)
 
   return (
     <AppShell
@@ -205,6 +257,9 @@ export default async function Search({
       depart={params.depart}
       ret={params.return ?? ''}
       adults={params.adults}
+      childrenCount={params.children}
+      infants={params.infants}
+      cabin={params.cabin}
       user={user}
       pointsTotal={user ? result.balances.reduce((s, b) => s + b.balance, 0) : undefined}
     >
