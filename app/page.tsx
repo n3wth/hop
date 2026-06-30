@@ -13,14 +13,7 @@ import InspirationTeaser from '@/components/landing/InspirationTeaser'
 import DestinationReel from '@/components/landing/DestinationReel'
 import SignedInHome from '@/components/landing/SignedInHome'
 import { conciergeBackdrop } from '@/lib/concierge-backdrop'
-
-// YYYY-MM-DD for `today + days`. Seed dates are computed RELATIVE to today so
-// the seeded hero search never goes stale onto an un-searchable past date.
-function isoOffset(days: number): string {
-  const d = new Date()
-  d.setDate(d.getDate() + days)
-  return d.toISOString().slice(0, 10)
-}
+import { isoOffset } from '@/lib/dates'
 
 // A sensible default search to seed the hero form. Picking it pre-fills the
 // fields so the very first action — a real search — is one tap away. Dates are
