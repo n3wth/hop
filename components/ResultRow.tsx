@@ -112,7 +112,7 @@ export default function ResultRow({ option, rank, maxCpp, index = 0, open, onTog
 
   return (
     <article
-      className="hop-rise flex flex-col rounded-[20px] border-[1.5px] border-border bg-paper transition-colors hover:border-brand-mint-deep data-[open=true]:border-brand-mint-deep"
+      className="hop-rise flex flex-col rounded-[20px] border-[1.5px] border-border bg-paper transition-colors hover:border-brand-mint-deep data-[open=true]:border-brand"
       data-open={open}
       style={{ ['--hop-delay' as string]: `${120 + index * 70}ms` }}
     >
