@@ -1,15 +1,17 @@
 import type { MetadataRoute } from 'next'
-import { SITE_URL } from '@/lib/seo'
+import { absoluteUrl, SITE_URL } from '@/lib/seo'
 
-// Allow crawling of public routes; keep private/auth/api surfaces out of the index.
+// Allow crawling of public routes; keep API, auth, the booking confirmation,
+// and the private account surface out of the index. /book itself is crawlable
+// (it's in the sitemap) — only /book/confirmation is excluded.
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/account', '/auth', '/api', '/book'],
+      disallow: ['/api/', '/auth/', '/book/confirmation', '/account'],
     },
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    sitemap: absoluteUrl('/sitemap.xml'),
     host: SITE_URL,
   }
 }
