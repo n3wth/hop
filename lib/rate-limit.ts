@@ -96,15 +96,23 @@ function getRedis(): Redis | null {
 }
 
 // One Ratelimit per distinct config (cheap to reuse; keyed by its shape). The
-// token bucket mirrors the in-memory model: refillPerSec tokens/sec up to capacity.
+// token bucket mirrors the in-memory model. Upstash's tokenBucket takes an
+// INTEGER refillRate per interval, so a fractional rate (our configs use 0.2/s =
+// 12/min) is encoded as 1 token per N ms — NOT rounded up to 1/s (which would 5x
+// the budget). Caller guarantees refillPerSec > 0 (see checkRateLimit).
 const limiters = new Map<string, Ratelimit>()
 function limiterFor(cfg: RateLimitConfig, redis: Redis): Ratelimit {
   const id = `${cfg.capacity}:${cfg.refillPerSec}`
   let rl = limiters.get(id)
   if (!rl) {
+    const intervalMs = Math.max(1, Math.round(1000 / cfg.refillPerSec))
     rl = new Ratelimit({
       redis,
-      limiter: Ratelimit.tokenBucket(Math.max(1, cfg.refillPerSec), '1 s', Math.max(1, cfg.capacity)),
+      limiter: Ratelimit.tokenBucket(
+        1,
+        `${intervalMs} ms` as `${number} ms`,
+        Math.max(1, Math.round(cfg.capacity)),
+      ),
       prefix: 'hop:rl',
     })
     limiters.set(id, rl)
@@ -115,9 +123,11 @@ function limiterFor(cfg: RateLimitConfig, redis: Redis): Ratelimit {
 // Durable rate check: uses Upstash when configured, else the in-memory bucket.
 // NEVER throws — a Redis hiccup degrades to the in-memory bucket rather than
 // failing the request (matches the "never break /ask on infra failure" stance).
+// A non-positive refill (pure burst, no refill) can't be expressed as an Upstash
+// token bucket, so it also takes the in-memory path.
 export async function checkRateLimit(key: string, cfg: RateLimitConfig): Promise<RateLimitResult> {
   const redis = getRedis()
-  if (!redis) return rateLimit(key, cfg)
+  if (!redis || cfg.refillPerSec <= 0) return rateLimit(key, cfg)
   try {
     const res = await limiterFor(cfg, redis).limit(key)
     if (res.success) return { ok: true, retryAfterSec: 0 }
