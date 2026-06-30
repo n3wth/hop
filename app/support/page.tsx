@@ -8,9 +8,22 @@ import { pageMeta } from '@/lib/seo'
 
 export const metadata = pageMeta({
   title: 'Support',
-  description: 'Help with adding points, cash-vs-miles, bookings, and your account.',
+  description:
+    'How hop works, and answers to the things people ask most — points, the cash-vs-miles verdict, booking, your account, and privacy.',
   path: '/support',
 })
+
+// Section anchors for the quick-jump nav. Keep in sync with the <h2 id> values
+// below so every entry lands on a real heading.
+const SECTIONS: { id: string; label: string }[] = [
+  { id: 'getting-started', label: 'Getting started' },
+  { id: 'points-balances', label: 'Points & balances' },
+  { id: 'the-verdict', label: 'How the verdict works' },
+  { id: 'booking', label: 'Booking, changes & cancellations' },
+  { id: 'claude-mcp', label: 'Using hop from Claude' },
+  { id: 'account-privacy', label: 'Account & privacy' },
+  { id: 'contact', label: 'Contact' },
+]
 
 export default async function SupportPage() {
   const session = await auth0.getSession()
@@ -35,83 +48,244 @@ export default async function SupportPage() {
       <LegalShell
         eyebrow="Support"
         title="Help center"
-        intro="Quick answers to the things people ask most. Can't find it? Email us — a real person reads it."
+        intro="What hop does, and clear answers to the things people ask most. Can't find it? Email us — a real person reads it."
       >
-        <h2>Getting started</h2>
+        {/* Quick-jump nav. A real landmark so keyboard and screen-reader users
+            can skip straight to a section. The list styling overrides the
+            inherited .legal-prose ul (disc bullets / indent). */}
+        <nav aria-label="Help topics" className="mb-2">
+          <ul className="grid list-none grid-cols-1 gap-x-6 gap-y-1.5 !pl-0 sm:grid-cols-2">
+            {SECTIONS.map((s) => (
+              <li key={s.id} className="!mb-0">
+                <a
+                  href={`#${s.id}`}
+                  className="text-[15px] font-medium text-brand underline decoration-border underline-offset-2 hover:text-brand-deep hover:decoration-brand-deep"
+                >
+                  {s.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <h2 id="getting-started" className="scroll-mt-24">
+          Getting started
+        </h2>
+        <p>
+          hop answers one question for every flight: <strong>book with points or pay cash?</strong>{' '}
+          It knows your real loyalty balances, prices the same trip across cash, miles, and transfer
+          partners, and tells you which one actually wins — with the math shown, not asserted. Three
+          steps:
+        </p>
+        <ul>
+          <li>
+            <strong>Add your programs.</strong> Open your <Link href="/account">account</Link> and
+            add each airline or bank program with its balance.
+          </li>
+          <li>
+            <strong>Search a trip.</strong> Enter a route and dates. hop ranks every way to fly it by
+            value and picks the best one.
+          </li>
+          <li>
+            <strong>Book.</strong> Award tickets deep-link to the airline; cash flights link out to
+            book. The <Link href="/deals">deals</Link> feed and the{' '}
+            <Link href="/ask">concierge</Link> use the same engine to surface where your miles go
+            furthest.
+          </li>
+        </ul>
+
+        <h3>Do I need to add my points to use hop?</h3>
+        <p>
+          No. You can search and see the cash-vs-miles math without an account. But once hop knows
+          your balances it can tell you what <em>you</em> can afford and which of <em>your</em>{' '}
+          programs to use — that&rsquo;s where it earns its keep.
+        </p>
+
+        <h2 id="points-balances" className="scroll-mt-24">
+          Points &amp; balances
+        </h2>
 
         <h3>How do I add my points?</h3>
         <p>
-          Go to your <Link href="/account">account</Link> and add each loyalty program with its
-          current balance. You can type balances in by hand, or connect{' '}
-          <strong>AwardWallet</strong> to sync them automatically. Manual entries are always under
-          your control — edit or remove them any time.
+          On your <Link href="/account">account</Link>, add each loyalty program with its current
+          balance. You can type balances in by hand, or connect <strong>AwardWallet</strong> to sync
+          them automatically. Manual entries are always under your control — edit or remove them any
+          time.
         </p>
 
-        <h3 id="how-hop-decides">How does hop decide cash vs. miles?</h3>
+        <h3>Manual entry or AwardWallet — what&rsquo;s the difference?</h3>
+        <p>
+          Both feed the same engine. <strong>Manual</strong> balances are numbers you enter and keep
+          current yourself. <strong>AwardWallet</strong> is a live link that syncs balances for the
+          programs it covers, so you don&rsquo;t have to. If you use both, AwardWallet wins for any
+          program it covers and your manual entries fill in the rest — no double-counting.
+        </p>
+
+        <h3>My balance looks wrong or stale.</h3>
+        <p>
+          For manually entered programs, update the number on your{' '}
+          <Link href="/account">account</Link>. For AwardWallet-synced programs, the balance reflects
+          AwardWallet&rsquo;s last sync — if it&rsquo;s behind, refresh the connection there.
+          Balances power the &ldquo;what you can afford&rdquo; call, so it&rsquo;s worth keeping them
+          honest.
+        </p>
+
+        <h3>What are transfer partners?</h3>
+        <p>
+          Bank points — Amex Membership Rewards, Chase Ultimate Rewards, Capital One, and others —
+          can transfer to airline programs, often 1:1. hop factors this in: if you can&rsquo;t book
+          an award directly but could reach it by transferring points first, it shows that path so
+          you don&rsquo;t miss a redemption you actually have the points for.
+        </p>
+
+        <h2 id="the-verdict" className="scroll-mt-24">
+          How the verdict works
+        </h2>
+
+        <h3>How does hop decide cash vs. miles?</h3>
         <p>
           For each option hop computes <strong>cents per point</strong> (¢/pt): how much real value
-          each point pulls in that redemption. Higher is better. We back out taxes and fees, then
-          divide the cash price by the points required:{' '}
+          each point pulls in that redemption. Higher is better. It backs out taxes and fees, then
+          divides the cash price by the points required:{' '}
           <strong>¢/pt = (cash − taxes) × 100 ÷ points</strong>. At or above{' '}
-          <strong>3.0&nbsp;¢/pt</strong> the value is strong; below{' '}
-          <strong>1.5&nbsp;¢/pt</strong> it&rsquo;s weak. When an option clears{' '}
-          <strong>2.5&nbsp;¢/pt</strong>, points usually win; when it&rsquo;s lower, cash is the
-          better buy. The figures are informational, not financial advice — always confirm with the
-          airline before booking.
+          <strong>3.0&nbsp;¢/pt</strong> the value is strong; below <strong>1.5&nbsp;¢/pt</strong>{' '}
+          it&rsquo;s weak. When the best award clears <strong>2.5&nbsp;¢/pt</strong>, points usually
+          win; when it&rsquo;s lower, cash is the better buy.
         </p>
 
-        <h3>Why does hop deep-link to the airline for award bookings?</h3>
+        <h3>Is the verdict generated by an AI?</h3>
         <p>
-          Award (points) tickets are issued by the airline&rsquo;s own loyalty program, so hop sends
-          you to the airline&rsquo;s site to complete the redemption directly with them under their
-          terms. hop doesn&rsquo;t process award bookings. For paid (cash) flights, hop facilitates
-          the booking in-app via Duffel.
+          No. Every number — the ¢/pt, the ranking, the pick, the verdict, and the dollars saved — is
+          computed by hop&rsquo;s own deterministic code, not written by a language model. The{' '}
+          <Link href="/ask">concierge</Link> can explain a result in plain language, but it never
+          invents the figures: it reads the same engine. Run the same search twice and you get the
+          same answer.
         </p>
 
-        <h2>Managing your account</h2>
-
-        <h3>How do I change my home airport?</h3>
+        <h3>Why did hop tell me to pay cash when I have the miles?</h3>
         <p>
-          Open your <Link href="/account">account</Link> and update your home airport. New searches
-          will default to it.
-        </p>
-
-        <h3>How do I disconnect AwardWallet?</h3>
-        <p>
-          In your <Link href="/account">account</Link>, revoke the AwardWallet connection. hop stops
-          syncing balances from it immediately. Any balances you entered manually stay until you
-          remove them.
-        </p>
-
-        <h3>How do I delete my account?</h3>
-        <p>
-          You can request deletion from your <Link href="/account">account</Link> or by emailing
-          us. See the <Link href="/privacy">Privacy Policy</Link> for what gets removed.
-        </p>
-
-        <h2>Bookings &amp; payments</h2>
-
-        <h3>I have a problem with a booking — who do I contact?</h3>
-        <p>
-          For <strong>cash bookings</strong> made through hop, the airline is the provider and the
-          booking is processed via Duffel. Have your booking reference ready and contact the airline
-          for changes, cancellations, or disruptions; you can also reach us and we&rsquo;ll help
-          point you to the right place. For <strong>award bookings</strong>, you booked directly on
-          the airline&rsquo;s site, so contact the airline&rsquo;s loyalty program.
+          Because spending miles on a low-value redemption is a worse deal than paying. If an award
+          comes in under <strong>2.5&nbsp;¢/pt</strong>, your points are worth more saved for a
+          richer redemption later, so hop says pay cash. The verdict is about value per point, not
+          whether you <em>can</em> cover it.
         </p>
 
         <h3>The price or availability changed — why?</h3>
         <p>
-          Fares, taxes, and award availability come from third parties and the airlines, and can
-          change at any time before you book. hop shows the best information it has, but the
-          provider&rsquo;s live price at checkout is the real one.
+          Fares, taxes, and award availability come from the airlines and third-party sources, and
+          can change at any moment before you book. hop shows the best information it has, but the
+          provider&rsquo;s live price at checkout is the real one. The figures are informational, not
+          financial advice — always confirm with the airline before booking.
         </p>
 
-        <h2>Contact us</h2>
+        <h3>A section says it&rsquo;s degraded — what does that mean?</h3>
         <p>
-          Still stuck? Email{' '}
-          <a href="mailto:support@hop.n3wth.com">support@hop.n3wth.com</a>. Include your account
-          email and, for booking issues, the booking reference — it helps us help you faster.
+          When an upstream source (cash prices, award space, or your balances) is briefly
+          unavailable, hop degrades just that part of the result and tells you, rather than failing
+          the whole search. The rest of the answer still stands; re-run the search in a minute to
+          fill the gap.
+        </p>
+
+        <h2 id="booking" className="scroll-mt-24">
+          Booking, changes &amp; cancellations
+        </h2>
+
+        <h3>Why does hop send me to the airline for award bookings?</h3>
+        <p>
+          Award (points) tickets are issued by the airline&rsquo;s own loyalty program, so hop links
+          you to the airline&rsquo;s site to complete the redemption directly with them, under their
+          terms. hop doesn&rsquo;t process award bookings.
+        </p>
+
+        <h3>How do cash bookings work?</h3>
+        <p>
+          For paid flights, hop links you out to book the fare it found. The airline is the provider
+          of the ticket; complete payment and ticketing through the booking flow you&rsquo;re sent
+          to, and keep the confirmation it gives you.
+        </p>
+
+        <h3>I need to change or cancel a flight.</h3>
+        <p>
+          Changes, cancellations, refunds, and disruptions are handled by the provider that issued
+          your ticket, under their rules — not by hop. For an <strong>award</strong> ticket, contact
+          the airline&rsquo;s loyalty program; for a <strong>cash</strong> ticket, contact the
+          airline or the site you booked through. Have your booking reference ready. If you&rsquo;re
+          not sure who that is, email us and we&rsquo;ll point you to the right place.
+        </p>
+
+        <h3>Does hop charge me anything?</h3>
+        <p>
+          hop doesn&rsquo;t add a fee to your ticket. You pay the airline (in miles or cash) at the
+          price they charge. Cash links may be affiliate links, which doesn&rsquo;t change your
+          price.
+        </p>
+
+        <h2 id="claude-mcp" className="scroll-mt-24">
+          Using hop from Claude
+        </h2>
+
+        <h3>What is &ldquo;Use hop from Claude&rdquo;?</h3>
+        <p>
+          hop&rsquo;s engine is available as an <strong>MCP server</strong>, so you can call it from
+          Claude or any MCP client and get the same deterministic answers you&rsquo;d get on the
+          site — pricing a trip, the full verdict, sweet-spot redemptions, and transfer paths.
+        </p>
+
+        <h3>How do I connect it?</h3>
+        <p>
+          On your <Link href="/account">account</Link>, open{' '}
+          <strong>Use hop from Claude (MCP)</strong> and mint a token. Add it to your MCP client and
+          your assistant can run hop on your behalf. A token is tied to <em>your</em> account: when
+          it&rsquo;s present, the tools see your real balances and tell you what you can afford. Treat
+          the token like a password — anyone with it can read your balances through hop.
+        </p>
+
+        <h3>Can I use it without a token?</h3>
+        <p>
+          Yes. Without a token the tools run in a stateless mode: they still price trips and compute
+          the verdict, but using balances you supply rather than your saved ones. Your account data
+          is only ever reachable with your own token.
+        </p>
+
+        <h2 id="account-privacy" className="scroll-mt-24">
+          Account &amp; privacy
+        </h2>
+
+        <h3>How do I change my home airport?</h3>
+        <p>
+          Open your <Link href="/account">account</Link> and update your home airport. New searches
+          default to it.
+        </p>
+
+        <h3>How do I disconnect AwardWallet?</h3>
+        <p>
+          On your <Link href="/account">account</Link>, revoke the AwardWallet connection. hop stops
+          syncing balances from it immediately. Any balances you entered manually stay until you
+          remove them.
+        </p>
+
+        <h3>What does hop store, and who can see it?</h3>
+        <p>
+          Your identity comes from Auth0; your balances, home airport, and any tokens are scoped to
+          your account and never exposed to other users. For the full picture — what&rsquo;s
+          collected, why, and who it&rsquo;s shared with — see the{' '}
+          <Link href="/privacy">Privacy Policy</Link>.
+        </p>
+
+        <h3>How do I delete my account?</h3>
+        <p>
+          Request deletion from your <Link href="/account">account</Link>, or email us. The{' '}
+          <Link href="/privacy">Privacy Policy</Link> lists exactly what gets removed.
+        </p>
+
+        <h2 id="contact" className="scroll-mt-24">
+          Contact
+        </h2>
+        <p>
+          Still stuck? Email <a href="mailto:support@hop.n3wth.com">support@hop.n3wth.com</a> — a real
+          person reads it. Include your account email and, for a booking issue, the booking
+          reference; it helps us help you faster. For a quick question about a redemption or where
+          your miles go furthest, the <Link href="/ask">concierge</Link> answers on the spot.
         </p>
       </LegalShell>
       <div className="mx-auto max-w-[1180px]">
