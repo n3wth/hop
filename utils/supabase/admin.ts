@@ -334,6 +334,38 @@ interface HopDatabase {
         }
         Relationships: []
       }
+      hop_support_tickets: {
+        // Inbound support emails captured as tickets by the Cloudflare support@
+        // Worker via POST /api/support-ingest. message_id is the inbound
+        // Message-ID (dedupe key; nulls allowed). See CREATE TABLE in
+        // lib/support-tickets.ts notes.
+        Row: {
+          id: string
+          message_id: string | null
+          from_email: string
+          to_email: string | null
+          subject: string | null
+          body: string | null
+          status: string | null
+          received_at: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          message_id?: string | null
+          from_email: string
+          to_email?: string | null
+          subject?: string | null
+          body?: string | null
+          status?: string
+          received_at?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          status?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
