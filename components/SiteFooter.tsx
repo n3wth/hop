@@ -8,25 +8,29 @@ export default function SiteFooter() {
   return (
     <footer
       role="contentinfo"
-      className="mt-14 border-t border-border pt-5 pb-3 text-[13px] font-normal text-text3 sm:mt-16 sm:pt-6 sm:pb-4"
+      className="mt-16 border-t border-border pt-8 text-[13px] text-text3"
     >
-      <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between lg:gap-10">
-        <div className="max-w-[360px]">
+      <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between lg:gap-16">
+        {/* Brand */}
+        <div className="max-w-[28ch] flex-shrink-0">
           <Link
             href="/"
-            className="font-display text-[15px] font-semibold text-text transition-colors hover:text-brand"
+            className="wordmark text-[22px] leading-none text-text2 transition-colors hover:text-brand"
           >
             {SITE_NAME}
           </Link>
-          <p className="mt-2 leading-[1.55]">
-            hop is a quieter way to decide when points beat cash.
-          </p>
-          <p className="mt-3 text-[12px] text-text3">
-            &copy; {YEAR} {SITE_NAME}
+          <p className="mt-2.5 leading-[1.6]">
+            Points vs. cash — valued in ¢/pt so you always know the smarter way to book.
           </p>
         </div>
 
         <FooterNav />
+      </div>
+
+      {/* Bottom bar */}
+      <div className="mt-8 flex items-center justify-between border-t border-hair pt-5 text-[11.5px]">
+        <span>© {YEAR} {SITE_NAME}</span>
+        <span className="hidden sm:block">Points + cash. Smarter travel.</span>
       </div>
     </footer>
   )
