@@ -1,5 +1,4 @@
 import DestinationGrid from '@/components/landing/DestinationGrid'
-import Icon from '@/components/Icon'
 import { topValue, imageQuery } from '@/lib/destinations'
 import { destinationImages } from '@/lib/images'
 
@@ -40,10 +39,9 @@ export default async function InspirationTeaser() {
       <div className="mt-8 flex justify-center">
         <a
           href="/deals"
-          className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline"
+          className="text-[15px] font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline"
         >
           See all sweet spots
-          <Icon name="swap_horiz" size={17} />
         </a>
       </div>
     </section>
