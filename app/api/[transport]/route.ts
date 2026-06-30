@@ -23,10 +23,14 @@ import {
   verdictSchema,
   sweetSpotsSchema,
   transferPathsSchema,
+  compareProgramsSchema,
+  bestCardForProgramSchema,
   runPriceTrip,
   runVerdict,
   runSweetSpots,
   runTransferPaths,
+  runComparePrograms,
+  runBestCardForProgram,
   type balanceInputSchema,
 } from '@/lib/mcp-tools'
 import type { z } from 'zod'
@@ -107,6 +111,36 @@ const handler = createMcpHandler(
       'Show transfer paths for a program. For a bank currency (Amex/Chase/Citi/Cap One/Bilt) returns its outbound partners with ratios; for an airline/hotel program returns which bank currencies can reach it.',
       transferPathsSchema,
       async (args) => ok(runTransferPaths({ program: args.program })),
+    )
+
+    // compare_programs — side-by-side cpp for named programs on a route.
+    // Balance-aware (same gating as price_trip/verdict): caller-supplied balances
+    // win; else a linked hop token loads the owner's REAL balances so `canAfford`
+    // is personalized. Every figure (miles, cpp, cash) is computed by the engine.
+    server.tool(
+      'compare_programs',
+      'Compare named loyalty programs head-to-head on a route, ranked by cents-per-point (best first). For each program: miles needed, cash comparison, computed CPP, and — when balances are supplied or a hop token is linked — whether you can afford it. Answers "should I use Chase points or transfer to United?".',
+      compareProgramsSchema,
+      async (args, extra) => {
+        const balances = await resolveBalances(args.balances, userIdFromExtra(extra))
+        return ok(
+          await runComparePrograms({
+            from: args.from,
+            to: args.to,
+            depart: args.depart,
+            programs: args.programs,
+            balances,
+          }),
+        )
+      },
+    )
+
+    // best_card_for_program — top earn card for a program (stateless, reference).
+    server.tool(
+      'best_card_for_program',
+      'Return the top points-earning credit card for a loyalty/bank program: card name, issuer, headline earn rate, current welcome bonus, annual fee, and an application link. Use to answer "which card earns the most United miles?".',
+      bestCardForProgramSchema,
+      async (args) => ok(runBestCardForProgram({ program: args.program })),
     )
   },
   {
