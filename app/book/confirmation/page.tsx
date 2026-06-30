@@ -46,7 +46,7 @@ export default async function ConfirmationPage({
 
   return (
     <AppShell user={user} hideSearch>
-      <div className="mx-auto max-w-[680px] pb-4 pt-8 sm:pt-12">
+      <div className="mx-auto max-w-[var(--container-xs)] pb-4 pt-8 sm:pt-12">
         {!res.ok ? (
           <div className="mt-2 flex items-start gap-4 rounded-[16px] border border-border bg-surface px-6 py-7">
             <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">

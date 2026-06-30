@@ -104,7 +104,7 @@ export default async function Home() {
   if (user) {
     return (
       <AppShell user={user} pointsTotal={programs > 0 ? totalPoints : undefined} hideSearch>
-        <div className="mx-auto max-w-[1180px]">
+        <div className="mx-auto max-w-[var(--container-app)]">
           <SignedInHome
             first={first}
             programs={programs}
@@ -114,7 +114,7 @@ export default async function Home() {
             heroBackdrop={heroBackdrop}
           />
         </div>
-        <div className="mx-auto max-w-[1180px]">
+        <div className="mx-auto max-w-[var(--container-app)]">
           <SiteFooter />
         </div>
       </AppShell>
@@ -124,7 +124,7 @@ export default async function Home() {
   // ── SIGNED OUT — marketing front door ────────────────────────────────────
   return (
     <AppShell user={null} hideSearch>
-      <div className="mx-auto flex max-w-[1180px] flex-col gap-16 pt-4 sm:gap-20 sm:pt-6 lg:gap-24 lg:pt-8">
+      <div className="mx-auto flex max-w-[var(--container-app)] flex-col gap-16 pt-4 sm:gap-20 sm:pt-6 lg:gap-24 lg:pt-8">
         {/* ── HERO — the agent is the front door ──────────────────────────── */}
         {/* Lead with the conversational promise: a composer that opens the agent
             (routing through sign-in when they act). The verdict below is the proof. */}
@@ -156,7 +156,7 @@ export default async function Home() {
         <ConnectBand user={null} programs={0} />
       </div>
 
-      <div className="mx-auto max-w-[1180px]">
+      <div className="mx-auto max-w-[var(--container-app)]">
         <SiteFooter />
       </div>
     </AppShell>

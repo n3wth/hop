@@ -7,7 +7,7 @@ import Logo from '@/components/Logo'
 // logo, a short headline, one body line, and two ways forward.
 export default function NotFound() {
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-76px)] max-w-[1440px] flex-col items-center justify-center px-16 text-center">
+    <div className="mx-auto flex min-h-[calc(100vh-var(--hop-nav))] max-w-[var(--container-full)] flex-col items-center justify-center px-4 text-center sm:px-8 lg:px-16">
       <div className="hop-rise grid place-items-center" style={{ ['--hop-delay' as string]: '40ms' }}>
         <Link href="/" aria-label="hop — home" className="grid place-items-center">
           <Logo size={92} carve="var(--color-bg)" className="text-brand" decorative />

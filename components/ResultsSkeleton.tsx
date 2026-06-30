@@ -57,7 +57,7 @@ export default function ResultsSkeleton() {
     <div
       aria-busy="true"
       aria-label="Loading flight results"
-      className="mx-auto max-w-[1440px] 2xl:max-w-[1560px]"
+      className="mx-auto max-w-[var(--container-app)]"
     >
       {/* RouteBar placeholder — codes + flight arc on the left, a weighted stat
           group on the right. Mirrors RouteBar (pt-4, NO bottom border) so the

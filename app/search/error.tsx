@@ -27,7 +27,7 @@ export default function SearchError({
   const retry = unstable_retry ?? reset ?? (() => {})
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-76px)] max-w-[1440px] flex-col items-center justify-center px-4 text-center sm:px-8 lg:px-16">
+    <div className="mx-auto flex min-h-[calc(100vh-var(--hop-nav))] max-w-[var(--container-full)] flex-col items-center justify-center px-4 text-center sm:px-8 lg:px-16">
       <div className="hop-rise grid place-items-center" style={{ ['--hop-delay' as string]: '40ms' }}>
         <Link href="/" aria-label="hop — home" className="grid place-items-center">
           <Logo size={92} carve="var(--color-bg)" className="text-brand" decorative />
