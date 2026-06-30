@@ -14,7 +14,7 @@ import { streamText, gateway } from 'ai'
 import { ledgerDream } from '@/lib/ledger-dream'
 import { resolveDreamSession } from '@/lib/dream-server'
 import { buildDreamPrompt, templatedBlurb } from '@/lib/dream-narration'
-import { rateLimit, clientIp } from '@/lib/rate-limit'
+import { checkRateLimit, clientIp } from '@/lib/rate-limit'
 import { GATEWAY_MODEL } from '@/lib/ai-gateway'
 
 export const runtime = 'nodejs'
@@ -55,9 +55,11 @@ export async function POST(request: Request): Promise<Response> {
   // Rate limit before any model work. Friendly fallback on limit — never a 429.
   const ip = clientIp(request)
   const keys = userId ? [`dream:sub:${userId}`, `dream:ip:${ip}`] : [`dream:ip:${ip}`]
-  if (keys.find((k) => !rateLimit(k, DREAM_RATE).ok)) {
-    // Still serve a real dream — just the templated voice, no model call.
-    return textResponse(templatedBlurb(ledgerDream(balances, index)))
+  for (const k of keys) {
+    if (!(await checkRateLimit(k, DREAM_RATE)).ok) {
+      // Still serve a real dream — just the templated voice, no model call.
+      return textResponse(templatedBlurb(ledgerDream(balances, index)))
+    }
   }
 
   // Let the ENGINE pick + price. This is the same engine the UI uses, so prose
