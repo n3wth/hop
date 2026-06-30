@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import Icon from '@/components/Icon'
 import { formatValue, tier } from '@/lib/cpp'
 import type { Destination } from '@/lib/destinations'
@@ -46,7 +47,7 @@ function DestinationCard({
   )}&adults=1`
 
   return (
-    <a
+    <Link
       href={href}
       className={`group flex flex-col overflow-hidden rounded-[18px] border border-border bg-paper transition-colors hover:border-brand-mint-deep${
         stagger ? ' hop-rise' : ''
@@ -129,7 +130,7 @@ function DestinationCard({
           <span className="truncate">{d.bestProgram}</span>
         </div>
       </div>
-    </a>
+    </Link>
   )
 }
 

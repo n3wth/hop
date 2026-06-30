@@ -230,7 +230,7 @@ export default function TopNav({
             <>
               <nav aria-label="Main" className="hidden items-center gap-0.5 md:flex sm:ml-1 lg:ml-2">
                 {PRIMARY_NAV.map((l) => (
-                  <a
+                  <Link
                     key={l.href}
                     href={l.href}
                     aria-current={isActive(l.href) ? 'page' : undefined}
@@ -241,7 +241,7 @@ export default function TopNav({
                     }
                   >
                     {l.label}
-                  </a>
+                  </Link>
                 ))}
               </nav>
               <div className="flex-1 md:hidden" />
@@ -316,7 +316,7 @@ export default function TopNav({
             {user ? (
               <div className="flex items-center gap-3">
                 {pointsTotal != null ? (
-                  <a
+                  <Link
                     href="/account"
                     title="Your points"
                     className="hidden items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-2 transition-colors hover:bg-sunk lg:flex"
@@ -325,7 +325,7 @@ export default function TopNav({
                       {compactPoints(pointsTotal)}
                     </span>
                     <span className="text-[12px] font-medium text-text3">pts</span>
-                  </a>
+                  </Link>
                 ) : null}
                 <AccountMenu user={user} />
               </div>
@@ -405,7 +405,7 @@ export default function TopNav({
           </div>
           <nav aria-label="Main" className="flex flex-col gap-1 p-4">
             {PRIMARY_NAV.map((l) => (
-              <a
+              <Link
                 key={l.href}
                 href={l.href}
                 aria-current={isActive(l.href) ? 'page' : undefined}
@@ -417,14 +417,14 @@ export default function TopNav({
                 }
               >
                 {l.label}
-              </a>
+              </Link>
             ))}
           </nav>
           <div className="mt-auto border-t border-border p-4">
             {user ? (
-              <a href="/account" onClick={() => setMenuOpen(false)} className="flex items-center justify-center rounded-full border border-border bg-surface px-5 py-3 text-[15px] font-semibold text-text transition-colors hover:bg-sunk">
+              <Link href="/account" onClick={() => setMenuOpen(false)} className="flex items-center justify-center rounded-full border border-border bg-surface px-5 py-3 text-[15px] font-semibold text-text transition-colors hover:bg-sunk">
                 Your account
-              </a>
+              </Link>
             ) : (
               <a href={signInHref} className="flex items-center justify-center rounded-full bg-brand px-5 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep">
                 Sign in

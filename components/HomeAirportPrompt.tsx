@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import HomeAirportPicker from './HomeAirportPicker'
 
 const DISMISS_KEY = 'hop:home-airport-prompt-dismissed'
@@ -54,12 +55,12 @@ export default function HomeAirportPrompt() {
               </h3>
               <p className="mt-1 text-[13.5px] leading-[1.5] text-text2">
                 Every search and deal now starts from there. Change it anytime in{' '}
-                <a
+                <Link
                   href="/account"
                   className="font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline"
                 >
                   your account
-                </a>
+                </Link>
                 .
               </p>
             </>

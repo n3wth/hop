@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { useChat } from '@ai-sdk/react'
 import Icon from './Icon'
 import ConciergeHero, { type ConciergeHeroPhoto } from './ConciergeHero'
@@ -290,7 +291,7 @@ export default function Concierge({
       <div className="hop-ask-measure flex flex-shrink-0 items-center justify-end pb-2 pt-1">
         <div className="flex items-center gap-1.5">
           {signedIn ? (
-            <a
+            <Link
               href="/account"
               aria-label="What hop remembers about you"
               className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] font-medium text-text3 transition-colors hover:text-brand"
@@ -298,7 +299,7 @@ export default function Concierge({
             >
               <Icon name="loyalty" size={13} />
               <span className="hidden sm:inline">What hop remembers</span>
-            </a>
+            </Link>
           ) : null}
           {confirmingClear ? (
             <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text3">

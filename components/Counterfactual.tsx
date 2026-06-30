@@ -12,6 +12,7 @@
 // no emojis.
 
 import { useState } from 'react'
+import Link from 'next/link'
 import Icon from './Icon'
 
 // --- Response shape (mirrors lib/counterfactual.CounterfactualResult) ---------
@@ -250,7 +251,7 @@ function ResultPanel({ result }: { result: CounterfactualResult }) {
 
 function UnlockedCard({ d }: { d: UnlockedDestination }) {
   return (
-    <a
+    <Link
       href={`/search?to=${encodeURIComponent(d.code)}`}
       className="group flex flex-col rounded-[12px] border border-border bg-paper p-3.5 transition-colors hover:border-brand"
     >
@@ -279,7 +280,7 @@ function UnlockedCard({ d }: { d: UnlockedDestination }) {
           ${d.cashUsd.toLocaleString('en-US')} cash
         </span>
       </div>
-    </a>
+    </Link>
   )
 }
 

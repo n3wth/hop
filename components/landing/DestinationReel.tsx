@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { Destination } from '@/lib/destinations'
 import { destinations, topValue, imageQuery } from '@/lib/destinations'
 import { destinationImages, type DestImage } from '@/lib/images'
@@ -25,7 +26,7 @@ function Tile({
 }) {
   const href = `/search?from=SFO&to=${encodeURIComponent(d.code)}&adults=1`
   return (
-    <a
+    <Link
       href={href}
       aria-hidden={decorative || undefined}
       tabIndex={decorative ? -1 : undefined}
@@ -75,7 +76,7 @@ function Tile({
           </div>
         </div>
       </div>
-    </a>
+    </Link>
   )
 }
 

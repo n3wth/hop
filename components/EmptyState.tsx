@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import Logo from './Logo'
 import Icon from './Icon'
 
@@ -35,13 +36,13 @@ export default function EmptyState({ route, fromCode, toCode }: EmptyStateProps)
         loosening the route — there&apos;s usually a better window nearby.
       </p>
 
-      <a
+      <Link
         href={href}
         className="mt-7 inline-flex items-center gap-[8px] rounded-[12px] border-[1.5px] border-text px-[20px] py-[12px] text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
       >
         <Icon name="search" size={16} />
         Adjust your search
-      </a>
+      </Link>
     </div>
   )
 }

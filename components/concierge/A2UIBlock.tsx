@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 // A2UIBlock — the CLIENT-OWNED renderer for the agent-to-UI spec (lib/a2ui.ts).
 // The agent emits a typed, CLOSED-union block; THIS file decides how each block
 // LOOKS. The model never sends HTML, classes, or colors — only structured fields
@@ -252,7 +254,7 @@ function VerdictCard({
   const econ = b.econ
   const city = econ?.city ?? b.code
   return (
-    <a
+    <Link
       href={searchHref(b.code, homeAirport)}
       className="group flex flex-col rounded-[16px] border border-border bg-surface p-4 transition-colors hover:border-brand"
     >
@@ -297,7 +299,7 @@ function VerdictCard({
         See the search
         <Icon name="swap_horiz" size={14} />
       </span>
-    </a>
+    </Link>
   )
 }
 
@@ -343,7 +345,7 @@ function CompareSide({
   const econ = side.econ
   const city = econ?.city ?? side.code
   return (
-    <a
+    <Link
       href={searchHref(side.code, homeAirport)}
       className="group flex flex-col rounded-[12px] border border-border bg-paper p-3 transition-colors hover:border-brand"
     >
@@ -354,7 +356,7 @@ function CompareSide({
       {econ ? <SavingsLead econ={econ} /> : null}
       <p className="mt-1.5 text-[12px] leading-[1.5] text-text2">{side.reason}</p>
       <EconFacts econ={econ} hasBalances={hasBalances} />
-    </a>
+    </Link>
   )
 }
 
@@ -554,7 +556,7 @@ function Counterfactual({ b, homeAirport }: { b: CounterfactualBlock; homeAirpor
       {r.unlocked.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-1.5">
           {r.unlocked.map((d) => (
-            <a
+            <Link
               key={d.code}
               href={searchHref(d.code, homeAirport)}
               className="inline-flex items-center gap-1.5 rounded-full border border-border bg-paper px-2.5 py-1 text-[12px] font-medium text-text2 transition-colors hover:border-brand hover:text-brand"
@@ -567,7 +569,7 @@ function Counterfactual({ b, homeAirport }: { b: CounterfactualBlock; homeAirpor
               {d.cpp != null ? (
                 <span className="hop-num text-text3">{d.cpp.toFixed(1)}¢/pt</span>
               ) : null}
-            </a>
+            </Link>
           ))}
         </div>
       ) : null}

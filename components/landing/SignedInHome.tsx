@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import Icon from '@/components/Icon'
 import HeroSearch from '@/components/landing/HeroSearch'
 import DestinationGrid from '@/components/landing/DestinationGrid'
@@ -122,13 +123,13 @@ export default async function SignedInHome({
               </div>
             </div>
 
-            <a
+            <Link
               href="/account"
               className="mt-5 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-brand transition-colors hover:text-brand-deep"
             >
               Refresh balances
               <span aria-hidden className="text-[15px] leading-none">→</span>
-            </a>
+            </Link>
           </aside>
         ) : (
           <aside className="flex flex-col justify-center rounded-[20px] border border-border bg-brand-light p-6 lg:rounded-[24px]">
@@ -142,13 +143,13 @@ export default async function SignedInHome({
               Link a loyalty account and hop fills this in with your real
               balances and where they can take you.
             </p>
-            <a
+            <Link
               href="/account"
               className="mt-5 inline-flex w-fit items-center gap-2 rounded-[14px] bg-brand px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep"
             >
               Add a program
               <span aria-hidden className="text-[15px] leading-none">→</span>
-            </a>
+            </Link>
           </aside>
         )}
       </section>
@@ -181,13 +182,13 @@ export default async function SignedInHome({
                 : 'A few more points and these open up. Sorted by value per point.'}
             </p>
           </div>
-          <a
+          <Link
             href="/ask"
             className="inline-flex flex-shrink-0 items-center gap-1.5 self-start text-[13.5px] font-semibold text-brand transition-colors hover:text-brand-deep sm:self-end"
           >
             Explore more
             <span aria-hidden className="text-[15px] leading-none">→</span>
-          </a>
+          </Link>
         </div>
 
         <div className="mt-8">
@@ -234,13 +235,13 @@ export default async function SignedInHome({
               business class — and hop finds where points beat cash.
             </p>
           </div>
-          <a
+          <Link
             href="/ask"
             className="mt-6 inline-flex w-fit items-center gap-2 rounded-[14px] bg-white px-6 py-3.5 text-[15px] font-semibold text-brand-ink transition-colors hover:bg-hero-white-hover"
           >
             Talk to hop
             <span aria-hidden className="text-[16px] leading-none">→</span>
-          </a>
+          </Link>
         </aside>
       </section>
 
@@ -262,13 +263,13 @@ export default async function SignedInHome({
           </div>
         </div>
         <div className="flex flex-shrink-0 items-center gap-3">
-          <a
+          <Link
             href="/account"
             className="inline-flex items-center gap-2 rounded-[14px] bg-brand px-6 py-3 text-[14.5px] font-semibold text-white transition-colors hover:bg-brand-deep"
           >
             <Icon name="settings" size={18} />
             {programs > 0 ? 'Manage programs' : 'Add a program'}
-          </a>
+          </Link>
         </div>
       </section>
     </div>

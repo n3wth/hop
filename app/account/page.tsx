@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { auth0 } from '@/lib/auth0'
 import { getUserAwId, getManualBalances } from '@/lib/accounts'
 import { getBalances } from '@/lib/awardwallet'
@@ -321,12 +322,12 @@ export default async function AccountPage({
             <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
               Standing orders
             </h2>
-            <a
+            <Link
               href="/search"
               className="text-[13px] font-semibold text-brand transition-colors hover:text-brand-deep"
             >
               New search
-            </a>
+            </Link>
           </div>
           <p className="mt-1 text-[13.5px] text-text2">
             Watch a route in plain English. hop re-runs its verdict on a schedule

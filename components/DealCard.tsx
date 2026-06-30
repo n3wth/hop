@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { Destination } from '@/lib/destinations'
 import { computeCpp } from '@/lib/destinations'
 import { tier } from '@/lib/cpp'
@@ -71,7 +72,7 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
   const cashCompare = money(dest.typicalCashUSD)
 
   return (
-    <a
+    <Link
       href={href}
       className="group flex min-w-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-colors hover:border-brand"
     >
@@ -201,6 +202,6 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
           </span>
         </div>
       </div>
-    </a>
+    </Link>
   )
 }
