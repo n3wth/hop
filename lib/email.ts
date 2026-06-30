@@ -30,6 +30,20 @@ function fromAddress(): string {
   return 'hop <alerts@hop.flights>'
 }
 
+// Where new support tickets + escalation leads are emailed for human review.
+// Configurable; defaults to the founder inbox.
+function ownerAddress(): string {
+  const a = process.env.HOP_OWNER_EMAIL
+  return a && a.trim() ? a.trim() : 'oliver@newth.ai'
+}
+
+// The From identity for support REPLIES (support@ answering a user). Defaults to
+// the support mailbox on the product domain — must be verified in Resend to send.
+function supportFromAddress(): string {
+  const a = process.env.HOP_SUPPORT_EMAIL_FROM
+  return a && a.trim() ? a.trim() : 'hop support <support@hop.flights>'
+}
+
 // True when email delivery is wired (a Resend key is present). Lets callers
 // (the cron) skip the whole delivery step cheaply instead of attempting a send
 // that's guaranteed to no-op.
@@ -131,35 +145,73 @@ function escapeAttr(s: string): string {
   return escapeHtml(s)
 }
 
-// Send one alert email. GATED: returns {ok:false, reason:'unconfigured'} (no
-// network, no throw) when RESEND_API_KEY is absent. Validates the recipient,
-// renders from engine fields, and sends via Resend. Any SDK/network failure is
-// caught and reported as {ok:false, reason:'send-failed'} — NEVER thrown — so a
-// dead provider leaves the alert undelivered (to retry) instead of crashing the
-// cron batch.
-export async function sendAlertEmail(
-  to: string | null | undefined,
-  alert: StandingOrderAlert,
-): Promise<EmailResult> {
+// Low-level Resend dispatch shared by every sender below. GATED: returns
+// {ok:false, reason:'unconfigured'} (no network, no throw) when RESEND_API_KEY is
+// absent; {ok:false, reason:'invalid-recipient'} for junk addresses. Any
+// SDK/network failure is caught and reported as 'send-failed' — NEVER thrown — so
+// a dead provider degrades the feature instead of crashing the caller.
+interface Dispatch {
+  from: string
+  to: string | null | undefined
+  subject: string
+  text: string
+  html?: string
+  replyTo?: string
+  headers?: Record<string, string>
+}
+async function dispatch(opts: Dispatch): Promise<EmailResult> {
   if (!isEmailEnabled()) return { ok: false, reason: 'unconfigured' }
-  if (!looksLikeEmail(to)) return { ok: false, reason: 'invalid-recipient' }
-
+  const { to } = opts
+  if (!looksLikeEmail(to)) return { ok: false, reason: 'invalid-recipient' } // narrows `to` to string
   try {
     const { Resend } = await import('resend')
     const resend = new Resend(env.resendApiKey())
-    const { subject, text, html } = renderAlertEmail(alert)
-
     const { data, error } = await resend.emails.send({
-      from: fromAddress(),
+      from: opts.from,
       to,
-      subject,
-      text,
-      html,
+      subject: opts.subject,
+      text: opts.text,
+      ...(opts.html ? { html: opts.html } : {}),
+      ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
+      ...(opts.headers ? { headers: opts.headers } : {}),
     })
     if (error) return { ok: false, reason: 'send-failed' }
     return { ok: true, id: data?.id }
   } catch {
-    // Import failure, malformed key, or network error — degrade, never throw.
     return { ok: false, reason: 'send-failed' }
   }
+}
+
+// Send one proactive standing-order alert email (subject/body rendered from the
+// engine-computed alert fields). Gated; never throws.
+export async function sendAlertEmail(
+  to: string | null | undefined,
+  alert: StandingOrderAlert,
+): Promise<EmailResult> {
+  const { subject, text, html } = renderAlertEmail(alert)
+  return dispatch({ from: fromAddress(), to, subject, text, html })
+}
+
+// Email the owner/team a notification (new support ticket, new escalation lead)
+// for human review. Gated; never throws.
+export async function sendOwnerNotification(
+  subject: string,
+  text: string,
+  html?: string,
+): Promise<EmailResult> {
+  return dispatch({ from: fromAddress(), to: ownerAddress(), subject, text, html })
+}
+
+// Send a support reply to a user from support@hop.flights, optionally threaded to
+// the original inbound message (In-Reply-To/References from its Message-ID).
+// Gated; never throws.
+export async function sendSupportReply(
+  to: string,
+  subject: string,
+  text: string,
+  opts?: { inReplyTo?: string | null; html?: string },
+): Promise<EmailResult> {
+  const id = opts?.inReplyTo?.trim()
+  const headers = id ? { 'In-Reply-To': id, References: id } : undefined
+  return dispatch({ from: supportFromAddress(), to, subject, text, html: opts?.html, headers })
 }

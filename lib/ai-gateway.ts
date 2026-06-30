@@ -36,6 +36,42 @@ export function extractJson(raw: string): unknown {
   }
 }
 
+// Single-shot TEXT completion via the gateway (no JSON parsing) — for prose the
+// model authors directly, e.g. a drafted support reply a human reviews. Returns
+// the trimmed content, or null when there's no key / the call fails / it's empty.
+// NEVER throws. The model never originates hop economics here — drafts speak only
+// in general terms (see lib/support-reply).
+export async function callGatewayText(opts: {
+  system: string
+  user: string
+  model?: string
+  maxTokens: number
+}): Promise<string | null> {
+  const key = process.env.AI_GATEWAY_API_KEY
+  if (!key) return null
+  try {
+    const res = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model: opts.model ?? GATEWAY_MODEL,
+        max_tokens: opts.maxTokens,
+        messages: [
+          { role: 'system', content: opts.system },
+          { role: 'user', content: opts.user },
+        ],
+      }),
+      signal: AbortSignal.timeout(20_000),
+    })
+    if (!res.ok) return null
+    const json = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> }
+    const content = json.choices?.[0]?.message?.content?.trim()
+    return content && content.length > 1 ? content : null
+  } catch {
+    return null
+  }
+}
+
 export interface GatewayCall<T> {
   // System + user prompt for the single-shot translation.
   system: string

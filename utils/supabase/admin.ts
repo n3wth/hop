@@ -347,6 +347,11 @@ interface HopDatabase {
           subject: string | null
           body: string | null
           status: string | null
+          // AI-suggested reply (general knowledge; human reviews) + delivery audit.
+          draft_reply: string | null
+          notified_at: string | null
+          reply_text: string | null
+          replied_at: string | null
           received_at: string | null
           created_at: string | null
         }
@@ -358,11 +363,19 @@ interface HopDatabase {
           subject?: string | null
           body?: string | null
           status?: string
+          draft_reply?: string | null
+          notified_at?: string | null
+          reply_text?: string | null
+          replied_at?: string | null
           received_at?: string | null
           created_at?: string | null
         }
         Update: {
           status?: string
+          draft_reply?: string | null
+          notified_at?: string | null
+          reply_text?: string | null
+          replied_at?: string | null
         }
         Relationships: []
       }

@@ -10,9 +10,12 @@
 // block the email reply/forward.
 
 import { timingSafeEqual } from 'node:crypto'
+import { after } from 'next/server'
 import { env, hasEnv } from '@/lib/env'
 import { checkRateLimit, clientIp } from '@/lib/rate-limit'
-import { createSupportTicket } from '@/lib/support-tickets'
+import { createSupportTicket, recordDraftAndNotified } from '@/lib/support-tickets'
+import { draftSupportReply } from '@/lib/support-reply'
+import { sendOwnerNotification } from '@/lib/email'
 
 export const runtime = 'nodejs'
 
@@ -76,15 +79,39 @@ export async function POST(request: Request): Promise<Response> {
   if (!from) return json({ ok: false, error: 'missing from' }, 400)
 
   const str = (v: unknown) => (typeof v === 'string' ? v : undefined)
-  const ok = await createSupportTicket({
+  const subject = str(body?.subject)
+  const text = str(body?.text)
+  const id = await createSupportTicket({
     from,
     to: str(body?.to),
-    subject: str(body?.subject),
-    text: str(body?.text),
+    subject,
+    text,
     messageId: str(body?.messageId),
     receivedAt: str(body?.receivedAt),
   })
-  // Soft failure (unconfigured db / bad sender / write error) — never 500.
-  if (!ok) return json({ ok: false, error: 'not stored' }, 200)
+
+  // Genuinely-new ticket (id present; a duplicate or unconfigured db returns null)
+  // → draft a reply + email the owner for review, AFTER the response so the
+  // Worker's fire-and-forget POST returns immediately and the LLM + email work
+  // never blocks it. All steps are best-effort + never throw.
+  if (id) {
+    after(async () => {
+      const draft = await draftSupportReply({ from, subject, body: text })
+      await recordDraftAndNotified(id, draft)
+      const owner = [
+        `From: ${from}`,
+        `Subject: ${subject || '(none)'}`,
+        '',
+        (text ?? '').slice(0, 4000) || '(no body)',
+        '',
+        '— — — Suggested reply (AI draft — review before sending) — — —',
+        draft ?? '(no draft — AI gateway not configured)',
+        '',
+        `Reply to: ${from}`,
+      ].join('\n')
+      await sendOwnerNotification(`New support email: ${subject || '(no subject)'}`, owner)
+    })
+  }
+
   return json({ ok: true })
 }

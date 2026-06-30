@@ -33,14 +33,14 @@ describe('isAuthorized() — constant-time Bearer check', () => {
 })
 
 describe('createSupportTicket() — graceful', () => {
-  it('returns false (never throws) when the db is unconfigured', async () => {
+  it('returns null (never throws) when the db is unconfigured', async () => {
     await expect(
       createSupportTicket({ from: 'sender@example.com', subject: 'hi', text: 'help' }),
-    ).resolves.toBe(false)
+    ).resolves.toBeNull()
   })
 
   it('never throws on junk input', async () => {
     // @ts-expect-error — exercising a non-string sender at runtime
-    await expect(createSupportTicket({ from: 123 })).resolves.toBe(false)
+    await expect(createSupportTicket({ from: 123 })).resolves.toBeNull()
   })
 })
