@@ -605,6 +605,8 @@ export async function POST(request: Request): Promise<Response> {
     const tools = buildConciergeTools(context?.programs ?? [], userId)
     const result = streamText({
       model: gateway(GATEWAY_MODEL),
+      // PostHog LLM analytics → $ai_generation (see instrumentation.ts).
+      experimental_telemetry: { isEnabled: true, functionId: 'concierge' },
       system: buildAgenticSystem(context, profile, history),
       // MULTI-TURN: thread the conversation (prior turns + this question) so the
       // agent answers in context. Single-question back-compat is preserved —
