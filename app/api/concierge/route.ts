@@ -664,10 +664,15 @@ export async function POST(request: Request): Promise<Response> {
             console.error('[concierge] tool frame emit error', err)
           }
         }
-        // Flush newly-arrived prose up to the fence opener, holding back a 2-char
-        // tail so a fence opener split across deltas is never half-flushed.
-        const flushProse = () => {
-          const limit = fenceAt === -1 ? Math.max(0, full.length - 2) : fenceAt
+        // Flush newly-arrived prose up to the fence opener. Mid-stream we hold a
+        // 2-char tail so a "```" fence opener split across deltas is never
+        // half-flushed. At a tool boundary we pass holdTail=false to flush
+        // EVERYTHING first: a fence never precedes the tools, and otherwise the
+        // held tail would be emitted AFTER the tool frames — splitting a word
+        // (e.g. "right no" … tools … "w!").
+        const flushProse = (holdTail = true) => {
+          const limit =
+            fenceAt === -1 ? (holdTail ? Math.max(0, full.length - 2) : full.length) : fenceAt
           if (limit > emitted) {
             controller.enqueue(encoder.encode(sanitizeProse(full.slice(emitted, limit))))
             emitted = limit
@@ -685,6 +690,7 @@ export async function POST(request: Request): Promise<Response> {
               }
               flushProse()
             } else if (part.type === 'tool-call') {
+              flushProse(false) // emit ALL prose-so-far before the frame — no mid-word split
               const id = `t${toolSeq++}`
               toolFrameIds.set(part.toolCallId, id)
               emitFrame({
@@ -694,9 +700,11 @@ export async function POST(request: Request): Promise<Response> {
                 detail: toolDetail(part.toolName, part.input, hasBalances),
               })
             } else if (part.type === 'tool-result') {
+              flushProse(false)
               const id = toolFrameIds.get(part.toolCallId)
               if (id) emitFrame({ id, tool: part.toolName, state: 'output-available' })
             } else if (part.type === 'tool-error') {
+              flushProse(false)
               const id = toolFrameIds.get(part.toolCallId)
               if (id) emitFrame({ id, tool: part.toolName, state: 'output-error' })
             }
