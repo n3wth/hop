@@ -30,7 +30,6 @@ import {
   type HopUIMessage,
   type ConciergeRequestContext,
 } from '@/lib/concierge-transport'
-import { useNavTheme } from './NavTheme'
 import {
   Conversation,
   ConversationContent,
@@ -145,13 +144,6 @@ export default function Concierge({
   // Has the assistant produced at least one turn? Gates the static follow-up
   // chips — they only make sense once there's an answer to follow up on.
   const hasAssistantTurn = messages.some((m) => m.role === 'assistant')
-
-  // Tell the TopNav whether it's floating over a dark hero (landing) or the
-  // cream thread surface so it renders the right text colors.
-  const { setSurface } = useNavTheme()
-  useEffect(() => {
-    setSurface(hasThread ? 'over-light' : 'over-dark')
-  }, [hasThread, setSurface])
 
   // Inline-confirm state for the destructive "start over" (the persisted thread
   // is DELETEd for signed-in users — never silently wipe it on a single tap).
@@ -289,6 +281,7 @@ export default function Concierge({
           {signedIn ? (
             <a
               href="/account"
+              aria-label="What hop remembers about you"
               className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] font-medium text-text3 transition-colors hover:text-brand"
               title="See and edit what hop remembers about you"
             >
@@ -337,7 +330,7 @@ export default function Concierge({
         />
         <Conversation className="h-full">
           <ConversationContent className="hop-ask-measure pb-6 pt-4">
-            {messages.map((m) => {
+            {messages.map((m, i) => {
               // Suppress an assistant turn that has nothing renderable yet (the
               // byline would flash empty before the first token/tool frame).
               // While busy, the ThinkingTurn covers it; this avoids a bare byline.
@@ -349,6 +342,9 @@ export default function Concierge({
                   onChip={send}
                   hasBalances={hasBalances}
                   homeAirport={homeAirport}
+                  isLast={i === messages.length - 1}
+                  busy={busy}
+                  onRegenerate={() => void regenerate()}
                 />
               )
             })}
@@ -405,11 +401,19 @@ function Turn({
   onChip,
   hasBalances,
   homeAirport,
+  isLast = false,
+  busy = false,
+  onRegenerate,
 }: {
   message: HopUIMessage
   onChip: (p: string) => void
   hasBalances: boolean
   homeAirport?: string
+  /** Last message in the thread — gates the per-turn "Retry" affordance. */
+  isLast?: boolean
+  /** A turn is streaming when it's the last one and the chat is busy. */
+  busy?: boolean
+  onRegenerate?: () => void
 }) {
   if (message.role === 'user') {
     const text = textOf(message)
@@ -448,6 +452,12 @@ function Turn({
     }
   })
 
+  // Action affordances (copy / retry) show once a turn has settled — never on the
+  // turn that's actively streaming (it's the last one while busy).
+  const hasText = inline.some((p) => p.kind === 'text')
+  const streamingThis = busy && isLast
+  const showActions = hasText && !streamingThis
+
   return (
     <Message from="assistant">
       <AssistantByline />
@@ -473,6 +483,13 @@ function Turn({
           </div>
         ))}
       </MessageContent>
+
+      {showActions ? (
+        <AssistantActions
+          text={textOf(message)}
+          onRegenerate={isLast && !busy ? onRegenerate : undefined}
+        />
+      ) : null}
     </Message>
   )
 }
@@ -505,6 +522,47 @@ function textOf(m: HopUIMessage): string {
     .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
     .map((p) => p.text)
     .join('')
+}
+
+// Per-turn affordances under a settled assistant answer: copy the prose, and
+// (on the latest turn) re-roll it. Flat, quiet — muted until hover, color-only.
+// "Copied" is a label/icon swap, not motion, so it's reduced-motion-safe.
+function AssistantActions({
+  text,
+  onRegenerate,
+}: {
+  text: string
+  onRegenerate?: () => void
+}) {
+  const [copied, setCopied] = useState(false)
+  const copy = useCallback(() => {
+    if (!text || typeof navigator === 'undefined' || !navigator.clipboard) return
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        setCopied(true)
+        window.setTimeout(() => setCopied(false), 1600)
+      })
+      .catch(() => {})
+  }, [text])
+
+  const btn =
+    'inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11.5px] font-medium text-text3 transition-colors hover:bg-sunk hover:text-brand'
+
+  return (
+    <div className="-mt-0.5 flex items-center gap-0.5">
+      <button type="button" onClick={copy} aria-label={copied ? 'Copied' : 'Copy answer'} className={btn}>
+        <Icon name={copied ? 'check' : 'content_copy'} size={13} />
+        {copied ? 'Copied' : 'Copy'}
+      </button>
+      {onRegenerate ? (
+        <button type="button" onClick={onRegenerate} aria-label="Regenerate answer" className={btn}>
+          <Icon name="refresh" size={13} />
+          Retry
+        </button>
+      ) : null}
+    </div>
+  )
 }
 
 // Pre-token thinking state — three animated dots (typing indicator).

@@ -42,7 +42,7 @@ export function ToolHeader({ title, icon = 'lightbulb', state, className = '' }:
         {running ? (
           <Loader size={11} className="text-brand" />
         ) : errored ? (
-          <Icon name="error" size={12} className="text-[#9a6a2e]" />
+          <Icon name="error" size={12} className="text-warn" />
         ) : (
           <Icon name="check_circle" size={12} className="text-brand/50" />
         )}
@@ -140,14 +140,14 @@ export function ToolActivity({
         <Icon
           name={icon}
           size={13}
-          className={running ? 'text-brand hop-pulse' : errored ? 'text-[#9a6a2e]' : 'text-text3'}
+          className={running ? 'text-brand hop-pulse' : errored ? 'text-warn' : 'text-text3'}
         />
         <span className="flex-1 truncate text-[12px] font-medium leading-none">{title}</span>
         <span className="ml-auto inline-flex shrink-0 items-center">
           {running ? (
             <Loader size={11} className="text-brand" />
           ) : errored ? (
-            <Icon name="error" size={12} className="text-[#9a6a2e]" />
+            <Icon name="error" size={12} className="text-warn" />
           ) : (
             <Icon name="check_circle" size={12} className="text-brand/50" />
           )}
