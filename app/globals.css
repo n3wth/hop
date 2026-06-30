@@ -282,53 +282,6 @@ body {
   grid-template-rows: 1fr;
 }
 
-/* ── Destination reel (marquee) ───────────────────────────────────────────
-   A CSS-only auto-scrolling strip of real destination photography. The track
-   holds TWO copies of the same row; translating it by exactly -50% loops
-   seamlessly. Transform-only (no opacity), GPU-friendly. Pauses on hover/focus
-   so a visitor can read a tile. prefers-reduced-motion freezes it to a static,
-   readable row (animation removed below). */
-@keyframes hop-marquee {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(-50%, 0, 0);
-  }
-}
-
-.hop-marquee-track {
-  display: flex;
-  width: max-content;
-  /* Slow, calm drift — barely-moving rather than a restless scroll. Pauses on
-     hover/focus so you can actually look at a tile. */
-  animation: hop-marquee var(--hop-marquee-dur, 140s) linear infinite;
-  will-change: transform;
-}
-.hop-marquee-track:hover,
-.hop-marquee-track:focus-within {
-  animation-play-state: paused;
-}
-
-/* Soft edge masks so tiles fade into the cream canvas at both ends rather than
-   hard-clipping. Mask only (no painted overlay) — keeps the flat look. */
-.hop-marquee-mask {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    #000 8%,
-    #000 92%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    #000 8%,
-    #000 92%,
-    transparent 100%
-  );
-}
-
 /* Shimmer for skeleton placeholders — a soft sheen sweeping across the warm
    cream/sunk surface. Subtle, not garish. */
 @keyframes hop-shimmer {
@@ -439,10 +392,6 @@ body {
     transition: none;
   }
   .hop-skeleton::after {
-    animation: none;
-  }
-  /* Reel freezes to a calm, static row — no horizontal drift. */
-  .hop-marquee-track {
     animation: none;
   }
   .hop-spin,
