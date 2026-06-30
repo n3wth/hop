@@ -117,6 +117,13 @@ body {
   outline-offset: 2px;
   border-radius: inherit;
 }
+/* Composer fields show focus on their CONTAINER (a brand border), so the field
+   itself opts out of the element-level ring — otherwise you get a box-in-box
+   double outline. Unlayered so it beats the broad rule above. */
+.no-inner-ring:focus-visible,
+.no-inner-ring:focus {
+  outline: none;
+}
 :focus:not(:focus-visible) {
   outline: none;
 }

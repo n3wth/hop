@@ -518,12 +518,12 @@ export function a2uiGuidance(
     '- timing { type, place, weeks:[{label, level:"low"|"mid"|"high"}], note? } — a cheapest-week strip. Use coarse levels, never invent dollar amounts.',
     '- weather { type, place, month, highC?, lowC?, summary } — pass through what get_weather returned; do not invent climate numbers.',
     '- web_note { type, text, source, url? } — a cited live fact from web_search. ALWAYS include the source.',
-    '- prompt_chips { type, chips:[string] } — 2-4 natural follow-up taps.',
+    '- prompt_chips { type, chips:[string] } — ALWAYS end your reply with this block: 3-4 SHORT (≤24 chars) follow-up taps that advance THIS specific conversation. Make them concrete next steps tied to what was just discussed — e.g. after a Tokyo verdict: "Build a 5-day plan", "Cheaper in May?", "Add Kyoto", "Compare with Seoul". Never generic ("Tell me more"), never the same chips every turn.',
     '- profile_confirm { type, fact } — after save_profile_fact, echo the durable fact you remembered.',
     '- connect_gmail { type, reason? } — invite the user to connect Gmail so hop can learn from past trips.',
     '- counterfactual { type, mutation:{op:"add"|"set"|"swap", program?, amount?, from?, to?} } — when the user asks "what if I had a different points portfolio?". Author ONLY the mutation intent (use program brand names as the user said them); hop runs its engine to fill what unlocks and the dollar value. Use "add" for more of a program, "set" for an exact target, "swap" for holding one program instead of another (from/to).',
     'PROACTIVE COUNTERFACTUAL: when price_trip shows affordable===false for a destination the traveler is clearly drawn to, do not just say "save toward it" — emit a counterfactual block with op:"add" proposing the SMALLEST realistic top-up of a transferable program the traveler ALREADY holds that would cross the line (hop computes what else that unlocks and the dollar value). When TWO destinations are both a stretch and both in play, prefer a compare block instead.',
-    'Rules: pick the block TYPE that fits; never emit HTML, styles, or block types not listed; omit the spec entirely if prose alone is best. Never author counterfactual unlock counts or dollar values — hop computes them.',
+    'Rules: pick the block TYPE that fits; never emit HTML, styles, or block types not listed. Cards (verdict_card/compare/timing/weather) are OPTIONAL — omit them when prose or an itinerary reads better — but ALWAYS include a prompt_chips block at the end. Never author counterfactual unlock counts or dollar values — hop computes them.',
   ] as (string | null)[]).filter((l): l is string => l != null)
 
   // Personalization nudges — tuned to THIS user's profile + history.

@@ -20,13 +20,13 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useChat } from '@ai-sdk/react'
 import Icon from './Icon'
-import FlyingBunny from './FlyingBunny'
 import ConciergeHero, { type ConciergeHeroPhoto } from './ConciergeHero'
 import { conciergeHeroCopy } from '@/lib/concierge-hero'
 import { A2UIBlocks } from './concierge/A2UIBlock'
 import type { A2UIBlock } from '@/lib/a2ui'
 import {
   ConciergeTransport,
+  dockChips,
   type HopUIMessage,
   type ConciergeRequestContext,
 } from '@/lib/concierge-transport'
@@ -85,9 +85,6 @@ export interface ConciergeProps {
 // Starter prompts now live in lib/concierge-hero (one canonical set, shared with
 // the home teaser) and are rendered by <ConciergeHero>.
 
-// Follow-up chips that keep the deliberation going — composer stays primary.
-const FOLLOW_UPS = ['Compare these', 'Cheaper', 'Best weather', "When's cheapest"] as const
-
 let initialIdSeq = 0
 
 // Turn the persisted {role,content} thread into seeded UIMessages so useChat
@@ -141,9 +138,9 @@ export default function Concierge({
 
   const busy = status === 'submitted' || status === 'streaming'
   const hasThread = messages.length > 0
-  // Has the assistant produced at least one turn? Gates the static follow-up
-  // chips — they only make sense once there's an answer to follow up on.
-  const hasAssistantTurn = messages.some((m) => m.role === 'assistant')
+  // Model-authored follow-up suggestions from the latest assistant turn — the
+  // dock renders these (contextual next steps), no static fallbacks.
+  const followUps = useMemo(() => dockChips(messages), [messages])
 
   // Inline-confirm state for the destructive "start over" (the persisted thread
   // is DELETEd for signed-in users — never silently wipe it on a single tap).
@@ -269,14 +266,10 @@ export default function Concierge({
       <div role="status" aria-live="polite" className="sr-only">
         {liveStatus}
       </div>
-      {/* identity rail — minimal, just enough to orient and offer controls */}
-      <div className="hop-ask-measure flex flex-shrink-0 items-center justify-between pb-2 pt-1">
-        <div className="flex items-center gap-2">
-          <FlyingBunny size={22} carve="var(--color-bg)" />
-          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand/70">
-            hop
-          </span>
-        </div>
+      {/* control rail — a thin strip of thread controls. No bunny/wordmark here:
+          the nav logo and each turn's byline already brand the surface, so a
+          third mark would just be clutter. */}
+      <div className="hop-ask-measure flex flex-shrink-0 items-center justify-end pb-2 pt-1">
         <div className="flex items-center gap-1.5">
           {signedIn ? (
             <a
@@ -361,10 +354,11 @@ export default function Concierge({
           the reading measure. Lives at the viewport floor; the thread scrolls
           behind it. */}
       <div className="hop-ask-measure flex-shrink-0 border-t border-hair pb-5 pt-3">
-        {/* Follow-up chips: only once the agent has answered; hidden while busy */}
-        {hasAssistantTurn && !busy ? (
+        {/* Follow-up chips: model-authored, contextual to the latest answer (the
+            agent emits prompt_chips each turn). Shown only when idle and present. */}
+        {!busy && followUps.length ? (
           <Suggestions className="mb-3">
-            {FOLLOW_UPS.map((f) => (
+            {followUps.map((f) => (
               <Suggestion key={f} suggestion={f} onClick={send} disabled={busy} />
             ))}
           </Suggestions>
@@ -447,7 +441,9 @@ function Turn({
         step: { tool: frame.tool, state: frame.state as ToolState, detail: frame.detail },
       })
     } else if (part.type === 'data-a2ui') {
-      const blocks = part.data?.blocks ?? []
+      // prompt_chips surface in the composer dock (latest turn only), not inline —
+      // so follow-ups live in one place and don't clutter the answer.
+      const blocks = (part.data?.blocks ?? []).filter((b) => b.type !== 'prompt_chips')
       if (blocks.length) a2ui.push({ key: part.id ?? `a${i}`, blocks })
     }
   })

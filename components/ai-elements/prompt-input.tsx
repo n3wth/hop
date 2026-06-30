@@ -61,7 +61,7 @@ export function PromptInputTextarea({
       }}
       onKeyDown={handleKeyDown}
       enterKeyHint="send"
-      className={`min-h-[28px] w-full flex-1 resize-none bg-transparent py-1 text-[16px] leading-[1.55] text-text outline-none placeholder:text-text3 ${className}`}
+      className={`no-inner-ring min-h-[28px] w-full flex-1 resize-none bg-transparent py-1 text-[16px] leading-[1.55] text-text outline-none placeholder:text-text3 ${className}`}
       {...props}
     />
   )
