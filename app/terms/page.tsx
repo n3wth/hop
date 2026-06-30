@@ -153,7 +153,7 @@ export default async function TermsPage() {
           <a href="mailto:support@hop.flights">support@hop.flights</a>.
         </p>
       </LegalShell>
-      <div className="mx-auto max-w-[1180px]">
+      <div className="mx-auto max-w-[var(--container-app)]">
         <SiteFooter />
       </div>
     </AppShell>

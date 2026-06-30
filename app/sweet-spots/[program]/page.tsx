@@ -94,7 +94,7 @@ export default async function ProgramSweetSpotsPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div className="mx-auto max-w-[820px]">
+      <div className="mx-auto max-w-[var(--container-sm)]">
         {/* breadcrumb back to the index */}
         <nav aria-label="Breadcrumb" className="pt-8 text-[13px] text-text3">
           <Link href="/sweet-spots" className="font-semibold text-brand hover:text-brand-deep">

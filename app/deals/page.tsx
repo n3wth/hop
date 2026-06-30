@@ -9,6 +9,7 @@ import AppShell from '@/components/AppShell'
 import DealCard from '@/components/DealCard'
 import DegradedNote from '@/components/DegradedNote'
 import SiteFooter from '@/components/SiteFooter'
+import EditorialHeader from '@/components/EditorialHeader'
 import Icon from '@/components/Icon'
 import { ORIGIN_STORAGE_KEY } from '@/lib/origin-context'
 import { pageMeta } from '@/lib/seo'
@@ -105,19 +106,13 @@ export default async function DealsPage({
 
   return (
     <AppShell user={user} pointsTotal={pointsTotal} hideSearch>
-      <div className="mx-auto max-w-[1180px] xl:max-w-[1340px] 2xl:max-w-[1500px]">
+      <div className="mx-auto max-w-[var(--container-app)] xl:max-w-[var(--container-wide)] 2xl:max-w-[var(--container-xwide)]">
         {/* editorial header — centered over the full-width feed */}
-        <header className="mx-auto max-w-[60ch] pt-10 text-center sm:pt-14">
-          <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
-            Sweet spots
-          </span>
-          <h1 className="mx-auto mt-3 max-w-[18ch] text-balance font-display text-[34px] font-semibold leading-[1.05] tracking-[-0.02em] text-text sm:text-[52px]">
-            Where your miles go furthest
-          </h1>
-          <p className="mx-auto mt-4 max-w-[50ch] text-pretty px-2 text-[16px] leading-relaxed text-text2 sm:px-0 sm:text-[17px]">
-            The redemptions where points beat cash by the widest margin, ranked
-            by cents per point. Every one is a route you can book.
-          </p>
+        <EditorialHeader
+          eyebrow="Sweet spots"
+          title="Where your miles go furthest"
+          intro="The redemptions where points beat cash by the widest margin, ranked by cents per point. Every one is a route you can book."
+        >
           <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[13px] text-text3">
             <span>
               <b className="font-semibold text-text2">{deals.length}</b> routes
@@ -131,7 +126,7 @@ export default async function DealsPage({
           </div>
 
           <DegradedNote degraded={degraded} />
-        </header>
+        </EditorialHeader>
 
         {/* agent on-ramp — these are great-value routes in the abstract; hop's
             concierge can say which ones YOUR points actually reach. A door into

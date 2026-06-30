@@ -36,7 +36,7 @@ function CardSkeleton() {
 export default function Loading() {
   return (
     <AppShell hideSearch>
-      <div className="mx-auto max-w-[1180px] xl:max-w-[1340px] 2xl:max-w-[1500px]">
+      <div className="mx-auto max-w-[var(--container-app)] xl:max-w-[var(--container-wide)] 2xl:max-w-[var(--container-xwide)]">
         {/* editorial header skeleton — eyebrow, balanced display title, subline */}
         <header className="mx-auto max-w-[60ch] pt-10 text-center sm:pt-14">
           <span className="hop-skeleton hop-skeleton-line mx-auto block w-[88px]" />

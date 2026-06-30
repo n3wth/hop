@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
+import EditorialHeader from '@/components/EditorialHeader'
 import { pageMeta } from '@/lib/seo'
 import { sweetSpotsByProgram, sweetSpots, VERIFY_CAVEAT } from '@/lib/sweet-spots'
 
@@ -20,19 +21,15 @@ export default function SweetSpotsIndexPage() {
 
   return (
     <AppShell user={null} hideSearch>
-      <div className="mx-auto max-w-[980px]">
+      <div className="mx-auto max-w-[var(--container-md)]">
         {/* editorial header */}
-        <header className="mx-auto max-w-[60ch] pt-10 text-center sm:pt-14">
-          <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
-            Sweet spots
-          </span>
-          <h1 className="mx-auto mt-3 max-w-[20ch] text-balance font-display text-[34px] font-semibold leading-[1.05] tracking-[-0.02em] text-text sm:text-[52px]">
-            The best uses of your miles, by program
-          </h1>
-          <p className="mx-auto mt-4 max-w-[52ch] text-pretty px-2 text-[16px] leading-relaxed text-text2 sm:px-0 sm:text-[17px]">
-            Each program books a handful of routes where points crush cash. Pick
-            the currency you hold and see its standout redemptions, ranked.
-          </p>
+        <EditorialHeader
+          eyebrow="Sweet spots"
+          title="The best uses of your miles, by program"
+          titleMaxW="max-w-[20ch]"
+          intro="Each program books a handful of routes where points crush cash. Pick the currency you hold and see its standout redemptions, ranked."
+          introMaxW="max-w-[52ch]"
+        >
           <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[13px] text-text3">
             <span>
               <b className="font-semibold text-text2">{programs.length}</b> programs
@@ -44,7 +41,7 @@ export default function SweetSpotsIndexPage() {
             <span className="hidden sm:inline">·</span>
             <span>premium cabins first</span>
           </div>
-        </header>
+        </EditorialHeader>
 
         {/* the program list — each links to its per-program guide */}
         <section className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">

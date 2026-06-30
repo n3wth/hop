@@ -111,6 +111,24 @@
   --text-hero: 64px; /* verdict headline */
 }
 
+/* ── Page container widths — single source of truth ──────────────────────
+   Every route wraps its content in `mx-auto max-w-[var(--container-*)]` (the
+   same idiom as `rounded-[var(--radius-lg)]`) instead of a hand-rolled pixel
+   value, so a page and its loading.tsx skeleton can never drift apart, and a
+   new page reuses an existing width instead of inventing one. Pick by content
+   shape, not by route: */
+:root {
+  --container-xs: 680px; /* a single receipt/confirmation card — book/confirmation */
+  --container-sm: 820px; /* one-topic profile/detail reading column — account, sweet-spots/[program] */
+  --container-article: 880px; /* long-form single article — destinations/[city] */
+  --container-md: 980px; /* narrow index/listing — sweet-spots */
+  --container-checkout: 1040px; /* form + sticky sidebar — book */
+  --container-app: 1180px; /* the standard app width — home, search, support, legal, deals/destinations base */
+  --container-wide: 1340px; /* wide card-grid bump — deals/destinations xl */
+  --container-xwide: 1500px; /* widest card-grid bump — deals 2xl */
+  --container-full: 1440px; /* full-bleed centered boundary states — not-found, error */
+}
+
 * {
   box-sizing: border-box;
 }

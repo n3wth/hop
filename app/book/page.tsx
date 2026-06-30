@@ -66,7 +66,7 @@ export default async function BookPage({
 
   return (
     <AppShell user={user} hideSearch>
-      <div className="mx-auto max-w-[1040px] pb-4 pt-8 sm:pt-12">
+      <div className="mx-auto max-w-[var(--container-checkout)] pb-4 pt-8 sm:pt-12">
         {backHref ? (
           <Link
             href={backHref}

@@ -12,7 +12,7 @@ function Bar({ className }: { className?: string }) {
 export default function Loading() {
   return (
     <AppShell hideSearch>
-      <div className="mx-auto max-w-[1040px] pb-4 pt-8 sm:pt-12">
+      <div className="mx-auto max-w-[var(--container-checkout)] pb-4 pt-8 sm:pt-12">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px] lg:gap-10">
           {/* LEFT — title + passenger card */}
           <div className="min-w-0">

@@ -278,7 +278,7 @@ export default async function Search({
       {/* The results column is generous enough for the verdict hero, the 4-up
           alternatives, and the wallet, but capped tighter so it reads as a
           composed column — not an edge-to-edge sprawl on wide monitors. */}
-      <div className="mx-auto max-w-[1200px]">
+      <div className="mx-auto max-w-[var(--container-app)]">
         {/* plain trip context — route + facts, not fake masthead metadata */}
         <RouteBar result={result} hasRealBalances={hasRealBalances} />
 
