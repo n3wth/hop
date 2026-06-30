@@ -76,7 +76,7 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
 
   return (
     <section
-      className="mt-[26px] grid grid-cols-1 overflow-hidden rounded-[20px] text-[#eafaf7] lg:grid-cols-[1fr_392px] lg:rounded-[28px]"
+      className="mt-[26px] grid grid-cols-1 overflow-hidden rounded-[20px] text-hero-cream lg:grid-cols-[1fr_392px] lg:rounded-[28px]"
       style={{ background: 'var(--color-brand)' }}
     >
       {/* LEFT — the verdict */}
@@ -93,11 +93,11 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
             >
               {owns ? (
                 <>
-                  Use your <span className="text-[#ffe7b0]">{airlineShort}&nbsp;{unit}</span> and save
+                  Use your <span className="text-gold-soft">{airlineShort}&nbsp;{unit}</span> and save
                 </>
               ) : (
                 <>
-                  <span className="text-[#ffe7b0]">{airlineShort}&nbsp;{unit}</span> win here — by
+                  <span className="text-gold-soft">{airlineShort}&nbsp;{unit}</span> win here — by
                 </>
               )}
             </h1>
@@ -109,7 +109,7 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
               style={{ ['--hop-delay' as string]: '110ms' }}
             >
               <CountUp
-                className="font-display text-[52px] font-semibold leading-[0.9] tracking-[-0.04em] text-[#6ff0d2] tabular-nums sm:text-[88px] lg:text-[128px]"
+                className="font-display text-[52px] font-semibold leading-[0.9] tracking-[-0.04em] text-mint-bright tabular-nums sm:text-[88px] lg:text-[128px]"
                 value={save}
                 format="usd"
                 delayMs={420}
@@ -124,7 +124,7 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
             className="hop-rise font-display text-[34px] font-semibold leading-[1.02] tracking-[-0.025em] text-white sm:text-[48px] sm:leading-[1.0] lg:text-[64px] lg:leading-[0.98]"
             style={{ ['--hop-delay' as string]: '60ms' }}
           >
-            Pay <span className="text-[#ffe7b0]">cash.</span>
+            Pay <span className="text-gold-soft">cash.</span>
             <br />
             Points don&apos;t pay off here.
           </h1>
@@ -159,7 +159,7 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
         <div className="mt-[34px] flex flex-wrap items-center gap-4">
           <a
             href={ctaHref}
-            className="inline-flex items-center gap-[10px] rounded-[14px] bg-white px-7 py-4 text-[16px] font-semibold text-[#073e3e] transition-colors hover:bg-[#fffdf6]"
+            className="inline-flex items-center gap-[10px] rounded-[14px] bg-white px-7 py-4 text-[16px] font-semibold text-brand-ink transition-colors hover:bg-hero-white-hover"
           >
             <Icon name="check_circle" size={19} />
             {!usingPoints

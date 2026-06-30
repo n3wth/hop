@@ -15,14 +15,14 @@ export default function ConnectBand({
 
   return (
     <section
-      className="overflow-hidden rounded-[20px] px-6 py-9 text-[#eafaf7] sm:px-10 sm:py-11 lg:rounded-[28px] lg:px-[52px] lg:py-12"
+      className="overflow-hidden rounded-[20px] px-6 py-9 text-hero-cream sm:px-10 sm:py-11 lg:rounded-[28px] lg:px-[52px] lg:py-12"
       style={{ background: 'var(--color-brand)' }}
     >
       <div className="flex flex-col items-start gap-7 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-[48ch]">
           {signedIn ? (
             <>
-              <span className="inline-flex items-center gap-2 rounded-full bg-[#0a5757] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#6ff0d2]">
+              <span className="inline-flex items-center gap-2 rounded-full bg-brand-deep px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-mint-bright">
                 <Icon name="check_circle" size={13} />
                 {programs} {programs === 1 ? 'program' : 'programs'} synced
               </span>
@@ -59,7 +59,7 @@ export default function ConnectBand({
           {signedIn ? (
             <a
               href="/account"
-              className="inline-flex items-center gap-2 rounded-[14px] border border-white/25 px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-[#0a5757]"
+              className="inline-flex items-center gap-2 rounded-[14px] border border-white/25 px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep"
             >
               <Icon name="settings" size={18} />
               Manage programs
@@ -71,14 +71,14 @@ export default function ConnectBand({
                   lands the visitor back home. */}
               <a
                 href="/auth/login?screen_hint=signup&returnTo=%2F"
-                className="inline-flex items-center gap-2 rounded-[14px] bg-white px-7 py-3.5 text-[15px] font-semibold text-[#073e3e] transition-colors hover:bg-hero-white-hover"
+                className="inline-flex items-center gap-2 rounded-[14px] bg-white px-7 py-3.5 text-[15px] font-semibold text-brand-ink transition-colors hover:bg-hero-white-hover"
               >
                 <Icon name="loyalty" size={18} />
                 Connect your points
               </a>
               <a
                 href="/auth/login?returnTo=%2F"
-                className="inline-flex items-center rounded-[14px] border border-white/25 px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-[#0a5757]"
+                className="inline-flex items-center rounded-[14px] border border-white/25 px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep"
               >
                 Sign in
               </a>

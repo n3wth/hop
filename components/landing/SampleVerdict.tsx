@@ -12,7 +12,7 @@ export default async function SampleVerdict() {
   const photo = await destinationImage('New York City skyline travel landmark')
   return (
     <section
-      className="grid grid-cols-1 overflow-hidden rounded-[20px] text-[#eafaf7] lg:grid-cols-[1fr_300px] lg:rounded-[28px]"
+      className="grid grid-cols-1 overflow-hidden rounded-[20px] text-hero-cream lg:grid-cols-[1fr_300px] lg:rounded-[28px]"
       style={{ background: 'var(--color-brand)' }}
     >
       {/* LEFT — the verdict */}
@@ -21,17 +21,17 @@ export default async function SampleVerdict() {
           <span className="rounded-full border border-white/25 px-2.5 py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-white/85">
             Sample verdict
           </span>
-          <span className="rounded-full bg-[#0a5757] px-2.5 py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6ff0d2]">
+          <span className="rounded-full bg-brand-deep px-2.5 py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-mint-bright">
             SFO → JFK
           </span>
         </span>
 
         <h3 className="font-display text-[26px] font-semibold leading-[1.06] tracking-[-0.02em] text-white sm:text-[32px] lg:text-[38px]">
-          Use <span className="text-[#ffe7b0]">Alaska miles</span> and save
+          Use <span className="text-gold-soft">Alaska miles</span> and save
         </h3>
 
         <div className="mt-2 flex items-baseline gap-3">
-          <span className="font-display text-[58px] font-semibold leading-[0.9] tracking-[-0.04em] text-[#6ff0d2] tabular-nums sm:text-[80px] lg:text-[96px]">
+          <span className="font-display text-[58px] font-semibold leading-[0.9] tracking-[-0.04em] text-mint-bright tabular-nums sm:text-[80px] lg:text-[96px]">
             $243
           </span>
           <span className="font-display text-[18px] font-semibold tracking-[-0.01em] text-[#9fe0d6] sm:text-[22px]">
