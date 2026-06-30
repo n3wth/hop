@@ -27,7 +27,7 @@ export default async function SampleVerdict() {
         </span>
 
         <h3 className="font-display-bold text-[26px] leading-[1.06] tracking-[-0.02em] text-white sm:text-[32px] lg:text-[38px]">
-          Use <span className="wordmark text-gold-soft">Alaska miles</span> and save
+          Use <span className="text-gold-soft">Alaska miles</span> and save
         </h3>
 
         <div className="mt-2 flex items-baseline gap-3">
