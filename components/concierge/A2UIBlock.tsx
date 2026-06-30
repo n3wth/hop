@@ -55,12 +55,18 @@ export function A2UIBlocks({
   onChip,
   hasBalances = false,
   homeAirport,
+  gmailEnabled = false,
+  onConnectGmail,
 }: {
   blocks: A2UIBlock[]
   onChip?: (prompt: string) => void
   hasBalances?: boolean
   /** The visitor's home airport — seeds `from` on every "See the search" link. */
   homeAirport?: string
+  /** Gmail seam live (env flag + Google creds) → connect_gmail is a real button. */
+  gmailEnabled?: boolean
+  /** Invoked by a live connect_gmail block (routes to login / OAuth start). */
+  onConnectGmail?: () => void
 }) {
   if (!blocks.length) return null
   return (
@@ -72,6 +78,8 @@ export function A2UIBlocks({
           onChip={onChip}
           hasBalances={hasBalances}
           homeAirport={homeAirport}
+          gmailEnabled={gmailEnabled}
+          onConnectGmail={onConnectGmail}
         />
       ))}
     </div>
@@ -84,11 +92,15 @@ export function A2UIBlockView({
   onChip,
   hasBalances = false,
   homeAirport,
+  gmailEnabled = false,
+  onConnectGmail,
 }: {
   block: A2UIBlock
   onChip?: (prompt: string) => void
   hasBalances?: boolean
   homeAirport?: string
+  gmailEnabled?: boolean
+  onConnectGmail?: () => void
 }) {
   switch (block.type) {
     case 'verdict_card':
@@ -106,7 +118,7 @@ export function A2UIBlockView({
     case 'profile_confirm':
       return <ProfileConfirm b={block} />
     case 'connect_gmail':
-      return <ConnectGmail b={block} />
+      return <ConnectGmail b={block} gmailEnabled={gmailEnabled} onConnect={onConnectGmail} />
     case 'counterfactual':
       return <Counterfactual b={block} homeAirport={homeAirport} />
     default:
@@ -464,7 +476,20 @@ function ProfileConfirm({ b }: { b: ProfileConfirmBlock }) {
 
 // ── connect_gmail ────────────────────────────────────────────────────────────
 
-function ConnectGmail({ b }: { b: ConnectGmailBlock }) {
+// `gmailEnabled` (threaded from the server via env.isGmailHistoryEnabled) flips
+// this from an honest disabled "Soon" affordance to a LIVE connect button. The
+// `onConnect` handler (Concierge) routes signed-out → /auth/login?returnTo=/ask
+// and signed-in → /auth/gmail/start; the start route self-gates as a backstop.
+function ConnectGmail({
+  b,
+  gmailEnabled = false,
+  onConnect,
+}: {
+  b: ConnectGmailBlock
+  gmailEnabled?: boolean
+  onConnect?: () => void
+}) {
+  const live = gmailEnabled && !!onConnect
   return (
     <div className="flex flex-col gap-2.5 rounded-[16px] border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-2.5">
@@ -474,17 +499,28 @@ function ConnectGmail({ b }: { b: ConnectGmailBlock }) {
           {b.reason ? ` ${b.reason}` : ' so hop can learn from your past trips.'}
         </span>
       </div>
-      <button
-        type="button"
-        disabled
-        title="Coming soon"
-        className="flex flex-shrink-0 cursor-not-allowed items-center gap-1.5 self-start rounded-full border border-border bg-sunk px-3.5 py-1.5 text-[12px] font-semibold text-text3 sm:self-auto"
-      >
-        Connect
-        <span className="rounded-full bg-paper px-1.5 py-px text-[10px] uppercase tracking-wide text-text3">
-          Soon
-        </span>
-      </button>
+      {live ? (
+        <button
+          type="button"
+          onClick={onConnect}
+          className="flex flex-shrink-0 items-center gap-1.5 self-start rounded-full border border-border bg-surface px-3.5 py-1.5 text-[12px] font-semibold text-text transition-colors hover:border-brand hover:text-brand sm:self-auto"
+        >
+          Connect
+          <Icon name="swap_horiz" size={14} />
+        </button>
+      ) : (
+        <button
+          type="button"
+          disabled
+          title="Coming soon"
+          className="flex flex-shrink-0 cursor-not-allowed items-center gap-1.5 self-start rounded-full border border-border bg-sunk px-3.5 py-1.5 text-[12px] font-semibold text-text3 sm:self-auto"
+        >
+          Connect
+          <span className="rounded-full bg-paper px-1.5 py-px text-[10px] uppercase tracking-wide text-text3">
+            Soon
+          </span>
+        </button>
+      )}
     </div>
   )
 }

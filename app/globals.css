@@ -315,6 +315,40 @@ body {
   animation: hop-shimmer 1.6s ease-in-out infinite;
 }
 
+/* Thinking-state skeleton lines — a soft, rounded sheen bar standing in for the
+   answer that's about to stream. Reuses the .hop-skeleton shimmer; a brand-tint
+   wash keeps it on-brand and quieter than the neutral sunk. Flat, no chrome. */
+.hop-skeleton-line {
+  height: 0.7rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-brand) 9%, var(--color-sunk));
+}
+.hop-skeleton-line::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--color-brand-light) 22%, #fff) 55%,
+    transparent
+  );
+}
+
+/* Text-appear — streamed assistant prose settles in with a one-shot opacity rise
+   (a tiny transform nudge, never layout). Applied per Response block so a batch
+   of tokens reads as arriving, not flashing. Reduced-motion shows it instantly. */
+@keyframes hop-text-appear {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.hop-text-appear {
+  animation: hop-text-appear 360ms var(--ease-premium) both;
+}
+
 /* Concierge tool/loader spin — AI Elements' Loader, themed. A quiet, continuous
    rotation while a tool runs. Frozen flat under prefers-reduced-motion. */
 @keyframes hop-spin {
@@ -375,6 +409,12 @@ body {
   .hop-pulse,
   .hop-dot {
     animation: none;
+  }
+  /* Streamed text appears instantly — no rise, no transform. */
+  .hop-text-appear {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 }
 

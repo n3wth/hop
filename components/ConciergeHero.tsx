@@ -56,6 +56,11 @@ export interface ConciergeHeroProps {
   photos?: ConciergeHeroPhoto[]
   /** Signed-in unlocks the "what hop remembers" affordance (full density). */
   signedIn?: boolean
+  /** Gmail travel-history seam is live (env flag + Google creds). When true the
+   *  "Connect Gmail" pill becomes a real button; otherwise it keeps "Soon". */
+  gmailEnabled?: boolean
+  /** Invoked by the live Gmail pill (routes to login / OAuth start). */
+  onConnectGmail?: () => void
   /** Signed in but no programs linked yet → show the "Add your programs" nudge
    *  so the visitor knows answers will sharpen once balances are connected. */
   needsPrograms?: boolean
@@ -72,6 +77,8 @@ export default function ConciergeHero({
   autoFocus = false,
   photos = [],
   signedIn = false,
+  gmailEnabled = false,
+  onConnectGmail,
   needsPrograms = false,
 }: ConciergeHeroProps) {
   const full = density === 'full'
@@ -221,18 +228,32 @@ export default function ConciergeHero({
                 Add your programs
               </a>
             ) : null}
-            <button
-              type="button"
-              disabled
-              title="Coming soon — let hop learn from your past trips"
-              className="flex cursor-not-allowed items-center gap-1.5 rounded-full border border-brand-muted bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-hero-label"
-            >
-              <Icon name="loyalty" size={14} className="flex-shrink-0" />
-              Connect Gmail to learn from past trips
-              <span className="rounded-full bg-brand-deep px-1.5 py-px text-[10px] uppercase tracking-wide text-hero-body">
-                Soon
-              </span>
-            </button>
+            {/* Gmail seam: live button when configured (env flag + creds), else
+                the honest disabled "Soon" affordance. This block is signed-in
+                only, so a live click routes straight to the OAuth start. */}
+            {gmailEnabled && onConnectGmail ? (
+              <button
+                type="button"
+                onClick={onConnectGmail}
+                className="flex items-center gap-1.5 rounded-full border border-brand-muted bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-hero-label transition-colors hover:border-wallet-active hover:text-hero-white-hover"
+              >
+                <Icon name="loyalty" size={14} className="flex-shrink-0" />
+                Connect Gmail to learn from past trips
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled
+                title="Coming soon — let hop learn from your past trips"
+                className="flex cursor-not-allowed items-center gap-1.5 rounded-full border border-brand-muted bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-hero-label"
+              >
+                <Icon name="loyalty" size={14} className="flex-shrink-0" />
+                Connect Gmail to learn from past trips
+                <span className="rounded-full bg-brand-deep px-1.5 py-px text-[10px] uppercase tracking-wide text-hero-body">
+                  Soon
+                </span>
+              </button>
+            )}
             <a
               href="/account"
               className="flex items-center gap-1.5 rounded-full border border-brand-muted bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-hero-label transition-colors hover:border-wallet-active hover:text-hero-white-hover"

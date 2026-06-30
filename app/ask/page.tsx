@@ -3,6 +3,7 @@ import { auth0 } from '@/lib/auth0'
 import { mockBalances } from '@/lib/mock'
 import { getUserBalances } from '@/lib/accounts'
 import { getPrefs } from '@/lib/prefs'
+import { isGmailHistoryEnabled } from '@/lib/env'
 import { pageMeta } from '@/lib/seo'
 import AppShell from '@/components/AppShell'
 import Concierge, { type ConciergePhoto, type ConciergeInitialMessage } from '@/components/Concierge'
@@ -101,6 +102,11 @@ export default async function AskPage({
   }
   const galleryCodes = topValue(6).map((d) => d.code)
 
+  // Whether the Gmail travel-history seam is live (env flag + Google creds). When
+  // off, the in-chat / hero "Connect Gmail" affordances keep their honest "Soon"
+  // state; when on, they become real (the /auth/gmail/start route self-gates too).
+  const gmailEnabled = isGmailHistoryEnabled()
+
   // The concierge IS the page on /ask: a full-height immersive stage flush under
   // the sticky TopNav. The empty state shows the warm guided hero centered in the
   // stage; the first message turns the stage into the immersive thread (single
@@ -116,6 +122,7 @@ export default async function AskPage({
           photos={photos}
           galleryCodes={galleryCodes}
           signedIn={!!user}
+          gmailEnabled={gmailEnabled}
           initialMessages={initialMessages}
           initialQuery={initialQuery}
         />
