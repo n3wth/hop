@@ -175,7 +175,7 @@ function Notice({
 }) {
   return (
     <div className="mx-auto mt-2 max-w-[560px]">
-      <div className="flex items-start gap-4 rounded-[18px] border border-border bg-surface px-6 py-7 sm:px-7">
+      <div className="flex items-start gap-4 rounded-[18px] border border-border bg-surface px-4 py-6 sm:px-7 sm:py-7">
         <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
           <Icon name={icon} size={22} />
         </span>
