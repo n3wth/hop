@@ -183,7 +183,12 @@ export default async function DestinationGuidePage({
         <header className="mt-5">
           <div
             className="relative aspect-[16/9] w-full overflow-hidden rounded-[var(--radius-lg)] border border-border"
-            style={{ background: 'var(--color-brand-deep)' }}
+            style={{
+              backgroundColor: photo?.color ?? 'var(--color-brand-deep)',
+              backgroundImage: photo?.blur ? `url("${photo.blur}")` : undefined,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
           >
             {photo ? (
               // eslint-disable-next-line @next/next/no-img-element

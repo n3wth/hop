@@ -3,6 +3,7 @@ import type { Destination } from '@/lib/destinations'
 import { computeCpp } from '@/lib/destinations'
 import { tier } from '@/lib/cpp'
 import type { CppTier } from '@/lib/types'
+import type { DestImage } from '@/lib/images'
 
 export interface DealCardProps {
   dest: Destination
@@ -14,7 +15,7 @@ export interface DealCardProps {
   /** Rank in the feed (0 = the single best find). */
   rank: number
   /** Hero photo for this destination (null → solid brand-tint fallback). */
-  photo?: { url: string; thumb: string; alt: string; credit: { name: string; link: string } } | null
+  photo?: DestImage | null
 }
 
 // cpp tier → chip palette. Mirrors lib/cpp tiers but renders editorially:
@@ -77,9 +78,18 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
       className="group flex min-w-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-colors hover:border-brand"
     >
       {/* ── photo header ─────────────────────────────────────────────────── */}
+      {/* The frame's background is a blurred placeholder of the photo (from its
+          blurhash), so a still-loading <img> fades up from a blur of itself
+          instead of a flat tile. Falls back to the photo's avg color, then to
+          brand-deep when we have no photo. */}
       <div
         className="relative aspect-[16/10] w-full overflow-hidden"
-        style={{ background: 'var(--color-brand-deep)' }}
+        style={{
+          backgroundColor: photo?.color ?? 'var(--color-brand-deep)',
+          backgroundImage: photo?.blur ? `url("${photo.blur}")` : undefined,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
       >
         {photo ? (
           // eslint-disable-next-line @next/next/no-img-element
