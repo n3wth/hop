@@ -9,9 +9,11 @@
 // any DB work, validated, and persisted via lib/escalation. Returns {ok} JSON and
 // NEVER 500s — a failure degrades to { ok:false } so /ask keeps working.
 
+import { after } from 'next/server'
 import { auth0 } from '@/lib/auth0'
 import { checkRateLimit, clientIp } from '@/lib/rate-limit'
 import { createEscalation, normalizeEmail, type EscalationTrip } from '@/lib/escalation'
+import { sendOwnerNotification } from '@/lib/email'
 
 export const runtime = 'nodejs'
 
@@ -94,6 +96,21 @@ export async function POST(request: Request): Promise<Response> {
       503,
     )
   }
+
+  // Email the owner the new lead AFTER responding — best-effort, never blocks the
+  // user's request (gated on Resend; no-ops cleanly when email is unconfigured).
+  after(async () => {
+    const ctx = Object.entries(trip ?? {})
+      .filter(([, v]) => v != null)
+      .map(([k, v]) => `${k}: ${String(v).slice(0, 400)}`)
+    const lines = [
+      'New "book it for me" request.',
+      `Email: ${email}`,
+      userId ? `User: ${userId}` : 'User: (signed out)',
+      ...(ctx.length ? ['', ...ctx] : []),
+    ]
+    await sendOwnerNotification(`New expert-booking request from ${email}`, lines.join('\n'))
+  })
 
   return json({ ok: true, id })
 }

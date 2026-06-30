@@ -63,12 +63,14 @@ function normalizeReceivedAt(raw: unknown): string | null {
 
 // Store an inbound support email as a ticket. Validates + clamps. Idempotent on
 // message_id (a redelivered email is ignored, not duplicated; a null id always
-// inserts since SQL nulls are distinct). Returns false on a bad sender,
-// unconfigured db, or write error — NEVER throws.
-export async function createSupportTicket(input: SupportTicketInput): Promise<boolean> {
-  return withDb(false, async (db) => {
+// inserts since SQL nulls are distinct). Returns the NEW row id on insert, or null
+// on a duplicate / bad sender / unconfigured db / write error — NEVER throws. The
+// id lets the caller attach an AI draft + owner notification for genuinely-new
+// tickets only (a duplicate returns null, so it isn't re-notified).
+export async function createSupportTicket(input: SupportTicketInput): Promise<string | null> {
+  return withDb<string | null>(null, async (db) => {
     const from = normalizeEmail(input?.from)
-    if (!from) return false // no sender → not a usable ticket
+    if (!from) return null // no sender → not a usable ticket
     const row = {
       message_id: clamp(input?.messageId, MAX_MSGID),
       from_email: from,
@@ -78,9 +80,25 @@ export async function createSupportTicket(input: SupportTicketInput): Promise<bo
       status: 'new',
       received_at: normalizeReceivedAt(input?.receivedAt),
     }
-    const { error } = await db
+    const { data, error } = await db
       .from(TABLE)
       .upsert(row, { onConflict: 'message_id', ignoreDuplicates: true })
-    return !error
+      .select('id')
+      .maybeSingle()
+    if (error) return null
+    return (data?.id as string | undefined) ?? null // null = duplicate (already stored)
+  })
+}
+
+// Stamp a ticket with its AI-drafted reply + the time the owner was notified.
+// Best-effort; never throws.
+export async function recordDraftAndNotified(id: string, draft: string | null): Promise<void> {
+  if (!id) return
+  await withDb<null>(null, async (db) => {
+    await db
+      .from(TABLE)
+      .update({ draft_reply: draft ?? null, notified_at: new Date().toISOString() })
+      .eq('id', id)
+    return null
   })
 }
