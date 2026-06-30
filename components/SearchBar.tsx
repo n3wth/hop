@@ -895,7 +895,7 @@ export function SearchForm({
 
         <button
           type="submit"
-          className="mt-1 flex h-12 items-center justify-center gap-2 rounded-xl bg-brand font-semibold text-white transition-colors hover:bg-brand-deep"
+          className="mt-1 flex h-12 items-center justify-center gap-2 rounded-xl bg-brand font-semibold text-white transition-colors hover:bg-brand-deep hop-press"
         >
           <Icon name="search" size={18} />
           Search
@@ -1027,7 +1027,7 @@ export function SearchForm({
       <button
         type="submit"
         aria-label="Search"
-        className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-brand text-white transition-colors hover:bg-brand-deep"
+        className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-brand text-white transition-colors hover:bg-brand-deep hop-press"
       >
         <Icon name="search" size={19} />
       </button>

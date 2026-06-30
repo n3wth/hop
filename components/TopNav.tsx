@@ -332,7 +332,7 @@ export default function TopNav({
             ) : (
               <a
                 href={signInHref}
-                className="rounded-full border border-text2 px-5 py-2.5 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk"
+                className="rounded-full border border-text2 px-5 py-2.5 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hop-press"
               >
                 Sign in
               </a>
@@ -426,7 +426,7 @@ export default function TopNav({
                 Your account
               </Link>
             ) : (
-              <a href={signInHref} className="flex items-center justify-center rounded-full bg-brand px-5 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep">
+              <a href={signInHref} className="flex items-center justify-center rounded-full bg-brand px-5 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep hop-press">
                 Sign in
               </a>
             )}

@@ -183,7 +183,7 @@ export default function ConciergeHero({
               type="submit"
               aria-label="Ask hop"
               disabled={!value.trim() || submitDisabled}
-              className="flex flex-shrink-0 items-center gap-1.5 rounded-[12px] bg-brand px-5 py-2.5 text-[14.5px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:bg-brand-deep disabled:text-hero-label"
+              className="flex flex-shrink-0 items-center gap-1.5 rounded-[12px] bg-brand px-5 py-2.5 text-[14.5px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:bg-brand-deep disabled:text-hero-label hop-press"
             >
               Ask hop
               <span aria-hidden className="text-[15px] leading-none">→</span>
