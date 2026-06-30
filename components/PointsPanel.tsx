@@ -51,7 +51,7 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
         </p>
         <a
           href="/account"
-          className="mt-4 inline-flex items-center gap-2 rounded-[12px] bg-white px-5 py-3 text-[14px] font-semibold text-[#0c3a3a] transition-colors hover:bg-[#eafaf7]"
+          className="mt-4 inline-flex items-center gap-2 rounded-[12px] bg-white px-5 py-3 text-[14px] font-semibold text-[#0c3a3a] transition-colors hover:bg-hero-cream"
         >
           Add your programs
           <span aria-hidden className="text-[15px] leading-none">→</span>

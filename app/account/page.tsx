@@ -130,7 +130,7 @@ export default async function AccountPage({
       <div className="mx-auto max-w-[820px] pb-4 pt-8 sm:pt-12 xl:max-w-[1200px]">
         {/* profile hero — teal plane, matches the editorial system */}
         <section
-          className="overflow-hidden rounded-[20px] text-[#eafaf7] lg:rounded-[24px]"
+          className="overflow-hidden rounded-[20px] text-hero-cream lg:rounded-[24px]"
           style={{ background: 'var(--color-brand)' }}
         >
           <div className="flex flex-col gap-5 px-6 py-8 sm:flex-row sm:items-center sm:gap-6 sm:px-10">
@@ -155,7 +155,7 @@ export default async function AccountPage({
                 {name}
               </h1>
               {user.email && user.email !== name ? (
-                <div className="mt-[3px] truncate text-[14px] text-[#c7ece5]">{user.email}</div>
+                <div className="mt-[3px] truncate text-[14px] text-hero-body">{user.email}</div>
               ) : null}
             </div>
             <a

@@ -111,7 +111,7 @@ function Confirmed({
     <>
       {/* hero — teal, matches the verdict system */}
       <section
-        className="overflow-hidden rounded-[20px] text-[#eafaf7] lg:rounded-[24px]"
+        className="overflow-hidden rounded-[20px] text-hero-cream lg:rounded-[24px]"
         style={{ background: 'var(--color-brand)' }}
       >
         <div className="px-6 py-9 sm:px-10">

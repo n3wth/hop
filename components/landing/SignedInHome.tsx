@@ -218,11 +218,11 @@ export default async function SignedInHome({
 
         {/* Back to the agent — a lighter nudge, not a competing concierge card. */}
         <aside
-          className="flex flex-col justify-between overflow-hidden rounded-[20px] p-6 text-[#eafaf7] sm:p-8 lg:rounded-[24px]"
+          className="flex flex-col justify-between overflow-hidden rounded-[20px] p-6 text-hero-cream sm:p-8 lg:rounded-[24px]"
           style={{ background: 'var(--color-brand)' }}
         >
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-[#0a5757] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#6ff0d2]">
+            <span className="inline-flex items-center gap-2 rounded-full bg-brand-deep px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-mint-bright">
               <Icon name="lightbulb" size={13} />
               Or just ask
             </span>
@@ -236,7 +236,7 @@ export default async function SignedInHome({
           </div>
           <a
             href="/ask"
-            className="mt-6 inline-flex w-fit items-center gap-2 rounded-[14px] bg-white px-6 py-3.5 text-[15px] font-semibold text-[#073e3e] transition-colors hover:bg-hero-white-hover"
+            className="mt-6 inline-flex w-fit items-center gap-2 rounded-[14px] bg-white px-6 py-3.5 text-[15px] font-semibold text-brand-ink transition-colors hover:bg-hero-white-hover"
           >
             Talk to hop
             <span aria-hidden className="text-[16px] leading-none">→</span>
