@@ -143,7 +143,7 @@ describe('duffel normalizer', () => {
     )
     vi.stubGlobal('fetch', fetchSpy)
     await searchCash(params)
-    const init = fetchSpy.mock.calls[0][1] as RequestInit
+    const init = (fetchSpy.mock.calls[0] as unknown[])[1] as RequestInit
     return JSON.parse(init.body as string).data
   }
 

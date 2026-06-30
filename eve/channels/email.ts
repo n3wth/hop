@@ -19,7 +19,7 @@ import { defineChannel } from 'eve/channels'
 
 // Same From identity lib/email.ts resolves for Resend: HOP_ALERT_EMAIL_FROM with a
 // hop default. Kept aligned so the agent's email I/O and the alert sender never drift.
-const FROM = process.env.HOP_ALERT_EMAIL_FROM?.trim() || 'hop alerts <alerts@hop.travel>'
+const FROM = process.env.HOP_ALERT_EMAIL_FROM?.trim() || 'hop <alerts@hop.flights>'
 
 export default defineChannel({
   type: 'email',
