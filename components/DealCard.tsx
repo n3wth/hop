@@ -41,6 +41,13 @@ function money(n: number): string {
   return `$${Math.round(n).toLocaleString('en-US')}`
 }
 
+// Capitalize the first letter so the evocative vibe fragment reads as a proper
+// caption ("neon nights & quiet temples" → "Neon nights & quiet temples").
+function sentenceCase(s: string): string {
+  const t = s.trim()
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : t
+}
+
 // One standout award redemption, rendered as a travel-magazine card you'd want
 // to chase: a real destination photo up top (with a legibility scrim + the city
 // and its flag overlaid), then the economics — cpp value, miles, cash compare,
@@ -159,7 +166,7 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
 
       {/* ── body ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-1 flex-col p-5">
-        <p className="text-[14px] leading-snug text-text2">{dest.vibe}</p>
+        <p className="text-[14px] leading-snug text-text2">{sentenceCase(dest.vibe)}</p>
 
         {/* the economics: miles needed, cash you'd skip, best program */}
         <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3.5 border-t border-hair pt-4">
@@ -193,14 +200,6 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
             →
           </span>
         </div>
-
-        {/* photo credit — Unsplash API terms (plain text; cannot nest <a> in the
-            card link. The /deals footer carries the linked Unsplash attribution.) */}
-        {photo && (
-          <p className="mt-3 text-[10px] text-text3">
-            Photo: {photo.credit.name} / Unsplash
-          </p>
-        )}
       </div>
     </a>
   )

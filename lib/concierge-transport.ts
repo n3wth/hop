@@ -71,43 +71,43 @@ function lastQuestion(messages: HopUIMessage[]): string {
   return ''
 }
 
-// Split a buffer into complete RS-framed tool frames + the leftover (prose +
-// possibly a partial frame opener). A frame is SEP + json + SEP. We only extract
-// PAIRS of separators; a dangling single SEP stays buffered until its closer
-// arrives. Returns the prose-with-frames-removed and any parsed frames.
-function extractToolFrames(buffer: string): {
-  prose: string
-  frames: ToolActivityFrame[]
-  rest: string
-} {
-  const frames: ToolActivityFrame[] = []
-  let prose = ''
+// One ordered piece of the stream: a run of visible prose, or a tool frame.
+type StreamEvent =
+  | { kind: 'prose'; text: string }
+  | { kind: 'frame'; frame: ToolActivityFrame }
+
+// Split a buffer into ORDERED prose/frame events + the leftover. Order is the
+// whole point: "prose, frameA, more prose, frameB" stays in that sequence so the
+// UI can place each tool exactly where it fired — not hoisted above or below the
+// whole answer. A frame is SEP + json + SEP; a dangling single SEP (a partial
+// frame) stays buffered in `rest` until its closer arrives.
+function extractStream(buffer: string): { events: StreamEvent[]; rest: string } {
+  const events: StreamEvent[] = []
   let i = 0
   while (i < buffer.length) {
     const open = buffer.indexOf(TOOL_FRAME_SEP, i)
     if (open === -1) {
-      prose += buffer.slice(i)
-      return { prose, frames, rest: '' }
+      if (i < buffer.length) events.push({ kind: 'prose', text: buffer.slice(i) })
+      return { events, rest: '' }
     }
-    // Prose up to the frame opener is safe to emit.
-    prose += buffer.slice(i, open)
+    if (open > i) events.push({ kind: 'prose', text: buffer.slice(i, open) })
     const close = buffer.indexOf(TOOL_FRAME_SEP, open + 1)
     if (close === -1) {
       // Partial frame — keep it (and everything after the opener) buffered.
-      return { prose, frames, rest: buffer.slice(open) }
+      return { events, rest: buffer.slice(open) }
     }
     const json = buffer.slice(open + 1, close)
     try {
       const frame = JSON.parse(json) as ToolActivityFrame
       if (frame && typeof frame.id === 'string' && typeof frame.tool === 'string') {
-        frames.push(frame)
+        events.push({ kind: 'frame', frame })
       }
     } catch {
       // Malformed frame — drop it silently; never corrupt the prose.
     }
     i = close + 1
   }
-  return { prose, frames, rest: '' }
+  return { events, rest: '' }
 }
 
 // Parse the trailing A2UI envelope JSON ("{\"blocks\":[...]}"); tolerant of a
@@ -157,41 +157,68 @@ export class ConciergeTransport implements ChatTransport<HopUIMessage> {
     })
 
     const reader = res.body?.getReader()
-    const textId = 'answer'
 
     return new ReadableStream<UIMessageChunk>({
       async start(controller) {
         controller.enqueue({ type: 'start' })
-        controller.enqueue({ type: 'text-start', id: textId })
 
         let buffer = '' // unflushed bytes (may hold a partial tool frame)
-        let prose = '' // accumulated VISIBLE prose (frames removed)
-        let emittedProse = 0 // chars of prose already sent as text-delta
+        let prose = '' // all VISIBLE prose so far (frames removed), across segments
+        let emitted = 0 // chars of prose already sent as text-delta (across segments)
+        let segId: string | null = null // the currently-open text segment, or none
+        let segCount = 0
         let sawSentinel = false
 
-        // Emit any newly-arrived prose as a text-delta, holding back a short tail
-        // so a mid-stream A2UI sentinel is never shown before we can split on it.
+        // Text is emitted in SEGMENTS split at each tool frame, so a tool lands
+        // between the prose before it and the prose after it — never hoisted past
+        // the answer. Each segment is its own text part (text-start/delta/end).
+        const openSeg = () => {
+          if (segId === null) {
+            segId = `t${segCount++}`
+            controller.enqueue({ type: 'text-start', id: segId })
+          }
+        }
+        const emitUpTo = (cap: number) => {
+          if (cap <= emitted) return
+          openSeg()
+          controller.enqueue({ type: 'text-delta', id: segId as string, delta: prose.slice(emitted, cap) })
+          emitted = cap
+        }
+        const endSeg = () => {
+          if (segId !== null) {
+            controller.enqueue({ type: 'text-end', id: segId })
+            segId = null
+          }
+        }
+
+        // Emit pending prose, holding back a short tail mid-stream so a partial
+        // A2UI sentinel is never shown before we can split on it. The sentinel
+        // appears once, at the very end (after all prose + tools).
         const TAIL = A2UI_SENTINEL.length + 2
         const flushProse = (final: boolean) => {
-          // Once the A2UI sentinel appears, prose is everything before it.
           const idx = prose.indexOf(A2UI_SENTINEL)
           const visibleEnd = idx === -1 ? prose.length : idx
-          const cap = final ? visibleEnd : Math.max(emittedProse, visibleEnd - TAIL)
-          if (cap > emittedProse) {
-            controller.enqueue({ type: 'text-delta', id: textId, delta: prose.slice(emittedProse, cap) })
-            emittedProse = cap
-          }
+          const cap = final ? visibleEnd : Math.max(emitted, visibleEnd - TAIL)
+          emitUpTo(cap)
           if (idx !== -1) sawSentinel = true
         }
 
         const pump = (chunk: string) => {
           buffer += chunk
-          const { prose: clean, frames, rest } = extractToolFrames(buffer)
+          const { events, rest } = extractStream(buffer)
           buffer = rest
-          if (clean) prose += clean
-          for (const frame of frames) {
-            // One data-tool part per frame; id-keyed so running -> done replaces.
-            controller.enqueue({ type: 'data-tool', id: frame.id, data: frame })
+          for (const ev of events) {
+            if (ev.kind === 'prose') {
+              prose += ev.text
+            } else {
+              // A tool fired HERE: flush the prose before it, close this text
+              // segment, emit the tool. The next prose opens a fresh segment that
+              // renders BELOW the tool. (No sentinel can appear mid-stream.)
+              emitUpTo(prose.length)
+              endSeg()
+              // id-keyed so a later running -> done frame updates it in place.
+              controller.enqueue({ type: 'data-tool', id: ev.frame.id, data: ev.frame })
+            }
           }
           flushProse(false)
         }
@@ -212,13 +239,14 @@ export class ConciergeTransport implements ChatTransport<HopUIMessage> {
           controller.enqueue({ type: 'error', errorText: err instanceof Error ? err.message : 'stream error' })
         }
 
-        // Drain any trailing buffered prose, then settle.
+        // Drain any trailing buffered prose (incl. a partial frame the model never
+        // closed), then settle the final segment.
         if (buffer) {
           prose += buffer
           buffer = ''
         }
         flushProse(true)
-        controller.enqueue({ type: 'text-end', id: textId })
+        endSeg()
 
         // After the sentinel: the validated A2UI block envelope -> a data part.
         if (sawSentinel) {
