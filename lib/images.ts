@@ -2,6 +2,8 @@
 // Results are cached in-process per query so we don't hit the API on every
 // render, and Next's fetch cache (revalidate) keeps it cheap across requests.
 
+import { averageColorHex, blurhashToDataUri } from './blurhash'
+
 const ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY
 
 export interface DestImage {
@@ -9,6 +11,8 @@ export interface DestImage {
   thumb: string // small thumb URL
   alt: string
   credit: { name: string; link: string } // Unsplash attribution (per API terms)
+  color?: string // avg color from the photo's blurhash (instant flat fallback)
+  blur?: string // tiny blurred SVG placeholder data URI — fades the photo up
 }
 
 const memo = new Map<string, DestImage | null>()
@@ -41,6 +45,10 @@ export async function destinationImage(query: string): Promise<DestImage | null>
       memo.set(key, null)
       return null
     }
+    // Unsplash returns a blurhash for every photo — decode it once here into a
+    // flat avg color + a blurred placeholder so the photo fades up instead of
+    // popping in. Bad/absent hash → undefined (callers keep the solid fallback).
+    const hash: string | undefined = p.blur_hash
     const img: DestImage = {
       url: p.urls.regular,
       thumb: p.urls.small,
@@ -49,6 +57,8 @@ export async function destinationImage(query: string): Promise<DestImage | null>
         name: p.user?.name ?? 'Unsplash',
         link: p.user?.links?.html ?? 'https://unsplash.com',
       },
+      color: hash ? averageColorHex(hash) ?? undefined : undefined,
+      blur: hash ? blurhashToDataUri(hash) ?? undefined : undefined,
     }
     memo.set(key, img)
     return img
