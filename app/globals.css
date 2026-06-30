@@ -143,12 +143,13 @@ body {
 }
 
 /* ── Entrance micro-interactions ──────────────────────────────────────────
-   Restrained SOLID rise-in (no translucency — transform only), ~360ms ease-out,
-   with a small stagger. Premium, not bouncy. Runs once on initial load.
+   Restrained SOLID rise-in (no translucency — transform only). Kept SHORT and
+   low-travel so content reads as instant, not a slow cascade: a 4px settle over
+   ~220ms. Premium, not bouncy. Runs once on initial load.
    prefers-reduced-motion disables all of it below. */
 @keyframes hop-rise-in {
   from {
-    transform: translateY(10px);
+    transform: translateY(4px);
   }
   to {
     transform: translateY(0);
@@ -156,8 +157,12 @@ body {
 }
 
 .hop-rise {
-  animation: hop-rise-in 460ms var(--ease-premium) both;
-  animation-delay: var(--hop-delay, 0ms);
+  animation: hop-rise-in 220ms var(--ease-premium) both;
+  /* Compress the per-element stagger so the hero settles together (fast), not as
+     a slow top-to-bottom cascade. Inline --hop-delay values (up to ~300ms) are
+     scaled down here to ~0.4x via the calc, capping the last element well under
+     200ms. */
+  animation-delay: calc(var(--hop-delay, 0ms) * 0.4);
 }
 
 /* Bunny motion is scroll-driven (see FlyingBunny) — it lifts with scroll
