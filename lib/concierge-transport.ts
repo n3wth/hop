@@ -240,3 +240,25 @@ export class ConciergeTransport implements ChatTransport<HopUIMessage> {
     return null
   }
 }
+
+// The model-authored follow-up chips from the LATEST assistant turn. Walks back
+// to the most recent assistant message and returns its prompt_chips (the agent
+// emits 3-4 contextual next-step suggestions per turn). Empty when none — e.g.
+// a freshly rehydrated thread, whose persisted turns carry only text, so the
+// dock simply waits for the next live turn rather than showing stale chips.
+export function dockChips(messages: HopUIMessage[]): string[] {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i]
+    if (m.role !== 'assistant') continue
+    for (const part of m.parts) {
+      if (part.type === 'data-a2ui') {
+        const chips = part.data?.blocks?.find((b) => b.type === 'prompt_chips')
+        if (chips && 'chips' in chips && Array.isArray(chips.chips) && chips.chips.length) {
+          return chips.chips
+        }
+      }
+    }
+    return [] // last assistant turn had no chips — don't fall further back
+  }
+  return []
+}

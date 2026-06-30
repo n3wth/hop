@@ -160,7 +160,7 @@ export default function ConciergeHero({
           className="hop-rise mt-8 w-full max-w-[600px]"
           style={{ ['--hop-delay' as string]: '190ms' }}
         >
-          <div className="flex items-center gap-2 rounded-[18px] bg-white px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5">
+          <div className="flex items-center gap-2 rounded-[18px] border-2 border-transparent bg-white px-3 py-2 transition-colors focus-within:border-brand sm:gap-3 sm:px-4 sm:py-2.5">
             <Icon name="lightbulb" size={20} className="flex-shrink-0 text-brand" />
             <input
               ref={inputRef}
@@ -170,7 +170,7 @@ export default function ConciergeHero({
               placeholder={copy.placeholder}
               aria-label="Tell hop where you want to go"
               enterKeyHint="go"
-              className="min-w-0 flex-1 bg-transparent py-1.5 text-[16px] text-text outline-none placeholder:text-text3"
+              className="no-inner-ring min-w-0 flex-1 bg-transparent py-1.5 text-[16px] text-text outline-none placeholder:text-text3"
             />
             <button
               type="submit"
