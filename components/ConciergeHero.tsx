@@ -202,7 +202,7 @@ export default function ConciergeHero({
               key={p}
               type="button"
               onClick={() => onChip(p)}
-              className={`rounded-full border border-brand-muted bg-brand-deep px-3.5 py-2 text-[13px] font-medium text-hero-body transition-colors hover:border-wallet-active hover:text-hero-white-hover ${full ? 'text-center' : ''}`}
+              className={`rounded-full border border-white/25 bg-white/10 px-4 py-2.5 text-[13.5px] font-medium text-hero-cream transition-colors hover:border-mint-bright hover:bg-white/20 hover:text-white ${full ? 'text-center' : ''}`}
             >
               {p}
             </button>
