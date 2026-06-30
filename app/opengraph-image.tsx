@@ -54,7 +54,6 @@ export default function Image() {
             flexShrink: 0,
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={bunnyDataUri()} width={236} height={238} alt="" />
         </div>
 

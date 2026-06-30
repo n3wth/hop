@@ -2,7 +2,7 @@
 // offers to the shared FlightOption model. NEVER throws — returns ApiResult.
 
 import type { ApiResult, FlightOption, SearchParams } from '@/lib/types'
-import { env, hasEnv, isCheckoutEnabled } from '@/lib/env'
+import { env, hasEnv } from '@/lib/env'
 import { cpp, tier } from '@/lib/cpp'
 import { cashBookingUrl } from '@/lib/booking'
 
