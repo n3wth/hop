@@ -126,6 +126,11 @@ body {
   color: var(--color-text);
   font-family: var(--font-sans);
   font-size: 14px;
+  /* Base body weight is MEDIUM (500), not regular. General Sans at 400 reads thin
+     on the cream canvas with antialiasing; 500 gives body + muted copy real
+     presence throughout. Headings (font-display 600/700), numbers (.hop-price
+     600), and explicit font-normal/semibold utilities still win. */
+  font-weight: 500;
   line-height: 1.5;
   font-feature-settings: "ss01" on, "cv01" on;
 }

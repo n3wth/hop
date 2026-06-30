@@ -155,7 +155,7 @@ export default async function AccountPage({
 
   return (
     <AppShell user={user} hideSearch>
-      <div className="mx-auto max-w-[820px] pb-4 pt-8 sm:pt-12 xl:max-w-[1200px]">
+      <div className="mx-auto max-w-[820px] pb-4 pt-8 sm:pt-12">
         {/* profile hero — teal plane, matches the editorial system */}
         <section
           className="overflow-hidden rounded-[20px] text-hero-cream lg:rounded-[24px]"

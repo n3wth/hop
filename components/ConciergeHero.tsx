@@ -168,8 +168,7 @@ export default function ConciergeHero({
           className="hop-rise mt-8 w-full max-w-[600px]"
           style={{ ['--hop-delay' as string]: '190ms' }}
         >
-          <div className="flex items-center gap-2 rounded-[18px] border-2 border-transparent bg-white px-3 py-2 transition-colors focus-within:border-brand sm:gap-3 sm:px-4 sm:py-2.5">
-            <Icon name="lightbulb" size={20} className="flex-shrink-0 text-brand" />
+          <div className="flex items-center gap-2 rounded-[16px] border-2 border-transparent bg-white py-2 pl-5 pr-2 transition-colors focus-within:border-brand sm:gap-3 sm:py-2.5">
             <input
               ref={inputRef}
               type="text"
@@ -178,16 +177,16 @@ export default function ConciergeHero({
               placeholder={copy.placeholder}
               aria-label="Tell hop where you want to go"
               enterKeyHint="go"
-              className="no-inner-ring min-w-0 flex-1 bg-transparent py-1.5 text-[16px] text-text outline-none placeholder:text-text3"
+              className="no-inner-ring min-w-0 flex-1 bg-transparent py-1.5 text-[16px] font-medium text-text outline-none placeholder:font-normal placeholder:text-text3"
             />
             <button
               type="submit"
               aria-label="Ask hop"
               disabled={!value.trim() || submitDisabled}
-              className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:bg-brand-deep disabled:text-hero-label"
+              className="flex flex-shrink-0 items-center gap-1.5 rounded-[12px] bg-brand px-5 py-2.5 text-[14.5px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:bg-brand-deep disabled:text-hero-label"
             >
-              <span className="hidden sm:inline">Ask hop</span>
-              <Icon name="flight" size={16} className="rotate-90" />
+              Ask hop
+              <span aria-hidden className="text-[15px] leading-none">→</span>
             </button>
           </div>
         </form>

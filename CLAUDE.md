@@ -18,9 +18,35 @@ from the root.
 - `app/`, `components/`, `lib/`, `utils/`, `public/` — the application
 - `docs/design/` — the design source of truth: `CHOSEN-editorial.html` (canonical visual
   reference), `copy-spec.md` (strict copy voice), `icons.json`, logo assets
-- `docs/plans/` — implementation plans (e.g. the flight-optimizer plan)
+- `docs/plans/` — implementation plans (e.g. the flight-optimizer plan, the Eve agent design)
+- `docs/decisions/` — **ADRs**: the load-bearing architectural decisions. Read the relevant one
+  before changing a decided area (engine-as-source-of-truth, Eve co-location, delivery layer).
+- `docs/solutions/` — **searchable solved-problems library** (YAML frontmatter). Grep here before
+  solving something that looks familiar; add an entry after solving something non-obvious.
 - `docs/content-plan.md` — content + destination-data strategy (sweet-spots table, SEO,
   concierge seed prompts)
+- `.claude/agents/` — specialized **review subagents** (engine-invariant, degradation, copy-voice,
+  nextjs16, eve-architecture, security); `.claude/commands/` — slash commands for the dev loop
+- `eve/` — the **Eve agent scaffold** (proactive travel agent on Vercel Eve). A separate runtime,
+  deliberately **excluded** from the Next app's typecheck/lint/build (see `eve/README.md`).
+
+## Compound engineering — how we work here
+
+This repo is **agent-native**: each unit of work should make the next one easier. Follow the loop
+(see `docs/decisions/0004-compound-engineering-operating-model.md`):
+
+1. **Plan** — research the codebase + the relevant `node_modules/next/dist/docs/` guide first, then
+   write a blueprint to `docs/plans/`. Plans are the source of truth (`/plan`).
+2. **Work** — implement in the house style: flag-gated seams (`lib/env.ts`), graceful degradation
+   (`withDb`, `{ok:false}` results, never throw), engine-computed numbers only.
+3. **Review** — run the specialized reviewers in `.claude/agents/` in parallel over the diff and
+   triage P1/P2/P3 (`/review-parallel`). Taste belongs in these systems, not in ad-hoc review.
+4. **Compound** — capture what you learned: a `docs/solutions/` entry, a CLAUDE.md rule, a new ADR,
+   or a new reviewer check so the lesson auto-catches next time (`/compound`). **Teach the system,
+   don't just do the task** — context given to the system pays compounding dividends.
+
+When you fix a non-obvious bug or make a durable decision, the work isn't done until it's captured
+where the next agent (you, or another LLM via `AGENTS.md`) will find it automatically.
 
 ## Commands (run from the repo root)
 
