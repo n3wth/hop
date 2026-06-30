@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { SearchResult } from '@/lib/types'
 import ResultRow from './ResultRow'
 import SectionHead from './SectionHead'
@@ -25,14 +25,17 @@ export default function ResultsList({ result }: ResultsListProps) {
   // independently, while the toolbar can still drive them all at once.
   const [openIds, setOpenIds] = useState<Set<string>>(() => new Set())
 
-  function toggleOne(id: string) {
+  // Stable reference — no deps because setOpenIds (from useState) is already
+  // stable. Passed directly to memoised ResultRow so memo's shallow comparison
+  // sees the same function reference across parent re-renders.
+  const toggleOne = useCallback((id: string) => {
     setOpenIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
       return next
     })
-  }
+  }, [])
 
   // Strongest cpp among the alternatives, to scale the value bars relatively.
   const maxCpp = others.reduce((m, o) => (o.cpp != null && o.cpp > m ? o.cpp : m), 0)
@@ -95,7 +98,7 @@ export default function ResultsList({ result }: ResultsListProps) {
               maxCpp={maxCpp || undefined}
               index={i}
               open={openIds.has(option.id)}
-              onToggle={() => toggleOne(option.id)}
+              onToggle={toggleOne}
               oneWay={oneWay}
             />
           ))}

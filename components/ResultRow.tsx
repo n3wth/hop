@@ -15,7 +15,7 @@ export interface ResultRowProps {
   index?: number
   /** Controlled expand state — all rows expand/collapse together via the toolbar. */
   open: boolean
-  onToggle: () => void
+  onToggle: (id: string) => void
   /** One-way trip — cash price reads "ow" instead of "rt". */
   oneWay?: boolean
 }
@@ -128,7 +128,7 @@ const ResultRow = memo(function ResultRow({ option, rank, maxCpp, index = 0, ope
       {/* summary — the whole top is the toggle */}
       <button
         type="button"
-        onClick={onToggle}
+        onClick={() => onToggle(option.id)}
         aria-expanded={open}
         aria-controls={panelId}
         aria-label={`${open ? 'Hide' : 'Show'} details for ${option.airline} ${option.route}`}
