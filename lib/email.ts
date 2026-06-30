@@ -20,13 +20,14 @@ export type EmailResult =
   | { ok: true; id?: string }
   | { ok: false; reason: 'unconfigured' | 'invalid-recipient' | 'send-failed' }
 
-// The From identity. Configurable for when a verified sending domain lands;
-// falls back to a sensible hop default. (A bare default still requires the
-// domain to be verified in Resend before real mail flows — see the report.)
+// The From identity. Override via HOP_ALERT_EMAIL_FROM; defaults to hop.flights.
+// NOTE: the From domain must be VERIFIED in Resend for mail to flow — verify
+// hop.flights (add Resend's DKIM/SPF records to Cloudflare DNS), or set
+// HOP_ALERT_EMAIL_FROM to an already-verified domain as a stopgap.
 function fromAddress(): string {
   const configured = process.env.HOP_ALERT_EMAIL_FROM
   if (configured && configured.trim()) return configured.trim()
-  return 'hop alerts <alerts@hop.travel>'
+  return 'hop <alerts@hop.flights>'
 }
 
 // True when email delivery is wired (a Resend key is present). Lets callers
@@ -94,7 +95,7 @@ export function renderAlertEmail(alert: StandingOrderAlert): {
   if (bookingUrl) {
     textLines.push('', `Book: ${bookingUrl}`)
   }
-  textLines.push('', 'You set this watch on hop. Manage it at hop.travel/account.')
+  textLines.push('', 'You set this watch on hop. Manage it at hop.flights/account.')
   const text = textLines.join('\n')
 
   // Minimal, flat HTML — no shadows/gradients, system type, just the facts and a
@@ -110,7 +111,7 @@ export function renderAlertEmail(alert: StandingOrderAlert): {
     `<p style="margin:0 0 8px;font-size:17px;font-weight:600">${escapeHtml(subject)}</p>`,
     `<p style="margin:0;color:#555">${detail}</p>`,
     cta,
-    `<p style="margin:24px 0 0;color:#888;font-size:13px">You set this watch on hop. Manage it at hop.travel/account.</p>`,
+    `<p style="margin:24px 0 0;color:#888;font-size:13px">You set this watch on hop. Manage it at hop.flights/account.</p>`,
     `</div>`,
   ].join('')
 
