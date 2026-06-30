@@ -39,12 +39,13 @@ export function MessageContent({ children, className = '', ...props }: MessageCo
   )
 }
 
-// The hop byline that precedes an assistant turn.
+// The hop byline that precedes an assistant turn — just the bunny mark. The nav
+// logo and wordmark already brand the surface, so the "hop" text label here was
+// redundant; the bunny alone reads as the speaker.
 export function AssistantByline({ children }: { children?: ReactNode }) {
   return (
     <div className="flex items-center gap-2">
       <FlyingBunny size={24} carve="var(--color-bg)" />
-      <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand">hop</span>
       {children}
     </div>
   )

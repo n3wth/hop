@@ -186,6 +186,19 @@ describe('parseA2UI() — top-level parse, never throws', () => {
     const many = Array.from({ length: 30 }, () => ({ type: 'connect_gmail' }))
     expect(parseA2UI(many).length).toBeLessThanOrEqual(8)
   })
+
+  it('preserves a trailing prompt_chips even past the block cap', () => {
+    // The model emits prompt_chips LAST. A naive head-slice at the cap would drop
+    // the very block that drives the follow-up dock — the "chips don't render"
+    // bug on answers with many cards. It must survive.
+    const blocks = [
+      ...Array.from({ length: 8 }, (_, i) => ({ type: 'verdict_card', code: `AA${i}`, reason: 'r' })),
+      { type: 'prompt_chips', chips: ['Build a plan', 'Cheaper in May?'] },
+    ]
+    const out = parseA2UI({ blocks })
+    expect(out.length).toBeLessThanOrEqual(8)
+    expect(out.some((b) => b.type === 'prompt_chips')).toBe(true)
+  })
 })
 
 describe('extractA2UIJson() — pull spec from model text', () => {
@@ -204,6 +217,27 @@ describe('extractA2UIJson() — pull spec from model text', () => {
 
   it('returns null when there is no json', () => {
     expect(extractA2UIJson('just prose, no spec')).toBeNull()
+  })
+
+  it('finds the envelope despite stray braces in prose (itinerary)', () => {
+    // The broadened concierge writes markdown itineraries that can contain a
+    // stray "{" (e.g. "## Day 1 {arrival}"). The OLD extractor grabbed that first
+    // brace, failed to parse, and gave up — losing the whole spec (cards AND
+    // chips). The robust extractor must skip the unparseable region and find the
+    // real a2ui envelope further along.
+    const text =
+      '# Tokyo, 5 days\n\n## Day 1 {arrival}\n- Land at NRT\n\nSounds good?\n\n' +
+      '```json\n{"blocks":[{"type":"verdict_card","code":"TYO","reason":"Worth it."},' +
+      '{"type":"prompt_chips","chips":["Cheaper in May?","Add Kyoto"]}]}\n```'
+    const blocks = parseA2UI(extractA2UIJson(text))
+    expect(blocks.map((b) => b.type)).toContain('prompt_chips')
+    expect(blocks.map((b) => b.type)).toContain('verdict_card')
+  })
+
+  it('finds the envelope when an unfenced object follows brace-bearing prose', () => {
+    const text = 'Your budget of {X} matters.\n\n{"blocks":[{"type":"prompt_chips","chips":["Plan it"]}]}'
+    const blocks = parseA2UI(extractA2UIJson(text))
+    expect(blocks.map((b) => b.type)).toEqual(['prompt_chips'])
   })
 })
 
