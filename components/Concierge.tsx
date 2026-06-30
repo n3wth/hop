@@ -75,6 +75,10 @@ export interface ConciergeProps {
   galleryCodes?: string[]
   /** Whether the visitor is signed in — gates server persistence + start-over. */
   signedIn?: boolean
+  /** Gmail travel-history seam is live (env flag + Google creds present). When
+   *  true the in-chat / hero "Connect Gmail" become real affordances; otherwise
+   *  they keep the honest "Soon" state. Computed server-side via env.ts. */
+  gmailEnabled?: boolean
   /** The user's persisted thread (signed-in), hydrated into the conversation. */
   initialMessages?: ConciergeInitialMessage[]
   /** When set, the concierge auto-sends this on mount — used when the home
@@ -105,6 +109,7 @@ export default function Concierge({
   photos = {},
   galleryCodes = [],
   signedIn = false,
+  gmailEnabled = false,
   initialMessages,
   initialQuery,
 }: ConciergeProps) {
@@ -183,6 +188,17 @@ export default function Concierge({
     [input, send],
   )
 
+  // Live "Connect Gmail" (gated by gmailEnabled). Signed-out → sign in first,
+  // returning to /ask; signed-in → start the OAuth handshake. The start route
+  // self-gates and bounces to /account?gmail=unconfigured if the flag is off, so
+  // this is safe even at the edge where env drifts from the rendered flag.
+  const onConnectGmail = useCallback(() => {
+    if (typeof window === 'undefined') return
+    window.location.href = signedIn
+      ? '/auth/gmail/start'
+      : `/auth/login?returnTo=${encodeURIComponent('/ask')}`
+  }, [signedIn])
+
   // "Start over" is destructive for signed-in users (it DELETEs the persisted
   // thread), so it asks for an inline confirm first. On confirm we delete the
   // server thread BEFORE clearing the client — and only clear if the delete
@@ -252,6 +268,8 @@ export default function Concierge({
           galleryCodes={galleryCodes}
           totalPoints={totalPoints}
           signedIn={signedIn}
+          gmailEnabled={gmailEnabled}
+          onConnectGmail={onConnectGmail}
         />
       </div>
     )
@@ -335,6 +353,8 @@ export default function Concierge({
                   onChip={send}
                   hasBalances={hasBalances}
                   homeAirport={homeAirport}
+                  gmailEnabled={gmailEnabled}
+                  onConnectGmail={onConnectGmail}
                   isLast={i === messages.length - 1}
                   busy={busy}
                   onRegenerate={() => void regenerate()}
@@ -395,6 +415,8 @@ function Turn({
   onChip,
   hasBalances,
   homeAirport,
+  gmailEnabled = false,
+  onConnectGmail,
   isLast = false,
   busy = false,
   onRegenerate,
@@ -403,6 +425,10 @@ function Turn({
   onChip: (p: string) => void
   hasBalances: boolean
   homeAirport?: string
+  /** Gmail seam live → connect_gmail blocks render a real affordance. */
+  gmailEnabled?: boolean
+  /** Invoked by a live connect_gmail block (routes to login / OAuth start). */
+  onConnectGmail?: () => void
   /** Last message in the thread — gates the per-turn "Retry" affordance. */
   isLast?: boolean
   /** A turn is streaming when it's the last one and the chat is busy. */
@@ -458,10 +484,14 @@ function Turn({
     <Message from="assistant">
       <AssistantByline />
       <MessageContent>
-        {/* Parts in stream order — text and tool calls interleaved chronologically */}
+        {/* Parts in stream order — text and tool calls interleaved chronologically.
+            Streamed prose settles in via .hop-text-appear (opacity rise, no
+            layout; instant under reduced-motion) so a batch reads as arriving. */}
         {inline.map((p) =>
           p.kind === 'text' ? (
-            <Response key={p.key}>{p.text}</Response>
+            <Response key={p.key} className="hop-text-appear">
+              {p.text}
+            </Response>
           ) : (
             <ToolActivity key={p.key} step={p.step} hasBalances={hasBalances} />
           ),
@@ -475,6 +505,8 @@ function Turn({
               onChip={onChip}
               hasBalances={hasBalances}
               homeAirport={homeAirport}
+              gmailEnabled={gmailEnabled}
+              onConnectGmail={onConnectGmail}
             />
           </div>
         ))}
@@ -561,17 +593,50 @@ function AssistantActions({
   )
 }
 
-// Pre-token thinking state — three animated dots (typing indicator).
-// Motion is the .hop-dot bounce only; reduced-motion freezes them flat.
+// Pre-token thinking state — a thoughtful placeholder for the answer about to
+// stream: the hop byline carrying a quietly cycling status word, over a soft
+// shimmer skeleton of two answer lines. The shimmer (.hop-skeleton sheen) is the
+// only continuous motion; the status word crossfades in via .hop-text-appear.
+// Both freeze flat under prefers-reduced-motion, where the word holds on the
+// first phrase.
+const THINKING_WORDS = [
+  'thinking it through',
+  'reading the routes',
+  'weighing points vs cash',
+  'pricing it out',
+] as const
+
 function ThinkingTurn() {
+  // Cycle the status word slowly so it reads as deliberation, not a spinner. We
+  // hold on the first phrase under reduced-motion (no interval, no crossfade).
+  const [word, setWord] = useState(0)
+  useEffect(() => {
+    const reduce =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (reduce) return
+    const id = window.setInterval(() => {
+      setWord((w) => (w + 1) % THINKING_WORDS.length)
+    }, 2200)
+    return () => window.clearInterval(id)
+  }, [])
+
   return (
     <Message from="assistant">
-      <AssistantByline />
+      <AssistantByline>
+        <span
+          key={word}
+          className="hop-text-appear text-[12px] font-medium text-text3"
+          aria-hidden
+        >
+          {THINKING_WORDS[word]}…
+        </span>
+      </AssistantByline>
       <MessageContent>
-        <div className="flex items-center gap-[5px] py-1">
-          <span className="hop-dot h-[7px] w-[7px] rounded-full bg-brand/50" />
-          <span className="hop-dot h-[7px] w-[7px] rounded-full bg-brand/50" />
-          <span className="hop-dot h-[7px] w-[7px] rounded-full bg-brand/50" />
+        {/* shimmer skeleton of the incoming answer — two lines at a calm measure */}
+        <div className="flex w-full max-w-[28rem] flex-col gap-2 py-1" aria-hidden>
+          <span className="hop-skeleton hop-skeleton-line w-full" />
+          <span className="hop-skeleton hop-skeleton-line w-3/5" />
         </div>
       </MessageContent>
     </Message>
@@ -617,6 +682,8 @@ function Landing({
   galleryCodes,
   totalPoints,
   signedIn,
+  gmailEnabled,
+  onConnectGmail,
 }: {
   input: string
   setInput: (v: string) => void
@@ -627,6 +694,8 @@ function Landing({
   galleryCodes: string[]
   totalPoints?: number
   signedIn: boolean
+  gmailEnabled: boolean
+  onConnectGmail: () => void
 }) {
   const tiles: ConciergeHeroPhoto[] = galleryCodes
     .map((c) => photos[c])
@@ -645,6 +714,8 @@ function Landing({
       onChip={onStarter}
       density="full"
       signedIn={signedIn}
+      gmailEnabled={gmailEnabled}
+      onConnectGmail={onConnectGmail}
       needsPrograms={signedIn && !totalPoints}
       submitDisabled={status !== 'ready'}
       autoFocus
