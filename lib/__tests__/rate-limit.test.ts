@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { rateLimit, checkRateLimit, _resetRateLimitForTest } from '@/lib/rate-limit'
+import { rateLimit, checkRateLimit, clientIp, _resetRateLimitForTest } from '@/lib/rate-limit'
 
 // The token-bucket limiter that guards the agentic concierge from repetition
 // abuse. Pure aside from a module-level bucket map; reset between cases.
@@ -45,5 +45,23 @@ describe('checkRateLimit() — durable wrapper', () => {
     const limited = await checkRateLimit('fb', cfg)
     expect(limited.ok).toBe(false)
     expect(limited.retryAfterSec).toBeGreaterThan(0)
+  })
+})
+
+describe('clientIp() — proxy header parsing', () => {
+  const req = (headers: Record<string, string>) => new Request('https://hop.test', { headers })
+
+  it('takes the first x-forwarded-for entry', () => {
+    expect(clientIp(req({ 'x-forwarded-for': '1.2.3.4, 5.6.7.8' }))).toBe('1.2.3.4')
+  })
+
+  it('falls through to x-real-ip when the leading XFF entry is empty', () => {
+    // A malformed chain like ", 9.9.9.9" must not bucket callers under "".
+    expect(clientIp(req({ 'x-forwarded-for': ', 9.9.9.9', 'x-real-ip': '8.8.8.8' }))).toBe('8.8.8.8')
+  })
+
+  it('falls through to "unknown" when nothing usable is present', () => {
+    expect(clientIp(req({ 'x-forwarded-for': '   ' }))).toBe('unknown')
+    expect(clientIp(req({}))).toBe('unknown')
   })
 })
