@@ -88,7 +88,7 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
         {usingPoints ? (
           <>
             <h1
-              className="hop-rise font-display text-[27px] font-semibold leading-[1.05] tracking-[-0.02em] text-white sm:text-[34px] lg:text-[40px]"
+              className="hop-rise font-display text-[24px] font-semibold leading-[1.05] tracking-[-0.02em] text-white sm:text-[34px] lg:text-[40px]"
               style={{ ['--hop-delay' as string]: '60ms' }}
             >
               {owns ? (
@@ -109,7 +109,7 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
               style={{ ['--hop-delay' as string]: '110ms' }}
             >
               <CountUp
-                className="font-display text-[68px] font-semibold leading-[0.9] tracking-[-0.04em] text-[#6ff0d2] tabular-nums sm:text-[96px] lg:text-[128px]"
+                className="font-display text-[52px] font-semibold leading-[0.9] tracking-[-0.04em] text-[#6ff0d2] tabular-nums sm:text-[88px] lg:text-[128px]"
                 value={save}
                 format="usd"
                 delayMs={420}
@@ -179,7 +179,7 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
           ) : null}
         </div>
 
-        <div className="hop-rise mt-8 flex flex-wrap gap-x-8 gap-y-5 border-t border-white/15 pt-7 sm:gap-10 lg:mt-[42px] lg:pt-[30px]" style={{ ['--hop-delay' as string]: '220ms' }}>
+        <div className="hop-rise mt-8 flex flex-wrap gap-x-6 gap-y-4 border-t border-white/15 pt-7 sm:gap-10 lg:mt-[42px] lg:pt-[30px]" style={{ ['--hop-delay' as string]: '220ms' }}>
           <HStat label="You pay" value={fmt(miles)} unit={unit} />
           <HStat label="Value" value={cpp != null ? formatValue(cpp) : '—'} />
           <HStat label="Cash price" value={`$${fmt(cash)}`} />
