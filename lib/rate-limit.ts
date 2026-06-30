@@ -70,8 +70,8 @@ export function _resetRateLimitForTest() {
 // limiter per-caller. Falls back to a shared 'unknown' bucket when nothing is
 // present (still caps anonymous abuse per node). Pure + total.
 export function clientIp(request: Request): string {
-  const xff = request.headers.get('x-forwarded-for')
-  if (xff) return xff.split(',')[0]!.trim()
+  const first = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+  if (first) return first
   return request.headers.get('x-real-ip')?.trim() || 'unknown'
 }
 
@@ -91,7 +91,15 @@ function getRedis(): Redis | null {
   if (redisClient !== undefined) return redisClient
   const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL
   const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN
-  redisClient = url && token ? new Redis({ url, token }) : null
+  try {
+    // new Redis() THROWS on a malformed URL (e.g. missing https://, a typo'd
+    // env). Catch it so a bad Redis config degrades to the in-memory bucket
+    // instead of throwing here — honoring this module's never-throw contract.
+    // Caching null also prevents re-constructing (and re-throwing) every call.
+    redisClient = url && token ? new Redis({ url, token }) : null
+  } catch {
+    redisClient = null
+  }
   return redisClient
 }
 
