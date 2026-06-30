@@ -272,6 +272,21 @@ export default function TopNav({
               <div className="hidden min-w-0 flex-shrink-0 md:flex">
                 <SearchForm initial={initial} variant="desktop" scrolled={c} />
               </div>
+
+              {/* MOBILE affordance (<sm) — on search/results pages the account
+                  block is hidden below sm and this branch has no hamburger, so a
+                  signed-in phone user couldn't reach their account and never saw a
+                  nav. Opens the same menu sheet (nav + account / Sign in). At ≥sm
+                  the account block itself is visible, so this hides. */}
+              <button
+                type="button"
+                aria-label="Open menu"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen(true)}
+                className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full border border-border bg-surface text-text2 transition-colors hover:bg-sunk sm:hidden"
+              >
+                <Icon name="menu" size={20} />
+              </button>
             </>
           )}
 
