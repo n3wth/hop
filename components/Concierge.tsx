@@ -46,6 +46,15 @@ import {
 import { ToolActivity, type ToolState } from './ai-elements/tool'
 import { Suggestions, Suggestion } from './ai-elements/suggestion'
 
+// Fallback chips shown when a resumed thread has no model-authored follow-ups.
+// Terse, on-voice, generic but useful — the dock is never dead for a returning user.
+const FALLBACK_CHIPS = [
+  'Plan a 5-day trip',
+  'Cheaper in a different month?',
+  'Compare two cities',
+  'Best use of my points',
+] as const
+
 // A lightweight, serializable photo record passed from the server page so the
 // client can render real imagery without exposing the Unsplash key.
 export interface ConciergePhoto {
@@ -145,8 +154,18 @@ export default function Concierge({
   const busy = status === 'submitted' || status === 'streaming'
   const hasThread = messages.length > 0
   // Model-authored follow-up suggestions from the latest assistant turn — the
-  // dock renders these (contextual next steps), no static fallbacks.
-  const followUps = useMemo(() => dockChips(messages), [messages])
+  // dock renders these (contextual next steps). For resumed threads with no
+  // model-authored chips, fall back to generic-but-on-voice next steps so the
+  // dock is never dead; fallback only shows when idle with an existing thread.
+  const followUps = useMemo(() => {
+    const live = dockChips(messages)
+    if (live.length) return live
+    // No live chips + idle + at least one assistant message = resumed thread.
+    if (!busy && messages.some((m) => m.role === 'assistant')) {
+      return Array.from(FALLBACK_CHIPS)
+    }
+    return []
+  }, [messages, busy])
 
   // Inline-confirm state for the destructive "start over" (the persisted thread
   // is DELETEd for signed-in users — never silently wipe it on a single tap).

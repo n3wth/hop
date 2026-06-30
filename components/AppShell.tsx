@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { cookies } from 'next/headers'
 import TopNav, { type TopNavProps } from './TopNav'
+import BottomTabBar from './BottomTabBar'
 import { OriginProvider, ORIGIN_STORAGE_KEY } from '@/lib/origin-context'
 
 export interface AppShellProps extends TopNavProps {
@@ -30,6 +31,7 @@ export default async function AppShell({ children, noPadX = false, ...nav }: App
         <main id="main" className={noPadX ? '' : 'px-4 pb-24 sm:px-8 lg:px-16'}>
           {children}
         </main>
+        <BottomTabBar />
       </div>
     </OriginProvider>
   )

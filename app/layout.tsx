@@ -50,6 +50,11 @@ export const metadata: Metadata = {
   authors: [{ name: 'hop' }],
   creator: SITE_NAME,
   publisher: SITE_NAME,
+  appleWebApp: {
+    capable: true,
+    title: SITE_NAME,
+    statusBarStyle: 'default',
+  },
   keywords: [
     'points vs cash',
     'award flights',
@@ -97,6 +102,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: TEAL,
   colorScheme: 'light',
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({

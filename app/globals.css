@@ -557,3 +557,117 @@ body {
        project-wide reduced-motion contract. */
   }
 }
+
+/* ── Bottom tab bar (phone-only) ──────────────────────────────────────────
+   Mobile-first fixed navigation bar. Sits above the safe-area inset to clear
+   notches and home indicator. Hidden on /ask (concierge owns the bottom).
+   Restrained settle transition on active state. */
+@keyframes hop-tab-active {
+  from {
+    transform: scale(0.95);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.hop-tab-active {
+  animation: hop-tab-active 180ms var(--ease-premium) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hop-tab-active {
+    animation: none;
+  }
+}
+
+/* ── View Transitions API — quiet cross-route fade ───────────────────────────
+   Next 16 experimental flag enables ::view-transition pseudo-elements. The root
+   animation is opacity-only (flat law), ~180ms, premium easing. Degrades to
+   instant in unsupported browsers (no JS fallback needed). */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 180ms;
+  animation-timing-function: var(--ease-premium);
+}
+
+::view-transition-old(root) {
+  animation-name: hop-view-fade-out;
+}
+
+::view-transition-new(root) {
+  animation-name: hop-view-fade-in;
+}
+
+@keyframes hop-view-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes hop-view-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ── Tactile press feedback ──────────────────────────────────────────────────
+   A 0.97 scale squeeze on active (90ms) for every interactive control. Phones
+   get the full haptic feel; desktops get a visual cue. The universal tap-
+   highlight is removed globally (see below). */
+.hop-press {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.hop-press:active {
+  transform: scale(0.97);
+  transition: transform 90ms var(--ease-premium);
+}
+
+/* Softer scale (0.985) for large card tap targets — the press gesture feels
+   less aggressive on spacious, high-hit-area components. */
+.hop-press-card {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.hop-press-card:active {
+  transform: scale(0.985);
+  transition: transform 90ms var(--ease-premium);
+}
+
+/* ── Remove mobile tap-highlight app-wide ────────────────────────────────────
+   Flat law: no chrome, no highlights. The .hop-press classes above set it
+   explicitly, but this global rule covers every link/button/[role=button]. */
+:where(a, button, [role=button]) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+
+/* ── Reduced motion: disable all tactile + view-transition animations ────────
+   Collapsed .hop-press to no scale, no transition. View transitions frozen. */
+@media (prefers-reduced-motion: reduce) {
+  .hop-press:active,
+  .hop-press-card:active {
+    transform: none;
+    transition: none;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
