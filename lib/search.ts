@@ -98,9 +98,14 @@ export async function assembleSearch(
       balances = userBalances ?? []
     } else if (balancesRes.ok) {
       balances = balancesRes.data
-    } else {
-      degraded.push('balances')
     }
+    // else: the env-global AwardWallet fallback failed. This path only runs when
+    // NO per-user balances were supplied (signed-out / stateless caller), so the
+    // viewer has no connected wallet of their own to refresh — empty is the
+    // EXPECTED state, not a stale refresh. We deliberately do NOT push 'balances'
+    // here: that degradation ("Couldn't refresh your balances…") is only honest
+    // for a signed-in user whose own programs failed to refresh, and a signed-in
+    // user's balances always arrive pre-resolved above (balancesRes === null).
   }
 
   // Cheapest cash price is the baseline for award cpp comparison.
