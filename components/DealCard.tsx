@@ -191,7 +191,7 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
         {/* CTA — single confident action; arrow nudges via color on hover */}
         <div className="mt-auto flex items-center justify-between gap-3 pt-5">
           <span className="text-[14px] font-semibold text-text transition-colors group-hover:text-brand">
-            from {fromCode} · See the math
+            See the math
           </span>
           <span
             aria-hidden
