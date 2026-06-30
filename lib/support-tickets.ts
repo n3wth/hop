@@ -102,3 +102,102 @@ export async function recordDraftAndNotified(id: string, draft: string | null): 
     return null
   })
 }
+
+// --- Read / reply (the owner-gated admin console) ---------------------------
+
+// A full ticket as the admin console reads it (camelCase, normalized).
+export interface SupportTicket {
+  id: string
+  messageId: string | null
+  fromEmail: string
+  toEmail: string | null
+  subject: string | null
+  body: string | null
+  status: string
+  draftReply: string | null
+  notifiedAt: string | null
+  replyText: string | null
+  repliedAt: string | null
+  receivedAt: string | null
+  createdAt: string | null
+}
+
+interface FullRow {
+  id: string
+  message_id: string | null
+  from_email: string | null
+  to_email: string | null
+  subject: string | null
+  body: string | null
+  status: string | null
+  draft_reply: string | null
+  notified_at: string | null
+  reply_text: string | null
+  replied_at: string | null
+  received_at: string | null
+  created_at: string | null
+}
+
+const SELECT_COLS =
+  'id, message_id, from_email, to_email, subject, body, status, draft_reply, notified_at, reply_text, replied_at, received_at, created_at'
+
+function rowToTicket(row: FullRow): SupportTicket | null {
+  const from = normalizeEmail(row.from_email)
+  if (!from) return null
+  return {
+    id: row.id,
+    messageId: row.message_id,
+    fromEmail: from,
+    toEmail: normalizeEmail(row.to_email),
+    subject: row.subject,
+    body: row.body,
+    status: row.status ?? 'new',
+    draftReply: row.draft_reply,
+    notifiedAt: row.notified_at,
+    replyText: row.reply_text,
+    repliedAt: row.replied_at,
+    receivedAt: row.received_at,
+    createdAt: row.created_at,
+  }
+}
+
+// Recent tickets, newest first (the admin console list). Empty on any failure.
+export async function listRecentTickets(limit = 100): Promise<SupportTicket[]> {
+  return withDb<SupportTicket[]>([], async (db) => {
+    const { data, error } = await db
+      .from(TABLE)
+      .select(SELECT_COLS)
+      .order('created_at', { ascending: false })
+      .limit(Math.min(Math.max(1, limit), 250))
+    if (error || !data) return []
+    return (data as FullRow[]).map(rowToTicket).filter((t): t is SupportTicket => t !== null)
+  })
+}
+
+// A single ticket by id (the send route loads it to address the reply). Null on
+// any failure / not found.
+export async function getSupportTicket(id: string): Promise<SupportTicket | null> {
+  if (!id) return null
+  return withDb<SupportTicket | null>(null, async (db) => {
+    const { data, error } = await db.from(TABLE).select(SELECT_COLS).eq('id', id).maybeSingle()
+    if (error || !data) return null
+    return rowToTicket(data as FullRow)
+  })
+}
+
+// Record that a reply was sent — stamps the text + time and flips status to
+// 'replied'. Returns false on failure; never throws.
+export async function markReplied(id: string, replyText: string): Promise<boolean> {
+  if (!id) return false
+  return withDb(false, async (db) => {
+    const { error } = await db
+      .from(TABLE)
+      .update({
+        reply_text: replyText.slice(0, MAX_BODY),
+        replied_at: new Date().toISOString(),
+        status: 'replied',
+      })
+      .eq('id', id)
+    return !error
+  })
+}

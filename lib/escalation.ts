@@ -181,3 +181,19 @@ export async function listEscalations(userId: string): Promise<Escalation[]> {
       .filter((e): e is Escalation => e !== null)
   })
 }
+
+// ALL recent escalations, newest first — the owner-gated admin console reads this
+// (no user scoping; the route gates on owner). Empty on any failure. NEVER throws.
+export async function listRecentEscalations(limit = 100): Promise<Escalation[]> {
+  return withDb<Escalation[]>([], async (db) => {
+    const { data, error } = await db
+      .from(TABLE)
+      .select('id, user_id, email, trip, status, created_at')
+      .order('created_at', { ascending: false })
+      .limit(Math.min(Math.max(1, limit), 250))
+    if (error || !data) return []
+    return (data as EscalationRow[])
+      .map(rowToEscalation)
+      .filter((e): e is Escalation => e !== null)
+  })
+}
