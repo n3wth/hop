@@ -202,7 +202,7 @@ function ResultPanel({ result }: { result: CounterfactualResult }) {
         {unlockedCount > 0 ? (
           <p className="mt-1.5 font-display text-[18px] font-semibold leading-snug tracking-[-0.01em] text-brand-deep">
             You&apos;d unlock {unlockedCount} {unlockedCount === 1 ? 'trip' : 'trips'} worth about{' '}
-            <span className="tabular-nums">${dollarValue.toLocaleString('en-US')}</span> in cash flights.
+            <span className="hop-num">${dollarValue.toLocaleString('en-US')}</span> in cash flights.
           </p>
         ) : closer.length > 0 ? (
           <p className="mt-1.5 font-display text-[17px] font-semibold leading-snug tracking-[-0.01em] text-brand-deep">
@@ -265,7 +265,7 @@ function UnlockedCard({ d }: { d: UnlockedDestination }) {
           </span>
         </div>
         {d.cpp != null ? (
-          <span className="rounded-full bg-brand-light px-2 py-0.5 font-display text-[11px] font-semibold tabular-nums text-brand">
+          <span className="hop-num rounded-full bg-brand-light px-2 py-0.5 text-[11px] font-semibold text-brand">
             {d.cpp.toFixed(1)}¢
           </span>
         ) : null}
@@ -275,7 +275,7 @@ function UnlockedCard({ d }: { d: UnlockedDestination }) {
           {Math.round(d.milesNeeded / 1000)}k pts
           <span className="ml-1 text-text3">· {d.bestProgram}</span>
         </span>
-        <span className="font-display font-semibold tabular-nums text-text2">
+        <span className="hop-num font-semibold text-text2">
           ${d.cashUsd.toLocaleString('en-US')} cash
         </span>
       </div>
@@ -288,7 +288,7 @@ function CloserRow({ d }: { d: ImprovedDestination }) {
   return (
     <div className="flex items-baseline justify-between gap-3 rounded-[10px] bg-sunk px-3.5 py-2 text-[13px]">
       <span className="min-w-0 truncate font-medium text-text">{d.city}</span>
-      <span className="flex-shrink-0 tabular-nums text-text3">
+      <span className="hop-num flex-shrink-0 text-text3">
         {gap > 0 ? `${gap.toLocaleString('en-US')} pts short` : 'almost there'}
       </span>
     </div>

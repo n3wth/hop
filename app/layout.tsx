@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Bricolage_Grotesque, Fraunces } from 'next/font/google'
+import { Bricolage_Grotesque, Fraunces, Geist_Mono } from 'next/font/google'
 import {
   SITE_URL,
   SITE_NAME,
@@ -25,6 +25,15 @@ const fraunces = Fraunces({
   weight: ['600', '700'],
   style: ['italic'],
   variable: '--font-wordmark',
+  display: 'swap',
+})
+
+// Tabular mono for all numbers, prices, cpp values, and miles counts.
+// Geist Mono's optical geometry reads cleanly at small sizes alongside General Sans.
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-geist-mono',
   display: 'swap',
 })
 
@@ -95,7 +104,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${bricolage.variable} ${fraunces.variable}`}>
+    <html lang="en" className={`${bricolage.variable} ${fraunces.variable} ${geistMono.variable}`}>
       <head>
         {/* Body/UI: General Sans (Fontshare — not on Google/next-font). */}
         <link rel="preconnect" href="https://api.fontshare.com" />

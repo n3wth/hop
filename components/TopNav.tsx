@@ -324,7 +324,7 @@ export default function TopNav({
                     title="Your points"
                     className="hidden items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-2 transition-colors hover:bg-sunk lg:flex"
                   >
-                    <span className="font-display text-[14px] font-semibold tabular-nums text-text">
+                    <span className="hop-num text-[14px] font-semibold text-text">
                       {compactPoints(pointsTotal)}
                     </span>
                     <span className="text-[12px] font-medium text-text3">pts</span>

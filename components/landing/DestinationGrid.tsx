@@ -117,7 +117,7 @@ function DestinationCard({
           </span>
           {cppVal !== undefined ? (
             <span
-              className={`rounded-full px-2.5 py-1 text-[11.5px] font-semibold tabular-nums ${TIER_CHIP[tier(cppVal)]}`}
+              className={`hop-num rounded-full px-2.5 py-1 text-[11.5px] font-semibold ${TIER_CHIP[tier(cppVal)]}`}
             >
               {formatValue(cppVal)}
             </span>

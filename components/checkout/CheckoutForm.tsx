@@ -390,7 +390,7 @@ export default function CheckoutForm({
               <div className="text-[10.5px] font-semibold uppercase tracking-[0.06em] text-text3">
                 Total due
               </div>
-              <div className="font-display text-[18px] font-semibold tabular-nums tracking-[-0.01em] text-text">
+              <div className="hop-price text-[18px] text-text">
                 {total}
               </div>
             </div>
@@ -659,7 +659,7 @@ export default function CheckoutForm({
                     <div className="font-display text-[17px] font-semibold leading-none tracking-[-0.01em] text-text">
                       {s.origin ?? '—'}
                     </div>
-                    <div className="mt-1.5 text-[11px] tabular-nums text-text3">
+                    <div className="hop-num mt-1.5 text-[11px] text-text3">
                       {timeOf(s.departingAt)}
                     </div>
                   </div>
@@ -670,7 +670,7 @@ export default function CheckoutForm({
                       <span className="h-px flex-1 bg-border" />
                     </div>
                     {s.flightNumber ? (
-                      <span className="mt-1 text-[10px] tabular-nums text-text3">
+                      <span className="hop-num mt-1 text-[10px] text-text3">
                         {s.flightNumber}
                       </span>
                     ) : null}
@@ -679,7 +679,7 @@ export default function CheckoutForm({
                     <div className="font-display text-[17px] font-semibold leading-none tracking-[-0.01em] text-text">
                       {s.destination ?? '—'}
                     </div>
-                    <div className="mt-1.5 text-[11px] tabular-nums text-text3">
+                    <div className="hop-num mt-1.5 text-[11px] text-text3">
                       {timeOf(s.arrivingAt)}
                     </div>
                   </div>
@@ -694,7 +694,7 @@ export default function CheckoutForm({
                 Total due
                 {count > 1 ? <span className="font-normal text-text3"> · {count} travelers</span> : null}
               </span>
-              <span className="font-display text-[22px] font-semibold tabular-nums tracking-[-0.01em] text-text">
+              <span className="hop-price text-[22px] text-text">
                 {total}
               </span>
             </div>

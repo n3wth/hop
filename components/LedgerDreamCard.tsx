@@ -169,7 +169,7 @@ export default function LedgerDreamCard({
               style={{ background: 'var(--color-good-bg)' }}
               title="cents per point — how hard each point works here"
             >
-              <span className="font-display text-[16px] font-semibold leading-none tabular-nums text-good">
+              <span className="hop-price text-[16px] leading-none text-good">
                 {v.cpp.toFixed(1)}
               </span>
               <span className="text-[10px] font-semibold tracking-[0.02em] text-good">¢/pt</span>
@@ -224,16 +224,16 @@ export default function LedgerDreamCard({
             <div className="mt-3.5 grid grid-cols-2 gap-x-4 gap-y-3.5">
               <div>
                 <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">Award</div>
-                <div className="mt-1 font-display text-[20px] font-semibold leading-none tabular-nums text-text">
+                <div className="hop-price mt-1 text-[20px] leading-none text-text">
                   {compactMiles(v.milesNeeded)}
-                  <span className="ml-1 text-[12px] font-medium text-text3">mi</span>
+                  <span className="font-sans ml-1 text-[12px] font-medium text-text3">mi</span>
                 </div>
               </div>
               <div>
                 <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">
                   Cash you skip
                 </div>
-                <div className="mt-1 font-display text-[20px] font-semibold leading-none tabular-nums text-text">
+                <div className="hop-price mt-1 text-[20px] leading-none text-text">
                   {money(v.cashValue)}
                 </div>
               </div>
@@ -269,11 +269,11 @@ export default function LedgerDreamCard({
               {v.effectiveBalance !== undefined && !v.saveToward ? (
                 <p className="mt-2 text-[12.5px] leading-[1.5] text-text2">
                   You hold{' '}
-                  <b className="font-semibold tabular-nums text-text">
+                  <b className="hop-num font-semibold text-text">
                     {v.effectiveBalance.toLocaleString('en-US')}
                   </b>{' '}
                   toward {v.program} — enough, with{' '}
-                  <span className="tabular-nums">
+                  <span className="hop-num">
                     {Math.max(0, v.effectiveBalance - v.milesNeeded).toLocaleString('en-US')}
                   </span>{' '}
                   to spare.

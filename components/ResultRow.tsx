@@ -152,11 +152,11 @@ export default function ResultRow({ option, rank, maxCpp, index = 0, open, onTog
         </div>
 
         <div className="pt-[18px]">
-          <div className="font-display text-[30px] font-semibold leading-none tracking-[-0.01em] text-text">
+          <div className="hop-price text-[30px] leading-none text-text">
             {isCash
               ? `$${option.cashPrice?.toLocaleString() ?? '—'}`
               : option.miles?.toLocaleString() ?? '—'}
-            <small className="text-[14px] font-medium text-text3">
+            <small className="font-sans text-[14px] font-medium text-text3">
               {isCash ? (oneWay ? ' ow' : ' rt') : ` ${unit}`}
             </small>
           </div>

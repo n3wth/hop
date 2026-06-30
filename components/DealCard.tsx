@@ -132,7 +132,7 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
           >
             <span
               aria-hidden
-              className="font-display text-[17px] font-semibold leading-none tabular-nums"
+              className="hop-price text-[17px] leading-none"
               style={{ color: chip.fg }}
             >
               {value.toFixed(1)}
@@ -172,13 +172,13 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
         <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3.5 border-t border-hair pt-4">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">Miles</div>
-            <div className="mt-1 font-display text-[19px] font-semibold leading-none tabular-nums text-text">
+            <div className="hop-price mt-1 text-[19px] leading-none text-text">
               {compactMiles(dest.typicalAwardMiles)}
             </div>
           </div>
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">vs. cash</div>
-            <div className="mt-1 font-display text-[19px] font-semibold leading-none tabular-nums text-text">
+            <div className="hop-price mt-1 text-[19px] leading-none text-text">
               {cashCompare}
             </div>
           </div>

@@ -357,7 +357,7 @@ function AlertRow({ alert, first }: { alert: StandingOrderAlert; first: boolean 
           {when ? ` · ${when}` : ''}
         </div>
       </div>
-      <span className="flex-shrink-0 font-display text-[15px] font-semibold tabular-nums text-brand">
+      <span className="hop-num flex-shrink-0 text-[15px] font-semibold text-brand">
         {cppText}
         <span className="ml-0.5 text-[11px] font-medium text-text3">cpp</span>
       </span>

@@ -90,7 +90,7 @@ export default async function SignedInHome({
             <span className="text-[11.5px] font-semibold uppercase tracking-[0.16em] text-brand">
               Your points
             </span>
-            <p className="mt-2 font-display text-[40px] font-semibold leading-[1] tracking-[-0.02em] text-text tabular-nums sm:text-[46px]">
+            <p className="hop-price mt-2 text-[40px] leading-[1] text-text sm:text-[46px]">
               {totalPoints.toLocaleString()}
             </p>
             <p className="mt-1 text-[13.5px] leading-[1.5] text-text2">
@@ -102,7 +102,7 @@ export default async function SignedInHome({
                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
                   {personalized ? 'In reach' : 'Worth saving for'}
                 </p>
-                <p className="mt-1 font-display text-[22px] font-semibold leading-none text-text tabular-nums">
+                <p className="hop-price mt-1 text-[22px] leading-none text-text">
                   {personalized ? affordable.length : picks.length}
                 </p>
                 <p className="mt-1 text-[12px] leading-[1.4] text-text2">
@@ -113,7 +113,7 @@ export default async function SignedInHome({
                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
                   Best value
                 </p>
-                <p className="mt-1 font-display text-[22px] font-semibold leading-none text-text tabular-nums">
+                <p className="hop-price mt-1 text-[22px] leading-none text-text">
                   {topCpp !== undefined ? `${topCpp.toFixed(1)}¢/pt` : '—'}
                 </p>
                 <p className="mt-1 truncate text-[12px] leading-[1.4] text-text2">
