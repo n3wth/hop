@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { rateLimit, _resetRateLimitForTest } from '@/lib/rate-limit'
+import { rateLimit, checkRateLimit, _resetRateLimitForTest } from '@/lib/rate-limit'
 
 // The token-bucket limiter that guards the agentic concierge from repetition
 // abuse. Pure aside from a module-level bucket map; reset between cases.
@@ -30,5 +30,20 @@ describe('rateLimit() — token bucket', () => {
     // capacity clamps to >=1, so the first call succeeds.
     _resetRateLimitForTest()
     expect(rateLimit('x', { capacity: 0, refillPerSec: 0 }).ok).toBe(true)
+  })
+})
+
+describe('checkRateLimit() — durable wrapper', () => {
+  beforeEach(() => _resetRateLimitForTest())
+
+  // With no Upstash/KV env (the test environment), it must transparently fall
+  // back to the in-memory bucket — same behavior as rateLimit().
+  it('falls back to the in-memory bucket when no Redis is configured', async () => {
+    const cfg = { capacity: 2, refillPerSec: 0 }
+    expect((await checkRateLimit('fb', cfg)).ok).toBe(true)
+    expect((await checkRateLimit('fb', cfg)).ok).toBe(true)
+    const limited = await checkRateLimit('fb', cfg)
+    expect(limited.ok).toBe(false)
+    expect(limited.retryAfterSec).toBeGreaterThan(0)
   })
 })

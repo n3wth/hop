@@ -39,7 +39,7 @@ import {
   type ConversationMessage,
 } from '@/lib/conversations'
 import { getProfile } from '@/lib/travel-profile'
-import { rateLimit, clientIp } from '@/lib/rate-limit'
+import { checkRateLimit, clientIp } from '@/lib/rate-limit'
 import { profileSummary, type TravelProfile } from '@/lib/travel-profile-model'
 import { getTravelHistory, travelHistorySummary, type TravelHistory } from '@/lib/travel-history'
 import {
@@ -573,7 +573,13 @@ export async function POST(request: Request): Promise<Response> {
   // gets a friendly text-stream "slow down" — never a 429 that breaks /ask.
   const ip = clientIp(request)
   const limitKeys = userId ? [`sub:${userId}`, `ip:${ip}`] : [`ip:${ip}`]
-  const limited = limitKeys.find((k) => !rateLimit(k, CONCIERGE_RATE).ok)
+  let limited = false
+  for (const k of limitKeys) {
+    if (!(await checkRateLimit(k, CONCIERGE_RATE)).ok) {
+      limited = true
+      break
+    }
+  }
   if (limited) {
     return new Response(
       "You're moving fast — give hop a few seconds to catch its breath, then ask again.",
