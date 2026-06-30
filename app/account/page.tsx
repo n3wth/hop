@@ -10,9 +10,12 @@ import AppShell from '@/components/AppShell'
 import Icon from '@/components/Icon'
 import SiteFooter from '@/components/SiteFooter'
 import ProgramsManager from '@/components/ProgramsManager'
+import AirlineStatusManager from '@/components/AirlineStatusManager'
 import GmailHistory from '@/components/GmailHistory'
 import McpAccess from '@/components/McpAccess'
 import { listTokens } from '@/lib/api-tokens'
+import { getProfile } from '@/lib/travel-profile'
+import type { AirlineStatus, TravelProfile } from '@/lib/travel-profile-model'
 import StandingOrders from '@/components/StandingOrders'
 import Counterfactual from '@/components/Counterfactual'
 import type { Balance } from '@/lib/types'
@@ -103,8 +106,32 @@ export default async function AccountPage({
     u.sub ? isGmailConnected(u.sub) : Promise.resolve({ connected: false, email: null }),
     u.sub ? getTravelHistory(u.sub) : Promise.resolve(null),
   ])
-  // "Add to Claude" MCP tokens for this user (list = no secrets).
-  const mcpTokens = u.sub ? await listTokens(u.sub) : []
+  // "Add to Claude" MCP tokens for this user (list = no secrets) + the durable
+  // travel profile (so we can render the saved elite statuses). Both degrade to
+  // empty on any failure.
+  const [mcpTokens, profile] = await Promise.all([
+    u.sub ? listTokens(u.sub) : Promise.resolve([]),
+    u.sub ? getProfile(u.sub) : Promise.resolve({} as TravelProfile),
+  ])
+  const airlineStatuses: AirlineStatus[] = profile.airlineStatuses ?? []
+
+  // AwardWallet sync already carries elite tiers under Balance.status — surface
+  // them as one-tap suggestions for the status editor (deduped by program; the
+  // editor hides any the user already holds). Cash-currency "Transferable" notes
+  // aren't elite tiers, so drop them.
+  const statusSuggestions: AirlineStatus[] = (() => {
+    const seen = new Set<string>()
+    const out: AirlineStatus[] = []
+    for (const b of awBalances) {
+      const tier = b.status?.trim()
+      if (!tier || tier.toLowerCase() === 'transferable') continue
+      const key = b.program.trim().toLowerCase()
+      if (seen.has(key)) continue
+      seen.add(key)
+      out.push({ program: b.program, tier })
+    }
+    return out
+  })()
 
   // Merged held programs (manual + AwardWallet) so Counterfactual's presets are
   // about THIS user's real stack — "+50k of your largest", a swap of their two
@@ -174,6 +201,7 @@ export default async function AccountPage({
         <nav className="mt-8 flex flex-wrap gap-2 border-b border-hair pb-5">
           {[
             { href: '#programs', label: 'Programs' },
+            { href: '#status', label: 'Status' },
             { href: '#trips', label: 'Trips' },
             { href: '#watches', label: 'Watches' },
             { href: '#whatif', label: 'What-if' },
@@ -230,6 +258,20 @@ export default async function AccountPage({
             awReason={awReason}
             awUnconfigured={awUnconfigured}
           />
+        </section>
+
+        {/* elite status — the airline/hotel tiers the user holds. Sits with the
+            travel profile: like programs, it's what hop knows about you, and the
+            concierge reasons over it (lounge access, upgrades, free bags). */}
+        <section id="status" className="mt-10 scroll-mt-24">
+          <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
+            Elite status
+          </h2>
+          <p className="mt-1 text-[13.5px] text-text2">
+            Where you have status — so hop’s concierge factors lounges, upgrades,
+            and free bags into its picks.
+          </p>
+          <AirlineStatusManager statuses={airlineStatuses} suggestions={statusSuggestions} />
         </section>
 
         {/* trips — Gmail travel-history seam (explicit consent). Lives in the
