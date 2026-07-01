@@ -113,7 +113,7 @@ function Confirmed({
     <>
       {/* hero — teal, matches the verdict system */}
       <section
-        className="overflow-hidden rounded-[20px] text-hero-cream lg:rounded-[24px]"
+        className="overflow-hidden rounded-[20px] text-hero-cream lg:rounded-[var(--radius-hero)]"
         style={{ background: 'var(--color-brand)' }}
       >
         <div className="px-6 py-9 sm:px-10">
@@ -129,7 +129,7 @@ function Confirmed({
 
           {order.bookingReference ? (
             <div className="mt-6 inline-flex flex-col rounded-[14px] bg-white/10 px-5 py-3 ring-1 ring-white/15">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#9fe0d6]">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-hero-eyebrow">
                 Booking reference
               </span>
               <span className="font-display text-[24px] font-semibold tracking-[0.04em] text-white">

@@ -131,7 +131,7 @@ export default async function DealsPage({
         {/* agent on-ramp — these are great-value routes in the abstract; hop's
             concierge can say which ones YOUR points actually reach. A door into
             /ask so the static feed isn't a dead end. */}
-        <div className="mx-auto mt-7 flex max-w-[640px] flex-col items-center justify-between gap-3 rounded-[var(--radius-lg)] border border-border bg-surface px-5 py-4 text-center sm:flex-row sm:gap-4 sm:text-left">
+        <div className="mx-auto mt-7 flex max-w-[640px] flex-col items-center justify-between gap-3 rounded-[16px] border border-border bg-surface px-5 py-4 text-center sm:flex-row sm:gap-4 sm:text-left">
           <div className="flex items-center gap-2.5">
             <Icon name="lightbulb" size={18} className="flex-shrink-0 text-brand" />
             <span className="text-[14px] leading-[1.5] text-text2">

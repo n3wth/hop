@@ -30,7 +30,7 @@ export default function Loading() {
       <div className="mx-auto max-w-[var(--container-sm)] pb-4 pt-8 sm:pt-12">
         {/* profile hero */}
         <section
-          className="overflow-hidden rounded-[20px] lg:rounded-[24px]"
+          className="overflow-hidden rounded-[20px] lg:rounded-[var(--radius-hero)]"
           style={{ background: 'var(--color-brand)' }}
         >
           <div className="flex flex-col gap-5 px-6 py-8 sm:flex-row sm:items-center sm:gap-6 sm:px-10">

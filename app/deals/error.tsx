@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import Logo from '@/components/Logo'
 import Icon from '@/components/Icon'
+import Button from '@/components/ui/Button'
 
 // /deals route error boundary. The feed is built from a static dataset, so the
 // page rarely throws — this catches the surrounding failures (session, balance
@@ -50,27 +51,17 @@ export default function DealsError({
       </p>
 
       <div className="hop-rise mt-8 flex flex-wrap items-center justify-center gap-3" style={{ ['--hop-delay' as string]: '220ms' }}>
-        <button
-          type="button"
-          onClick={() => retry()}
-          className="inline-flex items-center gap-[9px] rounded-[14px] bg-brand px-7 py-[15px] text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep"
-        >
+        <Button onClick={() => retry()}>
           <Icon name="swap_horiz" size={18} />
           Try again
-        </button>
-        <Link
-          href="/ask"
-          className="inline-flex items-center gap-[9px] rounded-[14px] border border-border bg-surface px-7 py-[15px] text-[15px] font-semibold text-text transition-colors hover:bg-sunk"
-        >
+        </Button>
+        <Button href="/ask" variant="secondary">
           <Icon name="flight" size={18} />
           Ask hop
-        </Link>
-        <Link
-          href="/"
-          className="inline-flex items-center rounded-[14px] border border-border bg-surface px-7 py-[15px] text-[15px] font-semibold text-text transition-colors hover:bg-sunk"
-        >
+        </Button>
+        <Button href="/" variant="secondary">
           Go home
-        </Link>
+        </Button>
       </div>
 
       {error.digest ? (

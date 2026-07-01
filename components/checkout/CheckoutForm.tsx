@@ -405,7 +405,7 @@ export default function CheckoutForm({
         {expired ? (
           <div
             role="alert"
-            className="mt-6 flex flex-wrap items-center gap-3 rounded-[12px] border border-ok/25 bg-ok-bg px-4 py-3.5 text-[13px] leading-[1.5] text-text"
+            className="mt-6 flex flex-wrap items-center gap-3 rounded-[12px] border border-border bg-sunk px-4 py-3.5 text-[13px] leading-[1.5] text-text"
           >
             <Icon name="schedule" size={16} className="flex-shrink-0 text-text2" />
             <span className="flex-1">The held price lapsed. Refresh to get the latest fare.</span>
