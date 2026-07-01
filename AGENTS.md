@@ -47,13 +47,24 @@ Same invariant as the engine: these are **real, looked-up, date-stamped values, 
 
 # Visual verification on this harness
 
-`npm run build` catches RSC/route errors. To *see* a page, the headless Chromium at
-`/opt/pw-browsers/chromium-*/chrome-linux/chrome` can screenshot **localhost only** (`npx next start`
-on a free port; pass `--virtual-time-budget` so streamed/Suspense content settles). The agent proxy
-**closes Chromium's connection to any external URL** (`ERR_CONNECTION_CLOSED`), so you cannot
-screenshot the Vercel preview from here. Photos also need `UNSPLASH_ACCESS_KEY` (absent locally →
-solid/blur fallback), so local shots verify **layout / spacing / cohesion**, not imagery.
+`npm run build` catches RSC/route errors. To actually *see* a page, screenshot **localhost** with the
+pre-installed headless Chromium — but two gotchas: (1) `next start` will **not persist** as a detached
+background process here, and (2) the agent proxy **closes Chromium's connection to any external URL**
+(`ERR_CONNECTION_CLOSED`), so you can't screenshot the Vercel preview. The working recipe runs the
+server and the shots inside **one** foreground command so the server stays alive during capture:
 
-For the *real* render (photos + prod env), push and let the Vercel **preview** deploy — the human
-reviews it. The Vercel MCP can read the protected preview's **HTML** (`web_fetch_vercel_url`, or
-`get_access_to_vercel_url` for a share link) to check structure, but it returns markup, not pixels.
+```bash
+CHROME=/opt/pw-browsers/chromium-*/chrome-linux/chrome
+UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY node_modules/.bin/next start -p 3200 > /tmp/srv.log 2>&1 &
+SRV=$!; for i in $(seq 1 15); do sleep 2; curl -sf -o /dev/null http://localhost:3200/ && break; done
+$CHROME --headless --no-sandbox --disable-gpu --hide-scrollbars \
+  --virtual-time-budget=12000 --window-size=1280,1600 \
+  --screenshot=/tmp/home.png http://localhost:3200/    # repeat per page
+kill $SRV
+```
+
+`UNSPLASH_ACCESS_KEY` gates destination photos (absent → the solid/blur fallback), and `MOCK=1` swaps
+in cash/awards/balances fixtures. Set both in the environment for full-fidelity local shots; without
+the key you still verify **layout / spacing / cohesion**, just not the imagery. Run a fresh
+`npm run build` before starting the server after any code change (the static pages are prebuilt).
+For the real prod render, push and let the Vercel **preview** deploy — the human reviews it.
