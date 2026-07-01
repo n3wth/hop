@@ -14,7 +14,7 @@ export function PromptInput({ className = '', onSubmit, children, ...props }: Pr
   return (
     <form
       onSubmit={onSubmit}
-      className={`flex items-end gap-2.5 rounded-[22px] border-2 border-border bg-paper px-3.5 py-2.5 transition-colors focus-within:border-brand ${className}`}
+      className={`flex items-end gap-2.5 rounded-[var(--radius-lg)] border-2 border-border bg-paper px-3.5 py-2.5 transition-colors focus-within:border-brand ${className}`}
       {...props}
     >
       {children}
