@@ -1,0 +1,33 @@
+name: Deploy valuations worker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "cloudflare/valuations-worker/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cloudflare/valuations-worker
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      # Requires the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID repo
+      # secrets to be added manually in GitHub settings (Settings > Secrets
+      # and variables > Actions) before this workflow can succeed. That is
+      # expected on first setup — not a bug.
+      - name: Deploy to Cloudflare
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

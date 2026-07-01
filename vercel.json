@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/revalidate-seo",
       "schedule": "0 6 * * 0"
+    },
+    {
+      "path": "/api/cron/valuation-sync",
+      "schedule": "30 13 * * *"
     }
   ]
 }

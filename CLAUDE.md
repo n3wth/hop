@@ -105,6 +105,19 @@ merges **manual** programs (Supabase `hop_manual_balances`, the primary path) wi
 programs it covers, manual fills the rest. Returns `[]` (never throws) when the user has nothing;
 callers decide whether to fall back to mock fixtures.
 
+### Point valuations: static floor, observed ceiling — `lib/valuations.ts` + `lib/valuations-live.ts`
+
+`lib/valuations.ts`'s hand-curated `BASELINE_CPP` table is the permanent fallback for what a
+point/mile is worth (used mainly to ground the `/ask` concierge's prompt) and is never modified by
+this pipeline — it stays pure, with no top-level I/O. `lib/valuations-live.ts` layers real,
+first-party-observed cpp on top: `lib/search.ts#assembleSearch` emits each computed award option's
+cpp as an observation (`lib/valuation-telemetry.ts`, fire-and-forget) to a Cloudflare Worker
+(`cloudflare/valuations-worker/`), which aggregates a trimmed-mean per program; a Vercel cron
+mirrors that aggregate into Supabase (`lib/valuation-overrides.ts`), and a program's live cpp only
+overrides the static baseline once it has **≥20 fresh samples**. The whole seam is gated behind
+`HOP_ENABLE_VALUATION_SYNC` and is fully inert until `cloudflare/valuations-worker/` is deployed
+and its secrets are configured (see ADR 0005).
+
 ### Dual auth — `middleware.ts`
 
 Two layers run on navigation: **Auth0** owns identity and mounts `/auth/*` (its response is

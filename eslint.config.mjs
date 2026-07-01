@@ -16,6 +16,10 @@ const eslintConfig = defineConfig([
     // `eve` framework — see eve/README.md). It is intentionally NOT part of the
     // Next.js app's typecheck/lint/build (also excluded in tsconfig.json).
     "eve/**",
+    // The Cloudflare valuations Worker (cloudflare/valuations-worker/) is a
+    // separate runtime (workerd) with its own package.json/tsconfig, deployed
+    // independently — same reasoning as the eve/** ignore above.
+    "cloudflare/**",
   ]),
 ]);
 

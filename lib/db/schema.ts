@@ -129,3 +129,16 @@ export const escalations = pgTable('hop_escalations', {
   status: text('status').notNull().default('new'),
   createdAt: tz('created_at').defaultNow(),
 })
+
+// Live cents-per-point aggregates sourced from hop's own first-party cash vs
+// award observations (Cloudflare valuations Worker), read/written by
+// lib/valuation-overrides.ts. Mirrors the hop_valuation_overrides table added
+// to utils/supabase/admin.ts's typed schema. program_id is the canonical
+// program id from lib/programs; as_of is when the Worker last aggregated it.
+export const valuationOverrides = pgTable('hop_valuation_overrides', {
+  programId: text('program_id').primaryKey(),
+  cpp: numeric('cpp').notNull(),
+  sampleSize: integer('sample_size').notNull(),
+  asOf: tz('as_of').notNull(),
+  updatedAt: tz('updated_at').defaultNow(),
+})

@@ -334,6 +334,32 @@ interface HopDatabase {
         }
         Relationships: []
       }
+      hop_valuation_overrides: {
+        // Live cents-per-point aggregates, populated by
+        // app/api/cron/valuation-sync/route.ts from the Cloudflare valuations
+        // Worker. See CREATE TABLE in lib/valuation-overrides.ts notes.
+        Row: {
+          program_id: string
+          cpp: number
+          sample_size: number
+          as_of: string
+          updated_at: string | null
+        }
+        Insert: {
+          program_id: string
+          cpp: number
+          sample_size: number
+          as_of: string
+          updated_at?: string | null
+        }
+        Update: {
+          cpp?: number
+          sample_size?: number
+          as_of?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       hop_support_tickets: {
         // Inbound support emails captured as tickets by the Cloudflare support@
         // Worker via POST /api/support-ingest. message_id is the inbound
