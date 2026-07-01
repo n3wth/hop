@@ -92,3 +92,15 @@ export function isConversationMemoryEnabled(): boolean {
   const on = /^(1|true|yes)$/i.test(flag.trim())
   return on && Boolean(process.env.AI_GATEWAY_API_KEY?.trim())
 }
+
+// Inferred-facts ("hop noticed …") is GATED behind an explicit flag AND the AI
+// Gateway key it needs to infer. Off by default: no inference runs, the glass box
+// shows no "noticed" rows, and even flipped on the read/write no-op gracefully
+// until the hop_inferred_facts table exists (withDb fallback). Nothing is ever
+// auto-applied — inferred facts land as PENDING suggestions the user confirms.
+// Flip HOP_ENABLE_INFERRED_FACTS once the table is created.
+export function isInferredFactsEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_INFERRED_FACTS ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && Boolean(process.env.AI_GATEWAY_API_KEY?.trim())
+}

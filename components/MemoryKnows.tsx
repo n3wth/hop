@@ -4,7 +4,8 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Icon from './Icon'
 import { groupFacts, type MemoryFact } from '@/lib/memory-view'
-import { forgetFact } from '@/app/account/memory-actions'
+import type { InferredFact } from '@/lib/inferred-facts'
+import { forgetFact, confirmInference, dismissInference } from '@/app/account/memory-actions'
 
 // "What hop knows about you" — the glass box. Renders the durable facts hop holds
 // (from the user's travel_profile, projected by lib/memory-view) as plain,
@@ -79,15 +80,105 @@ function FactRow({ fact, onForgotten }: { fact: MemoryFact; onForgotten: (id: st
   )
 }
 
-export default function MemoryKnows({ facts }: { facts: MemoryFact[] }) {
+// How each travel-party value reads at the end of "You usually travel …?".
+const PARTY_PHRASE: Record<string, string> = {
+  solo: 'solo',
+  couple: 'as a two',
+  family: 'as a family',
+  group: 'with a group',
+}
+
+// Turn an inferred fact into a warm, first-person question the user answers.
+function describeInference(f: InferredFact): string {
+  const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
+  switch (f.kind) {
+    case 'cabin':
+      return `You usually fly ${cap(f.value)} on long trips?`
+    case 'travelParty':
+      return `You usually travel ${PARTY_PHRASE[f.value] ?? f.value}?`
+    case 'lovedDestinations':
+      return `You keep coming back to ${f.value}?`
+    case 'avoidedDestinations':
+      return `You'd rather skip ${f.value}?`
+  }
+}
+
+// A pending "hop noticed …" suggestion — the user confirms (→ promoted into their
+// stated profile) or dismisses. Two plain buttons, flat, no modal.
+function NoticedRow({ fact, onResolved }: { fact: InferredFact; onResolved: (id: string) => void }) {
+  const router = useRouter()
+  const [pending, startTransition] = useTransition()
+
+  const act = (fn: (id: string) => Promise<{ ok: boolean }>) =>
+    startTransition(async () => {
+      const res = await fn(fact.id)
+      if (res.ok) {
+        onResolved(fact.id)
+        router.refresh()
+      }
+    })
+
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-hair py-3 last:border-b-0">
+      <span className="min-w-0 text-[14px] leading-[1.4] text-text">{describeInference(fact)}</span>
+      <div className="flex flex-shrink-0 items-center gap-2">
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => act(confirmInference)}
+          className="hop-press rounded-full bg-brand px-3.5 py-1.5 text-[12.5px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:opacity-60"
+        >
+          Yes
+        </button>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => act(dismissInference)}
+          className="hop-press rounded-full border border-border bg-paper px-3.5 py-1.5 text-[12.5px] font-semibold text-text2 transition-colors hover:border-text2 disabled:opacity-60"
+        >
+          Not really
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export default function MemoryKnows({
+  facts,
+  noticed = [],
+}: {
+  facts: MemoryFact[]
+  noticed?: InferredFact[]
+}) {
   // Optimistically drop a forgotten row so the UI responds before revalidate.
   const [hidden, setHidden] = useState<Set<string>>(new Set())
+  const [resolved, setResolved] = useState<Set<string>>(new Set())
   const visible = facts.filter((f) => !hidden.has(f.id))
   const groups = groupFacts(visible)
+  const pendingNoticed = noticed.filter((n) => !resolved.has(n.id))
 
   const onForgotten = (id: string) => setHidden((prev) => new Set(prev).add(id))
+  const onResolved = (id: string) => setResolved((prev) => new Set(prev).add(id))
 
-  if (groups.length === 0) {
+  const noticedBlock =
+    pendingNoticed.length > 0 ? (
+      <div>
+        <h3 className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-brand">
+          <Icon name="lightbulb" size={13} />
+          hop noticed
+        </h3>
+        <div className="rounded-[16px] border border-border bg-brand-tint px-4">
+          {pendingNoticed.map((n) => (
+            <NoticedRow key={n.id} fact={n} onResolved={onResolved} />
+          ))}
+        </div>
+        <p className="mt-1 text-[12px] leading-[1.5] text-text3">
+          Guesses from how you chat. Confirm one and hop remembers it for good; dismiss and it won&apos;t ask again.
+        </p>
+      </div>
+    ) : null
+
+  if (groups.length === 0 && !noticedBlock) {
     return (
       <div className="rounded-[16px] border border-dashed border-border bg-paper px-5 py-7 text-center">
         <span className="grid mx-auto h-10 w-10 place-items-center rounded-full bg-brand-light text-brand">
@@ -106,6 +197,7 @@ export default function MemoryKnows({ facts }: { facts: MemoryFact[] }) {
 
   return (
     <div className="flex flex-col gap-6">
+      {noticedBlock}
       {groups.map((g) => (
         <div key={g.group}>
           <h3 className="mb-1 text-[12px] font-semibold uppercase tracking-[0.12em] text-brand">
@@ -118,10 +210,12 @@ export default function MemoryKnows({ facts }: { facts: MemoryFact[] }) {
           </div>
         </div>
       ))}
-      <p className="text-[12.5px] leading-[1.5] text-text3">
-        hop uses these to make its answers fit you. Forget anything you don&apos;t want it to remember — it
-        won&apos;t cite it again.
-      </p>
+      {groups.length > 0 ? (
+        <p className="text-[12.5px] leading-[1.5] text-text3">
+          hop uses these to make its answers fit you. Forget anything you don&apos;t want it to remember — it
+          won&apos;t cite it again.
+        </p>
+      ) : null}
     </div>
   )
 }
