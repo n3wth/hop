@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { topValue, imageQuery } from '@/lib/destinations'
 import { destinationImages } from '@/lib/images'
 import { getUserBalances } from '@/lib/accounts'
+import { getMemoryContext, withoutAvoided, EMPTY_MEMORY_CONTEXT } from '@/lib/memory-context'
 import { getPrefs } from '@/lib/prefs'
 import { auth0 } from '@/lib/auth0'
 import AppShell from '@/components/AppShell'
@@ -51,7 +52,6 @@ export default async function DealsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const deals = topValue(24)
   const { depart, ret } = defaultDates()
   const params = await searchParams
   const fromParam = normalizeOrigin(params.from)
@@ -61,13 +61,18 @@ export default async function DealsPage({
   const cookieStore = await cookies()
   const cookieOrigin = normalizeOrigin(cookieStore.get(ORIGIN_STORAGE_KEY)?.value)
 
-  // Destination photography and the Auth0 session are independent — resolve
-  // them concurrently. Photos are cached per query (day-long revalidate); null
-  // entries fall back to a solid brand-tint tile in the card.
-  const [photos, session] = await Promise.all([
-    destinationImages(deals.map((d) => imageQuery(d))),
-    auth0.getSession(),
-  ])
+  // M5 — compounding: resolve the session first so the signed-in member's STATED
+  // "avoid" places are dropped from the feed BEFORE we fetch photos for the final
+  // set. Value order (cents-per-point) is preserved, so the "ranked by cents per
+  // point" copy stays true. Degrades to today's exact feed when signed out /
+  // unset. Photos are cached per query (day-long revalidate); null entries fall
+  // back to a solid brand-tint tile in the card.
+  const session = await auth0.getSession()
+  const memory = session?.user?.sub
+    ? await getMemoryContext(session.user.sub)
+    : EMPTY_MEMORY_CONTEXT
+  const deals = withoutAvoided(topValue(24), memory.avoided)
+  const photos = await destinationImages(deals.map((d) => imageQuery(d)))
   const su = session?.user
   const user = su
     ? {
