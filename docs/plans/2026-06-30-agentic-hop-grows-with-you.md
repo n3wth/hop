@@ -8,6 +8,23 @@
 
 ---
 
+## Status (living)
+
+The **memory spine is shipped** — all four axes are on `main`, flag-gated (dark):
+
+- **M1 — glass box** ✅ (#76) — `/account` "What hop knows about you"; reversible stated facts.
+- **M2 — durable conversation memory** ✅ (#86) — `hop_conversation_summary`, rolling summaries.
+- **M3 — inferred facts** ✅ (#90) — `hop_inferred_facts`, "hop noticed…" confirm/dismiss.
+- **M4 — observed outcomes** ✅ (#93) — `hop_memory_outcomes`, "Not for me" → "hop observed…".
+
+To turn the spine on (migrations + flags + verification), see
+[`docs/enabling-agentic-memory.md`](../enabling-agentic-memory.md).
+
+**Next:** M5 (compounding everywhere — one `lib/memory-context.ts` resolver feeds home/deals),
+then M6 (first real action — Add-to-Calendar / Watch-this).
+
+---
+
 ## 1. Vision
 
 Today hop answers one sharp question — *points or cash?* — brilliantly, but it has a goldfish memory and no hands. It remembers only what you literally typed into `save_profile_fact`, its 40-turn thread (`lib/conversations.ts`, `MAX_MESSAGES = 40`) silently rolls off, the Gmail learning seam is gated dark, and nothing it observes — a booked trip, an ignored standing-order alert, the fact you ask about Tokyo every session — ever feeds back into the next answer. And when hop reaches a verdict, all it can do is *tell* you; it can't put the trip on your calendar, draft the itinerary, or watch it for you without you wiring a form.
