@@ -126,3 +126,15 @@ export function isInferredFactsEnabled(): boolean {
   const on = /^(1|true|yes)$/i.test(flag.trim())
   return on && Boolean(process.env.AI_GATEWAY_API_KEY?.trim())
 }
+
+// Observed-outcomes ("hop learned from what you DO") is GATED behind an explicit
+// flag ONLY — the aggregator is DETERMINISTIC (no LLM), so unlike the memory /
+// inference seams it needs no gateway key. Off by default: verdict cards show no
+// "Not for me" dismiss, nothing is recorded, and the glass box shows no "observed"
+// rows. Even flipped on the read/write no-op gracefully until the
+// hop_memory_outcomes table exists (withDb fallback). Flip
+// HOP_ENABLE_OBSERVED_OUTCOMES once the table is created.
+export function isObservedOutcomesEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_OBSERVED_OUTCOMES ?? ''
+  return /^(1|true|yes)$/i.test(flag.trim())
+}

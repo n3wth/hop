@@ -323,6 +323,19 @@ describe('personalizeBlocks() — same question, different blocks per user', () 
     expect(personalizeBlocks(blocks, {}, false)).toEqual(blocks)
   })
 
+  it('stamps verdict_card.dismissable ONLY when canDismiss (server-gated)', () => {
+    const off = personalizeBlocks(torn, {}, false) as VerdictCardBlock[]
+    expect(off[0].dismissable).toBeUndefined()
+    const on = personalizeBlocks(torn, {}, false, true) as VerdictCardBlock[]
+    expect(on[0].dismissable).toBe(true)
+    // A forged model-supplied dismissable must not survive when the seam is off.
+    const forged: A2UIBlock[] = [
+      { type: 'verdict_card', code: 'NRT', reason: 'x', dismissable: true } as VerdictCardBlock,
+    ]
+    const scrubbed = personalizeBlocks(forged, {}, false, false) as VerdictCardBlock[]
+    expect(scrubbed[0].dismissable).toBeUndefined()
+  })
+
   it('is pure — does not mutate the input blocks', () => {
     const input: A2UIBlock[] = [{ type: 'verdict_card', code: 'NRT', reason: 'x', cabin: 'first' }]
     const snapshot = JSON.parse(JSON.stringify(input))

@@ -147,6 +147,34 @@ interface HopDatabase {
         }
         Relationships: []
       }
+      hop_memory_outcomes: {
+        // Append-only log of discrete OBSERVED signals (today: a verdict card the
+        // user dismissed with "Not for me"). A pure aggregator derives human
+        // "hop observed …" rows + soft prompt context. Holds NO economics — subject
+        // is a place label, cabin is optional context. See lib/memory-outcomes.ts.
+        Row: {
+          id: string
+          user_id: string
+          kind: string
+          subject: string
+          cabin: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          kind: string
+          subject: string
+          cabin?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          kind?: string
+          subject?: string
+          cabin?: string | null
+        }
+        Relationships: []
+      }
       hop_user_accounts: {
         Row: {
           user_id: string
