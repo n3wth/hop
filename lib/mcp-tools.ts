@@ -13,6 +13,7 @@ import { priceTrip, type PriceTripBalance } from '@/lib/concierge-tools'
 import { assembleSearch, verdictSummary } from '@/lib/search'
 import { canonicalizeProgram, programById, listTransferablePrograms } from '@/lib/programs'
 import { partnersOf, transfersTo, effectiveBalanceFor } from '@/lib/transfers'
+import { cardForProgram, formatBonus } from '@/lib/card-affiliates'
 import type { Balance, FlightOption } from '@/lib/types'
 
 // Shared balances input: a list of { program, balance }. `program` is free-text
@@ -332,140 +333,6 @@ export async function runComparePrograms(args: {
 
 // --- best_card_for_program -------------------------------------------------
 
-// Top earn card per program, keyed by canonical lib/programs id.
-//
-// TEMPORARY LOCAL MAP. lib/card-affiliates.ts is being built in a parallel PR
-// (roadmap WS2 — affiliate links + earn-card data). When it lands, this map
-// should be DELETED and best_card_for_program() should source the card +
-// affiliate link from lib/card-affiliates.ts instead. Until then this small
-// static set covers the major transferable currencies + a few popular co-brands
-// so the tool is useful immediately. Figures are public, well-known earn rates;
-// `applyUrl` points at the issuer's own application page (no affiliate tag yet —
-// that's WS2's job). NEVER computed economics here — this is reference data.
-interface CardOffer {
-  card: string
-  issuer: string
-  earnRate: string // headline earn on the program's everyday/bonus spend
-  bonus: string // current/typical welcome offer (verify live before applying)
-  annualFee: string
-  applyUrl: string
-}
-
-const TOP_CARD_BY_PROGRAM: Record<string, CardOffer> = {
-  'amex-mr': {
-    card: 'American Express Gold Card',
-    issuer: 'American Express',
-    earnRate: '4x at restaurants & U.S. supermarkets (to $25k/yr), 3x on flights',
-    bonus: '60,000 Membership Rewards after $6,000 spend in 6 months',
-    annualFee: '$325',
-    applyUrl: 'https://www.americanexpress.com/us/credit-cards/card/gold-card/',
-  },
-  'chase-ur': {
-    card: 'Chase Sapphire Preferred',
-    issuer: 'Chase',
-    earnRate: '3x dining, 2x travel, 5x on Chase Travel',
-    bonus: '60,000 Ultimate Rewards after $5,000 spend in 3 months',
-    annualFee: '$95',
-    applyUrl: 'https://creditcards.chase.com/rewards-credit-cards/sapphire/preferred',
-  },
-  'citi-typ': {
-    card: 'Citi Strata Premier',
-    issuer: 'Citi',
-    earnRate: '3x air/hotels, restaurants, supermarkets & gas',
-    bonus: '75,000 ThankYou Points after $4,000 spend in 3 months',
-    annualFee: '$95',
-    applyUrl: 'https://www.citi.com/credit-cards/citi-strata-premier-credit-card',
-  },
-  'capital-one': {
-    card: 'Capital One Venture X',
-    issuer: 'Capital One',
-    earnRate: '2x everywhere, 5x flights & 10x hotels via Capital One Travel',
-    bonus: '75,000 miles after $4,000 spend in 3 months',
-    annualFee: '$395',
-    applyUrl: 'https://www.capitalone.com/credit-cards/venture-x/',
-  },
-  bilt: {
-    card: 'Bilt Mastercard',
-    issuer: 'Wells Fargo',
-    earnRate: '1x rent (no fee), 3x dining, 2x travel',
-    bonus: 'No welcome bonus; double points on the 1st of each month',
-    annualFee: '$0',
-    applyUrl: 'https://www.biltrewards.com/card',
-  },
-  united: {
-    card: 'United Explorer Card',
-    issuer: 'Chase',
-    earnRate: '2x United, dining & hotels',
-    bonus: '60,000 miles after $3,000 spend in 3 months',
-    annualFee: '$0 first year, then $150',
-    applyUrl: 'https://creditcards.chase.com/travel-credit-cards/united/explorer',
-  },
-  delta: {
-    card: 'Delta SkyMiles Gold American Express',
-    issuer: 'American Express',
-    earnRate: '2x Delta, restaurants & U.S. supermarkets',
-    bonus: '50,000 miles after $2,000 spend in 6 months',
-    annualFee: '$0 first year, then $150',
-    applyUrl: 'https://www.americanexpress.com/us/credit-cards/card/delta-skymiles-gold/',
-  },
-  american: {
-    card: 'Citi / AAdvantage Platinum Select',
-    issuer: 'Citi',
-    earnRate: '2x American, restaurants & gas',
-    bonus: '50,000 miles after $2,500 spend in 3 months',
-    annualFee: '$0 first year, then $99',
-    applyUrl: 'https://www.citi.com/credit-cards/citi-aadvantage-platinum-select-credit-card',
-  },
-  alaska: {
-    card: 'Alaska Airlines Visa Signature',
-    issuer: 'Bank of America',
-    earnRate: '3x Alaska, 2x gas, EV charging, local transit & cable',
-    bonus: '50,000 miles + Companion Fare after $3,000 spend in 90 days',
-    annualFee: '$95',
-    applyUrl: 'https://www.bankofamerica.com/credit-cards/products/alaska-airlines-credit-card/',
-  },
-  southwest: {
-    card: 'Southwest Rapid Rewards Priority',
-    issuer: 'Chase',
-    earnRate: '3x Southwest, 2x transit, internet, cable & phone',
-    bonus: '50,000 points after $1,000 spend in 3 months',
-    annualFee: '$149',
-    applyUrl: 'https://creditcards.chase.com/travel-credit-cards/southwest/priority',
-  },
-  hyatt: {
-    card: 'World of Hyatt Credit Card',
-    issuer: 'Chase',
-    earnRate: '4x Hyatt, 2x dining, flights, transit & gym',
-    bonus: '30,000 points after $3,000 spend in 3 months',
-    annualFee: '$95',
-    applyUrl: 'https://creditcards.chase.com/travel-credit-cards/world-of-hyatt',
-  },
-  marriott: {
-    card: 'Marriott Bonvoy Boundless',
-    issuer: 'Chase',
-    earnRate: '6x Marriott, 3x on first $6k/yr in combined everyday categories',
-    bonus: '3 Free Night Awards after $3,000 spend in 3 months',
-    annualFee: '$95',
-    applyUrl: 'https://creditcards.chase.com/travel-credit-cards/marriott-bonvoy/boundless',
-  },
-  hilton: {
-    card: 'Hilton Honors American Express Surpass',
-    issuer: 'American Express',
-    earnRate: '12x Hilton, 6x U.S. dining, supermarkets & gas',
-    bonus: '130,000 points after $3,000 spend in 6 months',
-    annualFee: '$150',
-    applyUrl: 'https://www.americanexpress.com/us/credit-cards/card/hilton-honors-surpass/',
-  },
-  ihg: {
-    card: 'IHG One Rewards Premier',
-    issuer: 'Chase',
-    earnRate: '10x IHG, 5x travel/dining/gas, 3x everywhere else',
-    bonus: '5 Free Nights after $5,000 spend in 3 months',
-    annualFee: '$99',
-    applyUrl: 'https://creditcards.chase.com/travel-credit-cards/ihg/premier',
-  },
-}
-
 export const bestCardForProgramSchema = {
   program: z
     .string()
@@ -474,17 +341,17 @@ export const bestCardForProgramSchema = {
 
 // The top earn card for a program: name, issuer, headline earn rate, welcome
 // bonus, annual fee, and an application link. `program` is canonicalized so
-// "Chase", "chase ur", "Ultimate Rewards" all resolve. Returns an { error }
-// shape (never throws) when the program is unknown or no card is mapped yet.
-//
-// NB: card data is currently a small local map (TOP_CARD_BY_PROGRAM). It should
-// later source from lib/card-affiliates.ts (parallel PR) for affiliate links.
+// "Chase", "chase ur", "Ultimate Rewards" all resolve. Sources the card from
+// lib/card-affiliates.ts — the single table shared with the UI's affiliate CTA,
+// so this tool and the app can never disagree on a card's bonus or fee. Returns
+// an { error } shape (never throws) when the program is unknown or no card is
+// mapped yet (e.g. hotels — lib/card-affiliates.ts only covers flights).
 export function runBestCardForProgram(args: { program: string }) {
   const canon = canonicalizeProgram(args.program)
   if (!canon) {
     return { error: `Unknown program "${args.program}".`, program: args.program }
   }
-  const offer = TOP_CARD_BY_PROGRAM[canon.id]
+  const offer = cardForProgram(args.program)
   if (!offer) {
     return {
       error: `No earn card mapped for "${canon.name}" yet.`,
@@ -496,10 +363,10 @@ export function runBestCardForProgram(args: { program: string }) {
     program: canon.name,
     programId: canon.id,
     transferable: canon.transferable,
-    card: offer.card,
+    card: offer.cardName,
     issuer: offer.issuer,
     earnRate: offer.earnRate,
-    bonus: offer.bonus,
+    bonus: formatBonus(offer),
     annualFee: offer.annualFee,
     applyUrl: offer.applyUrl,
     note: 'Earn rates & bonuses change often — verify on the issuer page before applying.',

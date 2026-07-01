@@ -5,11 +5,14 @@ import {
   listValuations,
   valuationsByName,
   clampCpp,
+  walletValue,
+  WALLET_VALUE_CAVEAT,
   GENERIC_BASELINE,
   MIN_CPP,
   MAX_CPP,
 } from '../valuations'
 import { PROGRAMS, programById } from '../programs'
+import type { Balance } from '../types'
 
 describe('baseline table coverage', () => {
   it('prices every canonical program', () => {
@@ -99,5 +102,48 @@ describe('registry integration', () => {
     for (const id of Object.keys(listValuations())) {
       expect(programById(id), `${id} is not a canonical program`).toBeDefined()
     }
+  })
+})
+
+describe('walletValue()', () => {
+  it('returns 0 for empty, missing, or falsy balances — never throws', () => {
+    expect(walletValue([])).toBe(0)
+    expect(walletValue(null)).toBe(0)
+    expect(walletValue(undefined)).toBe(0)
+  })
+
+  it('canonicalizes free-text program names before pricing', () => {
+    const balances: Balance[] = [
+      { program: 'Amex Membership Rewards', code: 'AX', balance: 100_000 },
+    ]
+    // 100k Amex MR at 2.0cpp = $2000, canonicalized via lib/programs.
+    expect(walletValue(balances)).toBe(2000)
+  })
+
+  it('falls back to GENERIC_BASELINE for an unrecognized program', () => {
+    const balances: Balance[] = [{ program: 'Mystery Rewards Co', code: 'MR', balance: 10_000 }]
+    expect(walletValue(balances)).toBe(Math.round(10_000 * GENERIC_BASELINE) / 100)
+  })
+
+  it('sums a mix of known and unknown programs and rounds to the nearest dollar', () => {
+    const balances: Balance[] = [
+      { program: 'Amex Membership Rewards', code: 'AX', balance: 100_000 }, // $2000 @ 2.0cpp
+      { program: 'Hilton Honors', code: 'HH', balance: 50_000 }, // $175 @ 0.35cpp
+      { program: 'Not A Real Program', code: 'NR', balance: 10_000 }, // $100 @ GENERIC_BASELINE
+    ]
+    expect(walletValue(balances)).toBe(2275)
+  })
+
+  it('ignores non-positive or malformed balance entries instead of throwing', () => {
+    const balances = [
+      { program: 'Amex Membership Rewards', code: 'AX', balance: 0 },
+      { program: 'Delta SkyMiles', code: 'DL', balance: -500 },
+      { program: 'Chase Ultimate Rewards', code: 'UR', balance: Number.NaN },
+    ] as Balance[]
+    expect(walletValue(balances)).toBe(0)
+  })
+
+  it('exposes a non-empty caveat string', () => {
+    expect(WALLET_VALUE_CAVEAT.length).toBeGreaterThan(0)
   })
 })

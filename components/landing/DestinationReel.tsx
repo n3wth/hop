@@ -81,16 +81,14 @@ export default async function DestinationReel() {
   const photos = await destinationImages(picks.map((d) => imageQuery(d)))
 
   return (
-    <section
-      aria-label="Where your points could take you"
-      className="-mx-4 sm:-mx-8 lg:-mx-16"
-    >
-      <p className="mb-4 px-4 text-center text-[12px] font-semibold uppercase tracking-[0.18em] text-brand sm:px-8 lg:px-16">
+    <section aria-label="Where your points could take you">
+      <p className="mb-4 text-center text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
         {destinations.length} cities within reach on points
       </p>
-      {/* A static row the visitor scrolls themselves — snap, hidden scrollbar,
-          edge padding so the first/last tiles aren't flush to the viewport. */}
-      <div className="flex snap-x gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:gap-4 sm:px-8 lg:px-16 [&::-webkit-scrollbar]:hidden">
+      {/* A static row the visitor scrolls themselves, aligned to the page grid
+          (no full-bleed breakout): first tile lines up with the content column;
+          tiles scroll horizontally within it. Snap + hidden scrollbar. */}
+      <div className="flex snap-x gap-3 overflow-x-auto pb-2 [scrollbar-width:none] sm:gap-4 [&::-webkit-scrollbar]:hidden">
         {picks.map((d) => (
           <Tile key={d.code} d={d} photo={photos[imageQuery(d)]} />
         ))}

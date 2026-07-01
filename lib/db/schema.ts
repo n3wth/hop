@@ -55,6 +55,33 @@ export const conversations = pgTable('hop_conversations', {
   updatedAt: tz('updated_at').defaultNow(),
 })
 
+// Rolling conversation MEMORY — one durable summary per user of the older turns
+// that scroll off the live thread (hop_conversations caps at 40). Lets a resumed
+// thread stay context-aware instead of amnesiac. Written fire-and-forget by the
+// concierge when memory is enabled; read into the agent's system prompt. Holds
+// NO economics (the engine owns every number) — just durable human context.
+export const conversationSummary = pgTable('hop_conversation_summary', {
+  userId: text('user_id').primaryKey(),
+  summary: text('summary').notNull().default(''),
+  updatedAt: tz('updated_at').defaultNow(),
+})
+
+// INFERRED facts — durable preferences hop noticed from how the traveler chats
+// (cabin lean, who they travel with, places they gravitate to / away from). NOT
+// stated facts: each lands as a confidence-scored PENDING suggestion the user
+// confirms (→ promoted to their stated travel_profile) or dismisses (→ rejected,
+// never re-suggested). Holds NO economics. Deduped per (user, kind, value).
+export const inferredFacts = pgTable('hop_inferred_facts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull(),
+  kind: text('kind').notNull(),
+  value: text('value').notNull(),
+  confidence: numeric('confidence').notNull().default('0'),
+  status: text('status').notNull().default('pending'),
+  createdAt: tz('created_at').defaultNow(),
+  updatedAt: tz('updated_at').defaultNow(),
+})
+
 export const bookings = pgTable('hop_bookings', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: text('user_id').notNull(),

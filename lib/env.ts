@@ -102,3 +102,27 @@ export function isValuationSyncEnabled(): boolean {
   const on = /^(1|true|yes)$/i.test(flag.trim())
   return on && hasEnv('HOP_VALUATION_WORKER_URL') && hasEnv('HOP_VALUATION_SYNC_SECRET')
 }
+
+// Durable conversation MEMORY (rolling summaries of older concierge turns) is
+// GATED behind an explicit flag AND the AI Gateway key it needs to condense. Off
+// by default: the concierge reads no summary and writes none, and even when the
+// flag is flipped the read/write no-op gracefully until the hop_conversation_summary
+// table exists (withDb returns the fallback). Flip HOP_ENABLE_CONVO_MEMORY once
+// the table is created to let resumed threads stay context-aware.
+export function isConversationMemoryEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_CONVO_MEMORY ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && Boolean(process.env.AI_GATEWAY_API_KEY?.trim())
+}
+
+// Inferred-facts ("hop noticed …") is GATED behind an explicit flag AND the AI
+// Gateway key it needs to infer. Off by default: no inference runs, the glass box
+// shows no "noticed" rows, and even flipped on the read/write no-op gracefully
+// until the hop_inferred_facts table exists (withDb fallback). Nothing is ever
+// auto-applied — inferred facts land as PENDING suggestions the user confirms.
+// Flip HOP_ENABLE_INFERRED_FACTS once the table is created.
+export function isInferredFactsEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_INFERRED_FACTS ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && Boolean(process.env.AI_GATEWAY_API_KEY?.trim())
+}

@@ -25,7 +25,7 @@ import {
   destinationByCode,
   type Destination,
 } from '@/lib/destinations'
-import { valuationsByName } from '@/lib/valuations'
+import { valuationsByName, walletValue } from '@/lib/valuations'
 import { liveValuationsByName } from '@/lib/valuations-live'
 import { effectiveBalanceFor } from '@/lib/transfers'
 import { POINTS_THRESHOLD_CPP } from '@/lib/search'
@@ -39,6 +39,8 @@ import {
   sanitizeMessages,
   type ConversationMessage,
 } from '@/lib/conversations'
+import { getConversationMemory, updateConversationMemory } from '@/lib/conversation-memory'
+import { proposeInferredFacts } from '@/lib/inferred-facts'
 import { getProfile } from '@/lib/travel-profile'
 import { checkRateLimit, clientIp } from '@/lib/rate-limit'
 import { profileSummary, type TravelProfile } from '@/lib/travel-profile-model'
@@ -272,6 +274,18 @@ function balancesSummary(context?: ConciergeContext): string {
   if (total !== undefined) {
     lines.push(`- Total usable points: ${total.toLocaleString('en-US')}`)
   }
+  // Engine-computed wallet dollar total (lib/valuations#walletValue) — the ONLY
+  // dollar figure for "the whole wallet" the model may ever state. Injected here
+  // so the model restates this number instead of summing balances x cpp itself,
+  // which could drift from the engine's rounding/coverage (see P2 review finding).
+  if (programs.length) {
+    const dollars = walletValue(
+      programs.map((p) => ({ program: p.program, code: p.program, balance: p.balance })),
+    )
+    lines.push(
+      `- Engine-computed wallet dollar value (typical baseline, ALL programs combined): ~$${dollars.toLocaleString('en-US')}`,
+    )
+  }
   return lines.join('\n')
 }
 
@@ -289,6 +303,7 @@ export function buildPrompt(
     '- NEVER invent specific flight prices, fares, or live award availability. Frame every suggestion from the destinations dataset.',
     '- Match suggestions to the destinations dataset by IATA code. Do not suggest places not in the dataset.',
     "- Respect the user's points balances: prefer destinations they can actually afford with the points they have.",
+    '- NEVER sum or multiply balances against the cpp table yourself to state a total wallet dollar value. If asked what the whole wallet is worth, restate ONLY the "Engine-computed wallet dollar value" figure below — never compute your own.',
     '- Be warm, concrete, and concise — a few sentences, full of wanderlust but practical. No emoji spam, no hype.',
     '- When it helps, say roughly how many points a trip needs (from the dataset) and which program books it well.',
     '',
@@ -326,9 +341,11 @@ function buildAgenticSystem(
   profile?: TravelProfile,
   history?: TravelHistory,
   liveValuations?: Record<string, number>,
+  memory?: string,
 ): string {
   const profileBlock = profileSummary(profile)
   const historyBlock = travelHistorySummary(history)
+  const memoryBlock = (memory ?? '').trim()
   // True only when the visitor has real balances in play — gates the ownership
   // voice (no "your points" for a signed-out / no-balance visitor).
   const hasBalances = (context?.programs?.length ?? 0) > 0
@@ -353,6 +370,7 @@ function buildAgenticSystem(
     '- For open-ended INSPIRATION ("where should I go", "somewhere warm") without a specific date, RECOMMEND from the curated destinations dataset below (match by IATA code) via price_trip. For a SPECIFIC route + date — or any airport not in the dataset — call search_flights instead; it prices any real airport live, so you are not limited to the dataset there. You may freely build itineraries, plans, and give travel advice for ANY place the user names.',
     '- NEVER invent flight prices, fares, miles, CPP, or award availability. Numbers come from price_trip or search_flights; live facts come from web_search/get_weather. Every points/miles/cash/CPP figure in your PROSE must match what the tool actually returned for that exact destination/route — never round it into a different number or imply affordability the engine did not. If a tool reports a degraded section (cash or awards unavailable), say so plainly rather than filling the gap. Never invent visa rules, prices, or hard facts — if unsure, say so or web_search.',
     '- The "Points valuations" table below is a REFERENCE-ONLY typical value per program — never multiply it by a balance yourself to state a dollar figure (e.g. do not say "your 50,000 points are worth $1,200" by doing that math). A specific trip\'s real dollar value, miles needed, or affordability ALWAYS comes from price_trip or search_flights for that exact destination/route, never from this table.',
+    '- NEVER sum or multiply the balances and cpp table below yourself to state a total wallet dollar value. If asked what the whole wallet/all points combined are worth, restate ONLY the "Engine-computed wallet dollar value" figure below — never compute your own from the per-program numbers.',
     "- Prefer destinations the user can actually afford with the points they hold.",
     '- Honor the profile: respect dietary/accessibility/cabin needs and NEVER suggest a destination the user listed as avoided.',
     '- After tool calls, weave the real figures into a flowing 1-4 sentence answer. Mention how many points a trip needs and which program books it.',
@@ -378,6 +396,13 @@ function buildAgenticSystem(
       ? `This traveler's past-trip patterns (from their connected travel history):\n${historyBlock}`
       : "No travel history is connected yet (Gmail import is coming soon), so reason only from what they tell you.",
     '',
+    // Durable memory of earlier turns that have scrolled off the live thread.
+    // CONTEXT ONLY — never authoritative for numbers; always re-check live
+    // figures with the tools. Empty string when the memory seam is off/absent.
+    memoryBlock
+      ? `What you remember from earlier in your history with this traveler (older turns that scrolled off — use it for continuity, but it is NOT a source of prices/miles/CPP; always re-check live figures with your tools):\n${memoryBlock}`
+      : '',
+    '',
     context?.homeAirport
       ? `The user flies from ${context.homeAirport.toUpperCase()}. Favor trips that make sense from there and mention it naturally.`
       : "The user hasn't set a home airport. Keep suggestions origin-agnostic, or gently suggest they set one.",
@@ -396,8 +421,9 @@ export function buildAgenticSystemForTest(
   profile?: TravelProfile,
   history?: TravelHistory,
   liveValuations?: Record<string, number>,
+  memory?: string,
 ): string {
-  return buildAgenticSystem(context, profile, history, liveValuations)
+  return buildAgenticSystem(context, profile, history, liveValuations, memory)
 }
 
 // Build the message list threaded into streamText. Merges any SERVER-persisted
@@ -613,9 +639,14 @@ export async function POST(request: Request): Promise<Response> {
   try {
     // Load MEMORY for signed-in users (all helpers degrade to empty, never
     // throw). Anonymous users get empty profile/history + client-only thread.
-    const [persisted, profile, history] = userId
-      ? await Promise.all([getConversation(userId), getProfile(userId), getTravelHistory(userId)])
-      : [[] as ConversationMessage[], {} as TravelProfile, undefined]
+    const [persisted, profile, history, memory] = userId
+      ? await Promise.all([
+          getConversation(userId),
+          getProfile(userId),
+          getTravelHistory(userId),
+          getConversationMemory(userId),
+        ])
+      : [[] as ConversationMessage[], {} as TravelProfile, undefined, '']
 
     const messages = buildMessages(question, body?.messages, persisted)
     const liveValuations = await liveValuationsByName()
@@ -623,7 +654,7 @@ export async function POST(request: Request): Promise<Response> {
     const tools = buildConciergeTools(context?.programs ?? [], userId)
     const result = streamText({
       model: gateway(GATEWAY_MODEL),
-      system: buildAgenticSystem(context, profile, history, liveValuations),
+      system: buildAgenticSystem(context, profile, history, liveValuations, memory),
       // MULTI-TURN: thread the conversation (prior turns + this question) so the
       // agent answers in context. Single-question back-compat is preserved —
       // buildMessages yields a one-element [user] array when there's no history.
@@ -647,6 +678,22 @@ export async function POST(request: Request): Promise<Response> {
           ? [...messages, { role: 'assistant' as const, content: answer }]
           : messages
         void saveConversation(userId, next)
+        // Fold older turns into durable memory (gated, fire-and-forget). Uses the
+        // FULL prior thread the client resends — not the 40-capped `messages` — so
+        // turns past the live window aren't lost. No-ops entirely when disabled.
+        const fullPrior = Array.isArray(body?.messages)
+          ? (body.messages as ConversationMessage[])
+          : []
+        const fullThread: ConversationMessage[] = [
+          ...fullPrior,
+          { role: 'user', content: question },
+          ...(answer ? [{ role: 'assistant' as const, content: answer }] : []),
+        ]
+        void updateConversationMemory(userId, fullThread)
+        // Infer durable preferences from the conversation (gated, fire-and-forget).
+        // Lands as PENDING "hop noticed" suggestions the user confirms/dismisses in
+        // the /account glass box — nothing is ever auto-applied.
+        void proposeInferredFacts(userId, fullThread)
       },
     })
 

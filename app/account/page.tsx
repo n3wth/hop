@@ -17,6 +17,7 @@ import McpAccess from '@/components/McpAccess'
 import { listTokens } from '@/lib/api-tokens'
 import { getProfile } from '@/lib/travel-profile'
 import { projectProfile } from '@/lib/memory-view'
+import { listPendingInferredFacts } from '@/lib/inferred-facts'
 import MemoryKnows from '@/components/MemoryKnows'
 import type { AirlineStatus, TravelProfile } from '@/lib/travel-profile-model'
 import StandingOrders from '@/components/StandingOrders'
@@ -112,9 +113,10 @@ export default async function AccountPage({
   // "Add to Claude" MCP tokens for this user (list = no secrets) + the durable
   // travel profile (so we can render the saved elite statuses). Both degrade to
   // empty on any failure.
-  const [mcpTokens, profile] = await Promise.all([
+  const [mcpTokens, profile, inferred] = await Promise.all([
     u.sub ? listTokens(u.sub) : Promise.resolve([]),
     u.sub ? getProfile(u.sub) : Promise.resolve({} as TravelProfile),
+    u.sub ? listPendingInferredFacts(u.sub) : Promise.resolve([]),
   ])
   const airlineStatuses: AirlineStatus[] = profile.airlineStatuses ?? []
 
@@ -245,7 +247,7 @@ export default async function AccountPage({
             Forget anything you&apos;d rather it didn&apos;t keep.
           </p>
           <div className="mt-4">
-            <MemoryKnows facts={projectProfile(profile)} />
+            <MemoryKnows facts={projectProfile(profile)} noticed={inferred} />
           </div>
         </section>
 

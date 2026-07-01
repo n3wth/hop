@@ -4,6 +4,7 @@ import { auth0 } from '@/lib/auth0'
 import { mockBalances } from '@/lib/mock'
 import { getPrefs, type UserPrefs } from '@/lib/prefs'
 import { getUserBalances } from '@/lib/accounts'
+import { walletValue } from '@/lib/valuations'
 import { ORIGIN_STORAGE_KEY } from '@/lib/origin-context'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
@@ -77,11 +78,13 @@ export default async function Home() {
   // programs sees a genuine empty/onboarding state, never fabricated balances.
   let programs = 0
   let totalPoints = 0
+  let pointsWorth = 0
   if (user) {
     const useMock = real.length === 0 && /^(1|true|yes)$/i.test(process.env.MOCK ?? '')
     const balances = real.length > 0 ? real : useMock ? mockBalances() : []
     programs = balances.length
     totalPoints = balances.reduce((sum, b) => sum + b.balance, 0)
+    pointsWorth = walletValue(balances)
   }
 
   const first = user?.name?.trim().split(' ')[0]
@@ -110,6 +113,7 @@ export default async function Home() {
             first={first}
             programs={programs}
             totalPoints={totalPoints}
+            pointsWorth={pointsWorth}
             seed={homeSeed}
             hasHomeAirport={!!prefs.homeAirport}
             heroBackdrop={heroBackdrop}

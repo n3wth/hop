@@ -47,13 +47,23 @@ Same invariant as the engine: these are **real, looked-up, date-stamped values, 
 
 # Visual verification on this harness
 
-`npm run build` catches RSC/route errors. To *see* a page, the headless Chromium at
-`/opt/pw-browsers/chromium-*/chrome-linux/chrome` can screenshot **localhost only** (`npx next start`
-on a free port; pass `--virtual-time-budget` so streamed/Suspense content settles). The agent proxy
-**closes Chromium's connection to any external URL** (`ERR_CONNECTION_CLOSED`), so you cannot
-screenshot the Vercel preview from here. Photos also need `UNSPLASH_ACCESS_KEY` (absent locally →
-solid/blur fallback), so local shots verify **layout / spacing / cohesion**, not imagery.
+`npm run build` catches RSC/route errors. To actually *see* a page, screenshot **localhost** with the
+pre-installed headless Chromium — but two gotchas: (1) `next start` will **not persist** as a detached
+background process here, and (2) the agent proxy **closes Chromium's connection to any external URL**
+(`ERR_CONNECTION_CLOSED`), so you can't screenshot the Vercel preview. Both are handled by the helper —
+after a build, one command shoots any set of paths:
 
-For the *real* render (photos + prod env), push and let the Vercel **preview** deploy — the human
-reviews it. The Vercel MCP can read the protected preview's **HTML** (`web_fetch_vercel_url`, or
-`get_access_to_vercel_url` for a share link) to check structure, but it returns markup, not pixels.
+```bash
+npm run build && scripts/shoot.sh / /deals /destinations/tokyo   # → /tmp/shot-*.png
+```
+
+It starts the server and takes the shots inside **one** foreground command (so the server stays alive
+during capture) and kills it on exit. `UNSPLASH_ACCESS_KEY` gates destination photos (absent → the
+solid/blur fallback), and `MOCK=1` swaps in cash/awards/balances fixtures — set both in the environment
+(see `.env.example`) for full-fidelity local shots; without the key you still verify
+**layout / spacing / cohesion**, just not the imagery. Rebuild before shooting after any code change
+(the static pages are prebuilt). For the real prod render, push and let the Vercel **preview** deploy —
+the human reviews it.
+
+New containers: point the environment's **setup script** at `scripts/setup-cloud.sh` (installs deps);
+the two visual-loop vars go in the environment settings, not in the repo.
