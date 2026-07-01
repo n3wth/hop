@@ -25,9 +25,10 @@ export default function ResultsList({ result }: ResultsListProps) {
   // independently, while the toolbar can still drive them all at once.
   const [openIds, setOpenIds] = useState<Set<string>>(() => new Set())
 
-  // Stable reference — no deps because setOpenIds (from useState) is already
-  // stable. Passed directly to memoised ResultRow so memo's shallow comparison
-  // sees the same function reference across parent re-renders.
+  // Stable reference — setOpenIds (from useState) is itself stable, but it's
+  // listed explicitly so the React Compiler's static dependency inference
+  // matches the source deps. Passed directly to memoised ResultRow so memo's
+  // shallow comparison sees the same function reference across parent re-renders.
   const toggleOne = useCallback((id: string) => {
     setOpenIds((prev) => {
       const next = new Set(prev)
@@ -35,7 +36,7 @@ export default function ResultsList({ result }: ResultsListProps) {
       else next.add(id)
       return next
     })
-  }, [])
+  }, [setOpenIds])
 
   // Strongest cpp among the alternatives, to scale the value bars relatively.
   const maxCpp = others.reduce((m, o) => (o.cpp != null && o.cpp > m ? o.cpp : m), 0)

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cardForProgram, listCardAffiliates } from '../card-affiliates'
+import { cardForProgram, listCardAffiliates, formatBonus } from '../card-affiliates'
 import { canonicalizeProgram } from '../programs'
 
 describe('cardForProgram() — canonicalization', () => {
@@ -56,6 +56,49 @@ describe('affiliate table integrity', () => {
       expect(card.bonusMiles, id).toBeGreaterThanOrEqual(0)
       expect(card.applyUrl, id).toMatch(/^https:\/\//)
       expect(card.applyUrl, id).toContain('ref=hop-card')
+    }
+  })
+
+  it('every card carries a plain-string annual fee from the issuer page', () => {
+    for (const [id, card] of Object.entries(table)) {
+      expect(card.annualFee.length, id).toBeGreaterThan(0)
+      expect(typeof card.annualFee, id).toBe('string')
+    }
+  })
+})
+
+describe('formatBonus() — renders the standard bonus shape from raw fields', () => {
+  it('renders "N points after $X spend in Y months" when all fields are present', () => {
+    expect(formatBonus({ bonusMiles: 60000, bonusSpend: 4000, bonusMonths: 3 })).toBe(
+      '60,000 points after $4,000 spend in 3 months',
+    )
+  })
+
+  it('singularizes a 1-month window', () => {
+    expect(formatBonus({ bonusMiles: 10000, bonusSpend: 500, bonusMonths: 1 })).toBe(
+      '10,000 points after $500 spend in 1 month',
+    )
+  })
+
+  it('drops the spend clause when there is no minimum spend', () => {
+    expect(formatBonus({ bonusMiles: 5000 })).toBe('5,000 points')
+  })
+
+  it('drops the months clause when bonusMonths is omitted', () => {
+    expect(formatBonus({ bonusMiles: 5000, bonusSpend: 1000 })).toBe('5,000 points after $1,000 spend')
+  })
+
+  it('reports no welcome bonus when bonusMiles is zero', () => {
+    expect(formatBonus({ bonusMiles: 0, bonusSpend: 1000, bonusMonths: 3 })).toBe('No welcome bonus')
+  })
+
+  it('matches the shape every real table entry produces', () => {
+    for (const [id, card] of Object.entries(listCardAffiliates())) {
+      const bonus = formatBonus(card)
+      expect(bonus.length, id).toBeGreaterThan(0)
+      if (card.bonusMiles > 0 && card.bonusSpend && card.bonusMonths) {
+        expect(bonus, id).toMatch(/^[\d,]+ points after \$[\d,]+ spend in \d+ months?$/)
+      }
     }
   })
 })
