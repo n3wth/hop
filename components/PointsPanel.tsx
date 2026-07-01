@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Balance, FlightOption } from '@/lib/types'
+import { walletValue, WALLET_VALUE_CAVEAT } from '@/lib/valuations'
 import BrandIcon from './BrandIcon'
 
 export interface PointsPanelProps {
@@ -34,6 +35,7 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
   const total = balances.reduce((sum, b) => sum + b.balance, 0)
   const max = balances.reduce((m, b) => Math.max(m, b.balance), 0) || 1
   const spend = pick?.miles
+  const worth = walletValue(balances)
 
   // No programs yet → don't show a fake "0 across 0 programs" wallet. Invite the
   // user to add their points so hop can value redemptions against what they hold.
@@ -116,8 +118,18 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
           {total.toLocaleString()} across {balances.length}{' '}
           {balances.length === 1 ? 'program' : 'programs'}
         </span>
-        <span className="hop-price text-[20px] text-white">
-          {compact(total)}
+        <span className="flex items-baseline gap-2">
+          <span className="hop-price text-[20px] text-white">
+            {compact(total)}
+          </span>
+          {worth > 0 ? (
+            <span
+              className="text-[13px] text-[#9fb5b0]"
+              title={WALLET_VALUE_CAVEAT}
+            >
+              ~${compact(worth)}
+            </span>
+          ) : null}
         </span>
       </div>
     </section>
