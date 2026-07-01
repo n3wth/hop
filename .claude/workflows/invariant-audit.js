@@ -14,7 +14,19 @@ export const meta = {
 // Dedup is against everything ever SEEN (not just confirmed) — otherwise skeptic-rejected
 // findings reappear every round and the loop never converges.
 
-const focus = (args && args.focus) || ''
+// Some callers deliver `args` as a JSON-encoded string rather than an object — parse
+// defensively or every knob silently falls back to its default.
+let input = args || {}
+if (typeof input === 'string') {
+  try {
+    input = JSON.parse(input)
+  } catch {
+    // a bare string is a usable focus path
+    input = { focus: input }
+  }
+}
+
+const focus = input.focus || ''
 const scopeNote = focus ? ` Focus the sweep on ${focus} (still report cross-boundary leaks that involve it).` : ''
 
 // The six reviewer domains as codebase-wide sweeps, plus a seventh lens for the memory

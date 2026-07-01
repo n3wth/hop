@@ -20,6 +20,9 @@ are neither app code nor Node scripts — they execute in the Workflow tool's sa
   a bare module.
 - A script calling `Date.now()`, `new Date()`, or `Math.random()` throws at run time: the
   sandbox bans them because they would break record/replay resume.
+- A run invoked with `{base: 'main~3'}` silently reviewed against `main`: some callers deliver
+  `args` as a JSON-encoded *string*, so `args.base` reads as undefined and every knob falls
+  back to its default.
 
 ## Root cause
 
@@ -35,6 +38,9 @@ globals, async-function body wrap, deterministic replay) is invisible to Node an
   needed (see `plan-panel.js`'s synthesis prompt), and any timestamp comes in via `args`.
 - Syntax-check by mimicking the wrapper (recipe in `.claude/workflows/README.md`), not with
   `node --check`.
+- Every script opens with a defensive `input` block that `JSON.parse`s a stringified `args`
+  (falling back to treating a bare string as the script's primary knob), so knobs survive any
+  caller encoding.
 
 ## How this compounds
 

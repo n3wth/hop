@@ -14,10 +14,21 @@ export const meta = {
 // Orchestration is deterministic (ADR 0006): this script decides who reviews, what they
 // see, and how findings merge. The agents supply judgment inside each node — nothing else.
 
-const base = (args && args.base) || 'main'
+// Some callers deliver `args` as a JSON-encoded string rather than an object — parse
+// defensively or every knob silently falls back to its default.
+let input = args || {}
+if (typeof input === 'string') {
+  try {
+    input = JSON.parse(input)
+  } catch {
+    input = {}
+  }
+}
+
+const base = input.base || 'main'
 // Rigor knob for smaller driving models: quality comes from structure (more independent
 // skeptics, majority rule), not from escalating to a bigger model the session may not have.
-const skeptics = Math.max(1, Math.min(3, (args && args.skeptics) || 1))
+const skeptics = Math.max(1, Math.min(3, Number(input.skeptics) || 1))
 
 const SKEPTIC_ANGLES = [
   'correctness — does the code at that exact location actually permit the failure scenario as written',

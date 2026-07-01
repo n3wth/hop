@@ -77,6 +77,10 @@ Workflow scripts execute in the Workflow tool's sandbox — not in Node, not in 
   needed timestamp in via `args`.
 - No filesystem access from the script body; only agents touch the repo.
 - `agent()` returns `null` when a node is skipped or dies — always `.filter(Boolean)`.
+- **`args` may arrive as a JSON-encoded string** depending on the caller — parse defensively
+  at the top of every script (see the `input` block in any roster script) or every knob
+  silently falls back to its default. Caught live: a run invoked with `{base: 'main~3'}`
+  reviewed against `main` because `args.base` was undefined on a stringified payload.
 - The body runs inside an async function, so top-level `return`/`await` are fine — which also
   means a bare `node --check` rejects these files. Syntax-check by mimicking the wrapper:
 

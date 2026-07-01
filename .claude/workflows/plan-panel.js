@@ -14,7 +14,19 @@ export const meta = {
 // A judge panel beats one-attempt-iterated when the solution space is wide: diversity in
 // the drafts is the point, so each planner researches alone and never sees the others.
 
-const task = args && args.task
+// Some callers deliver `args` as a JSON-encoded string rather than an object — parse
+// defensively or every knob silently falls back to its default.
+let input = args || {}
+if (typeof input === 'string') {
+  try {
+    input = JSON.parse(input)
+  } catch {
+    // a bare string is a usable task description
+    input = { task: input }
+  }
+}
+
+const task = input.task
 if (!task) {
   return { error: 'plan-panel needs args.task — the feature or bug to plan, in a sentence.' }
 }
@@ -139,7 +151,7 @@ const synthesis = await agent(
     `The winning draft (lens: ${winner.lens}) is below. Keep its spine. Fold in the judges' grafts and repair their named weaknesses — graft ideas, do not average the plans into mush.`,
     `--- WINNING DRAFT ---\n${winner.text}`,
     ...verdicts.map((v, i) => `--- JUDGE ${i + 1} ---\nweaknesses: ${JSON.stringify(v.ranking)}\ngrafts: ${v.grafts}`),
-    `Write the result to docs/plans/<date>-<slug>.md — get <date> from \`date +%F\`, slug ${args && args.slug ? `is "${args.slug}"` : 'is a short kebab-case summary of the task'}. Keep the ten-section structure from .claude/commands/plan.md §2 and mark it \`> Plan. Status: proposal.\` Return the repo-relative path and a 3-line summary.`,
+    `Write the result to docs/plans/<date>-<slug>.md — get <date> from \`date +%F\`, slug ${input.slug ? `is "${input.slug}"` : 'is a short kebab-case summary of the task'}. Keep the ten-section structure from .claude/commands/plan.md §2 and mark it \`> Plan. Status: proposal.\` Return the repo-relative path and a 3-line summary.`,
   ].join('\n\n'),
   { label: 'synthesize', phase: 'Synthesize', schema: SYNTH_SCHEMA },
 )
