@@ -37,6 +37,9 @@ export interface AskStartProps {
   /** Resolved copy from lib/concierge-hero (one source, shared with the home). */
   eyebrow: string
   heading: string
+  /** The canonical subhead — for signed-in visitors this states their points
+   *  number ("With ~40,000 points…"). Shared with the home so the two never drift. */
+  sub: string
   placeholder: string
   chips: string[]
   /** Controlled composer value + setter (Concierge owns the state). */
@@ -57,6 +60,7 @@ export interface AskStartProps {
 export default function AskStart({
   eyebrow,
   heading,
+  sub,
   placeholder,
   chips,
   input,
@@ -82,8 +86,7 @@ export default function AskStart({
         </h1>
 
         <p className="mt-3 max-w-[46ch] text-[15px] leading-[1.6] text-text2 sm:text-[16px]">
-          Tell hop a vibe, a budget, or a city — it reads points and cash, and
-          tells you which wins.
+          {sub}
         </p>
 
         {/* THE composer — the same ai-elements/prompt-input the thread pins to the

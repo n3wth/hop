@@ -287,6 +287,7 @@ export default function Concierge({
       <AskStart
         eyebrow={copy.eyebrow}
         heading={copy.heading}
+        sub={copy.sub}
         placeholder={copy.placeholder}
         chips={copy.chips}
         input={input}
