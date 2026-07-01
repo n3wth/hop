@@ -1,6 +1,8 @@
 import type { FlightOption, SearchResult } from '@/lib/types'
 import { POINTS_THRESHOLD_CPP } from '@/lib/search'
 import { formatValue } from '@/lib/cpp'
+import { cityForCode } from '@/lib/airports'
+import { googleCalendarUrl } from '@/lib/calendar-link'
 import Icon from './Icon'
 import Logo from './Logo'
 import BrandIcon from './BrandIcon'
@@ -67,6 +69,20 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
     : owns
       ? (pick?.bookingUrl ?? '#')
       : `/auth/login?returnTo=${returnTo}`
+
+  // M6 — first ACTION: turn this trip into a calendar event in one tap (Google
+  // Calendar template, all-day, no OAuth). Carries route + dates + city + cabin
+  // ONLY — never the engine's live cpp/miles/price (those would go stale). null
+  // (→ the affordance hides) when the dates are unusable.
+  const calUrl = googleCalendarUrl({
+    fromCode: result.params.from,
+    toCode: result.params.to,
+    fromCity: cityForCode(result.params.from),
+    toCity: cityForCode(result.params.to),
+    depart: result.params.depart,
+    return: result.params.return,
+    cabin: result.params.cabin,
+  })
 
   const save = summary.saveVsCash ?? 0
   const cpp = summary.bestCpp
@@ -177,6 +193,18 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
               threshold={POINTS_THRESHOLD_CPP}
               unit={unit}
             />
+          ) : null}
+          {/* Add to calendar — the first hop ACTION. Route + dates only; no economics. */}
+          {calUrl ? (
+            <a
+              href={calUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-[8px] rounded-[14px] border-[1.5px] border-white/20 px-7 py-4 text-[15px] font-medium text-hero-body transition-colors hover:border-white/45 hover:text-white"
+            >
+              <Icon name="calendar" size={17} />
+              Add to calendar
+            </a>
           ) : null}
         </div>
 
