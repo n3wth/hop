@@ -36,18 +36,20 @@ Useful commands:
 npm run build
 npm run lint
 npm test
-npx tsc --noEmit
+npm run typecheck
+npm run check     # lint + typecheck + test — same gate CI runs
 ```
 
 Mock mode (no upstream keys required):
 
 ```bash
-MOCK=1 npm run dev
+npm run dev:mock
 ```
 
 ## Environment Setup
 
-For live integrations, configure environment variables in your shell or `.env.local`.
+For live integrations, configure environment variables in your shell or `.env.local`
+(`cp .env.example .env.local` for an annotated starting point).
 
 Commonly required keys:
 
@@ -95,10 +97,10 @@ Run all tests:
 npm test
 ```
 
-Run one test file:
+Run one test file (unit tests live in `lib/__tests__/` and `app/**/__tests__/`):
 
 ```bash
-npx vitest run lib/cpp.test.ts
+npx vitest run lib/__tests__/cpp.test.ts
 ```
 
 Run a single test by name:
@@ -110,7 +112,7 @@ npx vitest run -t "ranks options by cpp"
 Run type checks:
 
 ```bash
-npx tsc --noEmit
+npm run typecheck
 ```
 
 ## Documentation

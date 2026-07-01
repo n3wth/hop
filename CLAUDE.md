@@ -58,16 +58,17 @@ where the next agent (you, or another LLM via `AGENTS.md`) will find it automati
 ```bash
 npm run dev            # dev server (http://localhost:3000)
 npm run build          # production build — also catches RSC/route errors
-npm run lint           # eslint (next/core-web-vitals + next/typescript)
+npm run lint           # eslint (next/core-web-vitals + next/typescript), cached
 npm test               # vitest run (one-shot)
 npm run test:watch     # vitest watch
-npx tsc --noEmit       # typecheck (strict mode)
+npm run typecheck      # tsc --noEmit (strict mode)
+npm run check          # lint + typecheck + test — the pre-ship gate (CI runs the same)
 
-# single test file / single test by name
-npx vitest run lib/cpp.test.ts
+# single test file / single test by name (tests live in lib/__tests__/)
+npx vitest run lib/__tests__/cpp.test.ts
 npx vitest run -t "ranks options by cpp"
 
-MOCK=1 npm run dev     # serve from mock fixtures (no upstream API keys needed)
+npm run dev:mock       # serve from mock fixtures (no upstream API keys needed)
 ```
 
 Vitest uses the **node** environment and only collects `lib/**/*.test.ts` and `app/**/*.test.ts`
@@ -171,7 +172,8 @@ in one round-trip.
   fabricated balances.
 - **Graceful degradation is the house style** — `lib/*` clients and DB helpers return
   `{ok:false}`/fallbacks instead of throwing, and the UI degrades per-section.
-- **Cron**: `vercel.json` runs `/api/cron/standing-orders` every 6h.
+- **Cron**: `vercel.json` runs `/api/cron/standing-orders` (every 6h), `/api/cron/revalidate-seo`
+  (weekly), and `/api/cron/valuation-sync` (daily); all guarded by `CRON_SECRET`.
 
 ## Design & copy — hold this bar on any UI change
 
