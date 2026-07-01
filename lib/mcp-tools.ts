@@ -10,7 +10,7 @@
 import { z } from 'zod'
 import { computeCpp, topValue } from '@/lib/destinations'
 import { priceTrip, type PriceTripBalance } from '@/lib/concierge-tools'
-import { assembleSearch } from '@/lib/search'
+import { assembleSearch, verdictSummary } from '@/lib/search'
 import { canonicalizeProgram, programById, listTransferablePrograms } from '@/lib/programs'
 import { partnersOf, transfersTo, effectiveBalanceFor } from '@/lib/transfers'
 import type { Balance, FlightOption } from '@/lib/types'
@@ -74,11 +74,13 @@ export const verdictSchema = {
   balances: balanceInputSchema.optional(),
 }
 
-// The full points-vs-cash verdict for a route. Runs the SAME assembleSearch the
-// app uses, then returns the verdict + summary + the chosen pick + the top
-// options (trimmed) — never the raw firehose. Caller-supplied balances are used
-// verbatim; when omitted we pass [] so the engine runs in a stateless, balance
-// -agnostic mode (no false "you have" claims).
+// The full points-vs-cash verdict for a route. Thin passthrough to
+// lib/search.verdictSummary — the SAME assembleSearch call + trim the app's
+// /search page and the in-app /ask concierge (lib/concierge-tools' search_flights
+// tool) use, so this MCP tool, the live UI, and the LLM concierge can never
+// disagree on a verdict for the same route/date. Caller-supplied balances are
+// used verbatim; when omitted we pass [] so the engine runs in a stateless,
+// balance-agnostic mode (no false "you have" claims).
 export async function runVerdict(args: {
   from: string
   to: string
@@ -87,7 +89,7 @@ export async function runVerdict(args: {
   adults?: number
   balances?: BalanceInput
 }) {
-  const result = await assembleSearch(
+  return verdictSummary(
     {
       from: args.from.trim().toUpperCase(),
       to: args.to.trim().toUpperCase(),
@@ -97,42 +99,6 @@ export async function runVerdict(args: {
     },
     toBalances(args.balances),
   )
-
-  // Surface the decision-relevant fields; drop internal booking URLs / tiers the
-  // external caller can't act on. The verdict + summary ARE the product.
-  return {
-    route: `${result.params.from} → ${result.params.to}`,
-    depart: result.params.depart,
-    return: result.params.return,
-    adults: result.params.adults,
-    verdict: result.verdict,
-    summary: result.summary,
-    pick: result.pick
-      ? {
-          kind: result.pick.kind,
-          airline: result.pick.airline,
-          program: result.pick.program,
-          cabin: result.pick.cabin,
-          miles: result.pick.miles,
-          taxes: result.pick.taxes,
-          cashPrice: result.pick.cashPrice,
-          cpp: result.pick.cpp,
-          youHave: result.pick.youHave,
-        }
-      : null,
-    options: result.options.slice(0, 6).map((o) => ({
-      kind: o.kind,
-      airline: o.airline,
-      program: o.program,
-      cabin: o.cabin,
-      miles: o.miles,
-      taxes: o.taxes,
-      cashPrice: o.cashPrice,
-      cpp: o.cpp,
-      action: o.action,
-    })),
-    degraded: result.degraded,
-  }
 }
 
 // --- sweet_spots -----------------------------------------------------------

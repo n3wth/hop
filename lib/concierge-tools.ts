@@ -1,8 +1,16 @@
 // Agentic concierge tools (Vercel AI SDK). The concierge streams + uses tools to
-// fetch LIVE world-context, and — crucially — to QUOTE POINTS ECONOMICS. The
-// economics tool (price_trip) runs hop's REAL deterministic engine
-// (computeCpp + destinationByCode + effectiveBalanceFor), so the model NEVER
-// invents miles, CPP, or affordability — it reads them from the engine.
+// fetch LIVE world-context, and — crucially — to QUOTE POINTS ECONOMICS. Two
+// tools do this, for two different questions:
+//   - price_trip runs against hop's curated destinations dataset (computeCpp +
+//     destinationByCode + effectiveBalanceFor) — fast, no live lookup, good for
+//     "where should I go" ideation across hop's ~30 inspiration destinations.
+//   - search_flights runs verdictSummary — the SAME assembleSearch call /search
+//     makes (Duffel cash + seats.aero awards, live, for the exact route/dates
+//     asked) — for a real, bookable verdict on ANY route, not just the curated
+//     list. This is what makes the LLM concierge and the plain /search page
+//     agree: one engine, two front doors.
+// Either way the model NEVER invents miles, CPP, or affordability — it reads
+// them from a tool call.
 //
 // Pure helpers (parseWeather, priceTrip) are unit-tested in
 // lib/__tests__/concierge-tools.test.ts without touching the network.
@@ -10,7 +18,7 @@
 import { tool, gateway } from 'ai'
 import { z } from 'zod'
 import { computeCpp, destinationByCode } from '@/lib/destinations'
-import { POINTS_THRESHOLD_CPP } from '@/lib/search'
+import { POINTS_THRESHOLD_CPP, verdictSummary } from '@/lib/search'
 import { effectiveBalanceFor } from '@/lib/transfers'
 import type { Balance } from '@/lib/types'
 import { CABINS } from '@/lib/prefs-model'
@@ -260,11 +268,23 @@ export function buildSaveProfileFactTool(userId: string | undefined) {
   })
 }
 
-// Build the concierge's tool set. `balances` is closed over so price_trip runs
-// the engine against the CURRENT user's points without the model ever seeing or
-// inventing them. web_search is a provider-executed gateway tool (Parallel).
-// `userId` (optional) enables the save_profile_fact memory tool — when signed
-// out, the tool still validates but persists nothing (session-only memory).
+// search_flights args — mirrors lib/mcp-tools.ts's verdictSchema (same shape,
+// same engine call) so a route/date verdict never diverges between the MCP
+// surface and the in-app concierge.
+const searchFlightsSchema = z.object({
+  from: z.string().describe('Origin IATA airport code, e.g. "SFO". Use the traveler\'s home airport unless they name a different origin.'),
+  to: z.string().describe('Destination IATA airport code, e.g. "FCA". ANY real airport — not limited to hop\'s curated destinations list.'),
+  depart: z.string().describe('Departure date, ISO "YYYY-MM-DD".'),
+  return: z.string().optional().describe('Return date, ISO "YYYY-MM-DD", for a round trip. Omit for one-way.'),
+  adults: z.number().int().min(1).optional().describe('Number of adult passengers (default 1).'),
+})
+
+// Build the concierge's tool set. `balances` is closed over so price_trip /
+// search_flights run the engine against the CURRENT user's points without the
+// model ever seeing or inventing them. web_search is a provider-executed
+// gateway tool (Parallel). `userId` (optional) enables the save_profile_fact
+// memory tool — when signed out, the tool still validates but persists nothing
+// (session-only memory).
 export function buildConciergeTools(balances: PriceTripBalance[], userId?: string) {
   return {
     save_profile_fact: buildSaveProfileFactTool(userId),
@@ -286,11 +306,28 @@ export function buildConciergeTools(balances: PriceTripBalance[], userId?: strin
 
     price_trip: tool({
       description:
-        "Quote hop's DETERMINISTIC points economics for a destination: miles needed, cash, cents-per-point, what the user effectively has (direct or via transfer), affordability, and the points/cash/save verdict. ALWAYS call this before stating any miles, CPP, or affordability number — never invent them.",
+        "Quote hop's DETERMINISTIC points economics for one of hop's curated destinations: miles needed, cash, cents-per-point, what the user effectively has (direct or via transfer), affordability, and the points/cash/save verdict. Fast, no live lookup — good for \"where should I go\" ideation. ALWAYS call this before stating any miles, CPP, or affordability number for a dataset destination — never invent them. For a real, live, date-specific verdict (or any airport outside hop's curated list), use search_flights instead.",
       inputSchema: z.object({
         code: z.string().describe('IATA airport code of a hop destination, e.g. "NRT" for Tokyo'),
       }),
       execute: async ({ code }) => priceTrip(code, balances),
+    }),
+
+    search_flights: tool({
+      description:
+        "Run hop's REAL, LIVE points-vs-cash verdict for a specific route and date — the SAME engine the /search page uses (live Duffel cash fares + seats.aero award space). Use this whenever the user gives (or you know) a specific date, or asks about ANY airport — including ones outside hop's curated destinations list (price_trip only covers those ~30). ALWAYS call this before stating a live miles/cash/CPP figure for a specific date — never invent them. Degraded sections (cash or awards unavailable) are reported honestly — say so, never fill the gap with an invented number.",
+      inputSchema: searchFlightsSchema,
+      execute: async ({ from, to, depart, return: ret, adults }) =>
+        verdictSummary(
+          {
+            from: from.trim().toUpperCase(),
+            to: to.trim().toUpperCase(),
+            depart,
+            return: ret,
+            adults: Math.max(1, adults ?? 1),
+          },
+          balances.map((b) => ({ program: b.program, code: '', balance: b.balance })),
+        ),
     }),
   }
 }
