@@ -62,3 +62,4 @@ of these decisions automatically (e.g. `engine-invariant-reviewer` guards ADR 00
 | [0003](0003-notification-delivery-abstraction.md) | Gated, idempotent notification delivery layer | Accepted |
 | [0004](0004-compound-engineering-operating-model.md) | Compound-engineering operating model | Accepted |
 | [0005](0005-observed-point-valuation-sync.md) | Observed point-valuation sync | Accepted |
+| [0006](0006-deterministic-orchestration-workflows.md) | Deterministic multi-agent orchestration lives in `.claude/workflows/` | Accepted |
