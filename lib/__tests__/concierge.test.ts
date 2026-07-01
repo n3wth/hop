@@ -87,6 +87,14 @@ describe('buildPrompt()', () => {
     // Dataset is still present even with no balances.
     expect(system).toContain('NRT')
   })
+
+  it('injects the engine-computed wallet dollar total and forbids the model from computing its own', () => {
+    const { system } = buildPrompt('what is my whole wallet worth?', context)
+    // lib/valuations#walletValue: 60000 * 2.00cpp + 25000 * 2.05cpp = $1,713 (rounded)
+    expect(system).toContain('Engine-computed wallet dollar value')
+    expect(system).toContain('$1,713')
+    expect(system.toLowerCase()).toContain('never sum or multiply')
+  })
 })
 
 describe('parseConciergeJson()', () => {

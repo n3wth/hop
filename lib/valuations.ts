@@ -9,8 +9,16 @@
 // A wrong number is fatal to the moat, so economics live in this constant table.
 //
 // Keyed by lib/programs.ts canonical ids (the program-registry agent's slugs).
+//
+// NOTE — a DIFFERENT table from lib/cpp.ts: this module's BASELINE_CPP is
+// published/typical community valuations (used to price a wallet's *balance*
+// in dollars, e.g. walletValue()). lib/cpp.ts computes LIVE cpp from an actual
+// cash fare vs. an actual award (`cpp = (cash − taxes) × 100 / miles`) and owns
+// the tier thresholds (POINTS_THRESHOLD_CPP, tier()) for a specific search
+// result. Don't conflate the two constant sets when editing either.
 
-import { PROGRAMS } from '@/lib/programs'
+import { PROGRAMS, canonicalizeProgram } from '@/lib/programs'
+import type { Balance } from '@/lib/types'
 
 // --- Baseline table ---------------------------------------------------------
 // Cents per point/mile. Grounded in published 2025–2026 community valuations
@@ -117,4 +125,26 @@ export function valuationsByName(): Record<string, number> {
   const out: Record<string, number> = {}
   for (const p of PROGRAMS) out[p.name] = programValue(p.id)
   return out
+}
+
+// The accuracy caveat every surface showing a wallet dollar total must display
+// (mirrors lib/sweet-spots.ts VERIFY_CAVEAT). These are typical-redemption
+// baselines, not a live quote for any specific booking.
+export const WALLET_VALUE_CAVEAT =
+  'Typical baseline valuations, not a live quote — actual value depends on the redemption.'
+
+// Total USD value of a full wallet of balances: each balance's free-text
+// program string is canonicalized (lib/programs#canonicalizeProgram), priced
+// via valueOfPoints() (unknown programs degrade to GENERIC_BASELINE inside
+// programValue()), then summed and rounded to the nearest dollar. Empty,
+// missing, or entirely-unrecognized balances resolve to 0 — never throws,
+// matching the house degrade style (lib/accounts.ts, withDb).
+export function walletValue(balances: Balance[] | null | undefined): number {
+  if (!Array.isArray(balances) || balances.length === 0) return 0
+  const total = balances.reduce((sum, b) => {
+    if (!b || typeof b.balance !== 'number') return sum
+    const programId = canonicalizeProgram(b.program)?.id ?? b.program
+    return sum + valueOfPoints(programId, b.balance)
+  }, 0)
+  return Math.round(total)
 }

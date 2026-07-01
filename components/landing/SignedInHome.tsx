@@ -13,6 +13,7 @@ import {
   computeCpp,
 } from '@/lib/destinations'
 import { destinationImages } from '@/lib/images'
+import { WALLET_VALUE_CAVEAT } from '@/lib/valuations'
 import type { SearchState } from '@/components/SearchBar'
 
 // The personalized home for a signed-in member. NOT the marketing page — the
@@ -24,6 +25,7 @@ export default async function SignedInHome({
   first,
   programs,
   totalPoints,
+  pointsWorth = 0,
   seed,
   hasHomeAirport = true,
   heroBackdrop,
@@ -31,6 +33,8 @@ export default async function SignedInHome({
   first?: string
   programs: number
   totalPoints: number
+  /** Engine-computed USD value of the whole wallet (lib/valuations#walletValue). */
+  pointsWorth?: number
   seed: SearchState
   hasHomeAirport?: boolean
   /** Photographic backdrop for the agent hero, matching the /ask landing. */
@@ -97,6 +101,14 @@ export default async function SignedInHome({
             <p className="mt-1 text-[13.5px] leading-[1.5] text-text2">
               across {programs} {programs === 1 ? 'program' : 'programs'}
             </p>
+            {pointsWorth > 0 ? (
+              <p
+                className="mt-0.5 text-[13.5px] leading-[1.5] text-text3"
+                title={WALLET_VALUE_CAVEAT}
+              >
+                worth ~${pointsWorth.toLocaleString()} at typical redemption value
+              </p>
+            ) : null}
 
             <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-[14px] border border-hair bg-hair">
               <div className="bg-sunk p-3.5">
