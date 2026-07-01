@@ -66,6 +66,22 @@ export const conversationSummary = pgTable('hop_conversation_summary', {
   updatedAt: tz('updated_at').defaultNow(),
 })
 
+// INFERRED facts — durable preferences hop noticed from how the traveler chats
+// (cabin lean, who they travel with, places they gravitate to / away from). NOT
+// stated facts: each lands as a confidence-scored PENDING suggestion the user
+// confirms (→ promoted to their stated travel_profile) or dismisses (→ rejected,
+// never re-suggested). Holds NO economics. Deduped per (user, kind, value).
+export const inferredFacts = pgTable('hop_inferred_facts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull(),
+  kind: text('kind').notNull(),
+  value: text('value').notNull(),
+  confidence: numeric('confidence').notNull().default('0'),
+  status: text('status').notNull().default('pending'),
+  createdAt: tz('created_at').defaultNow(),
+  updatedAt: tz('updated_at').defaultNow(),
+})
+
 export const bookings = pgTable('hop_bookings', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: text('user_id').notNull(),

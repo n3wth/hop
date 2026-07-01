@@ -39,6 +39,7 @@ import {
   type ConversationMessage,
 } from '@/lib/conversations'
 import { getConversationMemory, updateConversationMemory } from '@/lib/conversation-memory'
+import { proposeInferredFacts } from '@/lib/inferred-facts'
 import { getProfile } from '@/lib/travel-profile'
 import { checkRateLimit, clientIp } from '@/lib/rate-limit'
 import { profileSummary, type TravelProfile } from '@/lib/travel-profile-model'
@@ -679,6 +680,10 @@ export async function POST(request: Request): Promise<Response> {
           ...(answer ? [{ role: 'assistant' as const, content: answer }] : []),
         ]
         void updateConversationMemory(userId, fullThread)
+        // Infer durable preferences from the conversation (gated, fire-and-forget).
+        // Lands as PENDING "hop noticed" suggestions the user confirms/dismisses in
+        // the /account glass box — nothing is ever auto-applied.
+        void proposeInferredFacts(userId, fullThread)
       },
     })
 

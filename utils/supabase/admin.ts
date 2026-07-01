@@ -115,6 +115,38 @@ interface HopDatabase {
         }
         Relationships: []
       }
+      hop_inferred_facts: {
+        // Confidence-scored preferences hop NOTICED (pending until the user
+        // confirms/dismisses). See CREATE TABLE in lib/inferred-facts.ts.
+        Row: {
+          id: string
+          user_id: string
+          kind: string
+          value: string
+          confidence: number | string
+          status: string
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          kind: string
+          value: string
+          confidence?: number | string
+          status?: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          kind?: string
+          value?: string
+          confidence?: number | string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       hop_user_accounts: {
         Row: {
           user_id: string
