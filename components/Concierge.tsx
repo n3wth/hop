@@ -21,8 +21,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useChat } from '@ai-sdk/react'
 import Icon from './Icon'
-import ConciergeHero, { type ConciergeHeroPhoto } from './ConciergeHero'
 import { conciergeHeroCopy } from '@/lib/concierge-hero'
+import AskStart from './concierge/AskStart'
 import { A2UIBlocks } from './concierge/A2UIBlock'
 import type { A2UIBlock } from '@/lib/a2ui'
 import {
@@ -96,8 +96,8 @@ export interface ConciergeProps {
   initialQuery?: string
 }
 
-// Starter prompts now live in lib/concierge-hero (one canonical set, shared with
-// the home teaser) and are rendered by <ConciergeHero>.
+// Starter prompts now live in lib/concierge-hero (one canonical set) — rendered
+// by <AskStart> on the /ask empty state and by <ConciergeHero> on the home teaser.
 
 let initialIdSeq = 0
 
@@ -271,27 +271,32 @@ export default function Concierge({
   }, [])
 
   if (!hasThread) {
-    // Empty state: full-bleed hero fills the 100dvh stage edge-to-edge.
-    // The transparent sticky nav floats over the top naturally.
+    // Empty state: a CALM CREAM editorial start (AskStart) that shares the
+    // thread's measure and the SAME composer — no dark hero, no mood gallery.
+    // Copy comes from lib/concierge-hero (one voice, shared with the home teaser);
+    // a slim destination strip seeds a starter prompt on tap. The gets-to-know-you
+    // pills are intentionally dropped here — the thread's control rail is the one
+    // quiet set of controls (see the thread branch below).
+    const copy = conciergeHeroCopy({ signedIn, totalPoints })
+    const startTiles = galleryCodes
+      .map((c) => photos[c])
+      .filter((p): p is ConciergePhoto => Boolean(p))
+      .slice(0, 5)
+      .map((p) => ({ city: p.city, thumb: p.thumb, alt: p.alt, countryCode: p.countryCode }))
     return (
-      <div
-        className="hop-rise flex min-h-0 flex-1 flex-col"
-        style={{ ['--hop-delay' as string]: '40ms' }}
-      >
-        <Landing
-          input={input}
-          setInput={setInput}
-          onSubmit={onSubmit}
-          onStarter={send}
-          status={status}
-          photos={photos}
-          galleryCodes={galleryCodes}
-          totalPoints={totalPoints}
-          signedIn={signedIn}
-          gmailEnabled={gmailEnabled}
-          onConnectGmail={onConnectGmail}
-        />
-      </div>
+      <AskStart
+        eyebrow={copy.eyebrow}
+        heading={copy.heading}
+        placeholder={copy.placeholder}
+        chips={copy.chips}
+        input={input}
+        setInput={setInput}
+        onSubmit={onSubmit}
+        onStarter={send}
+        status={status}
+        onStop={stop}
+        destinations={startTiles}
+      />
     )
   }
 
@@ -682,64 +687,5 @@ function ErrorTurn({ onRetry }: { onRetry: () => void }) {
         </div>
       </MessageContent>
     </Message>
-  )
-}
-
-// --- Warm guided landing -----------------------------------------------------
-// The immersive front door — the FULL version of the shared <ConciergeHero> the
-// home teaser also renders (one visual language, one voice via
-// lib/concierge-hero). It owns the photographic backdrop, headline prompt,
-// composer, starters, the Gmail learn-from-trips seam, and the mood gallery.
-// The first message replaces this with the conversation. The home teaser is the
-// same hero, thinner; landing here from /ask?q=… reads as one continuous motion.
-function Landing({
-  input,
-  setInput,
-  onSubmit,
-  onStarter,
-  status,
-  photos,
-  galleryCodes,
-  totalPoints,
-  signedIn,
-  gmailEnabled,
-  onConnectGmail,
-}: {
-  input: string
-  setInput: (v: string) => void
-  onSubmit: (e: FormEvent<HTMLFormElement>) => void
-  onStarter: (p: string) => void
-  status: 'submitted' | 'streaming' | 'ready' | 'error'
-  photos: Record<string, ConciergePhoto>
-  galleryCodes: string[]
-  totalPoints?: number
-  signedIn: boolean
-  gmailEnabled: boolean
-  onConnectGmail: () => void
-}) {
-  const tiles: ConciergeHeroPhoto[] = galleryCodes
-    .map((c) => photos[c])
-    .filter((p): p is ConciergePhoto => Boolean(p))
-    .slice(0, 6)
-    .map((p) => ({ thumb: p.thumb, alt: p.alt, city: p.city, countryCode: p.countryCode }))
-
-  const copy = conciergeHeroCopy({ signedIn, totalPoints })
-
-  return (
-    <ConciergeHero
-      copy={copy}
-      value={input}
-      onValueChange={setInput}
-      onSubmit={onSubmit}
-      onChip={onStarter}
-      density="full"
-      signedIn={signedIn}
-      gmailEnabled={gmailEnabled}
-      onConnectGmail={onConnectGmail}
-      needsPrograms={signedIn && !totalPoints}
-      submitDisabled={status !== 'ready'}
-      autoFocus
-      photos={tiles}
-    />
   )
 }

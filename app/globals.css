@@ -474,14 +474,167 @@ body {
   margin-top: 0;
 }
 
+/* ── Concierge streamed-markdown prose — .hop-md ─────────────────────────────
+   Streamdown renders the concierge's streamed answer tagged .hop-md (see
+   components/ai-elements/response.tsx, which also sets the base type size + ink
+   color). This scope gives that markdown a tight, editorial rhythm on the warm
+   canvas: paragraph cadence, brand links, display headings, real list markers,
+   and on-brand code / quote / table. Flat, AA, no decorative chrome. */
+.hop-md > :first-child {
+  margin-top: 0;
+}
+.hop-md > :last-child {
+  margin-bottom: 0;
+}
+
+/* Paragraph rhythm — ~0.7em between blocks, calm 1.6 leading. Body inherits the
+   ink set on the .hop-md container (response.tsx); softer copy lives in blockquote. */
+.hop-md p {
+  margin: 0 0 0.7em;
+  line-height: 1.6;
+}
+
+/* Links — brand teal with a quiet token underline that deepens on hover. */
+.hop-md a {
+  color: var(--color-brand);
+  text-decoration: underline;
+  text-decoration-color: var(--color-border);
+  text-underline-offset: 3px;
+  transition: color 0.15s ease;
+}
+.hop-md a:hover {
+  color: var(--color-brand-deep);
+}
+
+/* Headings — display face on the --text-* scale, tight leading. */
+.hop-md h1,
+.hop-md h2,
+.hop-md h3,
+.hop-md h4,
+.hop-md h5,
+.hop-md h6 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--color-text);
+  margin: 1.3em 0 0.5em;
+}
+.hop-md h1 {
+  font-size: var(--text-2xl);
+}
+.hop-md h2 {
+  font-size: var(--text-xl);
+}
+.hop-md h3 {
+  font-size: var(--text-lg);
+}
+.hop-md h4,
+.hop-md h5,
+.hop-md h6 {
+  font-size: var(--text-md);
+}
+
+/* Lists — real markers, comfortable indent, calm row rhythm. */
+.hop-md ul,
+.hop-md ol {
+  margin: 0 0 0.7em;
+  padding-left: 1.3em;
+}
+.hop-md ul {
+  list-style: disc;
+}
+.hop-md ol {
+  list-style: decimal;
+}
+.hop-md li {
+  margin: 0.2em 0;
+  line-height: 1.6;
+}
+.hop-md li::marker {
+  color: var(--color-text3);
+}
+.hop-md li > ul,
+.hop-md li > ol {
+  margin: 0.2em 0 0.3em;
+}
+
+.hop-md strong {
+  font-weight: 600;
+  color: var(--color-text);
+}
+.hop-md em {
+  font-style: italic;
+}
+
+/* Inline code — a small sunk chip, mono, subtly tightened. */
+.hop-md code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--color-sunk);
+  border: 1px solid var(--color-hair);
+  border-radius: 6px;
+  padding: 0.1em 0.36em;
+}
+
+/* Fenced blocks — a flat sunk panel; inner code sheds the inline chip styling. */
+.hop-md pre {
+  margin: 0 0 0.7em;
+  padding: 0.9em 1em;
+  background: var(--color-sunk);
+  border: 1px solid var(--color-hair);
+  border-radius: var(--radius);
+  overflow-x: auto;
+}
+.hop-md pre code {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  font-size: 0.86em;
+}
+
+/* Blockquote — a quiet brand spine, softened copy. */
+.hop-md blockquote {
+  margin: 0 0 0.7em;
+  padding-left: 0.9em;
+  border-left: 2px solid var(--color-brand-light);
+  color: var(--color-text2);
+}
+
+.hop-md hr {
+  border: 0;
+  border-top: 1px solid var(--color-hair);
+  margin: 1.2em 0;
+}
+
+/* Tables — flat hairline grid, sunk header, no fills. */
+.hop-md table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 0.7em;
+  font-size: 0.95em;
+}
+.hop-md th,
+.hop-md td {
+  border: 1px solid var(--color-hair);
+  padding: 0.4em 0.6em;
+  text-align: left;
+}
+.hop-md th {
+  background: var(--color-sunk);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
 /* ── /ask immersive chat surface ──────────────────────────────────────────
    The concierge thread is the PRIMARY surface on /ask: it fills the viewport
    below the sticky TopNav, owns the only scroll region (the message area), and
    pins the composer to the bottom. No nested card-on-bg, no double scrollbar.
-   --hop-nav mirrors the TopNav's expanded height (76px). dvh keeps the mobile
+   --hop-nav mirrors the TopNav's fixed height (72px). dvh keeps the mobile
    browser chrome from clipping the pinned composer. */
 :root {
-  --hop-nav: 76px;
+  --hop-nav: 72px;
 }
 
 /* Single-viewport stage — the concierge fills exactly the space below the nav so

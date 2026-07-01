@@ -267,7 +267,7 @@ function VerdictCard({
     void dismissVerdict(city, b.cabin).catch(() => {})
   }
   return (
-    <div className="group flex flex-col overflow-hidden rounded-[16px] border border-border bg-surface transition-colors hover:border-brand">
+    <div className="group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface transition-colors hover:border-brand">
       <Link href={searchHref(b.code, homeAirport)} className="flex flex-col p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-baseline gap-2">
@@ -340,7 +340,7 @@ function Compare({
   homeAirport?: string
 }) {
   return (
-    <div className="rounded-[16px] border border-border bg-surface p-4">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
       <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
         <Icon name="swap_horiz" size={14} className="text-brand" />
         Side by side
@@ -372,7 +372,7 @@ function CompareSide({
   return (
     <Link
       href={searchHref(side.code, homeAirport)}
-      className="group flex flex-col rounded-[12px] border border-border bg-paper p-3 transition-colors hover:border-brand"
+      className="group flex flex-col rounded-[var(--radius)] border border-border bg-paper p-3 transition-colors hover:border-brand"
     >
       <div className="flex items-center justify-between gap-2">
         <span className="font-display text-[15px] font-semibold leading-tight text-text">{city}</span>
@@ -393,7 +393,7 @@ function Timing({ b }: { b: TimingBlock }) {
   const labelFor = (level: TimingBlock['weeks'][number]['level']) =>
     level === 'low' ? 'Cheapest' : level === 'mid' ? 'Mid' : 'Pricey'
   return (
-    <div className="rounded-[16px] border border-border bg-surface p-4">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
       <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
         <Icon name="schedule" size={14} className="text-brand" />
         When to go · {b.place}
@@ -424,7 +424,7 @@ function Timing({ b }: { b: TimingBlock }) {
 function Weather({ b }: { b: WeatherBlock }) {
   const hasTemp = b.highC != null || b.lowC != null
   return (
-    <div className="rounded-[16px] border border-border bg-surface p-4">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
           <Icon name="info" size={14} className="text-brand" />
@@ -447,7 +447,7 @@ function Weather({ b }: { b: WeatherBlock }) {
 
 function WebNote({ b }: { b: WebNoteBlock }) {
   return (
-    <div className="rounded-[16px] border border-border bg-surface p-4">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
       <p className="text-[13px] leading-[1.55] text-text2">{b.text}</p>
       <div className="mt-2 flex items-center gap-1.5 text-[11px] text-text3">
         <Icon name="search" size={12} className="text-brand" />
@@ -492,7 +492,7 @@ function PromptChips({ b, onChip }: { b: PromptChipsBlock; onChip?: (p: string) 
 
 function ProfileConfirm({ b }: { b: ProfileConfirmBlock }) {
   return (
-    <div className="flex items-center gap-2.5 rounded-[16px] border border-border bg-sunk p-3.5">
+    <div className="flex items-center gap-2.5 rounded-[var(--radius-lg)] border border-border bg-sunk p-3.5">
       <Icon name="check_circle" size={18} className="flex-shrink-0 text-brand" />
       <span className="text-[13px] leading-[1.5] text-text2">
         <span className="font-semibold text-text">Got it.</span> {b.fact}
@@ -518,7 +518,7 @@ function ConnectGmail({
 }) {
   const live = gmailEnabled && !!onConnect
   return (
-    <div className="flex flex-col gap-2.5 rounded-[16px] border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-2.5 rounded-[var(--radius-lg)] border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-2.5">
         <Icon name="loyalty" size={18} className="mt-0.5 flex-shrink-0 text-brand" />
         <span className="text-[13px] leading-[1.5] text-text2">
@@ -562,7 +562,7 @@ function Counterfactual({ b, homeAirport }: { b: CounterfactualBlock; homeAirpor
   const r = b.result
   if (!r) return null
   return (
-    <div className="rounded-[16px] border border-border bg-surface p-4">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
       <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
         <Icon name="swap_horiz" size={14} className="text-brand" />
         What if · {r.label}
