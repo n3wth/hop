@@ -109,10 +109,16 @@ async function handleObserve(request: Request, env: Env): Promise<Response> {
     return jsonResponse({ ok: false, error: 'bad request' }, 400)
   }
 
+  // Bind observed_at explicitly as an ISO-8601 UTC string (matching the
+  // aggregation cutoff's toISOString()) rather than relying on the column's
+  // datetime('now') default, which is space-separated ("YYYY-MM-DD HH:MM:SS")
+  // and sorts incorrectly against ISO strings on the boundary day (' ' < 'T'
+  // lexicographically, even when the actual time is later).
+  const observedAt = new Date().toISOString()
   const statements = samples.map((sample) =>
     env.DB.prepare(
-      'INSERT INTO observations (program_id, cpp, cash_cents, miles) VALUES (?, ?, ?, ?)'
-    ).bind(sample.programId, sample.cpp, sample.cashCents, sample.miles)
+      'INSERT INTO observations (program_id, cpp, cash_cents, miles, observed_at) VALUES (?, ?, ?, ?, ?)'
+    ).bind(sample.programId, sample.cpp, sample.cashCents, sample.miles, observedAt)
   )
   await env.DB.batch(statements)
 

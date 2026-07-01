@@ -102,7 +102,10 @@ export async function GET(request: Request) {
     }
   }
 
-  await upsertValuationOverrides(validRows)
+  const persisted = await upsertValuationOverrides(validRows)
+  if (!persisted) {
+    return Response.json({ ok: true, applied: 0, skipped: validRows.length + skipped, reason: 'persist failed' })
+  }
 
   return Response.json({ ok: true, applied: validRows.length, skipped })
 }

@@ -9,6 +9,11 @@ CREATE TABLE IF NOT EXISTS observations (
   cpp REAL NOT NULL,
   cash_cents INTEGER,
   miles INTEGER,
+  -- The DEFAULT below is never actually hit: src/index.ts always binds
+  -- observed_at explicitly as an ISO-8601 UTC string (new Date().toISOString())
+  -- so it stays string-comparable against the aggregation cutoff, which is also
+  -- an ISO string. datetime('now') is space-separated ("YYYY-MM-DD HH:MM:SS"),
+  -- not ISO — keep any future ad-hoc INSERT from relying on it.
   observed_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
