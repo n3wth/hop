@@ -10,18 +10,23 @@
 
 ## Status (living)
 
-The **memory spine is shipped** — all four axes are on `main`, flag-gated (dark):
+The **memory spine + the resolver are shipped** and on `main`:
 
 - **M1 — glass box** ✅ (#76) — `/account` "What hop knows about you"; reversible stated facts.
-- **M2 — durable conversation memory** ✅ (#86) — `hop_conversation_summary`, rolling summaries.
-- **M3 — inferred facts** ✅ (#90) — `hop_inferred_facts`, "hop noticed…" confirm/dismiss.
-- **M4 — observed outcomes** ✅ (#93) — `hop_memory_outcomes`, "Not for me" → "hop observed…".
+- **M2 — durable conversation memory** ✅ (#86) — `hop_conversation_summary`, rolling summaries. *(dark)*
+- **M3 — inferred facts** ✅ (#90) — `hop_inferred_facts`, "hop noticed…" confirm/dismiss. *(dark)*
+- **M4 — observed outcomes** ✅ (#93) — `hop_memory_outcomes`, "Not for me" → "hop observed…". *(dark)*
+- **M5 — compounding** ✅ (#95) — `lib/memory-context.ts` (THE resolver) + `withoutAvoided`: the
+  home + `/deals` drop stated-avoided places (value order preserved). The avoid-drop is **live**
+  (stated profile, no flag); the resolver reads the gated axes when enabled.
 
-To turn the spine on (migrations + flags + verification), see
+M2–M4 ship **dark** (flag-gated). To turn them on (migrations + flags + verification), see
 [`docs/enabling-agentic-memory.md`](../enabling-agentic-memory.md).
 
-**Next:** M5 (compounding everywhere — one `lib/memory-context.ts` resolver feeds home/deals),
-then M6 (first real action — Add-to-Calendar / Watch-this).
+**Next (decision-gated — needs product direction):** M6 (first real action — Add-to-Calendar /
+Watch-this) and M7 (draft trip + hotel cost). These orchestrate connected MCP servers /
+deep-links and add prominent action affordances, so the *where* (which surface, which dates) and
+*how* (OAuth vs calendar deep-link/.ics) want a human call before building.
 
 ---
 
