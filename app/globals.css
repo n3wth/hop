@@ -151,6 +151,10 @@ body {
   font-weight: 500;
   line-height: 1.5;
   font-feature-settings: "ss01" on, "cv01" on;
+  /* Contain the vertical rubber-band so the installed/standalone app doesn't
+     bounce the whole document (the tell of a wrapped web page). Scrollable
+     regions inside still scroll normally. */
+  overscroll-behavior-y: contain;
 }
 
 /* Paper grain — a whisper-subtle tiled fractal-noise texture baked onto the
