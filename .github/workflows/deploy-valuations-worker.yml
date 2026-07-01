@@ -15,9 +15,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # wrangler 4.x requires Node >= 22 (run 1 failed on node 20 with
+      # "Wrangler requires at least Node.js v22.0.0").
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install dependencies
         run: npm install
