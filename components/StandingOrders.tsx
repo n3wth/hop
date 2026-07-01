@@ -99,7 +99,7 @@ function WatchComposer() {
   }
 
   return (
-    <section className="overflow-hidden rounded-[16px] border border-border bg-surface">
+    <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
       <div className="flex items-start gap-4 px-5 py-5 sm:px-6">
         <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
           <Icon name="notifications" size={22} />
@@ -161,7 +161,7 @@ function WatchComposer() {
 function WatchList({ orders }: { orders: StandingOrder[] }) {
   if (orders.length === 0) {
     return (
-      <div className="flex items-start gap-4 rounded-[16px] border border-border bg-surface px-6 py-7">
+      <div className="flex items-start gap-4 rounded-[var(--radius)] border border-border bg-surface px-6 py-6">
         <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
           <Icon name="search" size={22} />
         </span>
@@ -176,7 +176,7 @@ function WatchList({ orders }: { orders: StandingOrder[] }) {
     )
   }
   return (
-    <section className="overflow-hidden rounded-[16px] border border-border bg-surface">
+    <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
       <ul>
         {orders.map((o, i) => (
           <WatchRow key={o.id} order={o} first={i === 0} />
@@ -312,7 +312,7 @@ function AlertsList({ alerts, unseen }: { alerts: StandingOrderAlert[]; unseen: 
   if (alerts.length === 0) return null
 
   return (
-    <section className="overflow-hidden rounded-[16px] border border-brand-light bg-surface">
+    <section className="overflow-hidden rounded-[var(--radius)] border border-brand-light bg-surface">
       <div className="flex items-center gap-2 border-b border-border bg-brand-light/60 px-5 py-3 sm:px-6">
         <Icon name="workspace_premium" size={18} className="text-brand" />
         <span className="text-[13px] font-semibold text-brand-deep">

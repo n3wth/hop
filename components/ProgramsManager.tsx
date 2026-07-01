@@ -82,7 +82,7 @@ export default function ProgramsManager({
 
 function ManualSection({ manual }: { manual: ManualBalance[] }) {
   return (
-    <section className="overflow-hidden rounded-[16px] border border-border bg-surface">
+    <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
       {manual.length > 0 ? (
         <ul>
           {manual.map((b, i) => (
@@ -415,7 +415,7 @@ function AwardWalletSection({
 
   if (connected) {
     return (
-      <section className="overflow-hidden rounded-[16px] border border-border bg-surface">
+      <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
         <div className="flex items-center justify-between gap-3 px-5 py-3.5 sm:px-6">
           <span className="min-w-0 truncate text-[13px] font-semibold text-text2">
             Synced with AwardWallet
@@ -491,7 +491,7 @@ function AwardWalletSection({
 
   // Not connected — secondary CTA, honest about the AwardWallet requirement.
   return (
-    <section className="rounded-[16px] border border-border bg-surface px-5 py-4 sm:px-6">
+    <section className="rounded-[var(--radius)] border border-border bg-surface px-5 py-4 sm:px-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="text-[14px] font-semibold text-text">Auto-sync with AwardWallet</div>

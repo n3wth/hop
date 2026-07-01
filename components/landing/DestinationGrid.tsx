@@ -49,7 +49,7 @@ function DestinationCard({
   return (
     <Link
       href={href}
-      className={`group flex flex-col overflow-hidden rounded-[18px] border border-border bg-paper transition-colors hover:border-brand-mint-deep${
+      className={`group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-colors hover:border-brand-mint-deep${
         stagger ? ' hop-rise' : ''
       }`}
       style={stagger ? { ['--hop-delay' as string]: `${120 + index * 70}ms` } : undefined}

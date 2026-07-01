@@ -38,7 +38,7 @@ export default async function LedgerDream() {
         <h2 className="font-display text-[26px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[34px]">
           {card.saveToward ? 'A dream worth saving toward.' : 'The trip your points already bought.'}
         </h2>
-        <p className="mt-1 text-[15px] leading-[1.55] text-text2">
+        <p className="text-[15px] leading-[1.55] text-text2">
           {card.saveToward
             ? 'You\'re closer than you think. Here\'s where your points are headed — and the exact path that gets you there.'
             : 'Written from your real points stack — not filtered by it. Every number below is hop\'s engine, not a guess.'}

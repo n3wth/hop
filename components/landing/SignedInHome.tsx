@@ -90,7 +90,7 @@ export default async function SignedInHome({
         {/* A short, secondary section header — the agent above already greeted
             the member by name, so we don't repeat "Welcome back". */}
         <div>
-          <h2 className="font-display text-[28px] font-semibold leading-[1.04] tracking-[-0.02em] text-text sm:text-[36px]">
+          <h2 className="font-display text-[26px] font-semibold leading-[1.04] tracking-[-0.02em] text-text sm:text-[34px]">
             {programs > 0 ? 'Your points, working.' : 'Get started.'}
           </h2>
           <p className="mt-3 max-w-[52ch] text-[15px] leading-[1.55] text-text2 sm:text-[17px]">
@@ -103,7 +103,7 @@ export default async function SignedInHome({
         {/* Summary panel — anchors the right column.
             Flat: a bordered paper card with a sunk stat row, no shadow/lift. */}
         {programs > 0 ? (
-          <aside className="flex flex-col rounded-[20px] border border-border bg-paper p-6 lg:rounded-[var(--radius-hero)]">
+          <aside className="flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-6 lg:rounded-[var(--radius-hero)]">
             <span className="text-[11.5px] font-semibold uppercase tracking-[0.16em] text-brand">
               Your points
             </span>
@@ -122,7 +122,7 @@ export default async function SignedInHome({
               </p>
             ) : null}
 
-            <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-[14px] border border-hair bg-hair">
+            <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius)] border border-hair bg-hair">
               <div className="bg-sunk p-3.5">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
                   {personalized ? 'In reach' : 'Worth saving for'}
@@ -156,7 +156,7 @@ export default async function SignedInHome({
             </Link>
           </aside>
         ) : (
-          <aside className="flex flex-col justify-center rounded-[20px] border border-border bg-brand-light p-6 lg:rounded-[var(--radius-hero)]">
+          <aside className="flex flex-col justify-center rounded-[var(--radius-lg)] border border-border bg-brand-light p-6 lg:rounded-[var(--radius-hero)]">
             <span className="grid h-11 w-11 place-items-center rounded-full bg-paper text-brand">
               <Icon name="loyalty" size={22} />
             </span>
@@ -169,7 +169,7 @@ export default async function SignedInHome({
             </p>
             <Link
               href="/account"
-              className="mt-5 inline-flex w-fit items-center gap-2 rounded-[14px] bg-brand px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep"
+              className="mt-5 inline-flex w-fit items-center gap-2 rounded-[var(--radius)] bg-brand px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep"
             >
               Add a program
               <span aria-hidden className="text-[15px] leading-none">→</span>
@@ -200,7 +200,7 @@ export default async function SignedInHome({
                 ? 'Within reach.'
                 : 'Dreams worth saving toward.'}
             </h2>
-            <p className="mt-1 text-[15px] leading-[1.55] text-text2">
+            <p className="text-[15px] leading-[1.55] text-text2">
               {personalized
                 ? 'Where your balances can take you as you pool and transfer — sorted by value per point.'
                 : 'A few more points and these open up. Sorted by value per point.'}
@@ -223,13 +223,13 @@ export default async function SignedInHome({
       {/* ── RUN A SEARCH — secondary fast-path ───────────────────────────── */}
       {/* The agent above is the primary way in; search is the precise fast-path
           for members who already know the exact route they want. */}
-      <section className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_360px]">
+      <section className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px] lg:gap-12">
         {/* Run a real search */}
-        <div className="flex flex-col rounded-[20px] border border-border bg-paper p-6 sm:p-8 lg:rounded-[var(--radius-hero)]">
+        <div className="flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-6 sm:p-8 lg:rounded-[var(--radius-hero)]">
           <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
             Already know the route?
           </span>
-          <h2 className="mt-2 font-display text-[24px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[30px]">
+          <h2 className="mt-2 font-display text-[24px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[28px]">
             Run a search. Get the verdict.
           </h2>
           <p className="mt-2 max-w-[44ch] text-[14.5px] leading-[1.55] text-text2">
@@ -243,7 +243,7 @@ export default async function SignedInHome({
 
         {/* Back to the agent — a lighter nudge, not a competing concierge card. */}
         <aside
-          className="flex flex-col justify-between overflow-hidden rounded-[20px] p-6 text-hero-cream sm:p-8 lg:rounded-[var(--radius-hero)]"
+          className="flex flex-col justify-between overflow-hidden rounded-[var(--radius-lg)] p-6 text-hero-cream sm:p-8 lg:rounded-[var(--radius-hero)]"
           style={{ background: 'var(--color-brand)' }}
         >
           <div>
@@ -261,7 +261,7 @@ export default async function SignedInHome({
           </div>
           <Link
             href="/ask"
-            className="mt-6 inline-flex w-fit items-center gap-2 rounded-[14px] bg-white px-6 py-3.5 text-[15px] font-semibold text-brand-ink transition-colors hover:bg-hero-white-hover"
+            className="mt-6 inline-flex w-fit items-center gap-2 rounded-[var(--radius)] bg-white px-6 py-3.5 text-[15px] font-semibold text-brand-ink transition-colors hover:bg-hero-white-hover"
           >
             Ask hop
             <span aria-hidden className="text-[16px] leading-none">→</span>
@@ -270,7 +270,7 @@ export default async function SignedInHome({
       </section>
 
       {/* ── MANAGE PROGRAMS ──────────────────────────────────────────────── */}
-      <section className="flex flex-col items-start gap-5 rounded-[20px] border border-border bg-paper p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8 lg:rounded-[var(--radius-hero)]">
+      <section className="flex flex-col items-start gap-5 rounded-[var(--radius-lg)] border border-border bg-paper p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8 lg:rounded-[var(--radius-hero)]">
         <div className="flex items-center gap-4">
           <span className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-full bg-brand-light text-brand">
             <Icon name="loyalty" size={24} />
@@ -289,7 +289,7 @@ export default async function SignedInHome({
         <div className="flex flex-shrink-0 items-center gap-3">
           <Link
             href="/account"
-            className="inline-flex items-center gap-2 rounded-[14px] bg-brand px-6 py-3 text-[14.5px] font-semibold text-white transition-colors hover:bg-brand-deep"
+            className="inline-flex items-center gap-2 rounded-[var(--radius)] bg-brand px-6 py-3 text-[14.5px] font-semibold text-white transition-colors hover:bg-brand-deep"
           >
             <Icon name="settings" size={18} />
             {programs > 0 ? 'Manage programs' : 'Add a program'}

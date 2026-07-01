@@ -280,7 +280,7 @@ export default function McpAccess({ initialTokens }: Props) {
   }, [client, mcpUrl, token])
 
   return (
-    <div className="mt-4 rounded-[16px] border border-border bg-surface px-6 py-6">
+    <div>
       {/* server URL */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">

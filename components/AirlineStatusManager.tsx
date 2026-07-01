@@ -91,7 +91,7 @@ export default function AirlineStatusManager({
 
   return (
     <div className="mt-4 flex flex-col gap-4">
-      <section className="overflow-hidden rounded-[16px] border border-border bg-surface">
+      <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
         {statuses.length > 0 ? (
           <ul>
             {statuses.map((s, i) => (
@@ -122,7 +122,7 @@ export default function AirlineStatusManager({
       </section>
 
       {openSuggestions.length > 0 ? (
-        <div className="rounded-[16px] border border-border bg-surface px-5 py-4 sm:px-6">
+        <div className="rounded-[var(--radius)] border border-border bg-surface px-5 py-4 sm:px-6">
           <div className="text-[13px] font-semibold text-text2">From your synced accounts</div>
           <p className="mt-0.5 text-[12.5px] text-text3">
             hop spotted these in AwardWallet — tap to add, then edit if needed.
