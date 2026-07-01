@@ -46,7 +46,7 @@ export default function Loading() {
 
         {/* "Ask hop" on-ramp band — mirrors the real page's concierge door so the
             feed lands at the same vertical offset (no jump when content swaps). */}
-        <div className="mx-auto mt-7 flex max-w-[640px] items-center justify-between gap-4 rounded-[var(--radius-lg)] border border-border bg-surface px-5 py-4">
+        <div className="mx-auto mt-7 flex max-w-[640px] items-center justify-between gap-4 rounded-[16px] border border-border bg-surface px-5 py-4">
           <span className="hop-skeleton hop-skeleton-line block w-3/5" />
           <span className="hop-skeleton block h-[42px] w-[112px] flex-shrink-0 rounded-[var(--radius)]" />
         </div>

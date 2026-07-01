@@ -87,7 +87,7 @@ export default async function SignedInHome({
         {/* Summary panel — anchors the right column.
             Flat: a bordered paper card with a sunk stat row, no shadow/lift. */}
         {programs > 0 ? (
-          <aside className="flex flex-col rounded-[20px] border border-border bg-paper p-6 lg:rounded-[24px]">
+          <aside className="flex flex-col rounded-[20px] border border-border bg-paper p-6 lg:rounded-[var(--radius-hero)]">
             <span className="text-[11.5px] font-semibold uppercase tracking-[0.16em] text-brand">
               Your points
             </span>
@@ -132,7 +132,7 @@ export default async function SignedInHome({
             </Link>
           </aside>
         ) : (
-          <aside className="flex flex-col justify-center rounded-[20px] border border-border bg-brand-light p-6 lg:rounded-[24px]">
+          <aside className="flex flex-col justify-center rounded-[20px] border border-border bg-brand-light p-6 lg:rounded-[var(--radius-hero)]">
             <span className="grid h-11 w-11 place-items-center rounded-full bg-paper text-brand">
               <Icon name="loyalty" size={22} />
             </span>
@@ -186,7 +186,7 @@ export default async function SignedInHome({
             href="/ask"
             className="inline-flex flex-shrink-0 items-center gap-1.5 self-start text-[13.5px] font-semibold text-brand transition-colors hover:text-brand-deep sm:self-end"
           >
-            Explore more
+            Ask hop
             <span aria-hidden className="text-[15px] leading-none">→</span>
           </Link>
         </div>
@@ -201,7 +201,7 @@ export default async function SignedInHome({
           for members who already know the exact route they want. */}
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_360px]">
         {/* Run a real search */}
-        <div className="flex flex-col rounded-[20px] border border-border bg-paper p-6 sm:p-8 lg:rounded-[24px]">
+        <div className="flex flex-col rounded-[20px] border border-border bg-paper p-6 sm:p-8 lg:rounded-[var(--radius-hero)]">
           <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
             Already know the route?
           </span>
@@ -219,7 +219,7 @@ export default async function SignedInHome({
 
         {/* Back to the agent — a lighter nudge, not a competing concierge card. */}
         <aside
-          className="flex flex-col justify-between overflow-hidden rounded-[20px] p-6 text-hero-cream sm:p-8 lg:rounded-[24px]"
+          className="flex flex-col justify-between overflow-hidden rounded-[20px] p-6 text-hero-cream sm:p-8 lg:rounded-[var(--radius-hero)]"
           style={{ background: 'var(--color-brand)' }}
         >
           <div>
@@ -239,14 +239,14 @@ export default async function SignedInHome({
             href="/ask"
             className="mt-6 inline-flex w-fit items-center gap-2 rounded-[14px] bg-white px-6 py-3.5 text-[15px] font-semibold text-brand-ink transition-colors hover:bg-hero-white-hover"
           >
-            Talk to hop
+            Ask hop
             <span aria-hidden className="text-[16px] leading-none">→</span>
           </Link>
         </aside>
       </section>
 
       {/* ── MANAGE PROGRAMS ──────────────────────────────────────────────── */}
-      <section className="flex flex-col items-start gap-5 rounded-[20px] border border-border bg-paper p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8 lg:rounded-[24px]">
+      <section className="flex flex-col items-start gap-5 rounded-[20px] border border-border bg-paper p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8 lg:rounded-[var(--radius-hero)]">
         <div className="flex items-center gap-4">
           <span className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-full bg-brand-light text-brand">
             <Icon name="loyalty" size={24} />

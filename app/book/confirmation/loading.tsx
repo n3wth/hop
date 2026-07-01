@@ -13,7 +13,7 @@ export default function Loading() {
     <AppShell hideSearch>
       <div className="mx-auto max-w-[var(--container-xs)] pb-4 pt-8 sm:pt-12">
         <section
-          className="overflow-hidden rounded-[20px] lg:rounded-[24px]"
+          className="overflow-hidden rounded-[20px] lg:rounded-[var(--radius-hero)]"
           style={{ background: 'var(--color-brand)' }}
         >
           <div className="px-6 py-9 sm:px-10">

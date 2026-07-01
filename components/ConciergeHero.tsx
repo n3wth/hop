@@ -269,7 +269,7 @@ export default function ConciergeHero({
           whole hero fits in one viewport with nothing to scroll. */}
       {full && tiles.length > 0 ? (
         <div
-          className="hop-rise relative grid grid-cols-3 gap-px bg-[#0a4f4f] sm:grid-cols-6"
+          className="hop-rise relative grid grid-cols-3 gap-px bg-brand-deep sm:grid-cols-6"
           style={{
             ['--hop-delay' as string]: '300ms',
             height: 'clamp(170px, 30vh, 280px)',

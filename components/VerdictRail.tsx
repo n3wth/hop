@@ -82,7 +82,7 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
     >
       {/* LEFT — the verdict */}
       <div className="px-6 pb-9 pt-8 sm:px-10 lg:px-[52px] lg:pb-[46px] lg:pt-12">
-        <span className="mb-[26px] inline-flex items-center border-b border-white/15 pb-4 text-[12px] font-semibold uppercase tracking-[0.22em] text-[#9fe0d6]">
+        <span className="mb-[26px] inline-flex items-center border-b border-white/15 pb-4 text-[12px] font-semibold uppercase tracking-[0.22em] text-hero-eyebrow">
           Best value
         </span>
 
@@ -115,7 +115,7 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
                 format="usd"
                 delayMs={420}
               />
-              <span className="font-display text-[20px] font-semibold leading-tight tracking-[-0.01em] text-[#9fe0d6] sm:text-[24px]">
+              <span className="font-display text-[20px] font-semibold leading-tight tracking-[-0.01em] text-hero-eyebrow sm:text-[24px]">
                 vs&nbsp;cash
               </span>
             </div>
@@ -264,12 +264,9 @@ function HStat({
       <div className="mb-[6px] text-[11px] font-semibold uppercase tracking-[0.16em] text-hero-label">
         {label}
       </div>
-      <div
-        className="hop-price text-[27px]"
-        style={{ color: accent ? '#6ff0d2' : '#fff' }}
-      >
+      <div className={`hop-price text-[27px] ${accent ? 'text-mint-bright' : 'text-white'}`}>
         {value}
-        {unit ? <small className="text-[14px] font-medium text-[#9fe0d6]"> {unit}</small> : null}
+        {unit ? <small className="text-[14px] font-medium text-hero-eyebrow"> {unit}</small> : null}
       </div>
     </div>
   )

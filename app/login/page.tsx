@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { auth0 } from '@/lib/auth0'
 import Logo from '@/components/Logo'
 import Icon from '@/components/Icon'
+import Button from '@/components/ui/Button'
 
 export const metadata: Metadata = {
   title: 'Sign in — hop',
@@ -84,12 +85,9 @@ export default async function LoginPage({
 
           {/* actions */}
           <div className="mt-8">
-            <a
-              href={`/auth/login${qs}`}
-              className="flex h-[52px] w-full items-center justify-center rounded-[14px] bg-brand text-[15px] font-semibold text-hero-cream transition-colors hover:bg-brand-deep"
-            >
+            <Button href={`/auth/login${qs}`} native fullWidth>
               Continue
-            </a>
+            </Button>
 
             <div className="my-5 flex items-center gap-3 text-[12px] text-text3">
               <span className="h-px flex-1 bg-hair" aria-hidden />
@@ -97,12 +95,9 @@ export default async function LoginPage({
               <span className="h-px flex-1 bg-hair" aria-hidden />
             </div>
 
-            <a
-              href={`/auth/login${signupQs}`}
-              className="flex h-[52px] w-full items-center justify-center rounded-[14px] border border-border bg-surface text-[15px] font-semibold text-text transition-colors hover:bg-sunk"
-            >
+            <Button href={`/auth/login${signupQs}`} native variant="secondary" fullWidth>
               Create account
-            </a>
+            </Button>
           </div>
 
           {/* legal-ish footnote */}

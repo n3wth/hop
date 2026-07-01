@@ -19,7 +19,7 @@ export interface RouteBarProps {
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div className="flex flex-col items-end leading-none">
-      <span className="hop-price text-[18px] text-text">
+      <span className="hop-num text-[18px] font-semibold text-text">
         {value}
       </span>
       <span className="mt-[5px] text-[11px] uppercase tracking-[0.06em] text-text3">{label}</span>

@@ -160,7 +160,7 @@ export default async function AccountPage({
       <div className="mx-auto max-w-[var(--container-sm)] pb-4 pt-8 sm:pt-12">
         {/* profile hero — teal plane, matches the editorial system */}
         <section
-          className="overflow-hidden rounded-[20px] text-hero-cream lg:rounded-[24px]"
+          className="overflow-hidden rounded-[20px] text-hero-cream lg:rounded-[var(--radius-hero)]"
           style={{ background: 'var(--color-brand)' }}
         >
           <div className="flex flex-col gap-5 px-6 py-8 sm:flex-row sm:items-center sm:gap-6 sm:px-10">
@@ -178,7 +178,7 @@ export default async function AccountPage({
               )}
             </span>
             <div className="min-w-0 flex-1">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9fe0d6]">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-hero-eyebrow">
                 Your account
               </div>
               <h1 className="mt-1 truncate font-display text-[26px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[30px]">

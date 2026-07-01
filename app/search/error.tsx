@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import Logo from '@/components/Logo'
 import Icon from '@/components/Icon'
+import Button from '@/components/ui/Button'
 
 // Search-route error boundary. assembleSearch is built to never throw (failures
 // degrade per-section), so this catches the rarer surrounding failures — session,
@@ -50,27 +51,17 @@ export default function SearchError({
       </p>
 
       <div className="hop-rise mt-8 flex flex-wrap items-center justify-center gap-3" style={{ ['--hop-delay' as string]: '220ms' }}>
-        <button
-          type="button"
-          onClick={() => retry()}
-          className="inline-flex items-center gap-[9px] rounded-[14px] bg-brand px-7 py-[15px] text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep"
-        >
+        <Button onClick={() => retry()}>
           <Icon name="swap_horiz" size={18} />
           Try again
-        </button>
-        <Link
-          href="/search"
-          className="inline-flex items-center gap-[9px] rounded-[14px] border border-border bg-surface px-7 py-[15px] text-[15px] font-semibold text-text transition-colors hover:bg-sunk"
-        >
+        </Button>
+        <Button href="/search" variant="secondary">
           <Icon name="search" size={18} />
           New search
-        </Link>
-        <Link
-          href="/"
-          className="inline-flex items-center rounded-[14px] border border-border bg-surface px-7 py-[15px] text-[15px] font-semibold text-text transition-colors hover:bg-sunk"
-        >
+        </Button>
+        <Button href="/" variant="secondary">
           Go home
-        </Link>
+        </Button>
       </div>
 
       {error.digest ? (

@@ -25,7 +25,7 @@ export default async function DestinationsIndexPage() {
 
   return (
     <AppShell user={null} hideSearch>
-      <div className="mx-auto max-w-[var(--container-app)] xl:max-w-[var(--container-wide)]">
+      <div className="mx-auto max-w-[var(--container-app)] xl:max-w-[var(--container-wide)] 2xl:max-w-[var(--container-xwide)]">
         {/* editorial header */}
         <EditorialHeader
           eyebrow="Destination guides"

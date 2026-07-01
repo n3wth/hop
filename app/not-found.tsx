@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import Logo from '@/components/Logo'
+import Button from '@/components/ui/Button'
 
 // 404 boundary. Renders inside the root layout, so the cream canvas + grain
 // frame the page (nav/footer aren't part of this route's tree, but the layout
@@ -29,18 +30,10 @@ export default function NotFound() {
       </p>
 
       <div className="hop-rise mt-8 flex items-center gap-3" style={{ ['--hop-delay' as string]: '220ms' }}>
-        <Link
-          href="/"
-          className="inline-flex items-center rounded-[14px] bg-brand px-7 py-[15px] text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep"
-        >
-          Back to hop
-        </Link>
-        <Link
-          href="/search"
-          className="inline-flex items-center rounded-[14px] border border-border bg-surface px-7 py-[15px] text-[15px] font-semibold text-text transition-colors hover:bg-sunk"
-        >
+        <Button href="/">Back to hop</Button>
+        <Button href="/search" variant="secondary">
           Search flights
-        </Link>
+        </Button>
       </div>
     </div>
   )
