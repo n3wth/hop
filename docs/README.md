@@ -6,6 +6,7 @@ This folder stores product, design, and implementation documentation for hop.
 
 | Path | Purpose | Update cadence |
 |---|---|---|
+| `cloud-env.md` | Claude Code cloud environment template: setup script + env-var tiers. | When env keys or the setup script change |
 | `content-plan.md` | Content strategy, sweet spots seed data, SEO direction, and concierge prompt seeds. | Quarterly, plus major market changes |
 | `design/copy-spec.md` | UI copy tone and component-level copy rules. | As UI language evolves |
 | `design/CHOSEN-editorial.html` | Canonical visual reference for flat editorial design. | Only when design direction changes |

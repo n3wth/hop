@@ -66,4 +66,5 @@ solid/blur fallback), and `MOCK=1` swaps in cash/awards/balances fixtures — se
 the human reviews it.
 
 New containers: point the environment's **setup script** at `scripts/setup-cloud.sh` (installs deps);
-the two visual-loop vars go in the environment settings, not in the repo.
+the two visual-loop vars go in the environment settings, not in the repo. The full settings
+template (setup script + env tiers + what to leave unset) is `docs/cloud-env.md`.
