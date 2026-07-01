@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Icon from './Icon'
 import { groupFacts, type MemoryFact } from '@/lib/memory-view'
 import type { InferredFact } from '@/lib/inferred-facts'
+import type { Observation } from '@/lib/memory-outcomes'
 import { forgetFact, confirmInference, dismissInference } from '@/app/account/memory-actions'
 
 // "What hop knows about you" — the glass box. Renders the durable facts hop holds
@@ -146,9 +147,11 @@ function NoticedRow({ fact, onResolved }: { fact: InferredFact; onResolved: (id:
 export default function MemoryKnows({
   facts,
   noticed = [],
+  observed = [],
 }: {
   facts: MemoryFact[]
   noticed?: InferredFact[]
+  observed?: Observation[]
 }) {
   // Optimistically drop a forgotten row so the UI responds before revalidate.
   const [hidden, setHidden] = useState<Set<string>>(new Set())
@@ -178,7 +181,32 @@ export default function MemoryKnows({
       </div>
     ) : null
 
-  if (groups.length === 0 && !noticedBlock) {
+  // "hop observed" — read-only reflections of what you DID (places you passed on).
+  // No buttons: these mirror your own behavior. hop uses them to rank, never to hide.
+  const observedBlock =
+    observed.length > 0 ? (
+      <div>
+        <h3 className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-text3">
+          <Icon name="trending_up" size={13} />
+          hop observed
+        </h3>
+        <div className="rounded-[16px] border border-border bg-surface px-4">
+          {observed.map((o) => (
+            <div
+              key={o.id}
+              className="border-b border-hair py-3 text-[14px] leading-[1.4] text-text2 last:border-b-0"
+            >
+              {o.text}
+            </div>
+          ))}
+        </div>
+        <p className="mt-1 text-[12px] leading-[1.5] text-text3">
+          Picked up from what you tap. hop uses this to rank what it leads with — it never hides a place you ask for.
+        </p>
+      </div>
+    ) : null
+
+  if (groups.length === 0 && !noticedBlock && !observedBlock) {
     return (
       <div className="rounded-[16px] border border-dashed border-border bg-paper px-5 py-7 text-center">
         <span className="grid mx-auto h-10 w-10 place-items-center rounded-full bg-brand-light text-brand">
@@ -216,6 +244,7 @@ export default function MemoryKnows({
           won&apos;t cite it again.
         </p>
       ) : null}
+      {observedBlock}
     </div>
   )
 }

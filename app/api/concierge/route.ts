@@ -41,6 +41,8 @@ import {
 } from '@/lib/conversations'
 import { getConversationMemory, updateConversationMemory } from '@/lib/conversation-memory'
 import { proposeInferredFacts } from '@/lib/inferred-facts'
+import { getObservedContext } from '@/lib/memory-outcomes'
+import { isObservedOutcomesEnabled } from '@/lib/env'
 import { getProfile } from '@/lib/travel-profile'
 import { checkRateLimit, clientIp } from '@/lib/rate-limit'
 import { profileSummary, type TravelProfile } from '@/lib/travel-profile-model'
@@ -122,13 +124,14 @@ export function blocksFromText(
   balances: ConciergeProgram[],
   profile: TravelProfile | undefined,
   hasHistory: boolean,
+  canDismiss = false,
 ): A2UIBlock[] {
   const raw = extractA2UIJson(text ?? '')
   if (!raw) return []
   const validated = parseA2UI(raw)
   if (!validated.length) return []
   const withEcon = reconcileEconomics(validated, balances)
-  return personalizeBlocks(withEcon, profile, hasHistory)
+  return personalizeBlocks(withEcon, profile, hasHistory, canDismiss)
 }
 
 // Strip the fenced a2ui spec from the model's prose so the user reads clean text
@@ -342,10 +345,12 @@ function buildAgenticSystem(
   history?: TravelHistory,
   liveValuations?: Record<string, number>,
   memory?: string,
+  observed?: string,
 ): string {
   const profileBlock = profileSummary(profile)
   const historyBlock = travelHistorySummary(history)
   const memoryBlock = (memory ?? '').trim()
+  const observedBlock = (observed ?? '').trim()
   // True only when the visitor has real balances in play — gates the ownership
   // voice (no "your points" for a signed-out / no-balance visitor).
   const hasBalances = (context?.programs?.length ?? 0) > 0
@@ -403,6 +408,13 @@ function buildAgenticSystem(
       ? `What you remember from earlier in your history with this traveler (older turns that scrolled off — use it for continuity, but it is NOT a source of prices/miles/CPP; always re-check live figures with your tools):\n${memoryBlock}`
       : '',
     '',
+    // Observed behavior: destinations this traveler has repeatedly dismissed.
+    // SOFT context only — don't lead with these unless they ask; never treat it
+    // as an avoided-destination rule (that's a stated fact) or a source of numbers.
+    observedBlock
+      ? `Destinations this traveler has repeatedly set aside (dismissed more than once): ${observedBlock}. Don't lead with these unless they bring them up — but if they ask, help fully.`
+      : '',
+    '',
     context?.homeAirport
       ? `The user flies from ${context.homeAirport.toUpperCase()}. Favor trips that make sense from there and mention it naturally.`
       : "The user hasn't set a home airport. Keep suggestions origin-agnostic, or gently suggest they set one.",
@@ -422,8 +434,9 @@ export function buildAgenticSystemForTest(
   history?: TravelHistory,
   liveValuations?: Record<string, number>,
   memory?: string,
+  observed?: string,
 ): string {
-  return buildAgenticSystem(context, profile, history, liveValuations, memory)
+  return buildAgenticSystem(context, profile, history, liveValuations, memory, observed)
 }
 
 // Build the message list threaded into streamText. Merges any SERVER-persisted
@@ -639,14 +652,15 @@ export async function POST(request: Request): Promise<Response> {
   try {
     // Load MEMORY for signed-in users (all helpers degrade to empty, never
     // throw). Anonymous users get empty profile/history + client-only thread.
-    const [persisted, profile, history, memory] = userId
+    const [persisted, profile, history, memory, observed] = userId
       ? await Promise.all([
           getConversation(userId),
           getProfile(userId),
           getTravelHistory(userId),
           getConversationMemory(userId),
+          getObservedContext(userId),
         ])
-      : [[] as ConversationMessage[], {} as TravelProfile, undefined, '']
+      : [[] as ConversationMessage[], {} as TravelProfile, undefined, '', '']
 
     const messages = buildMessages(question, body?.messages, persisted)
     const liveValuations = await liveValuationsByName()
@@ -654,7 +668,7 @@ export async function POST(request: Request): Promise<Response> {
     const tools = buildConciergeTools(context?.programs ?? [], userId)
     const result = streamText({
       model: gateway(GATEWAY_MODEL),
-      system: buildAgenticSystem(context, profile, history, liveValuations, memory),
+      system: buildAgenticSystem(context, profile, history, liveValuations, memory, observed),
       // MULTI-TURN: thread the conversation (prior turns + this question) so the
       // agent answers in context. Single-question back-compat is preserved —
       // buildMessages yields a one-element [user] array when there's no history.
@@ -789,8 +803,11 @@ export async function POST(request: Request): Promise<Response> {
           controller.enqueue(encoder.encode(sanitizeProse(clean.slice(emitted))))
         }
         // Build + append the validated block envelope (best-effort; never throws).
+        // canDismiss stamps the "Not for me" affordance only for a signed-in user
+        // with the observed-outcomes seam on — dark by default.
         try {
-          const blocks = blocksFromText(full, balances, profile, hasHistory)
+          const canDismiss = !!userId && isObservedOutcomesEnabled()
+          const blocks = blocksFromText(full, balances, profile, hasHistory, canDismiss)
           if (blocks.length) {
             controller.enqueue(encoder.encode(A2UI_SENTINEL + JSON.stringify({ blocks })))
           }

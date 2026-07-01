@@ -82,6 +82,22 @@ export const inferredFacts = pgTable('hop_inferred_facts', {
   updatedAt: tz('updated_at').defaultNow(),
 })
 
+// OBSERVED outcomes — hop's "learned from what you DO" log (M4). An append-only
+// record of discrete, EXPLICIT user signals (today: a verdict card dismissed with
+// "Not for me"). A pure aggregator (lib/memory-outcomes.ts) folds recurring
+// subjects into human "hop observed …" rows + soft prompt context — it never
+// changes a verdict or a stated fact. Holds NO economics (no cpp/price/miles
+// column exists, by design): the subject is a place label, cabin is optional
+// context. Extensible via `kind` for the later action outcomes (M6/M7).
+export const memoryOutcomes = pgTable('hop_memory_outcomes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull(),
+  kind: text('kind').notNull(),
+  subject: text('subject').notNull(),
+  cabin: text('cabin'),
+  createdAt: tz('created_at').defaultNow(),
+})
+
 export const bookings = pgTable('hop_bookings', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: text('user_id').notNull(),
