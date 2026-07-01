@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Lunch Money — One Pager</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  @page { size: Letter; margin: 0.55in; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #f3f1ea;
+    color: #1c1a15;
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  .sheet {
+    max-width: 850px;
+    margin: 32px auto;
+    padding: 44px 48px 36px;
+    background: #fbfaf5;
+    border: 1px solid #d9d4c4;
+  }
+  header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #1c1a15; padding-bottom: 14px; margin-bottom: 18px; }
+  h1 { font-size: 30px; margin: 0; letter-spacing: -0.01em; }
+  .tag { font-size: 13px; color: #5c5648; margin-top: 4px; }
+  .kicker { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: #7a7462; text-align: right; }
+  .lede { font-size: 15.5px; line-height: 1.5; color: #3a3527; margin: 0 0 22px; max-width: 640px; }
+  .lede b { color: #1c1a15; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #7a7462; margin: 0 0 10px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 32px; margin-bottom: 22px; }
+  .item h3 { font-size: 14.5px; margin: 0 0 4px; }
+  .item p { font-size: 13px; line-height: 1.45; color: #4a4536; margin: 0; }
+  .callout {
+    background: #1c1a15;
+    color: #f3f1ea;
+    padding: 18px 22px;
+    margin: 4px 0 22px;
+    display: flex;
+    gap: 18px;
+    align-items: flex-start;
+  }
+  .callout .badge {
+    flex: 0 0 auto;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    background: #cf5a3e;
+    color: #fbfaf5;
+    padding: 3px 8px;
+    margin-top: 2px;
+  }
+  .callout p { margin: 0; font-size: 13.5px; line-height: 1.5; }
+  .callout code { background: rgba(255,255,255,0.12); padding: 1px 5px; font-size: 12px; }
+  .foot { display: flex; justify-content: space-between; align-items: flex-start; border-top: 1px solid #d9d4c4; padding-top: 16px; font-size: 12px; color: #5c5648; }
+  .foot .col { max-width: 260px; }
+  .foot b { color: #1c1a15; display: block; margin-bottom: 3px; }
+  .price { font-size: 20px; font-weight: 600; color: #1c1a15; }
+  a { color: #1c1a15; }
+  @media print {
+    body { background: #fff; }
+    .sheet { border: none; margin: 0; max-width: none; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header>
+    <div>
+      <h1>Lunch Money</h1>
+      <div class="tag">Why it's worth a look — a one-pager</div>
+    </div>
+    <div class="kicker">Personal finance,<br/>run like software</div>
+  </header>
+
+  <p class="lede">
+    Lunch Money is a subscription budgeting app that treats your money like a dataset, not a
+    dashboard someone else monetizes. <b>You own the categorization logic, the API access, and
+    the data</b> — most competitors sell you convenience and quietly sell your transaction data
+    to advertisers.
+  </p>
+
+  <h2>What makes it powerful</h2>
+  <div class="grid">
+    <div class="item">
+      <h3>One real net worth, not five apps</h3>
+      <p>Banks, credit cards, crypto wallets, investments, and manual assets (a house, a car) all
+      roll into a single balance sheet — plus native support for 160+ currencies with historical
+      FX rates, so a trip abroad or a foreign paycheck doesn't break the math.</p>
+    </div>
+    <div class="item">
+      <h3>Budgets that roll over, not reset</h3>
+      <p>Unspent grocery budget carries into next month instead of vanishing on the 1st. Recurring
+      bills are auto-detected and tracked separately from discretionary spend, so "did I actually
+      overspend" is a real answer, not a guess.</p>
+    </div>
+    <div class="item">
+      <h3>Rules do the categorizing for you</h3>
+      <p>Write a rule once ("Uber Eats → Dining, tag: takeout") and it applies retroactively and
+      going forward. Split one transaction across categories, group receipts, attach a PDF/photo
+      to any line — the ledger stays clean without manual busywork every week.</p>
+    </div>
+    <div class="item">
+      <h3>Shared, without losing your own view</h3>
+      <p>Partners can share specific budgets or accounts while keeping personal spending private —
+      built for real households, not a single-user assumption bolted onto a "family plan."</p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <span class="badge">For us specifically</span>
+    <p>
+      Lunch Money ships a full <b>REST API</b> — and an official <b>MCP server</b>, which is how
+      this document got written: an AI agent (Claude) connected directly to a live Lunch Money
+      account and could read balances, categories, and budgets, and could just as easily create
+      transactions, apply rules, or split a receipt — no export/import, no screen-scraping.
+      <code>get_budget_summary</code>, <code>create_transactions</code>, <code>upsert_budget</code> —
+      it's a programmable ledger, not just an app with an API bolted on. That's the differentiator
+      that matters to a technical audience: almost no budgeting tool exposes this much surface area.
+    </p>
+  </div>
+
+  <div class="foot">
+    <div class="col">
+      <b>Pricing</b>
+      <span class="price">$10/mo</span> — or pay-what-you-want annually ($50–$150/yr), everything
+      included, no feature paywalls, no ads, no selling your data.
+    </div>
+    <div class="col">
+      <b>Best fit</b>
+      Anyone who wants real budget control (rollovers, rules, multi-currency, crypto) and,
+      especially, anyone who'd rather script their finances than click through a dashboard.
+    </div>
+    <div class="col">
+      <b>Learn more</b>
+      <a href="https://lunchmoney.app">lunchmoney.app</a><br/>
+      <a href="https://lunchmoney.app/pricing">lunchmoney.app/pricing</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
