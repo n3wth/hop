@@ -12,6 +12,7 @@ import {
   imageQuery,
   computeCpp,
 } from '@/lib/destinations'
+import { withoutAvoided, EMPTY_MEMORY_CONTEXT, type MemoryContext } from '@/lib/memory-context'
 import { destinationImages } from '@/lib/images'
 import { WALLET_VALUE_CAVEAT } from '@/lib/valuations'
 import type { SearchState } from '@/components/SearchBar'
@@ -29,6 +30,7 @@ export default async function SignedInHome({
   seed,
   hasHomeAirport = true,
   heroBackdrop,
+  memory = EMPTY_MEMORY_CONTEXT,
 }: {
   first?: string
   programs: number
@@ -39,17 +41,27 @@ export default async function SignedInHome({
   hasHomeAirport?: boolean
   /** Photographic backdrop for the agent hero, matching the /ask landing. */
   heroBackdrop?: ConciergeHeroPhoto
+  /** Unified memory (lib/memory-context) — drops the member's stated "avoid"
+      places from the feed. Defaults to the empty context → today's exact behavior. */
+  memory?: MemoryContext
 }) {
   // Personalized to the member's real balance; best value first. If they're
   // light on points (or programs failed), fall back to the universally great
   // redemptions so the module is never empty.
   const affordable = affordableWith(totalPoints)
-  const picks = (affordable.length >= 4 ? affordable : topValue(8)).slice(0, 8)
   const personalized = affordable.length >= 4
+  // M5 — compounding: drop the member's STATED "avoid" places from this
+  // engine-ranked module. Value order is PRESERVED (hop leads with value; loved
+  // places shape the concierge's words, not this ranking), so "sorted by value
+  // per point" below stays true. A no-op when the profile has no avoided places
+  // → today's exact feed.
+  const base = personalized ? affordable : topValue(24)
+  const picks = withoutAvoided(base, memory.avoided).slice(0, 8)
   const photos = await destinationImages(picks.map((d) => imageQuery(d)))
 
-  // A single headline stat for the summary panel: the best-value trip the
-  // member can reach right now (or the best dream if they're light on points).
+  // A single headline stat for the summary panel: the best-value trip the member
+  // can reach right now (or the best dream if they're light on points). Order is
+  // preserved above, so picks[0] is the true cpp-max of the shown set.
   const topPick = picks[0]
   const topCpp = topPick ? computeCpp(topPick) : undefined
 
