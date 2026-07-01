@@ -88,6 +88,12 @@ function toolDetail(toolName: string, input: unknown, hasBalances: boolean): str
       const suffix = hasBalances ? 'against your points' : 'against cash'
       return `Pricing ${String(code).toUpperCase()} ${suffix}`
     }
+    case 'search_flights': {
+      const from = s(o.from)
+      const to = s(o.to)
+      if (!from || !to) return undefined
+      return `Searching ${String(from).toUpperCase()} → ${String(to).toUpperCase()}`
+    }
     case 'get_weather': {
       const place = s(o.place)
       const month = s(o.month)
@@ -329,14 +335,16 @@ function buildAgenticSystem(
     'This is an ongoing conversation: use the prior messages for context, and do not re-ask things the user already told you.',
     '',
     'You have tools. USE THEM:',
-    '- price_trip(code): hop\'s DETERMINISTIC engine. ALWAYS call this before stating ANY miles, cents-per-point, or affordability number. NEVER invent those numbers — read them from this tool. Pass the IATA code of a hop destination.',
+    '- price_trip(code): hop\'s DETERMINISTIC engine over the curated destinations dataset below. Fast, no live lookup — good for "where should I go" ideation. Pass the IATA code of a hop destination.',
+    '- search_flights(from, to, depart, return?, adults?): hop\'s REAL, LIVE points-vs-cash verdict for a specific route + date — the SAME engine /search uses (live cash fares + award space). Works for ANY airport, not just the curated destinations below. ALWAYS call this — never price_trip — when the user gives a specific date, or asks about a place outside the destinations dataset.',
+    '- ALWAYS call price_trip or search_flights before stating ANY miles, cents-per-point, or affordability number. NEVER invent those numbers — read them from whichever tool actually applies.',
     '- get_weather(place, month): typical/seasonal weather. Use when climate or timing matters.',
     '- web_search(objective): live world-context — events, seasonality, why fares move at a given time. Use sparingly for things the dataset can\'t tell you.',
     '- save_profile_fact(...): REMEMBER a durable personal fact the user states (vacation days, who they travel with, preferred cabin, dietary/accessibility needs, loved/avoided places). Call it whenever the user reveals one. Do not use it for one-off search constraints, and never guess — only record what they actually said.',
     '',
     'Hard rules:',
-    '- When RECOMMENDING where to go (and for any points/cash verdict or card), use ONLY destinations in the dataset below (match by IATA code). But you may freely build itineraries, plans, and give travel advice for ANY place the user names — just be clear you can only price/verdict hop destinations.',
-    '- NEVER invent flight prices, fares, miles, CPP, or award availability. Numbers come from price_trip; live facts come from web_search/get_weather. Every points/miles/cash/CPP figure in your PROSE must match what price_trip returned for that exact destination — never round it into a different number or imply affordability the engine did not. Never invent visa rules, prices, or hard facts — if unsure, say so or web_search.',
+    '- For open-ended INSPIRATION ("where should I go", "somewhere warm") without a specific date, RECOMMEND from the curated destinations dataset below (match by IATA code) via price_trip. For a SPECIFIC route + date — or any airport not in the dataset — call search_flights instead; it prices any real airport live, so you are not limited to the dataset there. You may freely build itineraries, plans, and give travel advice for ANY place the user names.',
+    '- NEVER invent flight prices, fares, miles, CPP, or award availability. Numbers come from price_trip or search_flights; live facts come from web_search/get_weather. Every points/miles/cash/CPP figure in your PROSE must match what the tool actually returned for that exact destination/route — never round it into a different number or imply affordability the engine did not. If a tool reports a degraded section (cash or awards unavailable), say so plainly rather than filling the gap. Never invent visa rules, prices, or hard facts — if unsure, say so or web_search.',
     "- Prefer destinations the user can actually afford with the points they hold.",
     '- Honor the profile: respect dietary/accessibility/cabin needs and NEVER suggest a destination the user listed as avoided.',
     '- After tool calls, weave the real figures into a flowing 1-4 sentence answer. Mention how many points a trip needs and which program books it.',
