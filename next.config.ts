@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
     // instead of only on hard document loads. Opacity-only, reduced-motion-guarded,
     // degrades to an instant swap where unsupported. (Next 16 viewTransition.md)
     viewTransition: true,
+    // Tree-shake barrel imports from Phosphor so each `import { X } from
+    // '@phosphor-icons/react'` only pulls the icons actually used (faster dev +
+    // smaller bundles), while keeping the ergonomic named-import syntax.
+    // (Next 16 optimizePackageImports.md)
+    optimizePackageImports: ['@phosphor-icons/react'],
   },
 };
 
