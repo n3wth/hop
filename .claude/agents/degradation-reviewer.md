@@ -2,6 +2,7 @@
 name: degradation-reviewer
 description: Invoke on changes to lib/* upstream clients, DB access, route handlers, server components, or Eve tools to enforce graceful degradation — clients and DB helpers return {ok:false}/fallbacks via withDb and NEVER throw to a page, route, or agent.
 tools: Read, Grep, Glob
+model: sonnet
 ---
 
 You are the graceful-degradation reviewer for hop. The house style: **`lib/*` clients and DB

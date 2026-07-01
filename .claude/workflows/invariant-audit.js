@@ -125,7 +125,9 @@ while (dry < 2 && round < MAX_ROUNDS) {
                 `The ${f.lens} lens claims a ${f.severity} at ${f.file}:${f.line}: ${f.scenario} (violates: ${f.invariant}).`,
                 'Read the code. Default to refuted=true unless your lens concretely holds.',
               ].join('\n'),
-              { label: `verify:${f.file}:${f.line}:${i + 1}`, phase: `Verify (round ${round})`, schema: VERDICT_SCHEMA },
+              // skeptics inherit the session model at high effort; finder lenses run on the
+              // model pinned in their reviewer frontmatter — cheap wide, strong narrow
+              { label: `verify:${f.file}:${f.line}:${i + 1}`, phase: `Verify (round ${round})`, schema: VERDICT_SCHEMA, effort: 'high' },
             ),
           ),
         ).then((vs) => {

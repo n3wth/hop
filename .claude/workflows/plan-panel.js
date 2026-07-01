@@ -108,8 +108,12 @@ const JUDGE_ANGLES = [
   'economy — is anything in this plan speculative scope the requirements do not need',
 ]
 
+// Judges inherit the session model at high effort: scoring competing plans against the
+// invariants is the hardest judgment node in this workflow — drafts stay at session default.
 const verdicts = (
-  await parallel(JUDGE_ANGLES.map((angle, i) => () => agent(judgePrompt(angle), { label: `judge:${i + 1}`, phase: 'Judge', schema: JUDGE_SCHEMA })))
+  await parallel(
+    JUDGE_ANGLES.map((angle, i) => () => agent(judgePrompt(angle), { label: `judge:${i + 1}`, phase: 'Judge', schema: JUDGE_SCHEMA, effort: 'high' })),
+  )
 ).filter(Boolean)
 
 if (!verdicts.length) {

@@ -3,7 +3,7 @@ export const meta = {
   description:
     "Review lane: hop's six standing reviewers fan out over one captured diff, every finding is adversarially verified at file:line, and the survivors merge into a single P1/P2/P3 list.",
   whenToUse:
-    'After implementing a change, before merge. args: { base?: string } — a git ref to diff against (default "main"; the working diff is always included).',
+    'After implementing a change, before merge. args: { base?: string, skeptics?: number } — base is a git ref to diff against (default "main"; the working diff is always included); skeptics (1–3, default 1) sets the verification panel size per finding — raise it when the driving model is small, a majority must uphold.',
   phases: [
     { title: 'Scope', detail: 'capture the diff once so every reviewer judges the same change' },
     { title: 'Review', detail: 'standing reviewers from .claude/agents/, path-gated, in parallel' },
@@ -15,6 +15,15 @@ export const meta = {
 // see, and how findings merge. The agents supply judgment inside each node — nothing else.
 
 const base = (args && args.base) || 'main'
+// Rigor knob for smaller driving models: quality comes from structure (more independent
+// skeptics, majority rule), not from escalating to a bigger model the session may not have.
+const skeptics = Math.max(1, Math.min(3, (args && args.skeptics) || 1))
+
+const SKEPTIC_ANGLES = [
+  'correctness — does the code at that exact location actually permit the failure scenario as written',
+  'blast radius — even if technically true, does it breach an invariant users or agents depend on, or is it inert',
+  'freshness — is the defect introduced or exposed by THIS diff, not pre-existing behavior misattributed to it',
+]
 
 // The six standing reviewers (.claude/agents/*). `paths` gates each one on the changed
 // file list — the same "skip only if the diff plainly cannot trigger its domain" rule as
@@ -108,7 +117,8 @@ const scope = await agent(
     `Run: \`git diff ${base}...HEAD\` (if the ref does not exist, fall back to \`git diff origin/${base}...HEAD\`, then \`git diff HEAD~1\`), plus \`git diff\` (unstaged) and \`git diff --staged\`. Untracked files are part of the change set too: list them via \`git status --porcelain\` and append each as a new-file diff (\`git diff --no-index /dev/null <path>\` — exits 1 on success, that is fine).`,
     'Return: empty=true only if ALL of those are empty; files = every changed repo-relative path (deduped); summary = one line per touched area; diff = the concatenated unified diffs. If the concatenated diff exceeds ~50,000 characters, keep the full per-file diffs for the most substantive files, replace the rest with their `git diff --stat` lines, and set truncated=true.',
   ].join('\n'),
-  { label: 'scope:diff', phase: 'Scope', schema: SCOPE_SCHEMA },
+  // effort low: capturing a diff is mechanical — spend the session's effort on verify nodes.
+  { label: 'scope:diff', phase: 'Scope', schema: SCOPE_SCHEMA, effort: 'low' },
 )
 
 if (!scope || scope.empty) {
@@ -131,16 +141,19 @@ const reviewPrompt = (r) =>
     'Report ONLY defects introduced or exposed by this change set, each with the exact file, the 1-indexed line, P1/P2/P3 per your severity table, the violated invariant, and a concrete failure scenario. If nothing in your domain is wrong, return an empty findings array.',
   ].join('\n\n')
 
-const skepticPrompt = (f, r) =>
+const skepticPrompt = (f, r, angle) =>
   [
-    `Adversarially verify one code-review finding. The ${r.key} claims a ${f.severity} at ${f.file}:${f.line}:`,
+    `Adversarially verify one code-review finding through a single lens — ${angle}.`,
+    `The ${r.key} claims a ${f.severity} at ${f.file}:${f.line}:`,
     `Violated invariant: ${f.invariant}`,
     `Failure scenario: ${f.scenario}`,
-    'Read the file at that location (and anything it references) in the current working tree. Your job is to REFUTE the finding: the defect is only real if the code at that location, as it exists now, concretely permits the failure scenario. Default to refuted=true if the claim is speculative, already guarded elsewhere, or points at unchanged pre-existing behavior misattributed to this diff.',
+    'Read the file at that location (and anything it references) in the current working tree. Your job is to REFUTE the finding: the defect is only real if the code at that location, as it exists now, concretely permits the failure scenario through your lens. Default to refuted=true if the claim is speculative or already guarded elsewhere.',
   ].join('\n')
 
 // pipeline, not a barrier: each reviewer's findings go to verification the moment that
-// reviewer finishes — the fast domains don't idle behind the slow ones.
+// reviewer finishes — the fast domains don't idle behind the slow ones. Reviewers run on
+// the model pinned in their .claude/agents/*.md frontmatter; skeptics inherit the session
+// model at high effort — cheap wide, strong narrow.
 const results = await pipeline(
   applicable,
   (r) => agent(reviewPrompt(r), { label: `review:${r.key}`, phase: 'Review', schema: FINDINGS_SCHEMA, agentType: r.key }),
@@ -149,9 +162,24 @@ const results = await pipeline(
     if (!findings.length) return []
     return parallel(
       findings.map((f) => () =>
-        agent(skepticPrompt(f, r), { label: `verify:${f.file}:${f.line}`, phase: 'Verify', schema: VERDICT_SCHEMA }).then(
-          (v) => (v && !v.refuted ? { ...f, reviewer: r.key, confirmedBecause: v.reason } : null),
-        ),
+        parallel(
+          SKEPTIC_ANGLES.slice(0, skeptics).map((angle, i) => () =>
+            agent(skepticPrompt(f, r, angle), {
+              label: `verify:${f.file}:${f.line}${skeptics > 1 ? `:${i + 1}` : ''}`,
+              phase: 'Verify',
+              schema: VERDICT_SCHEMA,
+              effort: 'high',
+            }),
+          ),
+        ).then((vs) => {
+          const kept = vs.filter(Boolean)
+          const upheld = kept.filter((v) => !v.refuted)
+          // strict majority of surviving skeptics must uphold; all-skeptics-dead drops the
+          // finding (fail-closed — an unverifiable finding is noise, not signal)
+          return upheld.length * 2 > kept.length
+            ? { ...f, reviewer: r.key, confirmedBecause: upheld[0].reason, skepticVotes: `${upheld.length}/${kept.length}` }
+            : null
+        }),
       ),
     ).then((vs) => vs.filter(Boolean))
   },

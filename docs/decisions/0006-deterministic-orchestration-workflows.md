@@ -47,6 +47,13 @@ between the nodes is computed by a checked-in workflow script.** Concretely:
 - **The Compound lane gains a fourth promotion target.** A lesson can now become a solutions
   entry, a CLAUDE.md rule, a reviewer check, an ADR — or an orchestration rule in a workflow
   (e.g. a new path gate, a stricter skeptic angle).
+- **The loop is model-portable by construction.** Because taste lives in checklists and rules
+  live in scripts, the driving model only fills judgment nodes: reviewers are pinned to
+  `sonnet` in their frontmatter, mechanical nodes run at low effort, verify/judge nodes inherit
+  the session model at high effort, and rigor scales via vote count (`args.skeptics`), never
+  via a hardcoded model escalation. Running the loop on Sonnet 5 — or following the
+  `.claude/commands/*` recipes from a non-Claude agent via `AGENTS.md` — changes cost, not
+  shape (see `.claude/workflows/README.md` §Model portability).
 - **Two sources of truth must not drift.** A command and its workflow describe the same
   process; changing one without the other reintroduces the improvisation this ADR removes.
   `invariant-audit.js`'s memory lens checks doc/code drift for exactly this class of problem.

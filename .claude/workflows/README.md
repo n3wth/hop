@@ -35,6 +35,33 @@ of disappearing (house style, applied to tooling).
   needs *all* prior results (judges comparing drafts, per-round dedup) — each one carries a
   comment saying why.
 
+## Model portability — the loop must not need a frontier driver
+
+The system is built so the *structure* carries the quality, and the driving model only supplies
+local judgment. That is what makes it portable: run the session on Sonnet 5 (or smaller) and
+the loop degrades in cost, not in shape.
+
+- **Taste is externalized.** The reviewers' judgment lives in their `.claude/agents/*.md`
+  checklists (grep targets, severity tables, exact invariants), not in model capability — so
+  they are pinned to `model: sonnet` in their frontmatter. Wide fan-out is always cheap,
+  whatever drives the session.
+- **Effort is routed, models are not.** Mechanical nodes (the scope scout) run at
+  `effort: 'low'`; the hardest judgment nodes (skeptics, plan judges) inherit the session model
+  at `effort: 'high'`. Scripts never hardcode a model escalation — a session without access to
+  a bigger model must still run everything. Cheap wide, strong narrow.
+- **Rigor is a knob, not a model.** A smaller driver compensates with more independent
+  verification, not a bigger brain: `review-parallel` takes `args.skeptics` (1–3, strict
+  majority must uphold); `invariant-audit` always uses a 2-of-3 panel. Schemas, path gates,
+  vote tallies, and dry-round exits hold regardless of who fills the nodes.
+- **Non-Claude agents get the same process.** `AGENTS.md` is the cross-tool entry point, and
+  every workflow's `.claude/commands/*` counterpart is a plain-prose recipe of the identical
+  loop — a harness with no Workflow tool (Cursor, Codex, anything reading `AGENTS.md`) follows
+  the command manually. Same lanes, same severity bars, same memory surfaces.
+
+Rule of thumb when adding nodes: put every rule you can into script + checklist (works on any
+model), spend `effort` on verify/judge nodes (works on any Claude model), and treat model
+pinning as a last resort that must never pin *upward* past `sonnet`.
+
 ## Constraints (these scripts are a third runtime)
 
 Workflow scripts execute in the Workflow tool's sandbox — not in Node, not in the Next.js app
