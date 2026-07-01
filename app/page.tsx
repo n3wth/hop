@@ -4,6 +4,8 @@ import { auth0 } from '@/lib/auth0'
 import { mockBalances } from '@/lib/mock'
 import { getPrefs, type UserPrefs } from '@/lib/prefs'
 import { getUserBalances } from '@/lib/accounts'
+import { getMemoryContext, EMPTY_MEMORY_CONTEXT } from '@/lib/memory-context'
+import { walletValue } from '@/lib/valuations'
 import { ORIGIN_STORAGE_KEY } from '@/lib/origin-context'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
@@ -33,6 +35,7 @@ function makeSeed(): SearchState {
     infants: 0,
     cabin: 'economy',
     oneWay: false,
+    nonstop: false,
   }
 }
 
@@ -59,16 +62,20 @@ export default async function Home() {
       }
     : null
 
-  // The three remaining data sources are independent — fetch them concurrently
-  // so the home renders in one round-trip instead of three sequential ones.
+  // These data sources are independent — fetch them concurrently so the home
+  // renders in one round-trip instead of sequentially.
   //   - balances: unified per-user (manual + AwardWallet, merged)
   //   - heroBackdrop: canonical Unsplash photo for the agent hero teaser
   //   - prefs: home airport that seeds the default From
+  //   - memory: unified personalization (M5) — drops avoided places from the feed
   // Each degrades gracefully on its own; none can crash the page.
-  const [real, heroBackdropRaw, prefs] = await Promise.all([
+  const [real, heroBackdropRaw, prefs, memory] = await Promise.all([
     su?.sub ? getUserBalances(su.sub) : Promise.resolve([]),
     conciergeBackdrop(),
     su?.sub ? getPrefs(su.sub) : Promise.resolve({} as UserPrefs),
+    // M5 — unified memory (orders the destinations module to stated affinities).
+    // Degrades to the empty context when signed out; never throws.
+    su?.sub ? getMemoryContext(su.sub) : Promise.resolve(EMPTY_MEMORY_CONTEXT),
   ])
 
   // Balances power both the program count and the personalized destinations.
@@ -76,11 +83,13 @@ export default async function Home() {
   // programs sees a genuine empty/onboarding state, never fabricated balances.
   let programs = 0
   let totalPoints = 0
+  let pointsWorth = 0
   if (user) {
     const useMock = real.length === 0 && /^(1|true|yes)$/i.test(process.env.MOCK ?? '')
     const balances = real.length > 0 ? real : useMock ? mockBalances() : []
     programs = balances.length
     totalPoints = balances.reduce((sum, b) => sum + b.balance, 0)
+    pointsWorth = walletValue(balances)
   }
 
   const first = user?.name?.trim().split(' ')[0]
@@ -104,17 +113,19 @@ export default async function Home() {
   if (user) {
     return (
       <AppShell user={user} pointsTotal={programs > 0 ? totalPoints : undefined} hideSearch>
-        <div className="mx-auto max-w-[1180px]">
+        <div className="mx-auto max-w-[var(--container-app)]">
           <SignedInHome
             first={first}
             programs={programs}
             totalPoints={totalPoints}
+            pointsWorth={pointsWorth}
             seed={homeSeed}
             hasHomeAirport={!!prefs.homeAirport}
             heroBackdrop={heroBackdrop}
+            memory={memory}
           />
         </div>
-        <div className="mx-auto max-w-[1180px]">
+        <div className="mx-auto max-w-[var(--container-app)]">
           <SiteFooter />
         </div>
       </AppShell>
@@ -124,7 +135,7 @@ export default async function Home() {
   // ── SIGNED OUT — marketing front door ────────────────────────────────────
   return (
     <AppShell user={null} hideSearch>
-      <div className="mx-auto flex max-w-[1180px] flex-col gap-16 pt-4 sm:gap-20 sm:pt-6 lg:gap-24 lg:pt-8">
+      <div className="mx-auto flex max-w-[var(--container-app)] flex-col gap-16 pt-4 sm:gap-20 sm:pt-6 lg:gap-24 lg:pt-8">
         {/* ── HERO — the agent is the front door ──────────────────────────── */}
         {/* Lead with the conversational promise: a composer that opens the agent
             (routing through sign-in when they act). The verdict below is the proof. */}
@@ -156,7 +167,7 @@ export default async function Home() {
         <ConnectBand user={null} programs={0} />
       </div>
 
-      <div className="mx-auto max-w-[1180px]">
+      <div className="mx-auto max-w-[var(--container-app)]">
         <SiteFooter />
       </div>
     </AppShell>

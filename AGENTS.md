@@ -17,3 +17,53 @@ Every unit of work should make the next one easier. The full guidance lives in *
 - **Read before you change a decided area:** `docs/decisions/`. **Search before you solve:** `docs/solutions/`.
 - The **`eve/`** directory is the Eve agent (a separate Vercel Eve runtime), deliberately excluded from the Next app's typecheck/lint/build — do not add it to the build graph (`eve/README.md`).
 - **Teach the system, don't just do the task.** When you learn something durable, write it where the next agent will find it automatically.
+
+# Content data — committed snapshots, regenerable offline
+
+Destination content is grounded in **real data fetched once, offline, and committed** — the live site
+never calls these APIs at request time (keeps `force-static` builds deterministic and sidesteps
+rate-limits / non-commercial *endpoint* terms; the underlying *data* licenses allow redistribution).
+Each dataset has a regenerator under `scripts/`; re-run it and commit the output to refresh. See
+**`docs/content-apis.md`** for the full sourcing + licensing rationale.
+
+- `lib/climate-normals.ts` ← `scripts/gen-climate-normals.mjs` — ERA5 monthly normals (Open-Meteo,
+  CC BY 4.0). `lib/climate.ts#computeSeasonality` derives the honest, per-city "when to go" verdict.
+- `lib/place-facts.ts` ← `scripts/gen-place-facts.mjs` — currency (Wikidata, CC0), timezone
+  (Open-Meteo), USD FX snapshot (Frankfurter/ECB). `lib/place-info.ts` renders the essentials chips +
+  the computed "how far your dollar goes" line. **Wikidata's raw language/currency-name fields are
+  noisy** — they're curated in the script; the codes/timezone/FX stay sourced.
+
+Same invariant as the engine: these are **real, looked-up, date-stamped values, never LLM-generated**.
+
+# Dynamic images
+
+- **OG/social cards** are computed per page via `next/og` (`app/**/opengraph-image.tsx`) sharing
+  `lib/og.tsx` (bunny mark, brand hex — Satori can't read CSS vars, fonts vendored under `lib/fonts/`
+  as TTF/OTF/WOFF since `next/font` ships WOFF2). They carry the **same `lib/cpp` verdict the page
+  shows**. Routes are statically prerendered, so fonts are read only at build.
+- **Photo placeholders**: `lib/blurhash.ts` decodes the Unsplash `blur_hash` (`lib/images.ts` captures
+  it) to a tiny blurred SVG + avg color; image frames use it as their background so a still-loading
+  `<img>` fades up from a blur of itself. No client JS, no-JS-safe.
+
+# Visual verification on this harness
+
+`npm run build` catches RSC/route errors. To actually *see* a page, screenshot **localhost** with the
+pre-installed headless Chromium — but two gotchas: (1) `next start` will **not persist** as a detached
+background process here, and (2) the agent proxy **closes Chromium's connection to any external URL**
+(`ERR_CONNECTION_CLOSED`), so you can't screenshot the Vercel preview. Both are handled by the helper —
+after a build, one command shoots any set of paths:
+
+```bash
+npm run build && scripts/shoot.sh / /deals /destinations/tokyo   # → /tmp/shot-*.png
+```
+
+It starts the server and takes the shots inside **one** foreground command (so the server stays alive
+during capture) and kills it on exit. `UNSPLASH_ACCESS_KEY` gates destination photos (absent → the
+solid/blur fallback), and `MOCK=1` swaps in cash/awards/balances fixtures — set both in the environment
+(see `.env.example`) for full-fidelity local shots; without the key you still verify
+**layout / spacing / cohesion**, just not the imagery. Rebuild before shooting after any code change
+(the static pages are prebuilt). For the real prod render, push and let the Vercel **preview** deploy —
+the human reviews it.
+
+New containers: point the environment's **setup script** at `scripts/setup-cloud.sh` (installs deps);
+the two visual-loop vars go in the environment settings, not in the repo.

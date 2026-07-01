@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import HomeAirportPicker from './HomeAirportPicker'
+import Logo from './Logo'
 
 const DISMISS_KEY = 'hop:home-airport-prompt-dismissed'
 
 // Shown on the signed-in home when the user has no home airport yet. A warm,
 // solid-bunny prompt to set it once — then every search/deal starts from home.
-// Uses the SOLID bunny (favicon-bunny.svg) on a teal chip, not the line mark.
+// Uses the Logo mark carved onto a solid teal chip, matching the sibling
+// icon-chip pattern (GmailHistory, ProgramsManager, AirlineStatusManager).
 export default function HomeAirportPrompt() {
   const [done, setDone] = useState<string | null>(null)
   // Persist dismissal so the prompt stays gone on reload (it's purely a nudge —
@@ -42,10 +44,8 @@ export default function HomeAirportPrompt() {
   return (
     <section className="rounded-[var(--radius-lg)] border border-border bg-surface p-6 sm:p-7">
       <div className="flex items-start gap-4">
-        <span className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-[14px] bg-brand text-brand-light">
-          {/* solid bunny mark */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/favicon-bunny.svg" alt="" className="h-7 w-7 [filter:brightness(0)_invert(0.93)_sepia(0.2)_saturate(3)_hue-rotate(120deg)]" />
+        <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand text-brand-light">
+          <Logo size={26} carve="var(--color-brand)" decorative />
         </span>
         <div className="min-w-0 flex-1">
           {done ? (

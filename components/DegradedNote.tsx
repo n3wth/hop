@@ -15,9 +15,12 @@ const COPY: Record<string, string> = {
   balances: 'Couldn’t refresh your balances just now — figures may be stale.',
 }
 
-// Subtle inline note when an upstream source failed. Calm amber tint, one line —
-// surfaces the gap rather than silently dropping it. Renders nothing if every
-// degraded source is one we don't message (or the list is empty).
+// Subtle inline note when an upstream source failed. Calm neutral tint, one
+// line — surfaces the gap rather than silently dropping it. Renders nothing
+// if every degraded source is one we don't message (or the list is empty).
+// Note: this is NOT a cpp value-tier signal, so it never uses the good/ok/weak
+// tokens (those are reserved for cents-per-point classification) — it uses the
+// same neutral border-border/bg-sunk treatment as other "heads up" notices.
 export default function DegradedNote({ degraded }: DegradedNoteProps) {
   const messages = degraded.map((d) => COPY[d]).filter(Boolean)
   if (messages.length === 0) return null
@@ -25,7 +28,7 @@ export default function DegradedNote({ degraded }: DegradedNoteProps) {
   return (
     <div
       role="status"
-      className="mt-[18px] flex items-start gap-[10px] rounded-[12px] border border-ok-bg bg-ok-bg/60 px-[16px] py-[11px] text-[13px] leading-[1.45] text-ok"
+      className="mt-[18px] flex items-start gap-[10px] rounded-[12px] border border-border bg-sunk px-[16px] py-[11px] text-[13px] leading-[1.45] text-text2"
     >
       <span className="mt-[1px] flex-shrink-0">
         <Icon name="notifications" size={16} />

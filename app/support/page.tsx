@@ -288,7 +288,7 @@ export default async function SupportPage() {
           your miles go furthest, the <Link href="/ask">concierge</Link> answers on the spot.
         </p>
       </LegalShell>
-      <div className="mx-auto max-w-[1180px]">
+      <div className="mx-auto max-w-[var(--container-app)]">
         <SiteFooter />
       </div>
     </AppShell>

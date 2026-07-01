@@ -71,4 +71,19 @@ describe('agentic system prompt — memory awareness', () => {
     const sys = buildAgenticSystemForTest(undefined, {}, undefined)
     expect(sys.toLowerCase()).toContain('coming soon')
   })
+
+  it('injects the engine-computed wallet dollar total and forbids the model from computing its own', () => {
+    const context = {
+      programs: [
+        { program: 'Amex MR', balance: 60000 },
+        { program: 'Chase UR', balance: 25000 },
+      ],
+      totalPoints: 85000,
+    }
+    const sys = buildAgenticSystemForTest(context, {})
+    // lib/valuations#walletValue: 60000 * 2.00cpp + 25000 * 2.05cpp = $1,713 (rounded)
+    expect(sys).toContain('Engine-computed wallet dollar value')
+    expect(sys).toContain('$1,713')
+    expect(sys.toLowerCase()).toContain('never sum or multiply')
+  })
 })

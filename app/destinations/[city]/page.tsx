@@ -167,7 +167,7 @@ export default async function DestinationGuidePage({
     <AppShell user={null} hideSearch>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <article className="mx-auto max-w-[760px]">
+      <article className="mx-auto max-w-[var(--container-article)]">
         {/* breadcrumb */}
         <nav aria-label="Breadcrumb" className="pt-8 text-[13px] text-text3">
           <Link href="/destinations" className="font-semibold text-brand hover:text-brand-deep">

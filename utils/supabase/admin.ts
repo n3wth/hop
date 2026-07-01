@@ -96,6 +96,85 @@ interface HopDatabase {
         }
         Relationships: []
       }
+      hop_conversation_summary: {
+        // One rolling durable summary per user of the older concierge turns that
+        // scrolled off the live thread. See CREATE TABLE in lib/conversation-memory.ts.
+        Row: {
+          user_id: string
+          summary: string
+          updated_at: string | null
+        }
+        Insert: {
+          user_id: string
+          summary?: string
+          updated_at?: string | null
+        }
+        Update: {
+          summary?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      hop_inferred_facts: {
+        // Confidence-scored preferences hop NOTICED (pending until the user
+        // confirms/dismisses). See CREATE TABLE in lib/inferred-facts.ts.
+        Row: {
+          id: string
+          user_id: string
+          kind: string
+          value: string
+          confidence: number | string
+          status: string
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          kind: string
+          value: string
+          confidence?: number | string
+          status?: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          kind?: string
+          value?: string
+          confidence?: number | string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      hop_memory_outcomes: {
+        // Append-only log of discrete OBSERVED signals (today: a verdict card the
+        // user dismissed with "Not for me"). A pure aggregator derives human
+        // "hop observed …" rows + soft prompt context. Holds NO economics — subject
+        // is a place label, cabin is optional context. See lib/memory-outcomes.ts.
+        Row: {
+          id: string
+          user_id: string
+          kind: string
+          subject: string
+          cabin: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          kind: string
+          subject: string
+          cabin?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          kind?: string
+          subject?: string
+          cabin?: string | null
+        }
+        Relationships: []
+      }
       hop_user_accounts: {
         Row: {
           user_id: string
@@ -331,6 +410,32 @@ interface HopDatabase {
           email?: string
           trip?: Json
           status?: string
+        }
+        Relationships: []
+      }
+      hop_valuation_overrides: {
+        // Live cents-per-point aggregates, populated by
+        // app/api/cron/valuation-sync/route.ts from the Cloudflare valuations
+        // Worker. See CREATE TABLE in lib/valuation-overrides.ts notes.
+        Row: {
+          program_id: string
+          cpp: number
+          sample_size: number
+          as_of: string
+          updated_at: string | null
+        }
+        Insert: {
+          program_id: string
+          cpp: number
+          sample_size: number
+          as_of: string
+          updated_at?: string | null
+        }
+        Update: {
+          cpp?: number
+          sample_size?: number
+          as_of?: string
+          updated_at?: string | null
         }
         Relationships: []
       }

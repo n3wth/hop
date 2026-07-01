@@ -11,6 +11,7 @@ import { destinationByCode, computeCpp, topValue } from '@/lib/destinations'
 import { partnersOf } from '@/lib/transfers'
 import { canonicalizeProgram } from '@/lib/programs'
 import { assembleSearch } from '@/lib/search'
+import { listCardAffiliates, formatBonus } from '@/lib/card-affiliates'
 
 // The MCP tool handlers MUST be a pure passthrough to hop's deterministic engine
 // — they introduce no economics of their own. These tests prove every figure a
@@ -295,5 +296,46 @@ describe('runBestCardForProgram() — static earn-card reference (no economics)'
     const out = runBestCardForProgram({ program: 'Aegean' })
     expect('error' in out).toBe(true)
     if ('error' in out) expect(out.programId).toBe('aegean')
+  })
+
+  it('sources card + bonus straight from lib/card-affiliates.ts (single table, no drift)', () => {
+    const out = runBestCardForProgram({ program: 'Chase UR' })
+    if ('error' in out) throw new Error('expected a card')
+    const affiliate = listCardAffiliates()['chase-ur']
+    expect(out.card).toBe(affiliate.cardName)
+    expect(out.issuer).toBe(affiliate.issuer)
+    expect(out.earnRate).toBe(affiliate.earnRate)
+    expect(out.annualFee).toBe(affiliate.annualFee)
+    expect(out.applyUrl).toBe(affiliate.applyUrl)
+    expect(out.bonus).toBe(formatBonus(affiliate))
+  })
+
+  // Coverage: the old TOP_CARD_BY_PROGRAM map (now deleted) guaranteed card,
+  // issuer, earnRate, bonus, annualFee, applyUrl for every entry it covered.
+  // Every lib/card-affiliates.ts entry the MCP tool can now surface must carry
+  // the same complete field set — no more, no less coverage than before.
+  it('every CardAffiliate has all the fields the old local map guaranteed', () => {
+    const table = listCardAffiliates()
+    expect(Object.keys(table).length).toBeGreaterThan(0)
+    for (const [id, affiliate] of Object.entries(table)) {
+      expect(affiliate.cardName.length, `${id}.cardName`).toBeGreaterThan(0)
+      expect(affiliate.issuer.length, `${id}.issuer`).toBeGreaterThan(0)
+      expect(affiliate.earnRate.length, `${id}.earnRate`).toBeGreaterThan(0)
+      expect(affiliate.annualFee.length, `${id}.annualFee`).toBeGreaterThan(0)
+      expect(affiliate.applyUrl, `${id}.applyUrl`).toMatch(/^https:\/\//)
+      expect(formatBonus(affiliate).length, `${id}.bonus`).toBeGreaterThan(0)
+
+      // And the MCP tool itself must resolve + surface every one of those fields
+      // for each mapped program — proving runBestCardForProgram never drops a
+      // field the old map used to guarantee.
+      const out = runBestCardForProgram({ program: id })
+      if ('error' in out) throw new Error(`expected a card for mapped id "${id}"`)
+      expect(out.card).toBe(affiliate.cardName)
+      expect(out.issuer).toBe(affiliate.issuer)
+      expect(out.earnRate).toBe(affiliate.earnRate)
+      expect(out.bonus).toBe(formatBonus(affiliate))
+      expect(out.annualFee).toBe(affiliate.annualFee)
+      expect(out.applyUrl).toBe(affiliate.applyUrl)
+    }
   })
 })

@@ -25,6 +25,8 @@ export interface TopNavProps {
   childrenCount?: number
   infants?: number
   cabin?: Cabin
+  /** Nonstop-only filter carried over from the search that landed on this page. */
+  nonstop?: boolean
   /** Auth0 session, passed from the server. Null when signed out. */
   user?: { initial: string; name?: string; email?: string; picture?: string } | null
   /** Total points across the user's programs — shown beside the avatar. */
@@ -134,6 +136,7 @@ export default function TopNav({
   childrenCount = 0,
   infants = 0,
   cabin = 'economy',
+  nonstop = false,
   user = null,
   pointsTotal,
   hideSearch = false,
@@ -156,8 +159,9 @@ export default function TopNav({
       infants,
       cabin,
       oneWay: !seedRet,
+      nonstop,
     }),
-    [fromCode, toCode, seedDepart, seedRet, adults, childrenCount, infants, cabin],
+    [fromCode, toCode, seedDepart, seedRet, adults, childrenCount, infants, cabin, nonstop],
   )
 
   const [mobileOpen, setMobileOpen] = useState(false)

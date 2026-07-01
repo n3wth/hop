@@ -166,13 +166,13 @@ const ResultRow = memo(function ResultRow({ option, rank, maxCpp, index = 0, ope
           <div className="mt-[10px] flex items-center gap-2">
             {cppText ? (
               <span
-                className={`rounded-[7px] px-[9px] py-1 text-[11.5px] font-semibold ${CHIP[option.tier]}`}
+                className={`hop-num rounded-full px-[9px] py-1 text-[11.5px] font-semibold ${CHIP[option.tier]}`}
                 aria-label={`${cppText} per point — ${TIER_WORD[option.tier]}`}
               >
                 <span aria-hidden="true">{cppText} / pt</span>
               </span>
             ) : option.earn != null ? (
-              <span className="rounded-[7px] bg-sunk px-[9px] py-1 text-[11.5px] font-semibold text-text2">
+              <span className="hop-num rounded-full bg-sunk px-[9px] py-1 text-[11.5px] font-semibold text-text2">
                 earns ~${option.earn.toFixed(2)}
               </span>
             ) : null}

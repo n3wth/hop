@@ -8,6 +8,10 @@ export interface RouteBarProps {
       programs. When false (signed out / mock / nothing connected) the
       "N programs" stat would be misleading, so it's hidden. */
   hasRealBalances?: boolean
+  /** The search was filtered to nonstop-only — surfaced so the trip context
+      confirms the filter actually applied (otherwise the only feedback is an
+      absence: no connecting itineraries in the results below). */
+  nonstop?: boolean
 }
 
 // A right-aligned stat: bold value over a small caption, so the summary carries
@@ -15,7 +19,7 @@ export interface RouteBarProps {
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div className="flex flex-col items-end leading-none">
-      <span className="hop-price text-[18px] text-text">
+      <span className="hop-num text-[18px] font-semibold text-text">
         {value}
       </span>
       <span className="mt-[5px] text-[11px] uppercase tracking-[0.06em] text-text3">{label}</span>
@@ -26,7 +30,7 @@ function Stat({ value, label }: { value: string; label: string }) {
 // Editorial route line: origin/dest codes with a flight arc, balanced by a
 // weighted stat group on the right. Pure read-out — every token informs the trip.
 // A compact stacked variant covers small screens (below lg).
-export default function RouteBar({ result, hasRealBalances = false }: RouteBarProps) {
+export default function RouteBar({ result, hasRealBalances = false, nonstop = false }: RouteBarProps) {
   const { from, to, adults } = result.params
   const oneWay = !result.params.return
   const ways = result.options.length
@@ -61,6 +65,12 @@ export default function RouteBar({ result, hasRealBalances = false }: RouteBarPr
           </span>
           <span aria-hidden>·</span>
           <span>{oneWay ? 'one way' : 'round trip'}</span>
+          {nonstop ? (
+            <>
+              <span aria-hidden>·</span>
+              <span className="font-semibold text-brand">nonstop only</span>
+            </>
+          ) : null}
         </div>
       </div>
 
@@ -95,6 +105,12 @@ export default function RouteBar({ result, hasRealBalances = false }: RouteBarPr
           <Stat value={String(adults)} label={adults === 1 ? 'traveler' : 'travelers'} />
           <span className="h-9 w-px bg-hair" />
           <Stat value={oneWay ? 'OW' : 'RT'} label={oneWay ? 'one way' : 'round trip'} />
+          {nonstop ? (
+            <>
+              <span className="h-9 w-px bg-hair" />
+              <Stat value="0" label="stops" />
+            </>
+          ) : null}
           {showPrograms ? (
             <>
               <span className="h-9 w-px bg-hair" />

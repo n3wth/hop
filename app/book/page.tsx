@@ -66,21 +66,13 @@ export default async function BookPage({
 
   return (
     <AppShell user={user} hideSearch>
-      <div className="mx-auto max-w-[1040px] pb-4 pt-8 sm:pt-12">
+      <div className="mx-auto max-w-[var(--container-checkout)] pb-4 pt-8 sm:pt-12">
         {backHref ? (
           <Link
             href={backHref}
             className="mb-5 inline-flex items-center gap-1.5 text-[13.5px] font-medium text-text2 transition-colors hover:text-text"
           >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 -960 960 960"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path d="m313-440 196 196q12 12 11.5 28T508-188q-12 11-28 11.5T452-188L188-452q-6-6-8.5-13t-2.5-15q0-8 2.5-15t8.5-13l264-264q12-12 28.5-11.5T508-771q11 12 11.5 28T508-715L313-520h447q17 0 28.5 11.5T800-480q0 17-11.5 28.5T760-440H313Z" />
-            </svg>
+            <Icon name="arrow_left" size={15} />
             Back to results
           </Link>
         ) : null}

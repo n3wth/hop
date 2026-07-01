@@ -29,6 +29,14 @@ type EnvKey =
   // Worker presents it as a Bearer token to file inbound emails as tickets.
   // Absent → the ingest endpoint rejects EVERY request (no unauthenticated writes).
   | 'HOP_SUPPORT_INGEST_SECRET'
+  // Base URL of the deployed Cloudflare Worker that aggregates live cpp
+  // observations into per-program valuation overrides (no trailing slash), e.g.
+  // "https://hop-valuations.<subdomain>.workers.dev". See lib/valuation-telemetry.ts
+  // (POST /observe) and lib/valuation-overrides.ts (the Worker's GET /valuations
+  // is instead pulled into Supabase by the Worker itself on its own cron).
+  | 'HOP_VALUATION_WORKER_URL'
+  // Shared bearer secret between Vercel and the valuation Worker.
+  | 'HOP_VALUATION_SYNC_SECRET'
 
 function read(key: EnvKey): string {
   const value = process.env[key]
@@ -50,6 +58,8 @@ export const env = {
   googleOAuthClientSecret: () => read('GOOGLE_OAUTH_CLIENT_SECRET'),
   resendApiKey: () => read('RESEND_API_KEY'),
   supportIngestSecret: () => read('HOP_SUPPORT_INGEST_SECRET'),
+  hopValuationWorkerUrl: () => read('HOP_VALUATION_WORKER_URL'),
+  hopValuationSyncSecret: () => read('HOP_VALUATION_SYNC_SECRET'),
 }
 
 // True when a key is present without throwing — lets a client degrade
@@ -79,4 +89,52 @@ export function isGmailHistoryEnabled(): boolean {
   const flag = process.env.HOP_ENABLE_GMAIL_HISTORY ?? ''
   const on = /^(1|true|yes)$/i.test(flag.trim())
   return on && hasEnv('GOOGLE_OAUTH_CLIENT_ID') && hasEnv('GOOGLE_OAUTH_CLIENT_SECRET')
+}
+
+// The live-valuation sync seam is GATED behind an explicit flag AND a configured
+// Worker URL + shared secret. Until BOTH are set, lib/valuation-telemetry.ts
+// no-ops (never POSTs an observation) and lib/valuations-live.ts still resolves
+// (overrides just stay empty, so it's the pure lib/valuations.ts baseline).
+// Flip HOP_ENABLE_VALUATION_SYNC and provide HOP_VALUATION_WORKER_URL +
+// HOP_VALUATION_SYNC_SECRET to enable.
+export function isValuationSyncEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_VALUATION_SYNC ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && hasEnv('HOP_VALUATION_WORKER_URL') && hasEnv('HOP_VALUATION_SYNC_SECRET')
+}
+
+// Durable conversation MEMORY (rolling summaries of older concierge turns) is
+// GATED behind an explicit flag AND the AI Gateway key it needs to condense. Off
+// by default: the concierge reads no summary and writes none, and even when the
+// flag is flipped the read/write no-op gracefully until the hop_conversation_summary
+// table exists (withDb returns the fallback). Flip HOP_ENABLE_CONVO_MEMORY once
+// the table is created to let resumed threads stay context-aware.
+export function isConversationMemoryEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_CONVO_MEMORY ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && Boolean(process.env.AI_GATEWAY_API_KEY?.trim())
+}
+
+// Inferred-facts ("hop noticed …") is GATED behind an explicit flag AND the AI
+// Gateway key it needs to infer. Off by default: no inference runs, the glass box
+// shows no "noticed" rows, and even flipped on the read/write no-op gracefully
+// until the hop_inferred_facts table exists (withDb fallback). Nothing is ever
+// auto-applied — inferred facts land as PENDING suggestions the user confirms.
+// Flip HOP_ENABLE_INFERRED_FACTS once the table is created.
+export function isInferredFactsEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_INFERRED_FACTS ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && Boolean(process.env.AI_GATEWAY_API_KEY?.trim())
+}
+
+// Observed-outcomes ("hop learned from what you DO") is GATED behind an explicit
+// flag ONLY — the aggregator is DETERMINISTIC (no LLM), so unlike the memory /
+// inference seams it needs no gateway key. Off by default: verdict cards show no
+// "Not for me" dismiss, nothing is recorded, and the glass box shows no "observed"
+// rows. Even flipped on the read/write no-op gracefully until the
+// hop_memory_outcomes table exists (withDb fallback). Flip
+// HOP_ENABLE_OBSERVED_OUTCOMES once the table is created.
+export function isObservedOutcomesEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_OBSERVED_OUTCOMES ?? ''
+  return /^(1|true|yes)$/i.test(flag.trim())
 }

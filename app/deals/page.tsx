@@ -3,12 +3,14 @@ import Link from 'next/link'
 import { topValue, imageQuery } from '@/lib/destinations'
 import { destinationImages } from '@/lib/images'
 import { getUserBalances } from '@/lib/accounts'
+import { getMemoryContext, withoutAvoided, EMPTY_MEMORY_CONTEXT } from '@/lib/memory-context'
 import { getPrefs } from '@/lib/prefs'
 import { auth0 } from '@/lib/auth0'
 import AppShell from '@/components/AppShell'
 import DealCard from '@/components/DealCard'
 import DegradedNote from '@/components/DegradedNote'
 import SiteFooter from '@/components/SiteFooter'
+import EditorialHeader from '@/components/EditorialHeader'
 import Icon from '@/components/Icon'
 import { ORIGIN_STORAGE_KEY } from '@/lib/origin-context'
 import { pageMeta } from '@/lib/seo'
@@ -50,7 +52,6 @@ export default async function DealsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const deals = topValue(24)
   const { depart, ret } = defaultDates()
   const params = await searchParams
   const fromParam = normalizeOrigin(params.from)
@@ -60,13 +61,18 @@ export default async function DealsPage({
   const cookieStore = await cookies()
   const cookieOrigin = normalizeOrigin(cookieStore.get(ORIGIN_STORAGE_KEY)?.value)
 
-  // Destination photography and the Auth0 session are independent — resolve
-  // them concurrently. Photos are cached per query (day-long revalidate); null
-  // entries fall back to a solid brand-tint tile in the card.
-  const [photos, session] = await Promise.all([
-    destinationImages(deals.map((d) => imageQuery(d))),
-    auth0.getSession(),
-  ])
+  // M5 — compounding: resolve the session first so the signed-in member's STATED
+  // "avoid" places are dropped from the feed BEFORE we fetch photos for the final
+  // set. Value order (cents-per-point) is preserved, so the "ranked by cents per
+  // point" copy stays true. Degrades to today's exact feed when signed out /
+  // unset. Photos are cached per query (day-long revalidate); null entries fall
+  // back to a solid brand-tint tile in the card.
+  const session = await auth0.getSession()
+  const memory = session?.user?.sub
+    ? await getMemoryContext(session.user.sub)
+    : EMPTY_MEMORY_CONTEXT
+  const deals = withoutAvoided(topValue(24), memory.avoided)
+  const photos = await destinationImages(deals.map((d) => imageQuery(d)))
   const su = session?.user
   const user = su
     ? {
@@ -105,19 +111,13 @@ export default async function DealsPage({
 
   return (
     <AppShell user={user} pointsTotal={pointsTotal} hideSearch>
-      <div className="mx-auto max-w-[1180px] xl:max-w-[1340px] 2xl:max-w-[1500px]">
+      <div className="mx-auto max-w-[var(--container-app)] xl:max-w-[var(--container-wide)] 2xl:max-w-[var(--container-xwide)]">
         {/* editorial header — centered over the full-width feed */}
-        <header className="mx-auto max-w-[60ch] pt-10 text-center sm:pt-14">
-          <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
-            Sweet spots
-          </span>
-          <h1 className="mx-auto mt-3 max-w-[18ch] text-balance font-display text-[34px] font-semibold leading-[1.05] tracking-[-0.02em] text-text sm:text-[52px]">
-            Where your miles go furthest
-          </h1>
-          <p className="mx-auto mt-4 max-w-[50ch] text-pretty px-2 text-[16px] leading-relaxed text-text2 sm:px-0 sm:text-[17px]">
-            The redemptions where points beat cash by the widest margin, ranked
-            by cents per point. Every one is a route you can book.
-          </p>
+        <EditorialHeader
+          eyebrow="Sweet spots"
+          title="Where your miles go furthest"
+          intro="The redemptions where points beat cash by the widest margin, ranked by cents per point. Every one is a route you can book."
+        >
           <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[13px] text-text3">
             <span>
               <b className="font-semibold text-text2">{deals.length}</b> routes
@@ -131,12 +131,12 @@ export default async function DealsPage({
           </div>
 
           <DegradedNote degraded={degraded} />
-        </header>
+        </EditorialHeader>
 
         {/* agent on-ramp — these are great-value routes in the abstract; hop's
             concierge can say which ones YOUR points actually reach. A door into
             /ask so the static feed isn't a dead end. */}
-        <div className="mx-auto mt-7 flex max-w-[640px] flex-col items-center justify-between gap-3 rounded-[var(--radius-lg)] border border-border bg-surface px-5 py-4 text-center sm:flex-row sm:gap-4 sm:text-left">
+        <div className="mx-auto mt-7 flex max-w-[640px] flex-col items-center justify-between gap-3 rounded-[16px] border border-border bg-surface px-5 py-4 text-center sm:flex-row sm:gap-4 sm:text-left">
           <div className="flex items-center gap-2.5">
             <Icon name="lightbulb" size={18} className="flex-shrink-0 text-brand" />
             <span className="text-[14px] leading-[1.5] text-text2">

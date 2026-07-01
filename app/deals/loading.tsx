@@ -36,7 +36,7 @@ function CardSkeleton() {
 export default function Loading() {
   return (
     <AppShell hideSearch>
-      <div className="mx-auto max-w-[1180px] xl:max-w-[1340px] 2xl:max-w-[1500px]">
+      <div className="mx-auto max-w-[var(--container-app)] xl:max-w-[var(--container-wide)] 2xl:max-w-[var(--container-xwide)]">
         {/* editorial header skeleton — eyebrow, balanced display title, subline */}
         <header className="mx-auto max-w-[60ch] pt-10 text-center sm:pt-14">
           <span className="hop-skeleton hop-skeleton-line mx-auto block w-[88px]" />
@@ -46,7 +46,7 @@ export default function Loading() {
 
         {/* "Ask hop" on-ramp band — mirrors the real page's concierge door so the
             feed lands at the same vertical offset (no jump when content swaps). */}
-        <div className="mx-auto mt-7 flex max-w-[640px] items-center justify-between gap-4 rounded-[var(--radius-lg)] border border-border bg-surface px-5 py-4">
+        <div className="mx-auto mt-7 flex max-w-[640px] items-center justify-between gap-4 rounded-[16px] border border-border bg-surface px-5 py-4">
           <span className="hop-skeleton hop-skeleton-line block w-3/5" />
           <span className="hop-skeleton block h-[42px] w-[112px] flex-shrink-0 rounded-[var(--radius)]" />
         </div>

@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
+import { dismissVerdict } from '@/app/ask/verdict-actions'
 
 // A2UIBlock — the CLIENT-OWNED renderer for the agent-to-UI spec (lib/a2ui.ts).
 // The agent emits a typed, CLOSED-union block; THIS file decides how each block
@@ -253,53 +255,76 @@ function VerdictCard({
 }) {
   const econ = b.econ
   const city = econ?.city ?? b.code
+  // "Not for me" — an OBSERVED dismiss (gated by the server via b.dismissable).
+  // Genuinely optimistic: hide the card immediately, then record best-effort. The
+  // record is a soft, gated signal, so a signed-out / dark-seam / transport-error
+  // click still declutters without surfacing anything (the .catch swallows any
+  // server-action rejection so it never becomes an unhandled promise rejection).
+  const [dismissed, setDismissed] = useState(false)
+  if (dismissed) return null
+  const dismiss = () => {
+    setDismissed(true)
+    void dismissVerdict(city, b.cabin).catch(() => {})
+  }
   return (
-    <Link
-      href={searchHref(b.code, homeAirport)}
-      className="group flex flex-col rounded-[16px] border border-border bg-surface p-4 transition-colors hover:border-brand"
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-baseline gap-2">
-          <span className="font-display text-[18px] font-semibold leading-tight text-text">
-            {city}
-          </span>
-          <span className="rounded-full bg-sunk px-1.5 py-0.5 font-display text-[10px] font-semibold uppercase tracking-[0.08em] text-text2">
-            {b.code}
-          </span>
-        </div>
-        {econ ? <VerdictPill verdict={econ.verdict} cpp={econ.cpp} /> : null}
-      </div>
-
-      {/* lead with the savings — the VerdictRail hero moment, compact */}
-      {econ ? <SavingsLead econ={econ} /> : null}
-
-      <p className="mt-2 text-[13px] leading-[1.5] text-text2">{b.reason}</p>
-
-      {/* personalization chips — only present when the server kept them */}
-      {b.fitsDays != null || b.cabin ? (
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
-          {b.fitsDays != null ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-sunk px-2 py-0.5 text-[11px] font-medium text-text2">
-              <Icon name="schedule" size={12} className="text-brand" />
-              Fits your {b.fitsDays} days
+    <div className="group flex flex-col overflow-hidden rounded-[16px] border border-border bg-surface transition-colors hover:border-brand">
+      <Link href={searchHref(b.code, homeAirport)} className="flex flex-col p-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-baseline gap-2">
+            <span className="font-display text-[18px] font-semibold leading-tight text-text">
+              {city}
             </span>
-          ) : null}
-          {b.cabin ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-sunk px-2 py-0.5 text-[11px] font-medium capitalize text-text2">
-              <Icon name="workspace_premium" size={12} className="text-brand" />
-              {b.cabin}
+            <span className="rounded-full bg-sunk px-1.5 py-0.5 font-display text-[10px] font-semibold uppercase tracking-[0.08em] text-text2">
+              {b.code}
             </span>
-          ) : null}
+          </div>
+          {econ ? <VerdictPill verdict={econ.verdict} cpp={econ.cpp} /> : null}
         </div>
+
+        {/* lead with the savings — the VerdictRail hero moment, compact */}
+        {econ ? <SavingsLead econ={econ} /> : null}
+
+        <p className="mt-2 text-[13px] leading-[1.5] text-text2">{b.reason}</p>
+
+        {/* personalization chips — only present when the server kept them */}
+        {b.fitsDays != null || b.cabin ? (
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {b.fitsDays != null ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-sunk px-2 py-0.5 text-[11px] font-medium text-text2">
+                <Icon name="schedule" size={12} className="text-brand" />
+                Fits your {b.fitsDays} days
+              </span>
+            ) : null}
+            {b.cabin ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-sunk px-2 py-0.5 text-[11px] font-medium capitalize text-text2">
+                <Icon name="workspace_premium" size={12} className="text-brand" />
+                {b.cabin}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+
+        <EconFacts econ={econ} hasBalances={hasBalances} />
+
+        <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand">
+          See the search
+          <Icon name="swap_horiz" size={14} />
+        </span>
+      </Link>
+
+      {/* "Not for me" — records the pass so hop stops leading with this place.
+          Server-gated: only present when b.dismissable was stamped. */}
+      {b.dismissable ? (
+        <button
+          type="button"
+          onClick={dismiss}
+          aria-label={`Not for me — dismiss ${city}`}
+          className="hop-press border-t border-border px-4 py-2 text-left text-[12px] font-medium text-text3 transition-colors hover:text-text2"
+        >
+          Not for me
+        </button>
       ) : null}
-
-      <EconFacts econ={econ} hasBalances={hasBalances} />
-
-      <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand">
-        See the search
-        <Icon name="swap_horiz" size={14} />
-      </span>
-    </Link>
+    </div>
   )
 }
 

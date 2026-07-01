@@ -32,7 +32,7 @@ export default function CardAffiliateCTA({ program, unit = 'miles' }: CardAffili
       className="hop-rise mt-5 flex items-start gap-3 rounded-[14px] border-[1.5px] border-white/15 bg-white/[0.04] px-4 py-[14px]"
       style={{ ['--hop-delay' as string]: '260ms' }}
     >
-      <span aria-hidden className="mt-[2px] flex-shrink-0 text-[#9fe0d6]">
+      <span aria-hidden className="mt-[2px] flex-shrink-0 text-hero-label">
         <Icon name="credit_card" size={18} />
       </span>
 

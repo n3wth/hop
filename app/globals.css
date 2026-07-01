@@ -64,7 +64,7 @@
   --color-aa: #c8102e;
   --color-ba: #2a5caa;
 
-  --radius: 12px;
+  --radius: 14px;
   --radius-lg: 20px;
   --radius-hero: 28px;
 
@@ -109,6 +109,24 @@
   --text-4xl: 30px;  /* route bar, key numbers */
   --text-5xl: 40px;  /* verdict sub-head (mobile) */
   --text-hero: 64px; /* verdict headline */
+}
+
+/* ── Page container widths — single source of truth ──────────────────────
+   Every route wraps its content in `mx-auto max-w-[var(--container-*)]` (the
+   same idiom as `rounded-[var(--radius-lg)]`) instead of a hand-rolled pixel
+   value, so a page and its loading.tsx skeleton can never drift apart, and a
+   new page reuses an existing width instead of inventing one. Pick by content
+   shape, not by route: */
+:root {
+  --container-xs: 680px; /* a single receipt/confirmation card — book/confirmation */
+  --container-sm: 820px; /* one-topic profile/detail reading column — account, sweet-spots/[program] */
+  --container-article: 880px; /* long-form single article — destinations/[city] */
+  --container-md: 980px; /* narrow index/listing — sweet-spots */
+  --container-checkout: 1040px; /* form + sticky sidebar — book */
+  --container-app: 1180px; /* the standard app width — home, search, support, legal, deals/destinations base */
+  --container-wide: 1340px; /* wide card-grid bump — deals/destinations xl */
+  --container-xwide: 1500px; /* widest card-grid bump — deals 2xl */
+  --container-full: 1440px; /* full-bleed centered boundary states — not-found, error */
 }
 
 * {
@@ -282,53 +300,6 @@ body {
   grid-template-rows: 1fr;
 }
 
-/* ── Destination reel (marquee) ───────────────────────────────────────────
-   A CSS-only auto-scrolling strip of real destination photography. The track
-   holds TWO copies of the same row; translating it by exactly -50% loops
-   seamlessly. Transform-only (no opacity), GPU-friendly. Pauses on hover/focus
-   so a visitor can read a tile. prefers-reduced-motion freezes it to a static,
-   readable row (animation removed below). */
-@keyframes hop-marquee {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(-50%, 0, 0);
-  }
-}
-
-.hop-marquee-track {
-  display: flex;
-  width: max-content;
-  /* Slow, calm drift — barely-moving rather than a restless scroll. Pauses on
-     hover/focus so you can actually look at a tile. */
-  animation: hop-marquee var(--hop-marquee-dur, 140s) linear infinite;
-  will-change: transform;
-}
-.hop-marquee-track:hover,
-.hop-marquee-track:focus-within {
-  animation-play-state: paused;
-}
-
-/* Soft edge masks so tiles fade into the cream canvas at both ends rather than
-   hard-clipping. Mask only (no painted overlay) — keeps the flat look. */
-.hop-marquee-mask {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    #000 8%,
-    #000 92%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    #000 8%,
-    #000 92%,
-    transparent 100%
-  );
-}
-
 /* Shimmer for skeleton placeholders — a soft sheen sweeping across the warm
    cream/sunk surface. Subtle, not garish. */
 @keyframes hop-shimmer {
@@ -439,10 +410,6 @@ body {
     transition: none;
   }
   .hop-skeleton::after {
-    animation: none;
-  }
-  /* Reel freezes to a calm, static row — no horizontal drift. */
-  .hop-marquee-track {
     animation: none;
   }
   .hop-spin,

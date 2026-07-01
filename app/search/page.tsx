@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import type { SearchParams } from '@/lib/types'
 import { assembleSearch } from '@/lib/search'
+import type { TravelPrefs } from '@/lib/prefs-model'
 import { getUserBalances } from '@/lib/accounts'
 import { getPrefs } from '@/lib/prefs'
 import { cityForCode } from '@/lib/airports'
@@ -109,6 +110,14 @@ function parseParams(
   }
 }
 
+// True when the URL explicitly asks to exclude connecting itineraries — a
+// per-search override that takes priority over any saved account travel
+// prefs (below), since it's the user's explicit, in-the-moment choice.
+function parseNonstop(q: Record<string, string | string[] | undefined>): boolean {
+  const v = Array.isArray(q.nonstop) ? q.nonstop[0] : q.nonstop
+  return v === '1' || v === 'true'
+}
+
 // Title-case cabin label for the trip-context summary, e.g. "premium" → "Premium".
 const CABIN_LABEL: Record<NonNullable<SearchParams['cabin']>, string> = {
   economy: 'Economy',
@@ -160,7 +169,9 @@ export async function generateMetadata({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }): Promise<Metadata> {
-  const p = parseParams(await searchParams)
+  const sp = await searchParams
+  const p = parseParams(sp)
+  const nonstop = parseNonstop(sp)
   const fromCity = cityForCode(p.from)
   const toCity = cityForCode(p.to)
   const dates = fmtRange(p.depart, p.return)
@@ -182,6 +193,7 @@ export async function generateMetadata({
   if (p.children) qs.set('children', String(p.children))
   if (p.infants) qs.set('infants', String(p.infants))
   if (p.cabin && p.cabin !== 'economy') qs.set('cabin', p.cabin)
+  if (nonstop) qs.set('nonstop', '1')
   const canonical = `/search?${qs.toString()}`
 
   const cardTitle = `${title} · hop`
@@ -213,7 +225,9 @@ export default async function Search({
   // Persistent "where from" cookie seeds the origin when the query omits one.
   const cookieStore = await cookies()
   const cookieOrigin = cookieStore.get(ORIGIN_STORAGE_KEY)?.value?.trim().toUpperCase()
-  const params = parseParams(await searchParams, cookieOrigin)
+  const sp = await searchParams
+  const params = parseParams(sp, cookieOrigin)
+  const nonstop = parseNonstop(sp)
 
   // Auth0 session → header avatar (null when signed out).
   const session = await auth0.getSession()
@@ -236,7 +250,12 @@ export default async function Search({
     su?.sub ? getUserBalances(su.sub) : Promise.resolve(undefined),
     su?.sub ? getPrefs(su.sub) : Promise.resolve(undefined),
   ])
-  const result = await assembleSearch(params, userBalances, prefs?.travelPrefs)
+  // An explicit ?nonstop=1 on THIS search always wins over any saved account
+  // preference — it's a deliberate, in-the-moment choice, not a stored default.
+  const effectivePrefs: TravelPrefs | undefined = nonstop
+    ? { ...prefs?.travelPrefs, maxStops: 0, preferNonstop: true }
+    : prefs?.travelPrefs
+  const result = await assembleSearch(params, userBalances, effectivePrefs)
 
   // The verdict's ownership voice ("You have the miles") is only honest when
   // these balances are this signed-in user's own connected programs. Signed out
@@ -272,15 +291,16 @@ export default async function Search({
       childrenCount={params.children}
       infants={params.infants}
       cabin={params.cabin}
+      nonstop={nonstop}
       user={user}
       pointsTotal={user ? result.balances.reduce((s, b) => s + b.balance, 0) : undefined}
     >
       {/* The results column is generous enough for the verdict hero, the 4-up
           alternatives, and the wallet, but capped tighter so it reads as a
           composed column — not an edge-to-edge sprawl on wide monitors. */}
-      <div className="mx-auto max-w-[1200px]">
+      <div className="mx-auto max-w-[var(--container-app)]">
         {/* plain trip context — route + facts, not fake masthead metadata */}
-        <RouteBar result={result} hasRealBalances={hasRealBalances} />
+        <RouteBar result={result} hasRealBalances={hasRealBalances} nonstop={nonstop} />
 
         {/* the verdict hero */}
         <VerdictRail result={result} destPhoto={destPhoto} hasRealBalances={hasRealBalances} />

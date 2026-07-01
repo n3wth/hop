@@ -12,7 +12,9 @@ import {
   imageQuery,
   computeCpp,
 } from '@/lib/destinations'
+import { withoutAvoided, EMPTY_MEMORY_CONTEXT, type MemoryContext } from '@/lib/memory-context'
 import { destinationImages } from '@/lib/images'
+import { WALLET_VALUE_CAVEAT } from '@/lib/valuations'
 import type { SearchState } from '@/components/SearchBar'
 
 // The personalized home for a signed-in member. NOT the marketing page — the
@@ -24,28 +26,42 @@ export default async function SignedInHome({
   first,
   programs,
   totalPoints,
+  pointsWorth = 0,
   seed,
   hasHomeAirport = true,
   heroBackdrop,
+  memory = EMPTY_MEMORY_CONTEXT,
 }: {
   first?: string
   programs: number
   totalPoints: number
+  /** Engine-computed USD value of the whole wallet (lib/valuations#walletValue). */
+  pointsWorth?: number
   seed: SearchState
   hasHomeAirport?: boolean
   /** Photographic backdrop for the agent hero, matching the /ask landing. */
   heroBackdrop?: ConciergeHeroPhoto
+  /** Unified memory (lib/memory-context) — drops the member's stated "avoid"
+      places from the feed. Defaults to the empty context → today's exact behavior. */
+  memory?: MemoryContext
 }) {
   // Personalized to the member's real balance; best value first. If they're
   // light on points (or programs failed), fall back to the universally great
   // redemptions so the module is never empty.
   const affordable = affordableWith(totalPoints)
-  const picks = (affordable.length >= 4 ? affordable : topValue(8)).slice(0, 8)
   const personalized = affordable.length >= 4
+  // M5 — compounding: drop the member's STATED "avoid" places from this
+  // engine-ranked module. Value order is PRESERVED (hop leads with value; loved
+  // places shape the concierge's words, not this ranking), so "sorted by value
+  // per point" below stays true. A no-op when the profile has no avoided places
+  // → today's exact feed.
+  const base = personalized ? affordable : topValue(24)
+  const picks = withoutAvoided(base, memory.avoided).slice(0, 8)
   const photos = await destinationImages(picks.map((d) => imageQuery(d)))
 
-  // A single headline stat for the summary panel: the best-value trip the
-  // member can reach right now (or the best dream if they're light on points).
+  // A single headline stat for the summary panel: the best-value trip the member
+  // can reach right now (or the best dream if they're light on points). Order is
+  // preserved above, so picks[0] is the true cpp-max of the shown set.
   const topPick = picks[0]
   const topCpp = topPick ? computeCpp(topPick) : undefined
 
@@ -87,7 +103,7 @@ export default async function SignedInHome({
         {/* Summary panel — anchors the right column.
             Flat: a bordered paper card with a sunk stat row, no shadow/lift. */}
         {programs > 0 ? (
-          <aside className="flex flex-col rounded-[20px] border border-border bg-paper p-6 lg:rounded-[24px]">
+          <aside className="flex flex-col rounded-[20px] border border-border bg-paper p-6 lg:rounded-[var(--radius-hero)]">
             <span className="text-[11.5px] font-semibold uppercase tracking-[0.16em] text-brand">
               Your points
             </span>
@@ -97,6 +113,14 @@ export default async function SignedInHome({
             <p className="mt-1 text-[13.5px] leading-[1.5] text-text2">
               across {programs} {programs === 1 ? 'program' : 'programs'}
             </p>
+            {pointsWorth > 0 ? (
+              <p
+                className="mt-0.5 text-[13.5px] leading-[1.5] text-text3"
+                title={WALLET_VALUE_CAVEAT}
+              >
+                worth ~${pointsWorth.toLocaleString()} at typical redemption value
+              </p>
+            ) : null}
 
             <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-[14px] border border-hair bg-hair">
               <div className="bg-sunk p-3.5">
@@ -132,7 +156,7 @@ export default async function SignedInHome({
             </Link>
           </aside>
         ) : (
-          <aside className="flex flex-col justify-center rounded-[20px] border border-border bg-brand-light p-6 lg:rounded-[24px]">
+          <aside className="flex flex-col justify-center rounded-[20px] border border-border bg-brand-light p-6 lg:rounded-[var(--radius-hero)]">
             <span className="grid h-11 w-11 place-items-center rounded-full bg-paper text-brand">
               <Icon name="loyalty" size={22} />
             </span>
@@ -186,7 +210,7 @@ export default async function SignedInHome({
             href="/ask"
             className="inline-flex flex-shrink-0 items-center gap-1.5 self-start text-[13.5px] font-semibold text-brand transition-colors hover:text-brand-deep sm:self-end"
           >
-            Explore more
+            Ask hop
             <span aria-hidden className="text-[15px] leading-none">→</span>
           </Link>
         </div>
@@ -201,7 +225,7 @@ export default async function SignedInHome({
           for members who already know the exact route they want. */}
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_360px]">
         {/* Run a real search */}
-        <div className="flex flex-col rounded-[20px] border border-border bg-paper p-6 sm:p-8 lg:rounded-[24px]">
+        <div className="flex flex-col rounded-[20px] border border-border bg-paper p-6 sm:p-8 lg:rounded-[var(--radius-hero)]">
           <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
             Already know the route?
           </span>
@@ -219,7 +243,7 @@ export default async function SignedInHome({
 
         {/* Back to the agent — a lighter nudge, not a competing concierge card. */}
         <aside
-          className="flex flex-col justify-between overflow-hidden rounded-[20px] p-6 text-hero-cream sm:p-8 lg:rounded-[24px]"
+          className="flex flex-col justify-between overflow-hidden rounded-[20px] p-6 text-hero-cream sm:p-8 lg:rounded-[var(--radius-hero)]"
           style={{ background: 'var(--color-brand)' }}
         >
           <div>
@@ -239,14 +263,14 @@ export default async function SignedInHome({
             href="/ask"
             className="mt-6 inline-flex w-fit items-center gap-2 rounded-[14px] bg-white px-6 py-3.5 text-[15px] font-semibold text-brand-ink transition-colors hover:bg-hero-white-hover"
           >
-            Talk to hop
+            Ask hop
             <span aria-hidden className="text-[16px] leading-none">→</span>
           </Link>
         </aside>
       </section>
 
       {/* ── MANAGE PROGRAMS ──────────────────────────────────────────────── */}
-      <section className="flex flex-col items-start gap-5 rounded-[20px] border border-border bg-paper p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8 lg:rounded-[24px]">
+      <section className="flex flex-col items-start gap-5 rounded-[20px] border border-border bg-paper p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8 lg:rounded-[var(--radius-hero)]">
         <div className="flex items-center gap-4">
           <span className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-full bg-brand-light text-brand">
             <Icon name="loyalty" size={24} />

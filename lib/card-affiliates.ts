@@ -34,8 +34,25 @@ export interface CardAffiliate {
   bonusMiles: number
   /** Minimum spend that unlocks the bonus, in USD (omit when there is none). */
   bonusSpend?: number
+  /** Months to hit bonusSpend (omit when there is no spend requirement). */
+  bonusMonths?: number
+  /** Annual fee as a plain string from the issuer's public card page, e.g. "$95". */
+  annualFee: string
   /** One terse line of context — the honest caveat or the standout perk. */
   note: string
+}
+
+// Render the same 'N points after $X spend in Y months' shape the old MCP
+// local map used to hand-format — computed from bonusMiles/bonusSpend/bonusMonths
+// so callers never format bonus copy themselves. Pure, no I/O.
+export function formatBonus(offer: Pick<CardAffiliate, 'bonusMiles' | 'bonusSpend' | 'bonusMonths'>): string {
+  if (!offer.bonusMiles) return 'No welcome bonus'
+  const points = `${offer.bonusMiles.toLocaleString('en-US')} points`
+  if (!offer.bonusSpend) return points
+  const spend = `$${offer.bonusSpend.toLocaleString('en-US')} spend`
+  if (!offer.bonusMonths) return `${points} after ${spend}`
+  const months = `${offer.bonusMonths} month${offer.bonusMonths === 1 ? '' : 's'}`
+  return `${points} after ${spend} in ${months}`
 }
 
 // Append the hop tracking param to a base application URL. Kept tiny + pure so
@@ -58,6 +75,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '4x dining & U.S. supermarkets',
     bonusMiles: 60000,
     bonusSpend: 6000,
+    bonusMonths: 6,
+    annualFee: '$325',
     note: 'Membership Rewards transfer to Delta, Air France-KLM, Virgin & more.',
   },
   'chase-ur': {
@@ -67,6 +86,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '2x–5x on travel',
     bonusMiles: 60000,
     bonusSpend: 4000,
+    bonusMonths: 3,
+    annualFee: '$95',
     note: 'Ultimate Rewards transfer 1:1 to United, Hyatt, Air Canada & more.',
   },
   'citi-typ': {
@@ -76,6 +97,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '3x travel, dining & groceries',
     bonusMiles: 70000,
     bonusSpend: 4000,
+    bonusMonths: 3,
+    annualFee: '$95',
     note: 'ThankYou points transfer to Turkish, Avianca, Qatar & more.',
   },
   'capital-one': {
@@ -85,6 +108,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '2x everything, 10x hotels',
     bonusMiles: 75000,
     bonusSpend: 4000,
+    bonusMonths: 3,
+    annualFee: '$395',
     note: 'Miles transfer to Air Canada, Avianca, Turkish, Flying Blue & more.',
   },
   bilt: {
@@ -93,6 +118,7 @@ const CARDS: Record<string, CardAffiliate> = {
     applyUrl: ref('https://www.biltrewards.com/card'),
     earnRate: '1x rent (no fee), 3x dining',
     bonusMiles: 0,
+    annualFee: '$0',
     note: 'Earn on rent with no annual fee; transfers to United, Hyatt, Alaska.',
   },
 
@@ -104,6 +130,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '2x United, dining & hotels',
     bonusMiles: 60000,
     bonusSpend: 3000,
+    bonusMonths: 3,
+    annualFee: '$0 first year, then $150',
     note: 'Free checked bag + priority boarding on United flights.',
   },
   delta: {
@@ -113,6 +141,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '2x Delta, dining & groceries',
     bonusMiles: 50000,
     bonusSpend: 2000,
+    bonusMonths: 6,
+    annualFee: '$0 first year, then $150',
     note: 'First checked bag free on Delta flights.',
   },
   american: {
@@ -122,6 +152,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '2x American, dining & gas',
     bonusMiles: 50000,
     bonusSpend: 2500,
+    bonusMonths: 3,
+    annualFee: '$0 first year, then $99',
     note: 'Free checked bag + preferred boarding on American.',
   },
   alaska: {
@@ -131,6 +163,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '3x Alaska, 2x dining',
     bonusMiles: 60000,
     bonusSpend: 3000,
+    bonusMonths: 3,
+    annualFee: '$95',
     note: 'Annual Companion Fare; powers Atmos Rewards redemptions.',
   },
   southwest: {
@@ -140,6 +174,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '2x Southwest, transit & internet',
     bonusMiles: 50000,
     bonusSpend: 1000,
+    bonusMonths: 3,
+    annualFee: '$69',
     note: 'Points count toward the Companion Pass.',
   },
   jetblue: {
@@ -149,6 +185,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '6x JetBlue, 2x dining & groceries',
     bonusMiles: 50000,
     bonusSpend: 1000,
+    bonusMonths: 3,
+    annualFee: '$99',
     note: 'Free first checked bag + 10% points back on redemptions.',
   },
   aeroplan: {
@@ -158,6 +196,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '3x Air Canada, dining & groceries',
     bonusMiles: 50000,
     bonusSpend: 3000,
+    bonusMonths: 3,
+    annualFee: '$95',
     note: 'Free first checked bag on Air Canada flights.',
   },
   'avios-ba': {
@@ -167,6 +207,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '3x British Airways, 2x travel',
     bonusMiles: 75000,
     bonusSpend: 5000,
+    bonusMonths: 3,
+    annualFee: '$95',
     note: 'Travel Together ticket after a spend threshold; earns Avios.',
   },
   'virgin-atlantic': {
@@ -176,6 +218,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '3x Virgin Atlantic, 1.5x else',
     bonusMiles: 60000,
     bonusSpend: 2000,
+    bonusMonths: 3,
+    annualFee: '$0',
     note: 'Flying Club points; strong on ANA & Delta partner awards.',
   },
 }

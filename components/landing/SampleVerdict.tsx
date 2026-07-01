@@ -34,7 +34,7 @@ export default async function SampleVerdict() {
           <span className="font-display text-[58px] font-semibold leading-[0.9] tracking-[-0.04em] text-mint-bright tabular-nums sm:text-[80px] lg:text-[96px]">
             $243
           </span>
-          <span className="font-display text-[18px] font-semibold tracking-[-0.01em] text-[#9fe0d6] sm:text-[22px]">
+          <span className="font-display text-[18px] font-semibold tracking-[-0.01em] text-hero-eyebrow sm:text-[22px]">
             vs&nbsp;cash
           </span>
         </div>
@@ -107,13 +107,10 @@ function Stat({
       <div className="mb-[5px] text-[11px] font-semibold uppercase tracking-[0.16em] text-hero-label">
         {label}
       </div>
-      <div
-        className="hop-price text-[24px]"
-        style={{ color: accent ? '#6ff0d2' : '#fff' }}
-      >
+      <div className={`hop-price text-[24px] ${accent ? 'text-mint-bright' : 'text-white'}`}>
         {value}
         {unit ? (
-          <small className="text-[13px] font-medium text-[#9fe0d6]"> {unit}</small>
+          <small className="text-[13px] font-medium text-hero-eyebrow"> {unit}</small>
         ) : null}
       </div>
     </div>

@@ -192,7 +192,7 @@ export default async function PrivacyPage() {
           question or request.
         </p>
       </LegalShell>
-      <div className="mx-auto max-w-[1180px]">
+      <div className="mx-auto max-w-[var(--container-app)]">
         <SiteFooter />
       </div>
     </AppShell>

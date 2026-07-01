@@ -20,6 +20,8 @@ import { searchCash } from '@/lib/duffel'
 import { searchAwards } from '@/lib/seatsaero'
 import { getBalances } from '@/lib/awardwallet'
 import { mockCash, mockAwards, mockBalances } from '@/lib/mock'
+import { recordCppObservations } from '@/lib/valuation-telemetry'
+import { canonicalizeProgram } from '@/lib/programs'
 
 export const POINTS_THRESHOLD_CPP = 2.5
 
@@ -215,6 +217,18 @@ export async function assembleSearch(
     }
   })
 
+  recordCppObservations(
+    awards
+      .filter((o) => o.program && typeof o.cpp === 'number' && o.cpp > 0)
+      .map((o) => ({
+        programId: canonicalizeProgram(o.program!)?.id ?? '',
+        cpp: o.cpp!,
+        cashCents: cheapestCash != null ? Math.round(cheapestCash * 100) : undefined,
+        miles: o.miles,
+      }))
+      .filter((s) => s.programId !== ''),
+  )
+
   // Collapse the raw API dump to ONE best option per program/airline, then cap.
   // Live sources return hundreds of near-duplicate offers (every fare/time);
   // a useful tool shows the best of each, not the firehose.
@@ -317,5 +331,84 @@ export async function assembleSearch(
     summary,
     balances,
     degraded,
+  }
+}
+
+// A compact, LLM/tool-friendly trim of a SearchResult: the decision-relevant
+// fields only (verdict, summary, the pick, up to 6 options), dropping internal
+// booking URLs and tiers a caller can't act on. This is the SAME assembleSearch
+// call the app itself makes for /search — the single verdict shape shared by
+// every non-UI caller (the MCP "Add to Claude" tools in lib/mcp-tools.ts and the
+// in-app /ask concierge tool in lib/concierge-tools.ts), so a live, date-specific
+// verdict never diverges between surfaces.
+export interface VerdictSummary {
+  route: string
+  depart: string
+  return: string | undefined
+  adults: number
+  verdict: SearchResult['verdict']
+  summary: SearchResult['summary']
+  pick: {
+    kind: FlightOption['kind']
+    airline: string
+    program: string | undefined
+    cabin: string | undefined
+    miles: number | undefined
+    taxes: number | undefined
+    cashPrice: number | undefined
+    cpp: number | undefined
+    youHave: number | undefined
+  } | null
+  options: Array<{
+    kind: FlightOption['kind']
+    airline: string
+    program: string | undefined
+    cabin: string | undefined
+    miles: number | undefined
+    taxes: number | undefined
+    cashPrice: number | undefined
+    cpp: number | undefined
+    action: OptionAction | undefined
+  }>
+  degraded: string[]
+}
+
+export async function verdictSummary(
+  params: SearchParams,
+  balances: Balance[] = [],
+): Promise<VerdictSummary> {
+  const result = await assembleSearch(params, balances)
+  return {
+    route: `${result.params.from} → ${result.params.to}`,
+    depart: result.params.depart,
+    return: result.params.return,
+    adults: result.params.adults,
+    verdict: result.verdict,
+    summary: result.summary,
+    pick: result.pick
+      ? {
+          kind: result.pick.kind,
+          airline: result.pick.airline,
+          program: result.pick.program,
+          cabin: result.pick.cabin,
+          miles: result.pick.miles,
+          taxes: result.pick.taxes,
+          cashPrice: result.pick.cashPrice,
+          cpp: result.pick.cpp,
+          youHave: result.pick.youHave,
+        }
+      : null,
+    options: result.options.slice(0, 6).map((o) => ({
+      kind: o.kind,
+      airline: o.airline,
+      program: o.program,
+      cabin: o.cabin,
+      miles: o.miles,
+      taxes: o.taxes,
+      cashPrice: o.cashPrice,
+      cpp: o.cpp,
+      action: o.action,
+    })),
+    degraded: result.degraded,
   }
 }

@@ -46,7 +46,7 @@ export default async function ConfirmationPage({
 
   return (
     <AppShell user={user} hideSearch>
-      <div className="mx-auto max-w-[680px] pb-4 pt-8 sm:pt-12">
+      <div className="mx-auto max-w-[var(--container-xs)] pb-4 pt-8 sm:pt-12">
         {!res.ok ? (
           <div className="mt-2 flex items-start gap-4 rounded-[16px] border border-border bg-surface px-6 py-7">
             <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
@@ -113,7 +113,7 @@ function Confirmed({
     <>
       {/* hero — teal, matches the verdict system */}
       <section
-        className="overflow-hidden rounded-[20px] text-hero-cream lg:rounded-[24px]"
+        className="overflow-hidden rounded-[20px] text-hero-cream lg:rounded-[var(--radius-hero)]"
         style={{ background: 'var(--color-brand)' }}
       >
         <div className="px-6 py-9 sm:px-10">
@@ -129,7 +129,7 @@ function Confirmed({
 
           {order.bookingReference ? (
             <div className="mt-6 inline-flex flex-col rounded-[14px] bg-white/10 px-5 py-3 ring-1 ring-white/15">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#9fe0d6]">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-hero-eyebrow">
                 Booking reference
               </span>
               <span className="font-display text-[24px] font-semibold tracking-[0.04em] text-white">

@@ -17,6 +17,8 @@ import McpAccess from '@/components/McpAccess'
 import { listTokens } from '@/lib/api-tokens'
 import { getProfile } from '@/lib/travel-profile'
 import { projectProfile } from '@/lib/memory-view'
+import { listPendingInferredFacts } from '@/lib/inferred-facts'
+import { listObservations } from '@/lib/memory-outcomes'
 import MemoryKnows from '@/components/MemoryKnows'
 import type { AirlineStatus, TravelProfile } from '@/lib/travel-profile-model'
 import StandingOrders from '@/components/StandingOrders'
@@ -112,9 +114,11 @@ export default async function AccountPage({
   // "Add to Claude" MCP tokens for this user (list = no secrets) + the durable
   // travel profile (so we can render the saved elite statuses). Both degrade to
   // empty on any failure.
-  const [mcpTokens, profile] = await Promise.all([
+  const [mcpTokens, profile, inferred, observed] = await Promise.all([
     u.sub ? listTokens(u.sub) : Promise.resolve([]),
     u.sub ? getProfile(u.sub) : Promise.resolve({} as TravelProfile),
+    u.sub ? listPendingInferredFacts(u.sub) : Promise.resolve([]),
+    u.sub ? listObservations(u.sub) : Promise.resolve([]),
   ])
   const airlineStatuses: AirlineStatus[] = profile.airlineStatuses ?? []
 
@@ -157,10 +161,10 @@ export default async function AccountPage({
 
   return (
     <AppShell user={user} hideSearch>
-      <div className="mx-auto max-w-[820px] pb-4 pt-8 sm:pt-12">
+      <div className="mx-auto max-w-[var(--container-sm)] pb-4 pt-8 sm:pt-12">
         {/* profile hero — teal plane, matches the editorial system */}
         <section
-          className="overflow-hidden rounded-[20px] text-hero-cream lg:rounded-[24px]"
+          className="overflow-hidden rounded-[20px] text-hero-cream lg:rounded-[var(--radius-hero)]"
           style={{ background: 'var(--color-brand)' }}
         >
           <div className="flex flex-col gap-5 px-6 py-8 sm:flex-row sm:items-center sm:gap-6 sm:px-10">
@@ -178,7 +182,7 @@ export default async function AccountPage({
               )}
             </span>
             <div className="min-w-0 flex-1">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9fe0d6]">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-hero-eyebrow">
                 Your account
               </div>
               <h1 className="mt-1 truncate font-display text-[26px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[30px]">
@@ -245,7 +249,7 @@ export default async function AccountPage({
             Forget anything you&apos;d rather it didn&apos;t keep.
           </p>
           <div className="mt-4">
-            <MemoryKnows facts={projectProfile(profile)} />
+            <MemoryKnows facts={projectProfile(profile)} noticed={inferred} observed={observed} />
           </div>
         </section>
 

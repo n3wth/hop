@@ -55,6 +55,49 @@ export const conversations = pgTable('hop_conversations', {
   updatedAt: tz('updated_at').defaultNow(),
 })
 
+// Rolling conversation MEMORY — one durable summary per user of the older turns
+// that scroll off the live thread (hop_conversations caps at 40). Lets a resumed
+// thread stay context-aware instead of amnesiac. Written fire-and-forget by the
+// concierge when memory is enabled; read into the agent's system prompt. Holds
+// NO economics (the engine owns every number) — just durable human context.
+export const conversationSummary = pgTable('hop_conversation_summary', {
+  userId: text('user_id').primaryKey(),
+  summary: text('summary').notNull().default(''),
+  updatedAt: tz('updated_at').defaultNow(),
+})
+
+// INFERRED facts — durable preferences hop noticed from how the traveler chats
+// (cabin lean, who they travel with, places they gravitate to / away from). NOT
+// stated facts: each lands as a confidence-scored PENDING suggestion the user
+// confirms (→ promoted to their stated travel_profile) or dismisses (→ rejected,
+// never re-suggested). Holds NO economics. Deduped per (user, kind, value).
+export const inferredFacts = pgTable('hop_inferred_facts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull(),
+  kind: text('kind').notNull(),
+  value: text('value').notNull(),
+  confidence: numeric('confidence').notNull().default('0'),
+  status: text('status').notNull().default('pending'),
+  createdAt: tz('created_at').defaultNow(),
+  updatedAt: tz('updated_at').defaultNow(),
+})
+
+// OBSERVED outcomes — hop's "learned from what you DO" log (M4). An append-only
+// record of discrete, EXPLICIT user signals (today: a verdict card dismissed with
+// "Not for me"). A pure aggregator (lib/memory-outcomes.ts) folds recurring
+// subjects into human "hop observed …" rows + soft prompt context — it never
+// changes a verdict or a stated fact. Holds NO economics (no cpp/price/miles
+// column exists, by design): the subject is a place label, cabin is optional
+// context. Extensible via `kind` for the later action outcomes (M6/M7).
+export const memoryOutcomes = pgTable('hop_memory_outcomes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull(),
+  kind: text('kind').notNull(),
+  subject: text('subject').notNull(),
+  cabin: text('cabin'),
+  createdAt: tz('created_at').defaultNow(),
+})
+
 export const bookings = pgTable('hop_bookings', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: text('user_id').notNull(),
@@ -128,4 +171,17 @@ export const escalations = pgTable('hop_escalations', {
   trip: jsonb('trip').notNull().default({}),
   status: text('status').notNull().default('new'),
   createdAt: tz('created_at').defaultNow(),
+})
+
+// Live cents-per-point aggregates sourced from hop's own first-party cash vs
+// award observations (Cloudflare valuations Worker), read/written by
+// lib/valuation-overrides.ts. Mirrors the hop_valuation_overrides table added
+// to utils/supabase/admin.ts's typed schema. program_id is the canonical
+// program id from lib/programs; as_of is when the Worker last aggregated it.
+export const valuationOverrides = pgTable('hop_valuation_overrides', {
+  programId: text('program_id').primaryKey(),
+  cpp: numeric('cpp').notNull(),
+  sampleSize: integer('sample_size').notNull(),
+  asOf: tz('as_of').notNull(),
+  updatedAt: tz('updated_at').defaultNow(),
 })
