@@ -80,3 +80,15 @@ export function isGmailHistoryEnabled(): boolean {
   const on = /^(1|true|yes)$/i.test(flag.trim())
   return on && hasEnv('GOOGLE_OAUTH_CLIENT_ID') && hasEnv('GOOGLE_OAUTH_CLIENT_SECRET')
 }
+
+// Durable conversation MEMORY (rolling summaries of older concierge turns) is
+// GATED behind an explicit flag AND the AI Gateway key it needs to condense. Off
+// by default: the concierge reads no summary and writes none, and even when the
+// flag is flipped the read/write no-op gracefully until the hop_conversation_summary
+// table exists (withDb returns the fallback). Flip HOP_ENABLE_CONVO_MEMORY once
+// the table is created to let resumed threads stay context-aware.
+export function isConversationMemoryEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_CONVO_MEMORY ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && Boolean(process.env.AI_GATEWAY_API_KEY?.trim())
+}

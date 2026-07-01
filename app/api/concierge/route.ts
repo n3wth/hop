@@ -38,6 +38,7 @@ import {
   sanitizeMessages,
   type ConversationMessage,
 } from '@/lib/conversations'
+import { getConversationMemory, updateConversationMemory } from '@/lib/conversation-memory'
 import { getProfile } from '@/lib/travel-profile'
 import { checkRateLimit, clientIp } from '@/lib/rate-limit'
 import { profileSummary, type TravelProfile } from '@/lib/travel-profile-model'
@@ -319,9 +320,11 @@ function buildAgenticSystem(
   context?: ConciergeContext,
   profile?: TravelProfile,
   history?: TravelHistory,
+  memory?: string,
 ): string {
   const profileBlock = profileSummary(profile)
   const historyBlock = travelHistorySummary(history)
+  const memoryBlock = (memory ?? '').trim()
   // True only when the visitor has real balances in play — gates the ownership
   // voice (no "your points" for a signed-out / no-balance visitor).
   const hasBalances = (context?.programs?.length ?? 0) > 0
@@ -370,6 +373,13 @@ function buildAgenticSystem(
       ? `This traveler's past-trip patterns (from their connected travel history):\n${historyBlock}`
       : "No travel history is connected yet (Gmail import is coming soon), so reason only from what they tell you.",
     '',
+    // Durable memory of earlier turns that have scrolled off the live thread.
+    // CONTEXT ONLY — never authoritative for numbers; always re-check live
+    // figures with the tools. Empty string when the memory seam is off/absent.
+    memoryBlock
+      ? `What you remember from earlier in your history with this traveler (older turns that scrolled off — use it for continuity, but it is NOT a source of prices/miles/CPP; always re-check live figures with your tools):\n${memoryBlock}`
+      : '',
+    '',
     context?.homeAirport
       ? `The user flies from ${context.homeAirport.toUpperCase()}. Favor trips that make sense from there and mention it naturally.`
       : "The user hasn't set a home airport. Keep suggestions origin-agnostic, or gently suggest they set one.",
@@ -387,8 +397,9 @@ export function buildAgenticSystemForTest(
   context?: ConciergeContext,
   profile?: TravelProfile,
   history?: TravelHistory,
+  memory?: string,
 ): string {
-  return buildAgenticSystem(context, profile, history)
+  return buildAgenticSystem(context, profile, history, memory)
 }
 
 // Build the message list threaded into streamText. Merges any SERVER-persisted
@@ -604,16 +615,21 @@ export async function POST(request: Request): Promise<Response> {
   try {
     // Load MEMORY for signed-in users (all helpers degrade to empty, never
     // throw). Anonymous users get empty profile/history + client-only thread.
-    const [persisted, profile, history] = userId
-      ? await Promise.all([getConversation(userId), getProfile(userId), getTravelHistory(userId)])
-      : [[] as ConversationMessage[], {} as TravelProfile, undefined]
+    const [persisted, profile, history, memory] = userId
+      ? await Promise.all([
+          getConversation(userId),
+          getProfile(userId),
+          getTravelHistory(userId),
+          getConversationMemory(userId),
+        ])
+      : [[] as ConversationMessage[], {} as TravelProfile, undefined, '']
 
     const messages = buildMessages(question, body?.messages, persisted)
 
     const tools = buildConciergeTools(context?.programs ?? [], userId)
     const result = streamText({
       model: gateway(GATEWAY_MODEL),
-      system: buildAgenticSystem(context, profile, history),
+      system: buildAgenticSystem(context, profile, history, memory),
       // MULTI-TURN: thread the conversation (prior turns + this question) so the
       // agent answers in context. Single-question back-compat is preserved —
       // buildMessages yields a one-element [user] array when there's no history.
@@ -637,6 +653,18 @@ export async function POST(request: Request): Promise<Response> {
           ? [...messages, { role: 'assistant' as const, content: answer }]
           : messages
         void saveConversation(userId, next)
+        // Fold older turns into durable memory (gated, fire-and-forget). Uses the
+        // FULL prior thread the client resends — not the 40-capped `messages` — so
+        // turns past the live window aren't lost. No-ops entirely when disabled.
+        const fullPrior = Array.isArray(body?.messages)
+          ? (body.messages as ConversationMessage[])
+          : []
+        const fullThread: ConversationMessage[] = [
+          ...fullPrior,
+          { role: 'user', content: question },
+          ...(answer ? [{ role: 'assistant' as const, content: answer }] : []),
+        ]
+        void updateConversationMemory(userId, fullThread)
       },
     })
 

@@ -55,6 +55,17 @@ export const conversations = pgTable('hop_conversations', {
   updatedAt: tz('updated_at').defaultNow(),
 })
 
+// Rolling conversation MEMORY — one durable summary per user of the older turns
+// that scroll off the live thread (hop_conversations caps at 40). Lets a resumed
+// thread stay context-aware instead of amnesiac. Written fire-and-forget by the
+// concierge when memory is enabled; read into the agent's system prompt. Holds
+// NO economics (the engine owns every number) — just durable human context.
+export const conversationSummary = pgTable('hop_conversation_summary', {
+  userId: text('user_id').primaryKey(),
+  summary: text('summary').notNull().default(''),
+  updatedAt: tz('updated_at').defaultNow(),
+})
+
 export const bookings = pgTable('hop_bookings', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: text('user_id').notNull(),
