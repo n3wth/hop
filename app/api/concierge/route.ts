@@ -26,6 +26,7 @@ import {
   type Destination,
 } from '@/lib/destinations'
 import { valuationsByName, walletValue } from '@/lib/valuations'
+import { liveValuationsByName } from '@/lib/valuations-live'
 import { effectiveBalanceFor } from '@/lib/transfers'
 import { POINTS_THRESHOLD_CPP } from '@/lib/search'
 import { buildConciergeTools } from '@/lib/concierge-tools'
@@ -244,11 +245,16 @@ export function destinationsSummary(items: Destination[] = destinations): string
     .join('\n')
 }
 
-// Pulls baseline valuations from lib/valuations.ts (canonical program names ->
-// cpp), the single source of truth. No hardcoded numbers live here anymore, so
-// the concierge and the deterministic engine reason with the same figures.
-function valuationsSummary(): string {
-  return Object.entries(valuationsByName())
+// Pulls per-program valuations (canonical program names -> cpp) — the static
+// lib/valuations.ts baseline by default, or the live-synced overrides from
+// lib/valuations-live.ts#liveValuationsByName() when the caller has resolved
+// them. Either way, this is a per-PROGRAM typical value, not a per-trip figure
+// — it never originates a number itself, but it's a DIFFERENT scope than
+// price_trip/search_flights' per-destination cpp, so the prompt must warn the
+// model not to blend the two (see the "REFERENCE-ONLY" hard rule above).
+function valuationsSummary(overrides?: Record<string, number>): string {
+  const table = overrides ?? valuationsByName()
+  return Object.entries(table)
     .map(([prog, cpp]) => `${prog} ${cpp.toFixed(2)}cpp`)
     .join(', ')
 }
@@ -334,6 +340,7 @@ function buildAgenticSystem(
   context?: ConciergeContext,
   profile?: TravelProfile,
   history?: TravelHistory,
+  liveValuations?: Record<string, number>,
   memory?: string,
 ): string {
   const profileBlock = profileSummary(profile)
@@ -362,6 +369,7 @@ function buildAgenticSystem(
     'Hard rules:',
     '- For open-ended INSPIRATION ("where should I go", "somewhere warm") without a specific date, RECOMMEND from the curated destinations dataset below (match by IATA code) via price_trip. For a SPECIFIC route + date — or any airport not in the dataset — call search_flights instead; it prices any real airport live, so you are not limited to the dataset there. You may freely build itineraries, plans, and give travel advice for ANY place the user names.',
     '- NEVER invent flight prices, fares, miles, CPP, or award availability. Numbers come from price_trip or search_flights; live facts come from web_search/get_weather. Every points/miles/cash/CPP figure in your PROSE must match what the tool actually returned for that exact destination/route — never round it into a different number or imply affordability the engine did not. If a tool reports a degraded section (cash or awards unavailable), say so plainly rather than filling the gap. Never invent visa rules, prices, or hard facts — if unsure, say so or web_search.',
+    '- The "Points valuations" table below is a REFERENCE-ONLY typical value per program — never multiply it by a balance yourself to state a dollar figure (e.g. do not say "your 50,000 points are worth $1,200" by doing that math). A specific trip\'s real dollar value, miles needed, or affordability ALWAYS comes from price_trip or search_flights for that exact destination/route, never from this table.',
     '- NEVER sum or multiply the balances and cpp table below yourself to state a total wallet dollar value. If asked what the whole wallet/all points combined are worth, restate ONLY the "Engine-computed wallet dollar value" figure below — never compute your own from the per-program numbers.',
     "- Prefer destinations the user can actually afford with the points they hold.",
     '- Honor the profile: respect dietary/accessibility/cabin needs and NEVER suggest a destination the user listed as avoided.',
@@ -374,8 +382,8 @@ function buildAgenticSystem(
       ? "- The user is signed in with real balances, so you MAY speak of \"your points\" and whether they have enough."
       : "- OWNERSHIP: the visitor has NO connected balances, so NEVER say \"your points\", \"you have\", or imply they own any miles. Frame value neutrally — what the route is worth (e.g. \"these miles are worth about 3.1¢ here\", \"points beat cash by about $X on this route\") — and you may invite them to sign in to check their own balances.",
     '',
-    'Points valuations (cents per point):',
-    valuationsSummary(),
+    'Points valuations (cents per point — typical reference value per program, NOT this-trip-specific; never multiply by a balance):',
+    valuationsSummary(liveValuations),
     '',
     "The user's points balances:",
     balancesSummary(context),
@@ -412,9 +420,10 @@ export function buildAgenticSystemForTest(
   context?: ConciergeContext,
   profile?: TravelProfile,
   history?: TravelHistory,
+  liveValuations?: Record<string, number>,
   memory?: string,
 ): string {
-  return buildAgenticSystem(context, profile, history, memory)
+  return buildAgenticSystem(context, profile, history, liveValuations, memory)
 }
 
 // Build the message list threaded into streamText. Merges any SERVER-persisted
@@ -640,11 +649,12 @@ export async function POST(request: Request): Promise<Response> {
       : [[] as ConversationMessage[], {} as TravelProfile, undefined, '']
 
     const messages = buildMessages(question, body?.messages, persisted)
+    const liveValuations = await liveValuationsByName()
 
     const tools = buildConciergeTools(context?.programs ?? [], userId)
     const result = streamText({
       model: gateway(GATEWAY_MODEL),
-      system: buildAgenticSystem(context, profile, history, memory),
+      system: buildAgenticSystem(context, profile, history, liveValuations, memory),
       // MULTI-TURN: thread the conversation (prior turns + this question) so the
       // agent answers in context. Single-question back-compat is preserved —
       // buildMessages yields a one-element [user] array when there's no history.

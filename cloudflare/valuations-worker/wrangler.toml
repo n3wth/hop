@@ -1,0 +1,14 @@
+name = "hop-valuations"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+# HOP_VALUATION_SYNC_SECRET is set via `wrangler secret put HOP_VALUATION_SYNC_SECRET`
+# — never committed here, never stored in this file or in git.
+
+[[d1_databases]]
+binding = "DB"
+database_name = "hop-valuations"
+database_id = "d26989d0-b0e1-42bc-87ba-859424f6f5b9"
+
+[triggers]
+crons = ["0 */6 * * *"]

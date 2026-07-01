@@ -20,6 +20,8 @@ import { searchCash } from '@/lib/duffel'
 import { searchAwards } from '@/lib/seatsaero'
 import { getBalances } from '@/lib/awardwallet'
 import { mockCash, mockAwards, mockBalances } from '@/lib/mock'
+import { recordCppObservations } from '@/lib/valuation-telemetry'
+import { canonicalizeProgram } from '@/lib/programs'
 
 export const POINTS_THRESHOLD_CPP = 2.5
 
@@ -214,6 +216,18 @@ export async function assembleSearch(
         pointsBookingUrl({ airlineCode: o.airlineCode, program: o.program }),
     }
   })
+
+  recordCppObservations(
+    awards
+      .filter((o) => o.program && typeof o.cpp === 'number' && o.cpp > 0)
+      .map((o) => ({
+        programId: canonicalizeProgram(o.program!)?.id ?? '',
+        cpp: o.cpp!,
+        cashCents: cheapestCash != null ? Math.round(cheapestCash * 100) : undefined,
+        miles: o.miles,
+      }))
+      .filter((s) => s.programId !== ''),
+  )
 
   // Collapse the raw API dump to ONE best option per program/airline, then cap.
   // Live sources return hundreds of near-duplicate offers (every fare/time);

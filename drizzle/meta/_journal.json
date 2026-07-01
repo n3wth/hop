@@ -15,6 +15,13 @@
       "when": 1782801675064,
       "tag": "0001_hop_escalations",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782927343646,
+      "tag": "0002_mighty_menace",
+      "breakpoints": true
     }
   ]
 }
