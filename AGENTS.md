@@ -50,21 +50,20 @@ Same invariant as the engine: these are **real, looked-up, date-stamped values, 
 `npm run build` catches RSC/route errors. To actually *see* a page, screenshot **localhost** with the
 pre-installed headless Chromium — but two gotchas: (1) `next start` will **not persist** as a detached
 background process here, and (2) the agent proxy **closes Chromium's connection to any external URL**
-(`ERR_CONNECTION_CLOSED`), so you can't screenshot the Vercel preview. The working recipe runs the
-server and the shots inside **one** foreground command so the server stays alive during capture:
+(`ERR_CONNECTION_CLOSED`), so you can't screenshot the Vercel preview. Both are handled by the helper —
+after a build, one command shoots any set of paths:
 
 ```bash
-CHROME=/opt/pw-browsers/chromium-*/chrome-linux/chrome
-UNSPLASH_ACCESS_KEY=$UNSPLASH_ACCESS_KEY node_modules/.bin/next start -p 3200 > /tmp/srv.log 2>&1 &
-SRV=$!; for i in $(seq 1 15); do sleep 2; curl -sf -o /dev/null http://localhost:3200/ && break; done
-$CHROME --headless --no-sandbox --disable-gpu --hide-scrollbars \
-  --virtual-time-budget=12000 --window-size=1280,1600 \
-  --screenshot=/tmp/home.png http://localhost:3200/    # repeat per page
-kill $SRV
+npm run build && scripts/shoot.sh / /deals /destinations/tokyo   # → /tmp/shot-*.png
 ```
 
-`UNSPLASH_ACCESS_KEY` gates destination photos (absent → the solid/blur fallback), and `MOCK=1` swaps
-in cash/awards/balances fixtures. Set both in the environment for full-fidelity local shots; without
-the key you still verify **layout / spacing / cohesion**, just not the imagery. Run a fresh
-`npm run build` before starting the server after any code change (the static pages are prebuilt).
-For the real prod render, push and let the Vercel **preview** deploy — the human reviews it.
+It starts the server and takes the shots inside **one** foreground command (so the server stays alive
+during capture) and kills it on exit. `UNSPLASH_ACCESS_KEY` gates destination photos (absent → the
+solid/blur fallback), and `MOCK=1` swaps in cash/awards/balances fixtures — set both in the environment
+(see `.env.example`) for full-fidelity local shots; without the key you still verify
+**layout / spacing / cohesion**, just not the imagery. Rebuild before shooting after any code change
+(the static pages are prebuilt). For the real prod render, push and let the Vercel **preview** deploy —
+the human reviews it.
+
+New containers: point the environment's **setup script** at `scripts/setup-cloud.sh` (installs deps);
+the two visual-loop vars go in the environment settings, not in the repo.
