@@ -82,7 +82,7 @@ filename**, so name files to match.
 
 - Add a vitest for the pure parts (thresholding, dedupe-key derivation, candidate selection) under
   `lib/**/*.test.ts`; the schedule body itself stays thin.
-- Run `npx tsc --noEmit` and `npx vitest run <file>` on what you added.
+- Run `npm run typecheck` and `npx vitest run <file>` on what you added.
 - Then run `/review-parallel` (especially **eve-architecture-reviewer** and
   **engine-invariant-reviewer**) and `/compound` to capture anything learned.
 
