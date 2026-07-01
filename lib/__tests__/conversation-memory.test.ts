@@ -73,6 +73,7 @@ describe('buildAgenticSystem memory block', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
       'the traveler is weighing Lisbon vs Tokyo and flies business',
     )
     expect(sys).toContain('weighing Lisbon vs Tokyo')
@@ -84,7 +85,7 @@ describe('buildAgenticSystem memory block', () => {
   })
 
   it('omits the memory framing when there is no summary', () => {
-    const sys = buildAgenticSystemForTest(undefined, undefined, undefined, '')
+    const sys = buildAgenticSystemForTest(undefined, undefined, undefined, undefined, '')
     expect(sys).not.toMatch(/remember from earlier/i)
   })
 })
