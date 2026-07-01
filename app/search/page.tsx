@@ -303,7 +303,12 @@ export default async function Search({
         <RouteBar result={result} hasRealBalances={hasRealBalances} nonstop={nonstop} />
 
         {/* the verdict hero */}
-        <VerdictRail result={result} destPhoto={destPhoto} hasRealBalances={hasRealBalances} />
+        <VerdictRail
+          result={result}
+          destPhoto={destPhoto}
+          hasRealBalances={hasRealBalances}
+          isSignedIn={!!user}
+        />
 
         {/* other ways to fly */}
         <ResultsList result={result} />
