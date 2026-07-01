@@ -1,7 +1,9 @@
-'use client'
-
 import type { SVGProps } from 'react'
+// Type-only import from the package root (the SSR entry doesn't re-export it);
+// erased at compile time, so it pulls no client runtime.
 import type { IconWeight } from '@phosphor-icons/react'
+// Value imports from the SSR entry: same component names, but a server-safe
+// renderer (plain SVG, no hooks/handlers) so this file needs no 'use client'.
 import {
   Airplane,
   ArrowClockwise,
@@ -46,7 +48,7 @@ import {
   Warning,
   WarningCircle,
   X,
-} from '@phosphor-icons/react'
+} from '@phosphor-icons/react/dist/ssr'
 
 // Icon registry — name → Phosphor component (fill weight default).
 // Add new names here as the icon vocabulary grows; keep old names for compat.
@@ -109,10 +111,24 @@ export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name' | 'ref'>
   name: IconName
   size?: number
   weight?: IconWeight
+  /**
+   * Accessible name. Provide it only when the icon carries meaning on its own
+   * (e.g. an icon-only control); the icon then renders `role="img"` with this
+   * label and is exposed to assistive tech. Omitted (the default) → the icon is
+   * decorative and marked `aria-hidden`, so screen readers skip it.
+   */
+  alt?: string
 }
 
-export default function Icon({ name, size = 24, weight = 'fill', className, ...rest }: IconProps) {
-  const PhIcon = ICONS[name] as React.ComponentType<{ size?: number; weight?: IconWeight; className?: string }>
+export default function Icon({ name, size = 24, weight = 'fill', className, alt, ...rest }: IconProps) {
+  const PhIcon = ICONS[name] as React.ComponentType<
+    { size?: number; weight?: IconWeight; className?: string } & Record<string, unknown>
+  >
   if (!PhIcon) return null
-  return <PhIcon size={size} weight={weight} className={className} {...(rest as object)} />
+  // Decorative by default (aria-hidden); labeled mode when `alt` is supplied.
+  // Placed before `...rest` so an explicit caller-provided aria-* still wins.
+  const a11y = alt
+    ? { role: 'img' as const, 'aria-label': alt }
+    : { 'aria-hidden': true as const }
+  return <PhIcon size={size} weight={weight} className={className} {...a11y} {...(rest as object)} />
 }
