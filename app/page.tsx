@@ -33,6 +33,7 @@ function makeSeed(): SearchState {
     infants: 0,
     cabin: 'economy',
     oneWay: false,
+    nonstop: false,
   }
 }
 
