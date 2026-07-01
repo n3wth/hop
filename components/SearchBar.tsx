@@ -229,6 +229,8 @@ interface CalendarPopProps {
   ret: string
   oneWay: boolean
   onOneWayChange: (oneWay: boolean) => void
+  nonstop: boolean
+  onNonstopChange: (nonstop: boolean) => void
   onChange: (depart: string, ret: string) => void
   children: (open: boolean, toggle: () => void) => ReactNode
 }
@@ -323,7 +325,16 @@ function MonthGrid({
   )
 }
 
-function CalendarPop({ depart, ret, oneWay, onOneWayChange, onChange, children }: CalendarPopProps) {
+function CalendarPop({
+  depart,
+  ret,
+  oneWay,
+  onOneWayChange,
+  nonstop,
+  onNonstopChange,
+  onChange,
+  children,
+}: CalendarPopProps) {
   const [open, setOpen] = useState(false)
   const ref = usePopover(open, () => setOpen(false))
   const today = useMemo(() => startOfDay(new Date()), [])
@@ -370,9 +381,10 @@ function CalendarPop({ depart, ret, oneWay, onOneWayChange, onChange, children }
       {children(open, () => setOpen((o) => !o))}
       {open && (
         <div className="absolute left-0 top-[calc(100%+10px)] z-[60] rounded-xl border border-border bg-surface p-4">
-          {/* trip-type lives here (Google-Flights style), not in the search row */}
-          <div className="mb-3 flex justify-center border-b border-hair pb-3">
+          {/* trip-type + stops live here (Google-Flights style), not in the search row */}
+          <div className="mb-3 flex flex-col items-center gap-2 border-b border-hair pb-3">
             <TripTypeToggle oneWay={oneWay} onChange={onOneWayChange} />
+            <NonstopToggle nonstop={nonstop} onChange={onNonstopChange} />
           </div>
           <div className="mb-1 flex items-center justify-between">
             <button
@@ -624,6 +636,8 @@ export interface SearchState {
   infants: number
   cabin: Cabin
   oneWay: boolean
+  /** Hard filter: connecting itineraries are excluded, even at a higher price. */
+  nonstop: boolean
 }
 
 // Compact passenger summary. Adults only → "1 adult"; otherwise sums every
@@ -652,6 +666,41 @@ function validateSearch(s: SearchState): string | null {
     if (s.ret < s.depart) return 'Return can’t be before departure.'
   }
   return null
+}
+
+// "Nonstop only" filter chip — a hard ceiling on connections (maxStops: 0),
+// not just a soft tiebreaker, so a traveler who'd rather pay more to skip
+// layovers has an explicit, one-tap way to say so (previously this was only
+// reachable via free-text preference parsing that no UI ever surfaced).
+function NonstopToggle({
+  nonstop,
+  onChange,
+}: {
+  nonstop: boolean
+  onChange: (nonstop: boolean) => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={nonstop}
+      onClick={() => onChange(!nonstop)}
+      className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors ${
+        nonstop
+          ? 'border-brand bg-brand-light text-brand-deep'
+          : 'border-border bg-surface text-text2 hover:bg-sunk'
+      }`}
+    >
+      <span
+        aria-hidden
+        className={`grid h-[14px] w-[14px] flex-shrink-0 place-items-center rounded-[4px] border ${
+          nonstop ? 'border-brand bg-brand text-white' : 'border-text3'
+        }`}
+      >
+        {nonstop && <Icon name="check" size={11} />}
+      </span>
+      Nonstop only
+    </button>
+  )
 }
 
 // Round-trip / one-way segmented toggle. Flat, brand-tinted active pill.
@@ -747,6 +796,11 @@ export function SearchForm({
     setS((p) => ({ ...p, oneWay, ret: oneWay ? '' : p.ret }))
   }
 
+  function setNonstop(nonstop: boolean) {
+    setError(null)
+    setS((p) => ({ ...p, nonstop }))
+  }
+
   // Reverse the route — swap From/To (and their displayed cities follow state).
   function swapFromTo() {
     setError(null)
@@ -774,6 +828,7 @@ export function SearchForm({
     if (s.children > 0) qs.set('children', String(s.children))
     if (s.infants > 0) qs.set('infants', String(s.infants))
     if (s.cabin !== 'economy') qs.set('cabin', s.cabin)
+    if (s.nonstop) qs.set('nonstop', '1')
     onSubmitted?.()
     router.push(`/search?${qs.toString()}`)
     // Same-route (query-only) pushes don't auto-scroll in the App Router, so a
@@ -822,6 +877,8 @@ export function SearchForm({
           ret={s.ret}
           oneWay={s.oneWay}
           onOneWayChange={setOneWay}
+          nonstop={s.nonstop}
+          onNonstopChange={setNonstop}
           onChange={(depart, ret) => {
             setError(null)
             setS((p) => ({ ...p, depart, ret }))
@@ -955,6 +1012,8 @@ export function SearchForm({
         ret={s.ret}
         oneWay={s.oneWay}
         onOneWayChange={setOneWay}
+        nonstop={s.nonstop}
+        onNonstopChange={setNonstop}
         onChange={(depart, ret) => {
           setError(null)
           setS((p) => ({ ...p, depart, ret }))
