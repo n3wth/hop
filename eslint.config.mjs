@@ -20,6 +20,11 @@ const eslintConfig = defineConfig([
     // separate runtime (workerd) with its own package.json/tsconfig, deployed
     // independently — same reasoning as the eve/** ignore above.
     "cloudflare/**",
+    // Workflow scripts (.claude/workflows/*.js) run in the Workflow tool's
+    // sandbox with injected globals (agent, pipeline, phase, …) — linting them
+    // as app code yields wall-to-wall no-undef. See ADR 0006 and
+    // docs/solutions/2026-07-01-workflow-scripts-are-a-third-runtime.md.
+    ".claude/**",
   ]),
 ]);
 

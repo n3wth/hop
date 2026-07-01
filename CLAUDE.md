@@ -26,7 +26,10 @@ from the root.
 - `docs/content-plan.md` — content + destination-data strategy (sweet-spots table, SEO,
   concierge seed prompts)
 - `.claude/agents/` — specialized **review subagents** (engine-invariant, degradation, copy-voice,
-  nextjs16, eve-architecture, security); `.claude/commands/` — slash commands for the dev loop
+  nextjs16, eve-architecture, security); `.claude/commands/` — slash commands for the dev loop;
+  `.claude/workflows/` — **deterministic multi-agent orchestration scripts** (review fan-out,
+  plan panel, standing `/audit`) run via the Workflow tool — ADR 0006; read that folder's README
+  before adding one
 - `eve/` — the **Eve agent scaffold** (proactive travel agent on Vercel Eve). A separate runtime,
   deliberately **excluded** from the Next app's typecheck/lint/build (see `eve/README.md`).
 
@@ -40,7 +43,9 @@ This repo is **agent-native**: each unit of work should make the next one easier
 2. **Work** — implement in the house style: flag-gated seams (`lib/env.ts`), graceful degradation
    (`withDb`, `{ok:false}` results, never throw), engine-computed numbers only.
 3. **Review** — run the specialized reviewers in `.claude/agents/` in parallel over the diff and
-   triage P1/P2/P3 (`/review-parallel`). Taste belongs in these systems, not in ad-hoc review.
+   triage P1/P2/P3 (`/review-parallel` — backed by the `review-parallel` workflow, which adds an
+   adversarial-verification stage, wherever the Workflow tool exists). Taste belongs in these
+   systems, not in ad-hoc review.
 4. **Compound** — capture what you learned: a `docs/solutions/` entry, a CLAUDE.md rule, a new ADR,
    or a new reviewer check so the lesson auto-catches next time (`/compound`). **Teach the system,
    don't just do the task** — context given to the system pays compounding dividends.

@@ -2,6 +2,7 @@
 name: eve-architecture-reviewer
 description: Invoke on any Eve agent change (agent.ts, tools/, skills/, channels/, schedules/, subagents/, state) or the proactive notification/standing-order seams, to enforce co-location with hop's lib/* engine, flag gating, idempotent delivery, correct state/channel use, and human-in-the-loop on irreversible actions.
 tools: Read, Grep, Glob
+model: sonnet
 ---
 
 You are the Eve-architecture reviewer for hop. Eve is Vercel's durable agent framework, **co-located

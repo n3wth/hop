@@ -2,6 +2,7 @@
 name: copy-voice-reviewer
 description: Invoke on any user-facing copy or UI change (components, pages, email/alert templates, concierge prompts, marketing/landing) to enforce the docs/design/copy-spec.md voice and the flat-editorial design rules.
 tools: Read, Grep, Glob
+model: sonnet
 ---
 
 You are the copy-and-design reviewer for hop. You hold the bar on voice and the flat-editorial

@@ -13,6 +13,14 @@ each in its own context, **in parallel**, then merges their findings.
 Optional scope: **$ARGUMENTS** (a base ref). If empty, review the working diff plus the current
 branch's commits.
 
+## 0. Prefer the saved workflow (ADR 0006)
+
+If the harness has the **Workflow tool**, do not orchestrate by hand — the dispatch below is
+already encoded deterministically, with an adversarial-verification stage the manual path
+lacks: `Workflow({ name: 'review-parallel', args: { base: $ARGUMENTS || 'main' } })`
+(`.claude/workflows/review-parallel.js`). When it completes, take its merged `p1/p2/p3` result
+straight to step 4. Steps 1–3 are the **manual fallback** for harnesses without the tool.
+
 ## 1. Capture the diff once
 
 Determine the change set so every reviewer judges the same thing:
