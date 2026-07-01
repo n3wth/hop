@@ -170,7 +170,7 @@ export default function MemoryKnows({
           <Icon name="lightbulb" size={13} />
           hop noticed
         </h3>
-        <div className="rounded-[16px] border border-border bg-brand-tint px-4">
+        <div className="rounded-[var(--radius)] border border-border bg-brand-tint px-4">
           {pendingNoticed.map((n) => (
             <NoticedRow key={n.id} fact={n} onResolved={onResolved} />
           ))}
@@ -190,7 +190,7 @@ export default function MemoryKnows({
           <Icon name="trending_up" size={13} />
           hop observed
         </h3>
-        <div className="rounded-[16px] border border-border bg-surface px-4">
+        <div className="rounded-[var(--radius)] border border-border bg-surface px-4">
           {observed.map((o) => (
             <div
               key={o.id}
@@ -208,7 +208,7 @@ export default function MemoryKnows({
 
   if (groups.length === 0 && !noticedBlock && !observedBlock) {
     return (
-      <div className="rounded-[16px] border border-dashed border-border bg-paper px-5 py-7 text-center">
+      <div className="rounded-[var(--radius)] border border-dashed border-border bg-paper px-5 py-7 text-center">
         <span className="grid mx-auto h-10 w-10 place-items-center rounded-full bg-brand-light text-brand">
           <Icon name="lightbulb" size={20} />
         </span>
@@ -231,7 +231,7 @@ export default function MemoryKnows({
           <h3 className="mb-1 text-[12px] font-semibold uppercase tracking-[0.12em] text-brand">
             {g.title}
           </h3>
-          <div className="rounded-[16px] border border-border bg-surface px-4">
+          <div className="rounded-[var(--radius)] border border-border bg-surface px-4">
             {g.facts.map((f) => (
               <FactRow key={f.id} fact={f} onForgotten={onForgotten} />
             ))}

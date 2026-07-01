@@ -124,16 +124,13 @@ export default function Counterfactual({
   }
 
   return (
-    <div className="mt-4 rounded-[16px] border border-border bg-surface p-5 sm:p-6">
+    <div className="mt-4 rounded-[var(--radius)] border border-border bg-surface p-5 sm:p-6">
       <div className="flex items-start gap-3">
         <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
           <Icon name="swap_horiz" size={20} />
         </span>
         <div className="min-w-0">
-          <h3 className="font-display text-[16px] font-semibold tracking-[-0.01em] text-text">
-            What if…
-          </h3>
-          <p className="mt-1 max-w-[58ch] text-[13px] leading-[1.55] text-text2">
+          <p className="max-w-[58ch] text-[13px] leading-[1.55] text-text2">
             A mirror for your portfolio. Ask what a different points stack would unlock — hop
             re-runs its real engine against your balances and shows the trips that open up.
           </p>

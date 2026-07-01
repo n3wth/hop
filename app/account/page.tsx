@@ -164,7 +164,7 @@ export default async function AccountPage({
       <div className="mx-auto max-w-[var(--container-sm)] pb-4 pt-8 sm:pt-12">
         {/* profile hero — teal plane, matches the editorial system */}
         <section
-          className="overflow-hidden rounded-[20px] text-hero-cream lg:rounded-[var(--radius-hero)]"
+          className="overflow-hidden rounded-[var(--radius-lg)] text-hero-cream lg:rounded-[var(--radius-hero)]"
           style={{ background: 'var(--color-brand)' }}
         >
           <div className="flex flex-col gap-5 px-6 py-8 sm:flex-row sm:items-center sm:gap-6 sm:px-10">
@@ -229,7 +229,7 @@ export default async function AccountPage({
             width and the power features aren't buried below a long scroll: left
             = what hop knows about you, right = what hop does + developer access.
             Below xl it collapses back to the single readable column. */}
-        <div className="mt-12 grid grid-cols-1 items-start gap-x-12 xl:grid-cols-2">
+        <div className="mt-12 flex flex-col gap-12">
         {/* ── COLUMN A — GROUP 1 — YOUR TRAVEL PROFILE ───────────────────────
             What hop knows about you: the programs you hold and where you've
             flown. These describe your identity, so they sit together. */}
@@ -329,7 +329,7 @@ export default async function AccountPage({
         {/* ── COLUMN B — GROUP 2 + GROUP 3 ───────────────────────────────────
             What hop does for you, plus developer access. On xl this column sits
             beside the travel profile; below xl it stacks under it. */}
-        <div className="mt-14 xl:mt-0">
+        <div>
 
         {/* ── GROUP 2 — WHAT HOP DOES FOR YOU ────────────────────────────────
             The active tools: watch a route, or ask what a different stack would
@@ -384,7 +384,7 @@ export default async function AccountPage({
 
         {/* MCP access tokens (collapsed) */}
         <section id="mcp" className="mt-6 scroll-mt-24">
-          <details className="group/mcp rounded-[16px] border border-border bg-surface">
+          <details className="group/mcp rounded-[var(--radius)] border border-border bg-surface">
             <summary className="flex cursor-pointer list-none items-center gap-2.5 px-5 py-4 transition-colors hover:bg-sunk [&::-webkit-details-marker]:hidden">
               <div className="min-w-0 flex-1">
                 <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">

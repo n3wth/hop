@@ -87,7 +87,7 @@ export default function GmailHistory({
   // Connected: show the linked inbox + parsed trips + disconnect/resync.
   if (connected) {
     return (
-      <section className="mt-4 overflow-hidden rounded-[16px] border border-border bg-surface">
+      <section className="mt-4 overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
         <div className="flex items-center justify-between gap-3 px-5 py-3.5 sm:px-6">
           <span className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-text2">
             <Icon name="check_circle" size={16} />
@@ -201,7 +201,7 @@ export default function GmailHistory({
 
   // Not connected. If the seam is gated off, keep the calm "coming soon" state.
   return (
-    <div className="mt-4 flex flex-col gap-4 rounded-[16px] border border-border bg-surface px-6 py-7 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mt-4 flex flex-col gap-4 rounded-[var(--radius)] border border-border bg-surface px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-4">
         <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
           <Icon name="receipt_long" size={22} />
