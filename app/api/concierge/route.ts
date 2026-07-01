@@ -25,7 +25,7 @@ import {
   destinationByCode,
   type Destination,
 } from '@/lib/destinations'
-import { valuationsByName } from '@/lib/valuations'
+import { valuationsByName, walletValue } from '@/lib/valuations'
 import { effectiveBalanceFor } from '@/lib/transfers'
 import { POINTS_THRESHOLD_CPP } from '@/lib/search'
 import { buildConciergeTools } from '@/lib/concierge-tools'
@@ -267,6 +267,18 @@ function balancesSummary(context?: ConciergeContext): string {
   if (total !== undefined) {
     lines.push(`- Total usable points: ${total.toLocaleString('en-US')}`)
   }
+  // Engine-computed wallet dollar total (lib/valuations#walletValue) — the ONLY
+  // dollar figure for "the whole wallet" the model may ever state. Injected here
+  // so the model restates this number instead of summing balances x cpp itself,
+  // which could drift from the engine's rounding/coverage (see P2 review finding).
+  if (programs.length) {
+    const dollars = walletValue(
+      programs.map((p) => ({ program: p.program, code: p.program, balance: p.balance })),
+    )
+    lines.push(
+      `- Engine-computed wallet dollar value (typical baseline, ALL programs combined): ~$${dollars.toLocaleString('en-US')}`,
+    )
+  }
   return lines.join('\n')
 }
 
@@ -284,6 +296,7 @@ export function buildPrompt(
     '- NEVER invent specific flight prices, fares, or live award availability. Frame every suggestion from the destinations dataset.',
     '- Match suggestions to the destinations dataset by IATA code. Do not suggest places not in the dataset.',
     "- Respect the user's points balances: prefer destinations they can actually afford with the points they have.",
+    '- NEVER sum or multiply balances against the cpp table yourself to state a total wallet dollar value. If asked what the whole wallet is worth, restate ONLY the "Engine-computed wallet dollar value" figure below — never compute your own.',
     '- Be warm, concrete, and concise — a few sentences, full of wanderlust but practical. No emoji spam, no hype.',
     '- When it helps, say roughly how many points a trip needs (from the dataset) and which program books it well.',
     '',
@@ -348,6 +361,7 @@ function buildAgenticSystem(
     'Hard rules:',
     '- For open-ended INSPIRATION ("where should I go", "somewhere warm") without a specific date, RECOMMEND from the curated destinations dataset below (match by IATA code) via price_trip. For a SPECIFIC route + date — or any airport not in the dataset — call search_flights instead; it prices any real airport live, so you are not limited to the dataset there. You may freely build itineraries, plans, and give travel advice for ANY place the user names.',
     '- NEVER invent flight prices, fares, miles, CPP, or award availability. Numbers come from price_trip or search_flights; live facts come from web_search/get_weather. Every points/miles/cash/CPP figure in your PROSE must match what the tool actually returned for that exact destination/route — never round it into a different number or imply affordability the engine did not. If a tool reports a degraded section (cash or awards unavailable), say so plainly rather than filling the gap. Never invent visa rules, prices, or hard facts — if unsure, say so or web_search.',
+    '- NEVER sum or multiply the balances and cpp table below yourself to state a total wallet dollar value. If asked what the whole wallet/all points combined are worth, restate ONLY the "Engine-computed wallet dollar value" figure below — never compute your own from the per-program numbers.',
     "- Prefer destinations the user can actually afford with the points they hold.",
     '- Honor the profile: respect dietary/accessibility/cabin needs and NEVER suggest a destination the user listed as avoided.',
     '- After tool calls, weave the real figures into a flowing 1-4 sentence answer. Mention how many points a trip needs and which program books it.',

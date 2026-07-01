@@ -9,6 +9,13 @@
 // A wrong number is fatal to the moat, so economics live in this constant table.
 //
 // Keyed by lib/programs.ts canonical ids (the program-registry agent's slugs).
+//
+// NOTE — a DIFFERENT table from lib/cpp.ts: this module's BASELINE_CPP is
+// published/typical community valuations (used to price a wallet's *balance*
+// in dollars, e.g. walletValue()). lib/cpp.ts computes LIVE cpp from an actual
+// cash fare vs. an actual award (`cpp = (cash − taxes) × 100 / miles`) and owns
+// the tier thresholds (POINTS_THRESHOLD_CPP, tier()) for a specific search
+// result. Don't conflate the two constant sets when editing either.
 
 import { PROGRAMS, canonicalizeProgram } from '@/lib/programs'
 import type { Balance } from '@/lib/types'
