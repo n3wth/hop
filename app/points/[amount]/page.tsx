@@ -146,7 +146,7 @@ export default async function PointsBandPage({
         {/* header — evergreen framing: "N points, here's where that typically
             goes", never a claim that the visitor holds this balance. */}
         <header className="mt-6 max-w-[60ch]">
-          <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
+          <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
             {list.length} {list.length === 1 ? 'destination' : 'destinations'}
           </span>
           <h1 className="mt-3 text-balance font-display text-[32px] font-semibold leading-[1.06] tracking-[-0.02em] text-text sm:text-[46px]">
@@ -205,7 +205,7 @@ export default async function PointsBandPage({
                       <span className="text-[13px] text-text3">{d.country}</span>
                       {value !== undefined && (
                         <span
-                          className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em]"
+                          className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[var(--track-label)]"
                           style={{ background: chip.bg, color: chip.fg, borderColor: chip.bd }}
                         >
                           {formatValue(value)}

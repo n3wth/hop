@@ -139,7 +139,7 @@ export default function ConciergeHero({
         }`}
       >
         <span
-          className="hop-rise inline-flex items-center gap-2 rounded-full bg-brand-deep px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-hero-eyebrow"
+          className="hop-rise inline-flex items-center gap-2 rounded-full bg-brand-deep px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[var(--track-tag)] text-hero-eyebrow"
           style={{ ['--hop-delay' as string]: '40ms' }}
         >
           <Icon name="lightbulb" size={12} />

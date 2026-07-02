@@ -98,7 +98,7 @@ export default function OriginSelector() {
           aria-label="Set departure airport"
           className="absolute right-0 top-[calc(100%+10px)] z-[80] w-[300px] rounded-[16px] border border-border bg-surface p-2.5"
         >
-          <span className="mb-1.5 block px-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text3">
+          <span className="mb-1.5 block px-1 text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
             Where from
           </span>
           <input

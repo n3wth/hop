@@ -45,7 +45,7 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
         className="overflow-hidden rounded-[22px] px-5 py-7 text-hero-cream sm:px-[30px]"
         style={{ background: 'var(--color-brand-ink)' }}
       >
-        <h2 className="text-[13px] font-semibold uppercase tracking-[0.14em] text-wallet-active">
+        <h2 className="text-[13px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-wallet-active">
           Your points
         </h2>
         <p className="mt-2 max-w-[40ch] text-[14px] leading-[1.55] text-hero-body">

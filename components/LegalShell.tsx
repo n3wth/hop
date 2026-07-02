@@ -18,7 +18,7 @@ export default function LegalShell({ eyebrow, title, intro, lastUpdated, childre
   return (
     <div className="mx-auto max-w-[72ch] px-1">
       <header className="pt-10 sm:pt-14">
-        <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-brand">
+        <span className="text-[12px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">
           {eyebrow}
         </span>
         <h1 className="mt-3 font-display text-[36px] font-bold leading-[1.08] text-text sm:text-[46px]">

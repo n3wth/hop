@@ -41,7 +41,7 @@ export default function ClimateStrip({
                   aria-hidden
                 />
               </div>
-              <span className="text-[10px] font-semibold uppercase tracking-[0.02em] text-text3">
+              <span className="text-[10px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
                 {MONTH_ABBR[i].charAt(0)}
               </span>
             </div>

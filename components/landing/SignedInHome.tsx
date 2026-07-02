@@ -104,7 +104,7 @@ export default async function SignedInHome({
             Flat: a bordered paper card with a sunk stat row, no shadow/lift. */}
         {programs > 0 ? (
           <aside className="flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-6 lg:rounded-[var(--radius-hero)]">
-            <span className="text-[11.5px] font-semibold uppercase tracking-[0.16em] text-brand">
+            <span className="text-[11.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
               Your points
             </span>
             <p className="hop-price mt-2 text-[40px] leading-[1] text-text sm:text-[46px]">
@@ -124,7 +124,7 @@ export default async function SignedInHome({
 
             <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius)] border border-hair bg-hair">
               <div className="bg-sunk p-3.5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
+                <p className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
                   {personalized ? 'In reach' : 'Worth saving for'}
                 </p>
                 <p className="hop-price mt-1 text-[22px] leading-none text-text">
@@ -135,7 +135,7 @@ export default async function SignedInHome({
                 </p>
               </div>
               <div className="bg-sunk p-3.5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
+                <p className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
                   Best value
                 </p>
                 <p className="hop-price mt-1 text-[22px] leading-none text-text">
@@ -192,10 +192,10 @@ export default async function SignedInHome({
       <section>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-col gap-2 sm:max-w-[54ch]">
-            <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
+            <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
               Trips your balances can get you to
             </span>
-            <h2 className="font-display text-[26px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[34px]">
+            <h2 className="text-balance font-display text-[26px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[34px]">
               {personalized
                 ? 'Within reach.'
                 : 'Dreams worth saving toward.'}
@@ -226,10 +226,10 @@ export default async function SignedInHome({
       <section className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px] lg:gap-12">
         {/* Run a real search */}
         <div className="flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-6 sm:p-8 lg:rounded-[var(--radius-hero)]">
-          <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
+          <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
             Already know the route?
           </span>
-          <h2 className="mt-2 font-display text-[24px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[28px]">
+          <h2 className="mt-2 text-balance font-display text-[24px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[28px]">
             Run a search. Get the verdict.
           </h2>
           <p className="mt-2 max-w-[44ch] text-[14.5px] leading-[1.55] text-text2">
@@ -247,11 +247,11 @@ export default async function SignedInHome({
           style={{ background: 'var(--color-brand)' }}
         >
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-brand-deep px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-mint-bright">
+            <span className="inline-flex items-center gap-2 rounded-full bg-brand-deep px-3 py-1 text-[11px] font-semibold uppercase tracking-[var(--track-tag)] text-mint-bright">
               <Icon name="lightbulb" size={12} />
               Or just ask
             </span>
-            <h2 className="mt-4 font-display text-[24px] font-semibold leading-[1.08] tracking-[-0.02em] text-white sm:text-[28px]">
+            <h2 className="mt-4 text-balance font-display text-[24px] font-semibold leading-[1.08] tracking-[-0.02em] text-white sm:text-[28px]">
               Not sure where to go?
             </h2>
             <p className="mt-2.5 text-[14.5px] leading-[1.55] text-hero-body">

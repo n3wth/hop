@@ -74,13 +74,11 @@ export default function RouteBar({ result, hasRealBalances = false, nonstop = fa
         </div>
       </div>
 
-      {/* FULL — wide screens (lg+). This is a thin one-line masthead (route
-          codes balanced against a stat group), not a content block that
-          should fill the shell — capped at --container-app (the width it
-          was designed at, pre-full-width-shell) so the two clusters read as
-          a balanced line instead of drifting to opposite edges of the full
-          1760px shell with dead air stranded between them. */}
-      <div className="hidden items-center justify-between pt-4 lg:flex lg:max-w-[var(--container-app)]">
+      {/* FULL — wide screens (lg+). A thin one-line masthead spanning the SAME
+          width as the verdict hero and results below, so the right-side stat
+          group aligns flush with the content's right edge (and with the
+          loading skeleton's stat placeholders — no snap when results land). */}
+      <div className="hidden items-center justify-between pt-4 lg:flex">
         <div className="flex items-center gap-[18px]">
           <div className="flex flex-col">
             <span className="font-display text-[19px] font-semibold tracking-[-0.01em] text-text">

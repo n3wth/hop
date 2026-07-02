@@ -148,7 +148,7 @@ function VerdictPill({ verdict, cpp }: { verdict: A2UIEconomics['verdict']; cpp?
         : 'var(--color-warn)'
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white"
+      className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[var(--track-tag)] text-white"
       style={{ background: bg }}
     >
       {label}
@@ -193,7 +193,7 @@ function SavingsLead({ econ }: { econ: A2UIEconomics }) {
 function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div>
-      <div className="mb-0.5 text-[9.5px] font-semibold uppercase tracking-[0.14em] text-text3">
+      <div className="mb-0.5 text-[9.5px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
         {label}
       </div>
       <div
@@ -274,7 +274,7 @@ function VerdictCard({
             <span className="font-display text-[18px] font-semibold leading-tight text-text">
               {city}
             </span>
-            <span className="rounded-full bg-sunk px-1.5 py-0.5 font-display text-[10px] font-semibold uppercase tracking-[0.08em] text-text2">
+            <span className="rounded-full bg-sunk px-1.5 py-0.5 font-display text-[10px] font-semibold uppercase tracking-[var(--track-tag)] text-text2">
               {b.code}
             </span>
           </div>
@@ -341,7 +341,7 @@ function Compare({
 }) {
   return (
     <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-      <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
+      <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
         <Icon name="swap_horiz" size={16} className="text-brand" />
         Side by side
       </div>
@@ -394,7 +394,7 @@ function Timing({ b }: { b: TimingBlock }) {
     level === 'low' ? 'Cheapest' : level === 'mid' ? 'Mid' : 'Pricey'
   return (
     <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-      <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
+      <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
         <Icon name="schedule" size={16} className="text-brand" />
         When to go · {b.place}
       </div>
@@ -426,7 +426,7 @@ function Weather({ b }: { b: WeatherBlock }) {
   return (
     <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
           <Icon name="info" size={16} className="text-brand" />
           {b.place} · {b.month}
         </div>
@@ -563,7 +563,7 @@ function Counterfactual({ b, homeAirport }: { b: CounterfactualBlock; homeAirpor
   if (!r) return null
   return (
     <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-      <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
+      <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
         <Icon name="swap_horiz" size={16} className="text-brand" />
         What if · {r.label}
       </div>

@@ -34,14 +34,14 @@ export default function Loading() {
           style={{ background: 'var(--color-brand)' }}
         >
           <div className="flex flex-col gap-5 px-6 py-8 sm:flex-row sm:items-center sm:gap-6 sm:px-10">
-            <span className="grid h-20 w-20 flex-shrink-0 place-items-center rounded-full bg-white/15 ring-1 ring-white/20" />
+            <span className="hop-skeleton-dark grid h-20 w-20 flex-shrink-0 place-items-center rounded-full ring-1 ring-white/20" />
             <div className="min-w-0 flex-1">
-              <span className="block h-[11px] w-[90px] rounded-[6px] bg-white/15" />
-              <span className="mt-3 block h-[28px] w-[200px] rounded-[6px] bg-white/20" />
-              <span className="mt-2 block h-[14px] w-[150px] rounded-[6px] bg-white/15" />
+              <span className="hop-skeleton-dark block h-[11px] w-[90px] rounded-[6px]" />
+              <span className="hop-skeleton-dark mt-3 block h-[28px] w-[200px] rounded-[6px]" />
+              <span className="hop-skeleton-dark mt-2 block h-[14px] w-[150px] rounded-[6px]" />
             </div>
             <span className="inline-flex flex-shrink-0 self-start rounded-[12px] border border-white/25 px-5 py-2.5 sm:self-center">
-              <span className="block h-[14px] w-[52px] rounded-[6px] bg-white/20" />
+              <span className="hop-skeleton-dark block h-[14px] w-[52px] rounded-[6px]" />
             </span>
           </div>
         </section>

@@ -355,6 +355,23 @@ body {
   animation: hop-shimmer 1.6s ease-in-out infinite;
 }
 
+/* On-dark skeleton variant — placeholders painted on the teal verdict hero and
+   the dark wallet. Same sweep as .hop-skeleton with a white sheen tuned for
+   dark surfaces, so EVERY loading block shimmers, not just the cream ones. */
+.hop-skeleton-dark {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+}
+.hop-skeleton-dark::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16) 55%, transparent);
+  animation: hop-shimmer 1.6s ease-in-out infinite;
+}
+
 /* Thinking-state skeleton lines — a soft, rounded sheen bar standing in for the
    answer that's about to stream. Reuses the .hop-skeleton shimmer; a brand-tint
    wash keeps it on-brand and quieter than the neutral sunk. Flat, no chrome. */
@@ -437,7 +454,8 @@ body {
   .hop-collapse {
     transition: none;
   }
-  .hop-skeleton::after {
+  .hop-skeleton::after,
+  .hop-skeleton-dark::after {
     animation: none;
   }
   .hop-spin,
