@@ -68,17 +68,17 @@ export default function ConnectBand({
           ) : (
             <>
               {/* Two distinct doors, not the same URL twice: signup is primary,
-                  sign in is the quieter return path. Both carry returnTo so Auth0
-                  lands the visitor back home. */}
+                  sign in is the quieter return path. Both carry returnTo so the
+                  visitor lands back home after auth. */}
               <a
-                href="/auth/login?screen_hint=signup&returnTo=%2F"
+                href="/login?returnTo=%2F"
                 className="inline-flex items-center gap-2 rounded-[14px] bg-white px-7 py-3.5 text-[15px] font-semibold text-brand-ink transition-colors hover:bg-hero-white-hover"
               >
                 <Icon name="loyalty" size={16} />
                 Connect your points
               </a>
               <a
-                href="/auth/login?returnTo=%2F"
+                href="/login?returnTo=%2F"
                 className="inline-flex items-center rounded-[14px] border border-white/25 px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep"
               >
                 Sign in

@@ -334,8 +334,8 @@ export default async function SupportPage() {
 
         <h3>What does hop store, and who can see it?</h3>
         <p>
-          Your identity comes from Auth0; your balances, home airport, and any tokens are scoped to
-          your account and never exposed to other users. For the full picture — what&rsquo;s
+          Your identity comes from Google sign-in; your balances, home airport, and any tokens are
+          scoped to your account and never exposed to other users. For the full picture — what&rsquo;s
           collected, why, and who it&rsquo;s shared with — see the{' '}
           <Link href="/privacy">Privacy Policy</Link>.
         </p>

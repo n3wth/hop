@@ -1,15 +1,20 @@
 /* eslint-disable */
-// Shared wrapper for the per-user Supabase persistence modules (prefs,
-// conversations, accounts, travel-profile, standing-orders, api-tokens,
-// travel-history, …).
+// Shared wrapper for the per-user persistence modules (prefs, conversations,
+// accounts, travel-profile, standing-orders, api-tokens, travel-history, …).
 //
-// Repointed to Drizzle/Neon using a robust Supabase Postgrest compatibility shim
-// so the entire codebase's 22+ database-access libraries compile and run
-// perfectly on the new Neon database with ZERO changes to their query builders!
+// A Postgrest-compatibility shim over Drizzle/Neon: the 22+ database-access
+// libraries keep their Supabase-style query builders while the queries execute
+// through lib/db. The shim implements the SUBSET of Postgrest the codebase
+// actually uses — filters (eq/neq/gt/gte/lt/lte/in/is), order/limit,
+// single/maybeSingle, insert/update/delete/upsert (incl. `.select()` read-back
+// via RETURNING, array rows, composite onConflict targets, ignoreDuplicates),
+// and `{ count: 'exact', head: true }`. Anything it can't resolve (unknown
+// column names, unsupported chains) fails CLOSED with `{ error }` rather than
+// silently widening a query.
 
 import { getDb } from '@/lib/db'
 import * as schema from '@/lib/db/schema'
-import { eq, ne, gte, lt, gt, lte, inArray, isNull, and, asc, desc } from 'drizzle-orm'
+import { eq, ne, gte, lt, gt, lte, inArray, isNull, and, asc, desc, sql } from 'drizzle-orm'
 
 // ── Snake/Camel Case Column Transformers ───────────────────────────────────
 
@@ -33,8 +38,10 @@ function toSnakeRow(obj: any): any {
 }
 
 // Converts a snake_case input payload (insert/update) to camelCase properties
-// for Drizzle. Transforms only top-level properties.
+// for Drizzle. Transforms only top-level properties; arrays map per row
+// (Postgrest bulk insert/upsert passes arrays).
 function toCamelRow(obj: any): any {
+  if (Array.isArray(obj)) return obj.map(toCamelRow)
   if (!obj || typeof obj !== 'object' || obj instanceof Date) return obj
   const result: any = {}
   for (const [key, value] of Object.entries(obj)) {
@@ -53,7 +60,7 @@ const TABLE_MAP: Record<string, any> = {
   hop_conversation_summary: schema.conversationSummary,
   hop_inferred_facts: schema.inferredFacts,
   hop_memory_outcomes: schema.memoryOutcomes,
-  hop_subscriptions: schema.subscriptions || schema.hopSubscriptions,
+  hop_subscriptions: schema.hopSubscriptions,
   hop_bookings: schema.bookings,
   hop_standing_orders: schema.standingOrders,
   hop_standing_order_alerts: schema.standingOrderAlerts,
@@ -94,7 +101,16 @@ class SupabaseCompatBuilder {
   }
 
   select(columns?: string, options?: any) {
-    this.op = 'select'
+    // Postgrest chains `.select()` AFTER a write (`insert(...).select('id')`)
+    // to read the written rows back. The write op must survive — the rows come
+    // from RETURNING. Only a fresh builder (op initialized to 'select' with no
+    // pending input) treats this as a read.
+    if (this.op !== 'select') {
+      if (columns && columns !== '*') {
+        this.selectColumns = columns.split(',').map(s => toCamelKey(s.trim()))
+      }
+      return this
+    }
     this.selectOptions = options
     if (columns && columns !== '*') {
       this.selectColumns = columns.split(',').map(s => toCamelKey(s.trim()))
@@ -200,11 +216,20 @@ class SupabaseCompatBuilder {
     }
 
     try {
-      // 1. Build where clause
+      // 1. Build where clause. Unknown columns FAIL CLOSED: silently skipping
+      // a filter would widen the query (potentially across users).
       const whereClauses: any[] = []
       for (const filter of this.filters) {
         const col = this.table[filter.column]
-        if (!col) continue
+        if (!col) {
+          return {
+            data: null,
+            error: new Error(
+              `[SupabaseCompat] Unknown filter column "${filter.column}" on ${this.tableName}`,
+            ),
+            count: null,
+          }
+        }
         if (filter.op === 'eq') {
           whereClauses.push(eq(col, filter.value))
         } else if (filter.op === 'neq') {
@@ -232,26 +257,57 @@ class SupabaseCompatBuilder {
       let rawResults: any = []
 
       if (this.op === 'select') {
-        let q = db.select().from(this.table)
-        if (whereExpr) q = q.where(whereExpr) as any
+        // `{ count: 'exact', head: true }` — count without fetching rows.
+        if (this.selectOptions?.head && this.selectOptions?.count) {
+          let cq: any = db.select({ count: sql<number>`count(*)` }).from(this.table)
+          if (whereExpr) cq = cq.where(whereExpr)
+          const [row] = await cq
+          return { data: null, error: null, count: Number(row?.count ?? 0) }
+        }
+
+        // Column projection when every requested column resolves; otherwise
+        // fetch full rows (extra keys are harmless to Postgrest-style callers).
+        let projection: Record<string, any> | undefined
+        if (this.selectColumns.length > 0) {
+          projection = {}
+          for (const name of this.selectColumns) {
+            if (!this.table[name]) {
+              projection = undefined
+              break
+            }
+            projection[name] = this.table[name]
+          }
+        }
+
+        let q: any = projection ? db.select(projection).from(this.table) : db.select().from(this.table)
+        if (whereExpr) q = q.where(whereExpr)
 
         if (this.orderOptions.length > 0) {
-          const orderExprs = this.orderOptions.map(o => {
+          const orderExprs = []
+          for (const o of this.orderOptions) {
             const col = this.table[o.column]
-            return o.ascending ? asc(col) : desc(col)
-          })
-          q = q.orderBy(...orderExprs) as any
+            if (!col) {
+              return {
+                data: null,
+                error: new Error(
+                  `[SupabaseCompat] Unknown order column "${o.column}" on ${this.tableName}`,
+                ),
+                count: null,
+              }
+            }
+            orderExprs.push(o.ascending ? asc(col) : desc(col))
+          }
+          q = q.orderBy(...orderExprs)
         }
 
         if (this.limitVal !== null) {
-          q = q.limit(this.limitVal) as any
+          q = q.limit(this.limitVal)
         }
 
         rawResults = await q
       } else if (this.op === 'insert') {
         const values = toCamelRow(this.inputData)
-        let q = db.insert(this.table).values(values)
-        rawResults = await q.returning()
+        rawResults = await db.insert(this.table).values(values).returning()
       } else if (this.op === 'update') {
         const values = toCamelRow(this.inputData)
         let q = db.update(this.table).set(values)
@@ -263,15 +319,39 @@ class SupabaseCompatBuilder {
         rawResults = await q.returning()
       } else if (this.op === 'upsert') {
         const values = toCamelRow(this.inputData)
-        const targetColName = toCamelKey(this.upsertOptions?.onConflict || 'id')
-        const targetColumn = this.table[targetColName]
-        const setValues = { ...values }
-        delete setValues[targetColName]
-        
-        let q = db.insert(this.table).values(values).onConflictDoUpdate({
-          target: targetColumn,
-          set: setValues,
-        })
+
+        // Composite conflict targets arrive Postgrest-style: 'user_id,kind,value'.
+        const targetNames = String(this.upsertOptions?.onConflict || 'id')
+          .split(',')
+          .map(s => toCamelKey(s.trim()))
+        const targetColumns = targetNames.map(n => this.table[n])
+        if (targetColumns.some((c: any) => !c)) {
+          return {
+            data: null,
+            error: new Error(
+              `[SupabaseCompat] Unknown onConflict column(s) "${this.upsertOptions?.onConflict}" on ${this.tableName}`,
+            ),
+            count: null,
+          }
+        }
+
+        const insert = db.insert(this.table).values(values)
+        let q: any
+        if (this.upsertOptions?.ignoreDuplicates) {
+          q = insert.onConflictDoNothing({ target: targetColumns })
+        } else {
+          // Build the DO UPDATE set from EXCLUDED so multi-row upserts update
+          // each row with its own incoming values.
+          const sample = Array.isArray(values) ? values[0] ?? {} : values
+          const setValues: Record<string, any> = {}
+          for (const key of Object.keys(sample)) {
+            if (targetNames.includes(key)) continue
+            const col = this.table[key]
+            if (!col) continue // unknown payload keys are dropped by Drizzle anyway
+            setValues[key] = sql.raw(`excluded."${col.name}"`)
+          }
+          q = insert.onConflictDoUpdate({ target: targetColumns, set: setValues })
+        }
         rawResults = await q.returning()
       }
 
@@ -285,6 +365,12 @@ class SupabaseCompatBuilder {
             return { data: null, error: new Error('No rows found'), count: null }
           }
           return { data: null, error: null, count: null }
+        }
+        // Postgrest contract: .single() errors when more than one row matches.
+        // (.maybeSingle() stays lenient — first row — since some legacy tables
+        // lack unique constraints and callers treat it as "best match".)
+        if (this.singleVal === 'single' && rawResults.length > 1) {
+          return { data: null, error: new Error('Multiple rows found'), count: null }
         }
         return { data: toSnakeRow(rawResults[0]), error: null, count: countValue }
       }

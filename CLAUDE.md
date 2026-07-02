@@ -15,7 +15,7 @@ actions, caching, `params`/`searchParams` shapes), read the relevant guide in
 The **repo root is the Next.js app** (App Router, RSC, TypeScript, Tailwind v4) — run every command
 from the root.
 
-- `app/`, `components/`, `lib/`, `utils/`, `public/` — the application
+- `app/`, `components/`, `lib/`, `public/` — the application
 - `docs/design/` — the design source of truth: `CHOSEN-editorial.html` (canonical visual
   reference), `copy-spec.md` (strict copy voice), logo assets
 - `docs/plans/` — implementation plans (e.g. the flight-optimizer plan, the Eve agent design)
@@ -69,6 +69,9 @@ npx vitest run lib/__tests__/cpp.test.ts
 npx vitest run -t "ranks options by cpp"
 
 npm run dev:mock       # serve from mock fixtures (no upstream API keys needed)
+
+npm run db:generate    # drizzle-kit generate (offline SQL from lib/db/schema.ts)
+npm run db:migrate     # apply drizzle/ migrations to Neon (no-op without DATABASE_URL)
 ```
 
 Vitest uses the **node** environment and only collects `lib/**/*.test.ts` and `app/**/*.test.ts`
@@ -106,7 +109,7 @@ plus `lib/transfers.ts` (transfer reachability) and `lib/booking.ts` (booking UR
 ### Balances: one resolver, two sources — `lib/accounts.ts#getUserBalances`
 
 Every surface (home, deals, ask, search) consumes balances through this single resolver. It
-merges **manual** programs (Supabase `hop_manual_balances`, the primary path) with an optional
+merges **manual** programs (Neon `hop_manual_balances`, the primary path) with an optional
 **AwardWallet** live link (`hop_user_accounts`), de-duped by program code; AwardWallet wins for
 programs it covers, manual fills the rest. Returns `[]` (never throws) when the user has nothing;
 callers decide whether to fall back to mock fixtures.
@@ -119,19 +122,27 @@ this pipeline — it stays pure, with no top-level I/O. `lib/valuations-live.ts`
 first-party-observed cpp on top: `lib/search.ts#assembleSearch` emits each computed award option's
 cpp as an observation (`lib/valuation-telemetry.ts`, fire-and-forget) to a Cloudflare Worker
 (`cloudflare/valuations-worker/`), which aggregates a trimmed-mean per program; a Vercel cron
-mirrors that aggregate into Supabase (`lib/valuation-overrides.ts`), and a program's live cpp only
+mirrors that aggregate into Neon (`lib/valuation-overrides.ts`), and a program's live cpp only
 overrides the static baseline once it has **≥20 fresh samples**. The whole seam is gated behind
 `HOP_ENABLE_VALUATION_SYNC` and is fully inert until `cloudflare/valuations-worker/` is deployed
 and its secrets are configured (see ADR 0005).
 
-### Dual auth — `middleware.ts`
+### Auth — Better Auth on Neon (`lib/auth.ts`)
 
-Two layers run on navigation: **Auth0** owns identity and mounts `/auth/*` (its response is
-returned untouched for those paths); **Supabase** refreshes its session cookie for everything
-else. Identity is the **Auth0 `sub`**; Supabase rows are scoped by `user_id` in code via the
-service-role client (`utils/supabase/`, `lib/supabase-helpers.ts#withDb`, which wraps every query
-to return a fallback instead of throwing). The MCP transport endpoints are deliberately excluded
-from the middleware matcher (they use Bearer hop tokens, not session cookies).
+Identity is **Better Auth** with Google social login, persisted via the Drizzle adapter on
+**Neon** (`lib/db/`). There is no middleware — `app/api/auth/[...all]/route.ts` serves the whole
+auth surface, and sessions resolve server-side per request (`lib/session.ts#getUserId`; the
+`lib/auth0.ts` compat shim keeps legacy `auth0.getSession()` call sites working — new code uses
+`getUserId`). Sign-in must go through `authClient.signIn.social` (POST — Better Auth has **no**
+GET sign-in URL); sign-out through `authClient.signOut()` or the `/auth/logout` route shim.
+Identity is the **Better Auth `user.id`**; every `hop_*` row is scoped by `user_id` in code via
+`lib/supabase-helpers.ts#withDb` (a Postgrest-compat shim over Drizzle that returns fallbacks
+instead of throwing and fails CLOSED on unknown columns). Secrets resolve
+`BETTER_AUTH_SECRET → AUTH_SECRET → derived from DATABASE_URL` (`lib/env.ts#resolveAuthSecret`);
+the Google provider registers only when configured (`isGoogleAuthEnabled`; `GOOGLE_ID`/
+`GOOGLE_SECRET` accepted as aliases). Schema: `lib/db/schema.ts`. Migrations: `drizzle/` applies
+automatically during `npm run build` (`scripts/db-migrate.mjs`, no-op without `DATABASE_URL`) or
+via `npm run db:migrate`. The MCP transport endpoints use Bearer hop tokens, not session cookies.
 
 ### MCP server — `app/api/[transport]/route.ts`
 
@@ -139,7 +150,7 @@ hop's engine is exposed as an MCP server ("Add to Claude") via `mcp-handler`. Th
 `[transport]` segment serves both streamable-HTTP (`/api/mcp`) and legacy SSE (`/api/sse`). Tools
 (`price_trip`, `verdict`, `sweet_spots`, `transfer_paths`) call the same `lib/*` engine. Auth is
 an **optional** Bearer `hop_` token (`lib/api-tokens.ts`): present → resolves to the owner's
-Auth0 sub and loads their real balances; absent → stateless mode with caller-supplied balances.
+user id and loads their real balances; absent → stateless mode with caller-supplied balances.
 A user's data is only ever reachable via that user's own token.
 
 ### AI concierge — `/ask`
