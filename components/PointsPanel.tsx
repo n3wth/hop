@@ -7,6 +7,11 @@ export interface PointsPanelProps {
   balances: Balance[]
   /** The pick, so we can flag the program being spent and how much. */
   pick?: FlightOption
+  /** True when these are NOT the viewer's own connected balances (signed out,
+      or MOCK's demo fallback) — labels the panel so specific-looking numbers
+      (six figures, real program names) never get mistaken for the visitor's
+      own account before they've signed in. */
+  isExample?: boolean
 }
 
 function compact(n: number): string {
@@ -31,7 +36,7 @@ function isActive(b: Balance, pick?: FlightOption): boolean {
 // Dark "Your points" wallet — a clean, aligned list: brand chip + program/status
 // (left) and balance (right column, tabular-nums). A value bar under each row
 // makes the relative size legible. Flat fills, real program marks.
-export default function PointsPanel({ balances, pick }: PointsPanelProps) {
+export default function PointsPanel({ balances, pick, isExample = false }: PointsPanelProps) {
   const total = balances.reduce((sum, b) => sum + b.balance, 0)
   const max = balances.reduce((m, b) => Math.max(m, b.balance), 0) || 1
   const spend = pick?.miles
@@ -74,7 +79,22 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
       className="overflow-hidden rounded-[22px] text-hero-cream lg:max-w-[var(--container-app)]"
       style={{ background: 'var(--color-brand-ink)' }}
     >
-      {/* no restating header — the balances + total speak for themselves */}
+      {/* Example-data label — only when these balances aren't the viewer's own
+          (signed out, or MOCK's demo fallback). Loud enough that a specific,
+          real-looking six-figure balance table never reads as "my account
+          somehow got connected already" or "this site is faking data" —
+          two independent first-time-visitor complaints this fixes. Real
+          balances get no header, same as before. */}
+      {isExample ? (
+        <div className="flex items-center gap-2 border-b border-white/[0.07] px-4 py-3 sm:px-[30px]">
+          <span className="rounded-full bg-white/10 px-2.5 py-[3px] text-[10px] font-semibold uppercase tracking-[var(--track-tag)] text-hero-label">
+            Example
+          </span>
+          <span className="text-[12.5px] text-hero-label">
+            Sign in to see your own balances here.
+          </span>
+        </div>
+      ) : null}
       <div className="px-4 pt-[14px] sm:px-[30px] sm:pt-[18px]">
         {balances.map((b, i) => {
           const active = isActive(b, pick)

@@ -5,11 +5,16 @@ import { destinationImage } from '@/lib/images'
 // A taste of the output — a static sample verdict in the same teal language as
 // the real hero, so a first-time visitor sees exactly what hop hands back: not a
 // fare list, a decision. Hard-coded, labelled "Sample" so it never reads as live
-// data. The right panel shows the destination (New York, the sample's JFK) so it
-// mirrors the real verdict hero. Flat, solid, no translucency (the dark teal's
-// white text is the one allowed exception, matching VerdictRail).
+// data — but the FIGURES are the canonical worked example from
+// docs/design/copy-spec.md's "Verdict hero" section (4,500 miles at 5.4¢/pt,
+// cash $254, save $243 — 4500 × 0.054 = $243.00 exactly), the same numbers the
+// mock search fixtures render live on /search, so a skeptical visitor who
+// checks the arithmetic here finds it holds. The right panel shows the
+// destination (Tokyo, the example's NRT) mirroring the real verdict hero. Flat,
+// solid, no translucency (the dark teal's white text is the one allowed
+// exception, matching VerdictRail).
 export default async function SampleVerdict() {
-  const photo = await destinationImage('New York City skyline travel landmark')
+  const photo = await destinationImage('Tokyo skyline travel landmark')
   return (
     <section
       className="grid grid-cols-1 overflow-hidden rounded-[20px] text-hero-cream lg:grid-cols-[1fr_300px] lg:rounded-[28px]"
@@ -22,7 +27,7 @@ export default async function SampleVerdict() {
             Sample verdict
           </span>
           <span className="rounded-full bg-brand-deep px-2.5 py-[3px] text-[10px] font-semibold uppercase tracking-[var(--track-tag)] text-mint-bright">
-            SFO → JFK
+            SFO → NRT
           </span>
         </span>
 
@@ -40,21 +45,21 @@ export default async function SampleVerdict() {
         </div>
 
         <p className="mt-5 max-w-[44ch] text-[15.5px] leading-[1.55] text-hero-body">
-          <b className="font-semibold text-white">25,000 miles</b> at{' '}
-          <b className="font-semibold text-white">2.1¢/pt</b> — the best
+          <b className="font-semibold text-white">4,500 miles</b> at{' '}
+          <b className="font-semibold text-white">5.4¢/pt</b> — the best
           redemption in this example. Cash is{' '}
-          <b className="font-semibold text-white">$768</b>, so points win.
+          <b className="font-semibold text-white">$254</b>, so points win.
         </p>
 
         <div className="mt-7 flex flex-wrap gap-x-8 gap-y-4 border-t border-white/15 pt-6">
-          <Stat label="You pay" value="25,000" unit="miles" />
-          <Stat label="Value" value="2.1¢" unit="/ pt" />
-          <Stat label="Cash price" value="$768" />
+          <Stat label="You pay" value="4,500" unit="miles" />
+          <Stat label="Value" value="5.4¢" unit="/ pt" />
+          <Stat label="Cash price" value="$254" />
           <Stat label="You save" value="$243" accent />
         </div>
       </div>
 
-      {/* RIGHT — the destination (New York), mirroring the real verdict hero.
+      {/* RIGHT — the destination (Tokyo), mirroring the real verdict hero.
           Falls back to the bunny mark when no photo is available. */}
       <aside
         className="relative hidden place-items-center overflow-hidden border-l border-white/10 lg:grid"

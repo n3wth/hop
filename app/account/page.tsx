@@ -77,61 +77,59 @@ export default async function AccountPage({
     picture: u.picture ?? undefined,
   }
 
-  // Manual programs (primary) + the optional AwardWallet link (live balances).
+  // Manual programs (primary) + the optional AwardWallet link (only the id;
+  // the live-balances CALL needs this id, so it stays a genuine dependency).
   const [manual, awId] = await Promise.all([
     u.sub ? getManualBalances(u.sub) : Promise.resolve([]),
     u.sub ? getUserAwId(u.sub) : Promise.resolve(null),
   ])
   const awConnected = !!awId
-  let awBalances: Balance[] = []
-  let awReason: string | undefined
-  if (awConnected && awId) {
-    const res = await getBalances(awId).catch(() => ({
-      ok: false as const,
-      reason: 'request failed',
-    }))
-    if (res.ok) awBalances = res.data
-    else awReason = res.reason
-  }
   const awUnconfigured = !hasEnv('AWARDWALLET_CONNECT_URL')
-
-  // Standing orders + the alerts the cron has recorded. Degrade to empty on any
-  // failure (every lib fn is try/caught) so the page never breaks.
-  const [orders, alerts, unseen] = await Promise.all([
-    u.sub ? listStandingOrders(u.sub) : Promise.resolve([]),
-    u.sub ? listAlerts(u.sub) : Promise.resolve([]),
-    u.sub ? countUnseenAlerts(u.sub) : Promise.resolve(0),
-  ])
   // The scheduled runner only re-checks when its flag is on — surface that
   // honestly so the user knows whether watches are live yet.
   const cronLive = /^(1|true|yes)$/i.test(process.env.STANDING_ORDERS_CRON_ENABLED ?? '')
-
-  // Billing (flag-gated): tier truth + the engine-computed active-alert count
-  // for the "Plan" section. Both reads degrade to their free/zero fallbacks.
   const billingEnabled = isBillingEnabled()
-  const [tier, activeAlerts] = billingEnabled
-    ? await Promise.all([
-        u.sub ? getUserTier(u.sub) : Promise.resolve('free' as const),
-        u.sub ? countActiveStandingOrders(u.sub) : Promise.resolve(0),
-      ])
-    : (['free', 0] as const)
-
-  // Gmail travel-history seam: connection state + the trips hop has learned.
-  // Both helpers degrade to empty/not-connected on any failure.
   const gmailEnabled = isGmailHistoryEnabled()
-  const [gmailState, travelHistory] = await Promise.all([
-    u.sub ? isGmailConnected(u.sub) : Promise.resolve({ connected: false, email: null }),
-    u.sub ? getTravelHistory(u.sub) : Promise.resolve(null),
-  ])
-  // "Add to Claude" MCP tokens for this user (list = no secrets) + the durable
-  // travel profile (so we can render the saved elite statuses). Both degrade to
-  // empty on any failure.
-  const [mcpTokens, profile, inferred, observed] = await Promise.all([
-    u.sub ? listTokens(u.sub) : Promise.resolve([]),
-    u.sub ? getProfile(u.sub) : Promise.resolve({} as TravelProfile),
-    u.sub ? listPendingInferredFacts(u.sub) : Promise.resolve([]),
-    u.sub ? listObservations(u.sub) : Promise.resolve([]),
-  ])
+
+  // Five independent groups — the AwardWallet live-balances call (a real
+  // third-party request, typically the slowest leg) and four Neon-backed
+  // Promise.all groups — none reads another's output, so they run together
+  // instead of the AwardWallet call blocking the rest from even starting.
+  // Every group still degrades to its own empty/free fallback on failure.
+  const [awResult, [orders, alerts, unseen], [tier, activeAlerts], [gmailState, travelHistory], [mcpTokens, profile, inferred, observed]] =
+    await Promise.all([
+      awConnected && awId
+        ? getBalances(awId).catch(() => ({ ok: false as const, reason: 'request failed' }))
+        : Promise.resolve(null),
+      Promise.all([
+        u.sub ? listStandingOrders(u.sub) : Promise.resolve([]),
+        u.sub ? listAlerts(u.sub) : Promise.resolve([]),
+        u.sub ? countUnseenAlerts(u.sub) : Promise.resolve(0),
+      ]),
+      billingEnabled
+        ? Promise.all([
+            u.sub ? getUserTier(u.sub) : Promise.resolve('free' as const),
+            u.sub ? countActiveStandingOrders(u.sub) : Promise.resolve(0),
+          ])
+        : Promise.resolve(['free', 0] as const),
+      Promise.all([
+        u.sub ? isGmailConnected(u.sub) : Promise.resolve({ connected: false, email: null }),
+        u.sub ? getTravelHistory(u.sub) : Promise.resolve(null),
+      ]),
+      Promise.all([
+        u.sub ? listTokens(u.sub) : Promise.resolve([]),
+        u.sub ? getProfile(u.sub) : Promise.resolve({} as TravelProfile),
+        u.sub ? listPendingInferredFacts(u.sub) : Promise.resolve([]),
+        u.sub ? listObservations(u.sub) : Promise.resolve([]),
+      ]),
+    ])
+
+  let awBalances: Balance[] = []
+  let awReason: string | undefined
+  if (awResult) {
+    if (awResult.ok) awBalances = awResult.data
+    else awReason = awResult.reason
+  }
   const airlineStatuses: AirlineStatus[] = profile.airlineStatuses ?? []
 
   // AwardWallet sync already carries elite tiers under Balance.status — surface

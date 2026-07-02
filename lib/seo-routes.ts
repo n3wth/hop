@@ -62,7 +62,7 @@ export const FOOTER_SECTIONS: FooterSection[] = [
   {
     title: 'Learn',
     links: [
-      { href: '/support#how-hop-decides', label: 'How we value points' },
+      { href: '/support#the-verdict', label: 'How we value points' },
       { href: '/support', label: 'Support' },
     ],
   },

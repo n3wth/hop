@@ -47,6 +47,12 @@ function searchUrlFrom(params: SearchResult['params']): string {
     adults: String(params.adults),
   })
   if (params.return) q.set('return', params.return)
+  // Every filter the visitor actually chose must round-trip through sign-in —
+  // dropping cabin silently reset a business-cabin search back to economy
+  // after auth.
+  if (params.cabin) q.set('cabin', params.cabin)
+  if (params.children) q.set('children', String(params.children))
+  if (params.infants) q.set('infants', String(params.infants))
   return `/search?${q.toString()}`
 }
 

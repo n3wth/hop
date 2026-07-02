@@ -3,7 +3,7 @@ import { cookies } from 'next/headers'
 import { auth0 } from '@/lib/auth0'
 import { mockBalances } from '@/lib/mock'
 import { getUserBalances } from '@/lib/accounts'
-import { getPrefs } from '@/lib/prefs'
+import { getPrefs, type UserPrefs } from '@/lib/prefs'
 import { isGmailHistoryEnabled } from '@/lib/env'
 import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import { pageMeta } from '@/lib/seo'
@@ -60,9 +60,19 @@ export default async function AskPage({
   const cookieOrigin = cookieStore.get(ORIGIN_STORAGE_KEY)?.value?.trim().toUpperCase()
   const originFallback = cookieOrigin && /^[A-Z]{3}$/.test(cookieOrigin) ? cookieOrigin : undefined
 
-  // Context for the concierge — the user's real points (total + per-program) and
-  // their home airport (where realistic trips depart from). Live when configured,
-  // mock otherwise; only computed when signed in. Never crashes the page.
+  // Context for the concierge — the user's real points (total + per-program),
+  // their home airport, resumed thread, and destination photography. These four
+  // sources are all independent (keyed only on su?.sub, or nothing at all for
+  // the photos) — fetched together so a signed-in visit to /ask is one round
+  // trip instead of up to four sequential ones. Live when configured, mock
+  // otherwise; only computed when signed in. Never crashes the page.
+  const [real, prefs, persisted, imgs] = await Promise.all([
+    su?.sub ? getUserBalances(su.sub) : Promise.resolve([]),
+    su?.sub ? getPrefs(su.sub) : Promise.resolve({} as UserPrefs),
+    su?.sub ? getConversation(su.sub) : Promise.resolve([]),
+    destinationImages(destinations.map((d) => imageQuery(d))),
+  ])
+
   let totalPoints: number | undefined
   let programs: { program: string; balance: number }[] | undefined
   let homeAirport: string | undefined = originFallback
@@ -70,12 +80,10 @@ export default async function AskPage({
     // Unified per-user balances (manual + AwardWallet, merged). Mock ONLY in
     // local dev (MOCK=1); a real user with no programs has none — the concierge
     // simply answers untethered rather than citing fabricated balances.
-    const real = su?.sub ? await getUserBalances(su.sub) : []
     const useMock = real.length === 0 && /^(1|true|yes)$/i.test(process.env.MOCK ?? '')
     const balances = real.length > 0 ? real : useMock ? mockBalances() : []
     totalPoints = balances.length > 0 ? balances.reduce((sum, b) => sum + b.balance, 0) : undefined
     programs = balances.map((b) => ({ program: b.program, balance: b.balance }))
-    const prefs = su?.sub ? await getPrefs(su.sub) : {}
     // Saved pref wins when present; otherwise keep the cookie origin fallback.
     homeAirport = prefs.homeAirport ?? originFallback
   }
@@ -83,20 +91,17 @@ export default async function AskPage({
   // Resume the signed-in user's persisted concierge thread so /ask picks up
   // where they left off (with a quiet "start over" in the UI). Signed-out users
   // get an empty thread (session-only memory). Never crashes the page.
-  let initialMessages: ConciergeInitialMessage[] = []
-  if (su?.sub) {
-    const persisted = await getConversation(su.sub)
-    initialMessages = persisted
-      .filter((m): m is { role: 'user' | 'assistant'; content: string } =>
-        m.role === 'user' || m.role === 'assistant',
-      )
-      .map((m) => ({ role: m.role, content: m.content }))
-  }
+  const initialMessages: ConciergeInitialMessage[] = su?.sub
+    ? persisted
+        .filter((m): m is { role: 'user' | 'assistant'; content: string } =>
+          m.role === 'user' || m.role === 'assistant',
+        )
+        .map((m) => ({ role: m.role, content: m.content }))
+    : []
 
   // Destination photography for the mood gallery + suggestion cards. Fetched
   // server-side (keeps the Unsplash key off the client), cached per query.
   // Keyed by IATA code so the client can look up by suggestion / gallery code.
-  const imgs = await destinationImages(destinations.map((d) => imageQuery(d)))
   const photos: Record<string, ConciergePhoto> = {}
   for (const d of destinations) {
     const img = imgs[imageQuery(d)]
