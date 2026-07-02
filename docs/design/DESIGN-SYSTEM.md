@@ -141,11 +141,48 @@ or the Tailwind default scale as needed until v4 custom scale support lands.
 
 ## Border Radius
 
+Four steps, nothing off-scale. An arbitrary `rounded-[Npx]` outside this scale is a defect.
+
 | Token | Value | Usage |
 |---|---|---|
+| `--radius-sm` | `10px` | Small chips, notes, compact controls |
 | `--radius` | `14px` | Standard cards, chips, inputs |
 | `--radius-lg` | `20px` | Larger cards (LedgerDream) |
 | `--radius-hero` | `28px` | Hero-scale cards on `lg:` |
+
+### Tailwind v4 namespace override — blessed
+
+`--radius-sm` and `--radius-lg` sit in Tailwind v4's stock `--radius-*` theme namespace, so
+declaring them in `@theme` **re-points the stock utilities**: `rounded-sm` renders at 10px
+(stock 0.25rem) and `rounded-lg` at 20px (stock 0.5rem). This is deliberate and blessed —
+in this codebase `rounded-sm` / `rounded-lg` **are** the tokens, byte-identical to
+`rounded-[var(--radius-sm)]` / `rounded-[var(--radius-lg)]`; either spelling is sanctioned.
+Audit at bless time (2026-07-02): zero stock `rounded-sm` call sites existed; the five stock
+`rounded-lg` call sites were already rendering at 20px and stay on-scale. Full write-up:
+`docs/solutions/2026-07-02-tailwind-v4-theme-namespace-overrides.md`. The general rule: before
+adding any `@theme` variable, check whether its name lands in a stock namespace — if it does,
+you are re-pointing an existing utility, so bless it here or pick a name outside the namespace
+(the `--track-*` tokens below chose the latter).
+
+---
+
+## Letter-spacing (tracking) tokens
+
+Three role tokens in `@theme` replace hand-rolled `tracking-[0.…em]` values. They are named
+`--track-*` — deliberately **outside** Tailwind's stock `--tracking-*` namespace — so the stock
+`tracking-wide`/`tracking-tight` utilities keep their defaults and nothing is silently
+re-pointed. There is no generated utility; use the arbitrary-value form:
+
+| Token | Value | Role | Usage |
+|---|---|---|---|
+| `--track-eyebrow` | `0.12em` | Uppercase kickers / section eyebrows | `tracking-[var(--track-eyebrow)]` |
+| `--track-label` | `0.06em` | Small uppercase captions / stat labels | `tracking-[var(--track-label)]` |
+| `--track-tag` | `0.1em` | Chips, tags, badges | `tracking-[var(--track-tag)]` |
+
+A new numeric `tracking-[0.…em]` in a diff is a defect (ESLint warns at `no-restricted-syntax`
+level; the warn count is the migration burn-down). Negative display tracking (`tracking-[-…]`,
+headline tightening) has no token and stays inline. Existing hand-rolled values convert
+opportunistically when a file is touched — no sweeps.
 
 ---
 

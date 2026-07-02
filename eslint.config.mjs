@@ -26,6 +26,34 @@ const eslintConfig = defineConfig([
     // docs/solutions/2026-07-01-workflow-scripts-are-a-third-runtime.md.
     ".claude/**",
   ]),
+  // ── Design-system enforcement ladder (docs/plans/2026-07-02-design-component-system.md) ──
+  // One `no-restricted-syntax` entry per canonized recipe. Each lands at 'warn'
+  // (visible, non-blocking — the /audit burn-down signal) and flips to 'error'
+  // per-recipe only once its census grep hits zero. Never a big-bang switch.
+  // components/ui/** is exempt: primitives are where the recipes legitimately live.
+  // Known gap (accepted): string literals only — template-literal interpolations
+  // escape the AST match; the copy-voice-reviewer grep over raw diff text is the
+  // backstop.
+  {
+    files: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}"],
+    ignores: ["components/ui/**"],
+    rules: {
+      "no-restricted-syntax": [
+        "warn",
+        {
+          // PR 1 (tokens): hand-rolled numeric letter-spacing, e.g. tracking-[0.12em].
+          // Use the role tokens instead: tracking-[var(--track-eyebrow|label|tag)]
+          // (app/globals.css @theme; index in docs/design/DESIGN-SYSTEM.md).
+          // The "[" is regex-escaped so the pattern stays a valid RegExp (an
+          // unescaped [ opens a character class). Negative display tracking
+          // (tracking-[-…]) is deliberately not matched: it has no token.
+          selector: String.raw`Literal[value=/tracking-\[0\./]`,
+          message:
+            "Hand-rolled tracking value — use the letter-spacing tokens: tracking-[var(--track-eyebrow)] (0.12em), tracking-[var(--track-label)] (0.06em), or tracking-[var(--track-tag)] (0.1em). See docs/design/DESIGN-SYSTEM.md.",
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;
