@@ -315,6 +315,7 @@ export default async function Search({
           destPhoto={destPhoto}
           hasRealBalances={hasRealBalances}
           isSignedIn={!!user}
+          nonstop={nonstop}
         />
 
         {/* other ways to fly */}

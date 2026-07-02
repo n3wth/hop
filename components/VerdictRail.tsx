@@ -26,6 +26,10 @@ export interface VerdictRailProps {
       Gates "Watch this route" on the pay-cash path: signed-out visitors see a
       sign-in link instead, since a watch has to belong to someone. */
   isSignedIn?: boolean
+  /** The search was filtered to nonstop-only (not part of SearchParams — a
+      prefs-model filter applied alongside it). Carried through the sign-in
+      returnTo so the filter survives auth, same as cabin/children/infants. */
+  nonstop?: boolean
 }
 
 function fmt(n: number | undefined): string {
@@ -39,7 +43,7 @@ function milesUnit(pick: FlightOption | undefined): string {
 
 // Rebuild the canonical /search URL from the result's params so a cold visitor
 // who hits a points-winning verdict keeps their exact route through sign-in.
-function searchUrlFrom(params: SearchResult['params']): string {
+function searchUrlFrom(params: SearchResult['params'], nonstop?: boolean): string {
   const q = new URLSearchParams({
     from: params.from,
     to: params.to,
@@ -53,6 +57,7 @@ function searchUrlFrom(params: SearchResult['params']): string {
   if (params.cabin) q.set('cabin', params.cabin)
   if (params.children) q.set('children', String(params.children))
   if (params.infants) q.set('infants', String(params.infants))
+  if (nonstop) q.set('nonstop', '1')
   return `/search?${q.toString()}`
 }
 
@@ -63,6 +68,7 @@ export default function VerdictRail({
   destPhoto,
   hasRealBalances = false,
   isSignedIn = false,
+  nonstop,
 }: VerdictRailProps) {
   const { pick, summary, verdict, cashOption } = result
   const usingPoints = verdict === 'use-points'
@@ -79,7 +85,7 @@ export default function VerdictRail({
   // sign-in instead of a book deep-link.
   // When points win but we can't claim ownership, route the CTA to sign-in with
   // a returnTo so the visitor lands back on this exact search after auth.
-  const returnTo = encodeURIComponent(searchUrlFrom(result.params))
+  const returnTo = encodeURIComponent(searchUrlFrom(result.params, nonstop))
   const signInHref = `/auth/login?returnTo=${returnTo}`
   const ctaHref = !usingPoints
     ? (cashOption?.bookingUrl ?? pick?.bookingUrl ?? '#')
