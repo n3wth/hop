@@ -756,6 +756,7 @@ export function SearchForm({
   // Whether the user has explicitly set the origin field this session. Once true,
   // the persistent "where from" never clobbers their choice; reset on server re-sync.
   const [fromTouched, setFromTouched] = useState(false)
+  const [searching, setSearching] = useState(false)
 
   // Re-sync local edits when the server sends new params (e.g. after a search
   // navigation). React's "adjust state during render" pattern — keyed on the
@@ -767,6 +768,7 @@ export function SearchForm({
     setS(initial)
     setError(null)
     setFromTouched(false)
+    setSearching(false)
   }
 
   // Default the origin from the persistent "where from" when the user hasn't
@@ -814,6 +816,7 @@ export function SearchForm({
       setError(msg)
       return
     }
+    setSearching(true)
     const qs = new URLSearchParams({
       from,
       to,
@@ -950,10 +953,20 @@ export function SearchForm({
 
         <button
           type="submit"
-          className="mt-1 flex h-12 items-center justify-center gap-2 rounded-xl bg-brand font-semibold text-white transition-colors hover:bg-brand-deep hop-press"
+          disabled={searching}
+          className="mt-1 flex h-12 items-center justify-center gap-2 rounded-xl bg-brand font-semibold text-white transition-colors hover:bg-brand-deep disabled:bg-brand-deep disabled:cursor-not-allowed hop-press"
         >
-          <Icon name="search" size={16} />
-          Search
+          {searching ? (
+            <>
+              <Icon name="refresh" size={16} className="animate-spin" />
+              Searching...
+            </>
+          ) : (
+            <>
+              <Icon name="search" size={16} />
+              Search
+            </>
+          )}
         </button>
       </form>
     )
@@ -1084,9 +1097,14 @@ export function SearchForm({
       <button
         type="submit"
         aria-label="Search"
-        className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-brand text-white transition-colors hover:bg-brand-deep hop-press"
+        disabled={searching}
+        className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-brand text-white transition-colors hover:bg-brand-deep disabled:bg-brand-deep disabled:cursor-not-allowed hop-press"
       >
-        <Icon name="search" size={20} />
+        {searching ? (
+          <Icon name="refresh" size={20} className="animate-spin" />
+        ) : (
+          <Icon name="search" size={20} />
+        )}
       </button>
 
       {error && (
