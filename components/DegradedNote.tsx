@@ -12,6 +12,7 @@ export interface DegradedNoteProps {
 const COPY: Record<string, string> = {
   awards: 'Award data is unavailable right now — showing cash only.',
   cash: 'Cash fares are unavailable right now — showing points only.',
+  both: 'Cash fares and award data are both unavailable right now — try again shortly.',
   balances: 'Couldn’t refresh your balances just now — figures may be stale.',
 }
 
@@ -22,7 +23,14 @@ const COPY: Record<string, string> = {
 // tokens (those are reserved for cents-per-point classification) — it uses the
 // same neutral border-border/bg-sunk treatment as other "heads up" notices.
 export default function DegradedNote({ degraded }: DegradedNoteProps) {
-  const messages = degraded.map((d) => COPY[d]).filter(Boolean)
+  // 'cash' and 'awards' each claim the OTHER source is the one still showing —
+  // said together they contradict each other, so a source pair collapses into
+  // one honest "both are down" line instead of concatenating both messages.
+  const bothDown = degraded.includes('cash') && degraded.includes('awards')
+  const keys = bothDown
+    ? ['both' as const, ...degraded.filter((d) => d !== 'cash' && d !== 'awards')]
+    : degraded
+  const messages = keys.map((d) => COPY[d]).filter(Boolean)
   if (messages.length === 0) return null
 
   return (
