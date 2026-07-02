@@ -89,7 +89,7 @@ export default function PointsIndexPage() {
         </section>
 
         {/* accuracy caveat — the table is seed reference data, not live quotes */}
-        <p className="mt-8 rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[13px] leading-relaxed text-text3">
+        <p className="mt-8 rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[14px] leading-relaxed text-text3">
           {VERIFY_CAVEAT}
         </p>
 

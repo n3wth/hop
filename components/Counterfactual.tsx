@@ -130,7 +130,7 @@ export default function Counterfactual({
           <Icon name="swap_horiz" size={24} weight="fill" />
         </span>
         <div className="min-w-0">
-          <p className="max-w-[58ch] text-[13px] leading-[1.55] text-text2">
+          <p className="max-w-[58ch] text-[14px] leading-[1.5] text-text2">
             A mirror for your portfolio. Ask what a different points stack would unlock — hop
             re-runs its real engine against your balances and shows the trips that open up.
           </p>

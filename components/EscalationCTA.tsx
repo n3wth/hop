@@ -91,7 +91,7 @@ export default function EscalationCTA({
           </span>
           <div className="min-w-0">
             <div className="text-[14px] font-semibold text-text">Request received</div>
-            <p className="mt-1 max-w-[60ch] text-[13px] leading-[1.55] text-text2">
+            <p className="mt-1 max-w-[60ch] text-[14px] leading-[1.5] text-text2">
               A hop specialist will look at your trip and email{' '}
               <span className="font-medium text-text">{email.trim()}</span> to take it from here.
               This is a hands-on booking service, so it&apos;s a real person — not an instant
@@ -117,7 +117,7 @@ export default function EscalationCTA({
               <div className="text-[14px] font-semibold text-text">
                 Want hop to book it for you?
               </div>
-              <p className="mt-1 max-w-[60ch] text-[13px] leading-[1.55] text-text2">
+              <p className="mt-1 max-w-[60ch] text-[14px] leading-[1.5] text-text2">
                 Tell us the trip and a hop specialist will find the award space and handle the
                 booking by hand. We&apos;ll email you to sort out the details.
               </p>
@@ -153,7 +153,7 @@ export default function EscalationCTA({
           {embedded ? null : (
             <div className="text-[14px] font-semibold text-text">Have hop book it for you</div>
           )}
-          <p className="mt-1 max-w-[60ch] text-[13px] leading-[1.55] text-text2">
+          <p className="mt-1 max-w-[60ch] text-[14px] leading-[1.5] text-text2">
             Leave your email and anything you know about the trip. A hop specialist books it by
             hand and emails you — it&apos;s a concierge request, not an instant confirmation.
           </p>
