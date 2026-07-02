@@ -169,8 +169,8 @@ export default async function Home() {
         <HowItWorks />
       </div>
 
-      {/* CTA sits flush against the footer — one continuous block, no gap. */}
-      <div className="mx-auto mt-16 max-w-[var(--container-shell)] sm:mt-20 lg:mt-24">
+      {/* CTA + footer read as one card: teal top half, paper-white bottom half. */}
+      <div className="mx-auto mt-16 max-w-[var(--container-shell)] overflow-hidden rounded-[20px] border border-border sm:mt-20 lg:mt-24 lg:rounded-[28px]">
         <ConnectBand user={null} programs={0} />
         <SiteFooter flush />
       </div>

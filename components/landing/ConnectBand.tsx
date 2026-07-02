@@ -16,7 +16,7 @@ export default function ConnectBand({
 
   return (
     <section
-      className="overflow-hidden rounded-t-[20px] px-6 py-9 text-hero-cream sm:px-10 sm:py-11 lg:rounded-t-[28px] lg:px-[52px] lg:py-12"
+      className="px-6 py-9 text-hero-cream sm:px-10 sm:py-11 lg:px-[52px] lg:py-12"
       style={{ background: 'var(--color-brand)' }}
     >
       <div className="mx-auto flex max-w-[1200px] flex-col items-start gap-7 lg:flex-row lg:items-center lg:justify-between">

@@ -9,7 +9,9 @@ export default function SiteFooter({ flush = false }: { flush?: boolean }) {
   return (
     <footer
       role="contentinfo"
-      className={`relative border-t border-border text-[13px] text-text3 ${flush ? '' : 'mt-20'}`}
+      className={`relative text-[13px] text-text3 ${
+        flush ? 'rounded-b-[20px] bg-paper lg:rounded-b-[28px]' : 'mt-20 border-t border-border'
+      }`}
     >
       {/* No horizontal padding here — <main>'s own gutter (AppShell.tsx) already
           provides it, matching every other page-content wrapper. Adding a second
