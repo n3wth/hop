@@ -300,10 +300,10 @@ export default async function Search({
       pointsTotal={user ? result.balances.reduce((s, b) => s + b.balance, 0) : undefined}
       homeAirport={params.from}
     >
-      {/* The results column is generous enough for the verdict hero, the 4-up
-          alternatives, and the wallet, but capped tighter so it reads as a
-          composed column — not an edge-to-edge sprawl on wide monitors. */}
-      <div className="mx-auto max-w-[var(--container-app)]">
+      {/* The results column rides the full-width shell — fluid under the shared
+          gutters, centered once it hits --container-shell — so the verdict hero,
+          the alternatives, and the wallet use the viewport like the nav does. */}
+      <div className="mx-auto max-w-[var(--container-shell)]">
         {/* plain trip context — route + facts, not fake masthead metadata */}
         <RouteBar result={result} hasRealBalances={hasRealBalances} nonstop={nonstop} />
 

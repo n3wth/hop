@@ -25,7 +25,7 @@ export default async function DestinationsIndexPage() {
 
   return (
     <AppShell user={null} hideSearch>
-      <div className="mx-auto max-w-[var(--container-app)] xl:max-w-[var(--container-wide)] 2xl:max-w-[var(--container-xwide)]">
+      <div className="mx-auto max-w-[var(--container-shell)]">
         {/* editorial header */}
         <EditorialHeader
           eyebrow="Destination guides"
@@ -42,7 +42,7 @@ export default async function DestinationsIndexPage() {
         </EditorialHeader>
 
         {/* the grid */}
-        <section className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
+        <section className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {ranked.map((dest) => (
             <DestinationGuideCard key={dest.code} dest={dest} photo={photos[imageQuery(dest)]} />
           ))}
