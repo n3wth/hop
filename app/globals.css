@@ -648,6 +648,17 @@ body {
   height: calc(100dvh - var(--hop-nav));
 }
 
+/* The ask surface's CHROME frame — the control rail and the docked composer's
+   hairline share the SAME container as the TopNav content (--container-app), so
+   the concierge's furniture aligns with the header above it (controls sit under
+   the avatar, the dock hairline spans the app width). One integrated surface,
+   not a narrow column floating inside wider chrome. */
+.hop-ask-frame {
+  width: 100%;
+  max-width: var(--container-app);
+  margin-inline: auto;
+}
+
 /* A calm reading measure for the thread — centered within the full-bleed stage
    so prose never runs edge-to-edge on wide screens. The message area scrolls;
    the byline/composer rails stay put. */
@@ -793,5 +804,12 @@ body {
   ::view-transition-old(root),
   ::view-transition-new(root) {
     animation: none !important;
+  }
+
+  /* Streamed-text word fade (streamdown `animated`) applies inline animation
+     styles per word — force them inert so streamed answers appear instantly. */
+  .hop-md * {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 }

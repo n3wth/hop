@@ -220,7 +220,7 @@ export default function TopNav({
         }}
       >
         <div className="h-full px-4 sm:px-8 lg:px-16">
-        <div className="mx-auto flex h-full max-w-[1180px] items-center gap-4 sm:gap-5 lg:gap-7">
+        <div className="mx-auto flex h-full max-w-[var(--container-app)] items-center gap-4 sm:gap-5 lg:gap-7">
           {/* logo — left. Stays the SAME size whether at top or scrolled; only its
               vertical position shifts as the header height contracts (76→56px). */}
           <div className="flex flex-shrink-0 items-center gap-[11px]">

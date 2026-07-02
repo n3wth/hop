@@ -301,15 +301,17 @@ export default function Concierge({
         {liveStatus}
       </div>
 
-      {/* control rail — a thin strip of quiet controls. "Have hop book it" is
-          always here (opens a slide-up sheet ON the surface, never below fold); the
-          thread also gets "What hop remembers" (signed in) + "Start over". No
-          bunny/wordmark: the nav logo and each turn's byline already brand it. */}
-      <div className="hop-ask-measure flex flex-shrink-0 items-center justify-end pb-2 pt-1">
+      {/* control rail — a thin strip of quiet controls. Framed at the HEADER's
+          container (hop-ask-frame), so the controls align under the nav avatar —
+          chrome aligns with chrome. "Have hop book it" is always here (opens a
+          slide-up sheet ON the surface, never below fold); the thread also gets
+          "What hop remembers" (signed in) + "Start over". */}
+      <div className="hop-ask-frame flex flex-shrink-0 items-center justify-end pb-2 pt-1">
         <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => setSheetOpen(true)}
+            aria-label="Have hop book it"
             className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] font-medium text-text3 transition-colors hover:text-brand"
             title="Have a hop specialist find the award space and book it by hand"
           >
@@ -415,37 +417,41 @@ export default function Concierge({
           measure, pinned to the viewport floor in BOTH states — so it never moves.
           Empty → starter chips (copy.chips) that seed a prompt; thread → the
           model-authored follow-up chips. One <PromptInput> instance, shared. */}
-      <div className="hop-ask-measure flex-shrink-0 border-t border-hair pb-5 pt-3">
-        {hasThread ? (
-          // Follow-up chips: model-authored, contextual to the latest answer (the
-          // agent emits prompt_chips each turn). Shown only when idle and present.
-          !busy && followUps.length ? (
+      <div className="hop-ask-frame flex-shrink-0 border-t border-hair pb-5 pt-3">
+        {/* The dock's hairline spans the header frame (integrated chrome); the
+            chips + composer stay at the thread's reading measure inside it. */}
+        <div className="hop-ask-measure">
+          {hasThread ? (
+            // Follow-up chips: model-authored, contextual to the latest answer (the
+            // agent emits prompt_chips each turn). Shown only when idle and present.
+            !busy && followUps.length ? (
+              <Suggestions className="mb-3">
+                {followUps.map((f) => (
+                  <Suggestion key={f} suggestion={f} onClick={send} disabled={busy} />
+                ))}
+              </Suggestions>
+            ) : null
+          ) : (
+            // Starter chips: the canonical concierge seed prompts (one voice, shared
+            // with the home). Tapping one sends it straight through.
             <Suggestions className="mb-3">
-              {followUps.map((f) => (
-                <Suggestion key={f} suggestion={f} onClick={send} disabled={busy} />
+              {copy.chips.map((c) => (
+                <Suggestion key={c} suggestion={c} onClick={send} />
               ))}
             </Suggestions>
-          ) : null
-        ) : (
-          // Starter chips: the canonical concierge seed prompts (one voice, shared
-          // with the home). Tapping one sends it straight through.
-          <Suggestions className="mb-3">
-            {copy.chips.map((c) => (
-              <Suggestion key={c} suggestion={c} onClick={send} />
-            ))}
-          </Suggestions>
-        )}
+          )}
 
-        <PromptInput onSubmit={onSubmit}>
-          <PromptInputTextarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onEnter={() => send(input)}
-            placeholder={hasThread ? 'Reply, or ask something new…' : copy.placeholder}
-            aria-label="Message hop"
-          />
-          <PromptInputSubmit status={status} onStop={stop} disabled={!input.trim()} />
-        </PromptInput>
+          <PromptInput onSubmit={onSubmit}>
+            <PromptInputTextarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onEnter={() => send(input)}
+              placeholder={hasThread ? 'Reply, or ask something new…' : copy.placeholder}
+              aria-label="Message hop"
+            />
+            <PromptInputSubmit status={status} onStop={stop} disabled={!input.trim()} />
+          </PromptInput>
+        </div>
       </div>
 
       {/* "Have hop book it" — a slide-up sheet ON the surface, so the expert-

@@ -12,8 +12,8 @@ export default function Loading() {
     <AppShell hideSearch noPadX>
       <div className="hop-ask-stage flex flex-col">
         <div className="flex min-h-0 flex-1 flex-col px-4 sm:px-8 lg:px-16">
-          {/* control rail — a quiet strip, right-aligned */}
-          <div className="hop-ask-measure flex flex-shrink-0 items-center justify-end pb-2 pt-1">
+          {/* control rail — a quiet strip, right-aligned at the header frame */}
+          <div className="hop-ask-frame flex flex-shrink-0 items-center justify-end pb-2 pt-1">
             <span className="h-[28px] w-[130px] rounded-full hop-skeleton" />
           </div>
 
@@ -44,19 +44,22 @@ export default function Loading() {
             </div>
           </div>
 
-          {/* docked dock — starter chips above the composer, pinned to the floor */}
-          <div className="hop-ask-measure flex-shrink-0 border-t border-hair pb-5 pt-3">
-            <div className="mb-3 flex flex-wrap gap-1.5">
-              {['180px', '150px', '170px', '210px'].map((w, i) => (
-                <span
-                  key={i}
-                  className="h-[32px] rounded-full border border-border bg-paper"
-                  style={{ width: w }}
-                />
-              ))}
+          {/* docked dock — hairline at the header frame; chips + composer at the
+              reading measure inside, matching the real dock exactly */}
+          <div className="hop-ask-frame flex-shrink-0 border-t border-hair pb-5 pt-3">
+            <div className="hop-ask-measure">
+              <div className="mb-3 flex flex-wrap gap-1.5">
+                {['180px', '150px', '170px', '210px'].map((w, i) => (
+                  <span
+                    key={i}
+                    className="h-[32px] rounded-full border border-border bg-paper"
+                    style={{ width: w }}
+                  />
+                ))}
+              </div>
+              {/* composer — a paper bar with the border-2 the real composer wears */}
+              <span className="block h-[52px] w-full rounded-[var(--radius-lg)] border-2 border-border bg-paper" />
             </div>
-            {/* composer — a paper bar with the border-2 the real composer wears */}
-            <span className="block h-[52px] w-full rounded-[var(--radius-lg)] border-2 border-border bg-paper" />
           </div>
         </div>
       </div>
