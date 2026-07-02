@@ -32,6 +32,7 @@ import { POINTS_THRESHOLD_CPP } from '@/lib/search'
 import { buildConciergeTools } from '@/lib/concierge-tools'
 import { GATEWAY_MODEL } from '@/lib/ai-gateway'
 import type { Balance } from '@/lib/types'
+import { checkBotId } from 'botid/server'
 import { auth0 } from '@/lib/auth0'
 import {
   getConversation,
@@ -592,6 +593,11 @@ function textStreamFromAnswer(r: ConciergeResponse): Response {
 // --- Handler ----------------------------------------------------------------
 
 export async function POST(request: Request): Promise<Response> {
+  const verification = await checkBotId()
+  if (verification.isBot) {
+    return new Response('Access denied', { status: 403 })
+  }
+
   let body: ConciergeRequest
   try {
     body = (await request.json()) as ConciergeRequest
