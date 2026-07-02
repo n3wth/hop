@@ -5,7 +5,7 @@ import { mockBalances } from '@/lib/mock'
 import { getUserBalances } from '@/lib/accounts'
 import { getPrefs } from '@/lib/prefs'
 import { isGmailHistoryEnabled } from '@/lib/env'
-import { ORIGIN_STORAGE_KEY } from '@/lib/origin-context'
+import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import { pageMeta } from '@/lib/seo'
 import AppShell from '@/components/AppShell'
 import Concierge, { type ConciergePhoto, type ConciergeInitialMessage } from '@/components/Concierge'
@@ -131,7 +131,7 @@ export default async function AskPage({
   // pass the session email (prefill) + live points (context for the human agent),
   // and constrain it to the same reading measure as the thread.
   return (
-    <AppShell user={user} pointsTotal={totalPoints} hideSearch noPadX>
+    <AppShell user={user} pointsTotal={totalPoints} homeAirport={homeAirport} hideSearch noPadX>
       <div className="hop-ask-stage flex flex-col">
         <Concierge
           totalPoints={totalPoints}
