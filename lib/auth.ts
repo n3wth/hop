@@ -15,9 +15,17 @@
 import { betterAuth } from 'better-auth'
 import { nextCookies } from 'better-auth/next-js'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { passkey } from '@better-auth/passkey'
 import { getDb } from './db'
 import * as schema from './db/schema'
-import { isGoogleAuthEnabled, resolveAuthSecret, env } from './env'
+import {
+  isGoogleAuthEnabled,
+  isEmailPasswordAuthEnabled,
+  isPasskeyEnabled,
+  resolveAuthSecret,
+  env,
+} from './env'
+import { sendVerificationEmail, sendResetPasswordEmail } from './email'
 
 // Forwards every property access to the live Drizzle client at call time.
 // Methods are bound to the real client so drizzle's internal `this` works.
@@ -67,8 +75,48 @@ export const auth = betterAuth({
         },
       }
     : {},
-  // nextCookies must stay LAST so Set-Cookie from server-side auth.api calls
-  // (session refresh in RSC, sign-out in route handlers) reaches the browser.
-  plugins: [nextCookies()],
+  // A user who signed up with Google and later sets a password (or vice versa)
+  // shouldn't hit a "this email already exists" dead end — trust Google's own
+  // verification of the address rather than treating it as a collision.
+  account: {
+    accountLinking: { enabled: true, trustedProviders: ['google'] },
+  },
+  // Fully inert (no route accepts it) until isEmailPasswordAuthEnabled() — same
+  // "no half-configured seam" rule as socialProviders above.
+  ...(isEmailPasswordAuthEnabled()
+    ? {
+        emailAndPassword: {
+          enabled: true,
+          requireEmailVerification: true,
+          sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) => {
+            await sendResetPasswordEmail(user.email, url)
+          },
+        },
+        emailVerification: {
+          sendOnSignUp: true,
+          sendVerificationEmail: async ({ user, url }: { user: { email: string }; url: string }) => {
+            await sendVerificationEmail(user.email, url)
+          },
+        },
+      }
+    : {}),
+  plugins: [
+    ...(isPasskeyEnabled() ? [passkey({ rpID: resolvePasskeyRpId(), rpName: 'hop' })] : []),
+    // nextCookies must stay LAST so Set-Cookie from server-side auth.api calls
+    // (session refresh in RSC, sign-out in route handlers) reaches the browser.
+    nextCookies(),
+  ],
 })
 export type Auth = typeof auth
+
+// Canonical rpID is 'hop.flights' (locked decision — WebAuthn scopes a passkey
+// to exactly one rpID, so it can't span hop.flights/hop.n3wth.com/preview
+// domains the way OAuth's multi-origin trustedOrigins list does). This can
+// never work on http://localhost as-is — override via HOP_PASSKEY_RP_ID for
+// local testing (e.g. 'localhost' in .env.local). Passkeys don't carry across
+// rpIDs: dev-registered credentials won't authenticate in prod, and that's
+// expected, not a bug.
+function resolvePasskeyRpId(): string {
+  const override = process.env.HOP_PASSKEY_RP_ID
+  return override && override.trim() ? override.trim() : 'hop.flights'
+}
