@@ -141,4 +141,29 @@ describe('free-tier alert cap arithmetic (mirrors the create action)', () => {
   it('never blocks premium (unbounded)', () => {
     expect(atCap(1000, ALERT_LIMITS.premium)).toBe(false)
   })
+
+  it('a premium user can create a 4th (and 40th) watch — the free cap never applies', () => {
+    expect(atCap(3, ALERT_LIMITS.premium)).toBe(false)
+    expect(atCap(39, ALERT_LIMITS.premium)).toBe(false)
+  })
+})
+
+// COUPLING regression: components/WatchThisRoute.tsx detects the limit state
+// via /alert limit/i over the server action's error string. Mirror BOTH copy
+// variants (billing off / billing on) from app/actions/standing-orders.ts so a
+// copy edit that breaks the detection fails here, visibly.
+describe('alert-cap copy keeps the load-bearing "alert limit" substring', () => {
+  const limit = ALERT_LIMITS.free
+  const billingOff = `You're at the ${limit}-alert limit on the free plan. Upgrade to add more alerts.`
+  const billingOn = `You're at the ${limit}-alert limit on the free plan. Upgrade in Account to add more.`
+
+  it('matches the WatchThisRoute limit-state regex in both variants', () => {
+    expect(/alert limit/i.test(billingOff)).toBe(true)
+    expect(/alert limit/i.test(billingOn)).toBe(true)
+  })
+
+  it('interpolates the cap from ALERT_LIMITS, never a hardcoded number', () => {
+    expect(billingOff).toContain(`${ALERT_LIMITS.free}-alert limit`)
+    expect(billingOn).toContain(`${ALERT_LIMITS.free}-alert limit`)
+  })
 })

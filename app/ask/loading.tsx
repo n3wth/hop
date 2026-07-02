@@ -11,7 +11,7 @@ export default function Loading() {
   return (
     <AppShell hideSearch noPadX>
       <div className="hop-ask-stage flex flex-col">
-        <div className="flex min-h-0 flex-1 flex-col px-4 sm:px-8 lg:px-16">
+        <div className="flex min-h-0 flex-1 flex-col px-5 sm:px-8 lg:px-12 xl:px-16">
           {/* control rail — a quiet strip, right-aligned at the header frame */}
           <div className="hop-ask-frame flex flex-shrink-0 items-center justify-end pb-2 pt-1">
             <span className="h-[28px] w-[130px] rounded-full hop-skeleton" />

@@ -123,10 +123,16 @@
   --container-article: 880px; /* long-form single article — destinations/[city] */
   --container-md: 980px; /* narrow index/listing — sweet-spots */
   --container-checkout: 1040px; /* form + sticky sidebar — book */
-  --container-app: 1180px; /* the standard app width — home, search, support, legal, deals/destinations base */
-  --container-wide: 1340px; /* wide card-grid bump — deals/destinations xl */
-  --container-xwide: 1500px; /* widest card-grid bump — deals 2xl */
+  --container-app: 1180px; /* legacy boxed width — kept for reference; app surfaces migrated to --container-shell */
+  --container-wide: 1340px; /* legacy wide card-grid bump — superseded by --container-shell */
+  --container-xwide: 1500px; /* legacy widest card-grid bump — superseded by --container-shell */
   --container-full: 1440px; /* full-bleed centered boundary states — not-found, error */
+  /* The full-width shell (Linear/Airbnb-class): app surfaces (nav, home, search,
+     deals, destinations, /ask chrome) are FLUID below this cap — content fills
+     the viewport minus the shared gutters (px-5 sm:px-8 lg:px-12 xl:px-16) —
+     and center above it. Reading surfaces stay measured on --container-sm
+     (820px) / prose measures; never put long-form text on the shell width. */
+  --container-shell: 1760px;
 }
 
 * {
@@ -649,13 +655,13 @@ body {
 }
 
 /* The ask surface's CHROME frame — the control rail and the docked composer's
-   hairline share the SAME container as the TopNav content (--container-app), so
-   the concierge's furniture aligns with the header above it (controls sit under
-   the avatar, the dock hairline spans the app width). One integrated surface,
-   not a narrow column floating inside wider chrome. */
+   hairline share the SAME container as the TopNav content (--container-shell),
+   so the concierge's furniture aligns with the header above it (controls sit
+   under the avatar, the dock hairline spans the shell width). One integrated
+   surface, not a narrow column floating inside wider chrome. */
 .hop-ask-frame {
   width: 100%;
-  max-width: var(--container-app);
+  max-width: var(--container-shell);
   margin-inline: auto;
 }
 

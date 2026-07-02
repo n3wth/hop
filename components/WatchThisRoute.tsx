@@ -99,7 +99,10 @@ export default function WatchThisRoute({
       {status === 'limit' ? (
         <p role="alert" className="mt-[8px] text-[12.5px] leading-[1.5] text-gold-soft">
           {message}{' '}
-          <a href="/account" className="underline underline-offset-2 hover:text-white">
+          {/* #billing lands on the Plan section (the upgrade door) when billing
+              is on; with billing off the anchor is absent and the link degrades
+              to plain /account — same page, no dead end. */}
+          <a href="/account#billing" className="underline underline-offset-2 hover:text-white">
             Manage in /account
           </a>
           .

@@ -19,6 +19,7 @@ import {
   boolean,
   jsonb,
   timestamp,
+  index,
 } from 'drizzle-orm/pg-core'
 
 const tz = (name: string) => timestamp(name, { withTimezone: true })
@@ -97,6 +98,26 @@ export const memoryOutcomes = pgTable('hop_memory_outcomes', {
   cabin: text('cabin'),
   createdAt: tz('created_at').defaultNow(),
 })
+
+// Premium subscription state — one row per user with a non-default tier
+// (absent row = 'free'). Written ONLY by the Stripe webhook route via
+// lib/subscription.ts#setUserTier (verified events; refs we minted).
+// stripe_customer_id is the fallback-attribution key for lifecycle events that
+// arrive without our metadata AND the stable re-link key across the auth
+// migration (docs/plans/auth-db-migration.md). last_event_at guards against
+// out-of-order webhook delivery. See drizzle/0005_subscriptions.sql.
+export const subscriptions = pgTable(
+  'hop_subscriptions',
+  {
+    userId: text('user_id').primaryKey(),
+    tier: text('tier').notNull().default('free'),
+    stripeCustomerId: text('stripe_customer_id'),
+    stripeSubscriptionId: text('stripe_subscription_id'),
+    lastEventAt: tz('last_event_at'),
+    updatedAt: tz('updated_at').defaultNow(),
+  },
+  (t) => [index('hop_subscriptions_stripe_customer_id_idx').on(t.stripeCustomerId)],
+)
 
 export const bookings = pgTable('hop_bookings', {
   id: uuid('id').defaultRandom().primaryKey(),

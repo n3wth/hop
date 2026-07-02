@@ -39,7 +39,7 @@ export default async function AppShell({
           Skip to content
         </a>
         <TopNav {...nav} />
-        <main id="main" className={noPadX ? '' : 'px-4 pb-24 sm:px-8 lg:px-16'}>
+        <main id="main" className={noPadX ? '' : 'px-5 pb-24 sm:px-8 lg:px-12 xl:px-16'}>
           {children}
         </main>
         <BottomTabBar />
