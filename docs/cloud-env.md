@@ -47,9 +47,10 @@ AI_GATEWAY_MODEL=<model id>
   burns quota to see what `MOCK=1` already shows; absent keys exercise the `degraded[]` path,
   which is a feature to look at, not a bug to hide.
 - **Delivery + prod seams** (`RESEND_API_KEY` — would send real email; `CRON_SECRET`,
-  `HOP_SUPPORT_INGEST_SECRET`, `HOP_VALUATION_*`) — these guard production routes.
-- **Feature flags** (`HOP_ENABLE_*`) — default off; set one only while working on that seam,
-  paired with its credentials per `lib/env.ts`.
+  `HOP_SUPPORT_INGEST_SECRET`, `HOP_VALUATION_*`; `LINEAR_API_KEY` + `LINEAR_TEAM_ID` — the
+  health sentinel would file real Linear issues) — these guard production routes.
+- **Feature flags** (`HOP_ENABLE_*`, incl. `HOP_ENABLE_SELF_IMPROVE`) — default off; set one
+  only while working on that seam, paired with its credentials per `lib/env.ts`.
 
 Fewest live secrets wins: nothing beyond tier 2 has ever been needed to iterate on hop.
 
