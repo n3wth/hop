@@ -43,7 +43,7 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
     return (
       <section
         className="overflow-hidden rounded-[22px] px-5 py-7 text-hero-cream sm:px-[30px]"
-        style={{ background: 'var(--color-text)' }}
+        style={{ background: 'var(--color-brand-ink)' }}
       >
         <h2 className="text-[13px] font-semibold uppercase tracking-[0.14em] text-wallet-active">
           Your points
@@ -72,7 +72,7 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
     // tightly aligned list instead of a row with dead air down the middle.
     <section
       className="overflow-hidden rounded-[22px] text-hero-cream lg:max-w-[var(--container-app)]"
-      style={{ background: 'var(--color-text)' }}
+      style={{ background: 'var(--color-brand-ink)' }}
     >
       {/* no restating header — the balances + total speak for themselves */}
       <div className="px-4 pt-[14px] sm:px-[30px] sm:pt-[18px]">
