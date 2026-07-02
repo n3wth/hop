@@ -9,6 +9,7 @@
 // degrades gracefully and never throws to a route handler.
 
 import { createHash, randomBytes } from 'node:crypto'
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { withDb } from '@/lib/supabase-helpers'
 
 // Plaintext tokens are prefixed so they're recognizable in logs / config and so
@@ -95,7 +96,7 @@ export async function listTokens(userId: string): Promise<ApiTokenInfo[]> {
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
     if (error || !data) return []
-    return data.map((r) => ({
+    return data.map((r: any) => ({
       id: r.id,
       name: r.name,
       lastFour: r.last_four,
