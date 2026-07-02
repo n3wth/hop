@@ -1,130 +1,153 @@
 # hop
 
-hop is a points-vs-cash flight optimizer and travel companion surface.
-It compares cash fares and award options, computes cents-per-point (cpp), and recommends whether to use points, transfer, or pay cash.
+hop is a points-vs-cash flight optimizer and travel companion.
+It compares cash fares against award options, computes real cents-per-point (cpp) off the user's
+actual loyalty balances, and tells them whether to book with points, transfer to a partner, or pay
+cash — plus a growing layer of deals, destination inspiration, and an AI concierge.
 
 ## What This Repo Is
 
-- Single Next.js app at the repo root (App Router + RSC)
-- Production target: Vercel
-- Main product surfaces: home, search, deals, concierge, account, and MCP endpoints
+- Single Next.js app at the repo root (App Router + RSC + TypeScript strict)
+- `eve/` is a separate agent runtime (Vercel Eve) that shares the `lib/*` engine but is excluded
+  from the Next app's build — see [`eve/README.md`](eve/README.md)
+- Production target: Vercel (cron jobs, Neon Postgres, AI Gateway)
+- Main product surfaces: home, search, deals, `/ask` concierge, account, destinations, and an
+  MCP server for third-party agents
 
-This codebase runs on Next.js 16.2.9 + React 19, with behavior that differs from older Next.js versions.
+This codebase runs on **Next.js 16.2.9 + React 19** — APIs and conventions differ from older Next.
+Before writing framework code, read the relevant guide in `node_modules/next/dist/docs/` (see
+`CLAUDE.md` / `AGENTS.md`).
 
 ## Stack
 
-- Next.js 16.2.9 (App Router) + React 19
-- TypeScript (strict)
-- Tailwind CSS v4
-- Vitest
+- Next.js 16.2.9 (App Router) + React 19, TypeScript (strict), Tailwind CSS v4
+- Neon Postgres + Drizzle ORM (`lib/db/`), Better Auth for identity (`lib/auth.ts`)
+- `ai` SDK + `@anthropic-ai/sdk` for the `/ask` concierge; `mcp-handler` for the MCP server
+- Duffel (cash fares), seats.aero (award space), AwardWallet (live balances), Resend (email),
+  Upstash Redis (rate limiting), Stripe (billing)
+- Vitest (node environment) for tests
 
 ## Run Locally
 
-1. Install dependencies.
-2. Start the dev server.
-
 ```bash
 npm install
-npm run dev
+npm run dev        # http://localhost:3000
 ```
 
-App URL: `http://localhost:3000`
+No upstream keys are required to see full-fidelity pages with fixture data:
+
+```bash
+npm run dev:mock    # MOCK=1 — swaps in cash/awards/balances fixtures
+```
 
 Useful commands:
 
 ```bash
-npm run build
+npm run build       # also runs DB migrations + catches RSC/route errors
 npm run lint
-npm test
 npm run typecheck
-npm run check     # lint + typecheck + test — same gate CI runs
+npm test
+npm run check        # lint + typecheck + test — the same gate CI runs
 ```
 
-Mock mode (no upstream keys required):
+Run a single test file or test by name (tests live in `lib/__tests__/` and `app/**/__tests__/`):
 
 ```bash
-npm run dev:mock
+npx vitest run lib/__tests__/cpp.test.ts
+npx vitest run -t "ranks options by cpp"
 ```
 
 ## Environment Setup
 
-For live integrations, configure environment variables in your shell or `.env.local`
-(`cp .env.example .env.local` for an annotated starting point).
+Copy `.env.example` to `.env.local` — it's tiered and annotated in place. The top two vars
+(`MOCK=1`, `UNSPLASH_ACCESS_KEY`) are enough for full-fidelity local UI work; everything else is
+production functionality that's OFF by default and degrades to a clean no-op when unset:
 
-Commonly required keys:
+- **Engine sources**: `DUFFEL_API_KEY_LIVE`/`DUFFEL_API_KEY_TEST`, `SEATS_AERO_API_KEY`,
+  `AWARDWALLET_API_KEY` + `AWARDWALLET_USER_ID`
+- **Persistence**: `DATABASE_URL` (Neon, via Drizzle) — auth is disabled until this is set
+- **Identity**: `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` for Google sign-in
+- **AI concierge**: `AI_GATEWAY_API_KEY` (Vercel AI Gateway)
+- **Email / rate limiting**: `RESEND_API_KEY`, `UPSTASH_REDIS_REST_URL`/`_TOKEN`
 
-- `DUFFEL_API_KEY_TEST` or `DUFFEL_API_KEY_LIVE`
-- `SEATS_AERO_API_KEY`
-- `AWARDWALLET_API_KEY`
-- `AWARDWALLET_USER_ID`
-- `AUTH0_*` keys for authenticated surfaces
-- Supabase keys used by server helpers
-
-See `lib/env.ts` for access patterns and feature gating.
-
-If you only need UI and deterministic logic work, use `MOCK=1`.
+See `lib/env.ts` for access patterns — env reads are lazy (evaluated at call time, not import) and
+every gated seam checks both a flag and its credentials before turning on.
 
 ## Project Layout
 
-- `app/`: routes, pages, API handlers
-- `components/`: UI components and page building blocks
-- `lib/`: domain logic, integrations, and deterministic scoring/ranking utilities
-- `utils/`: shared utility helpers
-- `docs/`: product, design, and implementation documentation
+- `app/` — routes, pages, API route handlers (App Router)
+- `components/` — UI components and page building blocks
+- `lib/` — the verdict engine, integrations, and all deterministic domain logic
+- `eve/` — the Eve agent scaffold (separate runtime, not part of the Next build)
+- `docs/decisions/` — ADRs: the load-bearing architectural decisions
+- `docs/solutions/` — searchable log of solved problems (grep before you debug something familiar)
+- `docs/plans/` — implementation blueprints
+- `docs/design/` — the design source of truth (flat editorial reference, copy voice spec)
+- `.claude/agents/` — specialized review subagents; `.claude/workflows/` — saved multi-agent
+  orchestration scripts (review, plan panel, standing audit)
 
 ## Core Architecture
 
-- Verdict engine: `lib/search.ts` assembles options and always resolves with degradation metadata.
-- CPP logic: `lib/cpp.ts` computes value tiers used for ranking and UI states.
-- Balances resolver: `lib/accounts.ts` merges manual and AwardWallet balances.
-- Integrations: `lib/duffel.ts`, `lib/seatsaero.ts`, `lib/awardwallet.ts`, plus transfer and booking helpers.
-- Middleware: `middleware.ts` handles Auth0 and Supabase session behavior by route class.
+- **Verdict engine** — `lib/search.ts#assembleSearch` is the moat: it fans out to every upstream
+  source concurrently, computes per-option economics, and always resolves (upstream failures land
+  in a `degraded[]` array instead of throwing). Every number — cpp, tiers, ranking, the pick — is
+  computed by `lib/*`, never generated by an LLM.
+- **CPP economics** — `lib/cpp.ts`: `cpp = (cash − taxes) × 100 / miles`; tiers are `≥3.0 green`,
+  `≥1.5 amber`, else muted; `POINTS_THRESHOLD_CPP = 2.5` drives the use-points verdict.
+- **Balances** — `lib/accounts.ts#getUserBalances` merges manual balances (Neon) with an optional
+  live AwardWallet link, de-duped by program; every surface reads through this one resolver.
+- **Point valuations** — `lib/valuations.ts` is a hand-curated static baseline; `lib/valuations-live.ts`
+  layers a Cloudflare Worker-aggregated, first-party-observed cpp on top once a program has ≥20
+  samples (see ADR 0005).
+- **Auth** — Better Auth (Google social login) on Neon via Drizzle (`lib/auth.ts`); there is no
+  middleware — `app/api/auth/[...all]/route.ts` serves the auth surface and sessions resolve
+  server-side per request (`lib/session.ts#getUserId`).
+- **MCP server** — `app/api/[transport]/route.ts` exposes the engine (`price_trip`, `verdict`,
+  `sweet_spots`, `transfer_paths`) over streamable-HTTP and SSE, authorized by optional Bearer
+  `hop_` tokens.
+- **AI concierge** — `/ask` is a streamed chat grounded in the user's real balances and
+  destination set; it calls the same computed tools as the MCP server, never invents numbers.
+- **Eve agent** — `eve/` runs the same `lib/*` engine on a schedule against real user balances and
+  proactively pushes crossings (email-first); see [`eve/README.md`](eve/README.md).
 
 ## Key Routes
 
-- `/`: auth-aware home (marketing when signed out, dashboard when signed in)
-- `/search`: flight optimizer and verdict flow
-- `/deals`: value-oriented redemption discovery
-- `/ask`: AI concierge
-- `/account`: program and balance management
-- `/api/[transport]`: MCP transport endpoints
+- `/` — auth-aware home (marketing when signed out, personalized dashboard when signed in)
+- `/search` (+ `/search/loading`) — the flight optimizer and verdict flow
+- `/deals`, `/sweet-spots`, `/destinations` — value-oriented redemption and inspiration surfaces
+- `/ask` — AI concierge
+- `/book` + `/book/confirmation` — checkout (native Duffel checkout is flag-gated, off by default)
+- `/account` — program and balance management
+- `/api/[transport]` — MCP server (`/api/mcp`, `/api/sse`)
 
-## Testing Workflow
+## Cron Jobs
 
-Run all tests:
+Defined in `vercel.json`, all guarded by `CRON_SECRET`: standing-order sweeps (every 6h), weekly
+SEO revalidation, daily valuation sync, daily Stripe sync, a weekly business digest, and a daily
+health sentinel.
 
-```bash
-npm test
-```
+## Documentation & How We Work Here
 
-Run one test file (unit tests live in `lib/__tests__/` and `app/**/__tests__/`):
+This repo is **agent-native**: every unit of work should make the next one easier (the compound
+engineering loop — Plan → Work → Review → Compound — is detailed in `CLAUDE.md` and
+`AGENTS.md`; smaller/less-capable models should read `docs/agent-playbook.md` first).
 
-```bash
-npx vitest run lib/__tests__/cpp.test.ts
-```
-
-Run a single test by name:
-
-```bash
-npx vitest run -t "ranks options by cpp"
-```
-
-Run type checks:
-
-```bash
-npm run typecheck
-```
-
-## Documentation
-
-- Docs index: `docs/README.md`
-- Content strategy and seed data: `docs/content-plan.md`
-- UI copy rules: `docs/design/copy-spec.md`
-- Initial implementation plan: `docs/plans/2026-06-28-001-feat-hop-flight-optimizer-plan.md`
+- `CLAUDE.md` / `AGENTS.md` — the always-loaded operating rules for this repo
+- `docs/README.md` — index of product/design/planning docs
+- `docs/decisions/` — ADRs (read the relevant one before changing a decided area)
+- `docs/solutions/` — searchable solved-problems log (grep before solving something familiar)
+- `docs/design/copy-spec.md` — strict UI copy voice
+- `.claude/workflows/README.md` — the saved multi-agent review/plan/audit scripts and their
+  manual-fallback equivalents in `.claude/commands/`
 
 ## Notes for Contributors
 
-- The verdict engine in `lib/search.ts` is deterministic; rankings and recommendations are computed, not generated.
-- Graceful degradation is intentional: upstream failures should produce partial results plus clear degraded notes, never page crashes.
-- For framework-specific behavior, consult Next.js docs in `node_modules/next/dist/docs/` before changing route handlers, metadata, middleware/proxy, caching, or request param handling.
-- Keep design and copy updates aligned with docs under `docs/design/`.
+- The verdict engine is deterministic — rankings and recommendations are computed, not generated.
+- Graceful degradation is the house style: `lib/*` clients and DB helpers
+  (`lib/supabase-helpers.ts#withDb`) return `{ok:false}`/fallbacks and never throw; a dead upstream
+  degrades a section instead of crashing the page.
+- New seams ship flag-gated (`lib/env.ts`) and degrade to a clean no-op when unconfigured.
+- For framework-specific behavior, consult `node_modules/next/dist/docs/` before changing route
+  handlers, metadata, caching, server actions, or `params`/`searchParams` usage — don't assume
+  training-data Next.js behavior.
+- Keep design and copy updates aligned with `docs/design/`.
