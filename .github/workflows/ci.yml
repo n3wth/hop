@@ -39,3 +39,29 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  stale-base-check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      # main moves fast here (parallel agent sessions merge roughly every
+      # 20-30min) — a PR left open too long can merge cleanly while silently
+      # missing very recent changes. This doesn't block merging by itself,
+      # it's a visible signal the branch needs a rebase/merge before landing.
+      - name: Check PR is based on a recent commit
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          MAX_BEHIND: 20
+        run: |
+          git fetch origin "$BASE_REF" --quiet
+          BEHIND=$(git rev-list --count HEAD..FETCH_HEAD)
+          echo "PR head is $BEHIND commit(s) behind origin/$BASE_REF"
+          if [ "$BEHIND" -gt "$MAX_BEHIND" ]; then
+            echo "::error::This PR is $BEHIND commits behind $BASE_REF (max: $MAX_BEHIND). Rebase or merge latest $BASE_REF before merging — otherwise this may land conflicting with very recent work."
+            exit 1
+          fi
