@@ -135,7 +135,7 @@ function AirportField({
       <span
         className={
           labelClassName ??
-          'text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2'
+          'text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2'
         }
       >
         {label}
@@ -892,7 +892,7 @@ export function SearchForm({
               aria-expanded={open}
               className="flex w-full flex-col items-start rounded-xl border border-border bg-paper p-3 text-left"
             >
-              <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
                 {s.oneWay ? 'Date' : 'Dates'}
               </span>
               <span className="text-[15px] font-semibold text-text">
@@ -917,7 +917,7 @@ export function SearchForm({
               aria-expanded={open}
               className="flex w-full flex-col items-start rounded-xl border border-border bg-paper p-3 text-left"
             >
-              <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
                 Who
               </span>
               <span className="text-[15px] font-semibold text-text">
@@ -935,7 +935,7 @@ export function SearchForm({
               aria-expanded={open}
               className="flex w-full flex-col items-start rounded-xl border border-border bg-paper p-3 text-left"
             >
-              <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
                 Cabin
               </span>
               <span className="text-[15px] font-semibold text-text">
@@ -1037,7 +1037,7 @@ export function SearchForm({
               aria-expanded={open}
               className="flex flex-col justify-center text-left leading-[1.05]"
             >
-              <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
                 {s.oneWay ? 'Date' : 'Dates'}
               </span>
               <span className="w-[120px] text-[15px] font-semibold text-text">
@@ -1064,7 +1064,7 @@ export function SearchForm({
               aria-expanded={open}
               className="flex flex-col justify-center text-left leading-[1.05]"
             >
-              <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
                 Who
               </span>
               <span className="w-[80px] text-[15px] font-semibold text-text">
@@ -1084,7 +1084,7 @@ export function SearchForm({
               aria-expanded={open}
               className="flex flex-col justify-center text-left leading-[1.05]"
             >
-              <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
                 Cabin
               </span>
               <span className="w-[88px] text-[15px] font-semibold text-text">

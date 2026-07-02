@@ -3,6 +3,8 @@
 // importing a client never throws, and tests can run without real keys.
 // Never logs secret values.
 
+import { createHash } from 'node:crypto'
+
 export type EnvKey =
   | 'DUFFEL_API_KEY_LIVE'
   // TEST-mode token (duffel_test_…) — native cash checkout books against this
@@ -54,6 +56,34 @@ export type EnvKey =
   // hop_improvement_findings; P1s fall back to the owner email).
   | 'LINEAR_API_KEY'
   | 'LINEAR_TEAM_ID'
+  // Parallel search / extraction and routing API key (for flight results & routing optimization)
+  | 'PARALLEL_API_KEY'
+  // Autonoma secure sandbox API credentials
+  | 'AUTONOMA_CLIENT_ID'
+  | 'AUTONOMA_SECRET_ID'
+  // Firecrawl crawler and extraction API key (for scraping destinations and travel deals)
+  | 'FIRECRAWL_API_KEY'
+  // ── Identity + data (Better Auth on Neon) ─────────────────────────────────
+  // Neon Postgres connection string (pooled). The Drizzle client (lib/db) and
+  // Better Auth both read it lazily; absent → getDb() returns null and every
+  // withDb caller degrades to its fallback.
+  | 'DATABASE_URL'
+  // Unpooled Neon URL — preferred by drizzle-kit for DDL/migrations.
+  | 'DATABASE_URL_UNPOOLED'
+  // Session-signing secret for Better Auth. AUTH_SECRET is accepted as an
+  // alias (Better Auth reads both natively; we resolve explicitly in lib/auth).
+  | 'BETTER_AUTH_SECRET'
+  | 'AUTH_SECRET'
+  // Canonical app origin for OAuth callbacks/redirects (falls back to
+  // NEXT_PUBLIC_SITE_URL, then the hop.flights production domain on Vercel).
+  | 'BETTER_AUTH_URL'
+  // Google social login for Better Auth. This is a DIFFERENT Google OAuth
+  // client from the Gmail travel-history seam (GOOGLE_OAUTH_CLIENT_ID/SECRET).
+  // GOOGLE_ID/GOOGLE_SECRET are accepted aliases (the names used in Vercel).
+  | 'GOOGLE_CLIENT_ID'
+  | 'GOOGLE_CLIENT_SECRET'
+  | 'GOOGLE_ID'
+  | 'GOOGLE_SECRET'
 
 function read(key: EnvKey): string {
   const value = process.env[key]
@@ -96,6 +126,38 @@ export const env = {
   stripePriceIdProYearly: () => read('STRIPE_PRICE_ID_PRO_YEARLY'),
   linearApiKey: () => read('LINEAR_API_KEY'),
   linearTeamId: () => read('LINEAR_TEAM_ID'),
+  parallelApiKey: () => read('PARALLEL_API_KEY'),
+  autonomaClientId: () => read('AUTONOMA_CLIENT_ID'),
+  autonomaSecretId: () => read('AUTONOMA_SECRET_ID'),
+  firecrawlApiKey: () => read('FIRECRAWL_API_KEY'),
+  databaseUrl: () => read('DATABASE_URL'),
+  googleClientId: () => firstEnv('GOOGLE_CLIENT_ID', 'GOOGLE_ID'),
+  googleClientSecret: () => firstEnv('GOOGLE_CLIENT_SECRET', 'GOOGLE_SECRET'),
+}
+
+// First non-empty value across alias keys (throws naming the primary key when
+// every alias is absent — same contract as read()).
+function firstEnv(...keys: EnvKey[]): string {
+  for (const key of keys) {
+    const value = process.env[key]
+    if (value && value.trim() !== '') return value
+  }
+  throw new Error(`Missing required environment variable: ${keys[0]}`)
+}
+
+// Check helper for Parallel API status
+export function isParallelEnabled(): boolean {
+  return hasEnv('PARALLEL_API_KEY')
+}
+
+// Check helper for Autonoma status
+export function isAutonomaEnabled(): boolean {
+  return hasEnv('AUTONOMA_CLIENT_ID') && hasEnv('AUTONOMA_SECRET_ID')
+}
+
+// Check helper for Firecrawl status
+export function isFirecrawlEnabled(): boolean {
+  return hasEnv('FIRECRAWL_API_KEY')
 }
 
 // True when a key is present without throwing — lets a client degrade
@@ -104,6 +166,42 @@ export function hasEnv(key: EnvKey): boolean {
   const value = process.env[key]
   return Boolean(value && value.trim() !== '')
 }
+
+// Google social login is available only when a Better Auth Google client is
+// fully configured (either canonical or alias names). Off → /login renders the
+// sign-in-unavailable state instead of a button that dead-ends at Google.
+export function isGoogleAuthEnabled(): boolean {
+  return (
+    (hasEnv('GOOGLE_CLIENT_ID') || hasEnv('GOOGLE_ID')) &&
+    (hasEnv('GOOGLE_CLIENT_SECRET') || hasEnv('GOOGLE_SECRET'))
+  )
+}
+
+// The session-signing secret for Better Auth AND the HMAC key for OAuth state
+// binding (AwardWallet connect). Resolution: explicit secret → alias → a
+// derived key from DATABASE_URL (deterministic across deploys; rotates only
+// with the database URL). Returns null when nothing is available — callers
+// fail closed.
+export function resolveAuthSecret(): string | null {
+  const explicit = process.env.BETTER_AUTH_SECRET || process.env.AUTH_SECRET
+  if (explicit && explicit.trim() !== '') return explicit.trim()
+  const dbUrl = process.env.DATABASE_URL
+  if (dbUrl && dbUrl.trim() !== '') {
+    // Deriving from DATABASE_URL keeps production sessions working when only
+    // the database is configured. Anyone holding DATABASE_URL already owns the
+    // data, so this adds no new exposure — but set BETTER_AUTH_SECRET properly.
+    if (!warnedDerivedSecret) {
+      warnedDerivedSecret = true
+      console.warn(
+        '[auth] BETTER_AUTH_SECRET is not set — deriving a session secret from DATABASE_URL. ' +
+          'Set BETTER_AUTH_SECRET (or AUTH_SECRET) in the environment.',
+      )
+    }
+    return createHash('sha256').update(`hop-better-auth:${dbUrl.trim()}`).digest('hex')
+  }
+  return null
+}
+let warnedDerivedSecret = false
 
 // Native cash checkout is GATED. It activates only when BOTH the explicit flag
 // is on AND a TEST token is present — otherwise the cash CTA keeps its current

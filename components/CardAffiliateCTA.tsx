@@ -37,7 +37,7 @@ export default function CardAffiliateCTA({ program, unit = 'miles' }: CardAffili
       </span>
 
       <div className="min-w-0 flex-1">
-        <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-hero-label">
+        <div className="mb-1 text-[10px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-hero-label">
           Sponsored
         </div>
         {/* Outbound clicks route through the first-party redirect (logged,

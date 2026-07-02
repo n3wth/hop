@@ -49,7 +49,8 @@ export async function GET(req: NextRequest) {
   const cookie = req.cookies.get(STATE_COOKIE)?.value
   const q = req.nextUrl.searchParams
   const state = q.get('state')
-  if (!cookie || !state || !safeEqual(cookie, stateCookieValue(state, userId))) {
+  const expected = state ? stateCookieValue(state, userId) : null
+  if (!cookie || !expected || !safeEqual(cookie, expected)) {
     return backToAccount(req, 'state')
   }
 

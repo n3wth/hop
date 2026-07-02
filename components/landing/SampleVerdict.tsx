@@ -18,15 +18,15 @@ export default async function SampleVerdict() {
       {/* LEFT — the verdict */}
       <div className="px-6 pb-8 pt-7 sm:px-10 lg:px-[44px] lg:pb-10 lg:pt-9">
         <span className="mb-5 inline-flex flex-wrap items-center gap-2 border-b border-white/15 pb-3">
-          <span className="rounded-full border border-white/25 px-2.5 py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-white/85">
+          <span className="rounded-full border border-white/25 px-2.5 py-[3px] text-[10px] font-semibold uppercase tracking-[var(--track-tag)] text-white/85">
             Sample verdict
           </span>
-          <span className="rounded-full bg-brand-deep px-2.5 py-[3px] text-[10px] font-semibold uppercase tracking-[0.14em] text-mint-bright">
+          <span className="rounded-full bg-brand-deep px-2.5 py-[3px] text-[10px] font-semibold uppercase tracking-[var(--track-tag)] text-mint-bright">
             SFO → JFK
           </span>
         </span>
 
-        <h3 className="font-display text-[26px] font-semibold leading-[1.06] tracking-[-0.02em] text-white sm:text-[32px] lg:text-[38px]">
+        <h3 className="text-balance font-display text-[26px] font-semibold leading-[1.06] tracking-[-0.02em] text-white sm:text-[32px] lg:text-[38px]">
           Use <span className="text-gold-soft">Alaska miles</span> and save
         </h3>
 
@@ -82,7 +82,7 @@ export default async function SampleVerdict() {
         ) : (
           <Logo size={150} carve="var(--color-brand-deep)" className="text-white" />
         )}
-        <span className="absolute bottom-5 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.18em] text-white">
+        <span className="absolute bottom-5 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-white">
           <Icon name="check_circle" size={12} weight="fill" />
           the verdict
         </span>
@@ -104,7 +104,7 @@ function Stat({
 }) {
   return (
     <div>
-      <div className="mb-[5px] text-[11px] font-semibold uppercase tracking-[0.16em] text-hero-label">
+      <div className="mb-[5px] text-[11px] font-semibold uppercase tracking-[var(--track-label)] text-hero-label">
         {label}
       </div>
       <div className={`hop-price text-[24px] ${accent ? 'text-mint-bright' : 'text-white'}`}>

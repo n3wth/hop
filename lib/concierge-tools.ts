@@ -24,6 +24,7 @@ import type { Balance } from '@/lib/types'
 import { CABINS } from '@/lib/prefs-model'
 import { TRAVEL_PARTIES, validateProfile, type TravelProfile } from '@/lib/travel-profile-model'
 import { saveProfileFact } from '@/lib/travel-profile'
+import { cacheWrap } from './cache'
 
 // --- price_trip economics (DETERMINISTIC — hop's engine, never the LLM) -------
 
@@ -192,35 +193,38 @@ export function monthToIndex(month: string | number | undefined): number {
 // normals). NEVER throws — returns a WeatherSummary with a graceful note on any
 // failure so the agent keeps going.
 export async function fetchWeather(place: string, monthIndex: number): Promise<WeatherSummary> {
-  const month = MONTHS[monthIndex] ?? 'that month'
-  try {
-    const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(place)}&count=1&language=en&format=json`
-    const geoRes = await fetch(geoUrl, { signal: AbortSignal.timeout(8000) })
-    if (!geoRes.ok) throw new Error('geocode failed')
-    const geo = (await geoRes.json()) as { results?: GeoHit[] }
-    const hit = geo.results?.[0]
-    if (!hit) {
-      return { place, month, highC: undefined, lowC: undefined, precipMm: undefined, note: `Couldn't locate ${place} for a weather lookup.` }
-    }
+  const key = `hop:weather:${place.toLowerCase().trim()}:${monthIndex}`
+  return cacheWrap<WeatherSummary>(key, 604800, async () => {
+    const month = MONTHS[monthIndex] ?? 'that month'
+    try {
+      const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(place)}&count=1&language=en&format=json`
+      const geoRes = await fetch(geoUrl, { signal: AbortSignal.timeout(8000) })
+      if (!geoRes.ok) throw new Error('geocode failed')
+      const geo = (await geoRes.json()) as { results?: GeoHit[] }
+      const hit = geo.results?.[0]
+      if (!hit) {
+        return { place, month, highC: undefined, lowC: undefined, precipMm: undefined, note: `Couldn't locate ${place} for a weather lookup.` }
+      }
 
-    // Climate normals for a representative recent year window, sliced to the month.
-    const year = new Date().getUTCFullYear() - 1
-    const mm = String(monthIndex + 1).padStart(2, '0')
-    const lastDay = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate()
-    const start = `${year}-${mm}-01`
-    const end = `${year}-${mm}-${String(lastDay).padStart(2, '0')}`
-    const climUrl =
-      `https://archive-api.open-meteo.com/v1/archive?latitude=${hit.latitude}&longitude=${hit.longitude}` +
-      `&start_date=${start}&end_date=${end}` +
-      `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`
-    const climRes = await fetch(climUrl, { signal: AbortSignal.timeout(8000) })
-    if (!climRes.ok) throw new Error('climate failed')
-    const data = (await climRes.json()) as OpenMeteoClimate
-    const label = hit.country ? `${hit.name}, ${hit.country}` : hit.name
-    return parseWeather(label, monthIndex, data)
-  } catch {
-    return { place, month, highC: undefined, lowC: undefined, precipMm: undefined, note: `Weather lookup for ${place} is unavailable right now.` }
-  }
+      // Climate normals for a representative recent year window, sliced to the month.
+      const year = new Date().getUTCFullYear() - 1
+      const mm = String(monthIndex + 1).padStart(2, '0')
+      const lastDay = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate()
+      const start = `${year}-${mm}-01`
+      const end = `${year}-${mm}-${String(lastDay).padStart(2, '0')}`
+      const climUrl =
+        `https://archive-api.open-meteo.com/v1/archive?latitude=${hit.latitude}&longitude=${hit.longitude}` +
+        `&start_date=${start}&end_date=${end}` +
+        `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`
+      const climRes = await fetch(climUrl, { signal: AbortSignal.timeout(8000) })
+      if (!climRes.ok) throw new Error('climate failed')
+      const data = (await climRes.json()) as OpenMeteoClimate
+      const label = hit.country ? `${hit.name}, ${hit.country}` : hit.name
+      return parseWeather(label, monthIndex, data)
+    } catch {
+      return { place, month, highC: undefined, lowC: undefined, precipMm: undefined, note: `Weather lookup for ${place} is unavailable right now.` }
+    }
+  })
 }
 
 // --- AI SDK tool definitions --------------------------------------------------

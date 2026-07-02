@@ -28,7 +28,7 @@ export default function EmptyState({ route, fromCode, toCode }: EmptyStateProps)
         <Logo size={84} carve="var(--color-paper)" className="text-brand" />
       </div>
 
-      <h2 className="mt-6 font-display text-[22px] font-semibold tracking-[-0.01em] text-text">
+      <h2 className="mt-6 text-balance font-display text-[22px] font-semibold tracking-[-0.01em] text-text">
         No flights found{route ? ` for ${route}` : ''}.
       </h2>
       <p className="mt-2 max-w-[42ch] text-[14px] leading-[1.55] text-text2">

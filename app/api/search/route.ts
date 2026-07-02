@@ -2,6 +2,7 @@
 // full SearchResult, and return it as JSON. Always responds 200; the assembler
 // never throws and degrades gracefully on upstream failure.
 
+import { checkBotId } from 'botid/server'
 import type { SearchParams } from '@/lib/types'
 import { assembleSearch } from '@/lib/search'
 import { auth0 } from '@/lib/auth0'
@@ -43,6 +44,11 @@ function parseParams(url: URL): SearchParams {
 }
 
 export async function GET(request: Request) {
+  const verification = await checkBotId()
+  if (verification.isBot) {
+    return Response.json({ ok: false, error: 'Access denied' }, { status: 403 })
+  }
+
   const params = parseParams(new URL(request.url))
   // Signed in → ground in this user's real balances (manual + AwardWallet);
   // signed out → undefined keeps the env-global/mock fallback in assembleSearch.

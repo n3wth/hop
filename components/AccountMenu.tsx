@@ -11,7 +11,7 @@ export interface AccountUser {
 }
 
 // Avatar that opens a small account menu: name/email, Profile, Log out.
-// Loads the Auth0 picture when present, falls back to the initial.
+// Loads the profile picture when present, falls back to the initial.
 export default function AccountMenu({ user }: { user: AccountUser }) {
   const [open, setOpen] = useState(false)
   const [imgOk, setImgOk] = useState(true)

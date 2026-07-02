@@ -70,7 +70,7 @@ export default async function TermsPage() {
         <p>
           The Service relies on third parties, including (among others) Duffel (flight search and
           cash booking), airlines and their loyalty programs, seats.aero (award availability),
-          AwardWallet (optional loyalty-balance sync), Auth0 (sign-in), Supabase (data storage),
+          AwardWallet (optional loyalty-balance sync), Google (sign-in), Neon (data storage),
           and Unsplash (destination imagery). Your use of those services is also subject to their
           own terms and privacy policies. We are not responsible for third-party services and do
           not guarantee their availability or accuracy.
@@ -109,7 +109,7 @@ export default async function TermsPage() {
 
         <h2>8. Accounts</h2>
         <p>
-          Sign-in is provided through Auth0. You are responsible for activity under your account
+          Sign-in is provided through Google. You are responsible for activity under your account
           and for keeping your credentials secure. You may delete your account; see our{' '}
           <Link href="/privacy">Privacy Policy</Link> for what that removes.
         </p>

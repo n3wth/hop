@@ -35,7 +35,7 @@ export default function Error({
       </div>
 
       <h1
-        className="hop-rise mt-7 font-display text-[34px] font-semibold tracking-[-0.02em] text-text"
+        className="hop-rise mt-7 text-balance font-display text-[34px] font-semibold tracking-[-0.02em] text-text"
         style={{ ['--hop-delay' as string]: '100ms' }}
       >
         That didn&apos;t go to plan.
@@ -59,7 +59,7 @@ export default function Error({
       </div>
 
       {error.digest ? (
-        <p className="mt-6 text-[12px] tracking-[0.04em] text-text3">
+        <p className="mt-6 text-[12px] tracking-[var(--track-label)] text-text3">
           Reference: {error.digest}
         </p>
       ) : null}

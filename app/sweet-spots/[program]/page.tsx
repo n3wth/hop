@@ -108,7 +108,7 @@ export default async function ProgramSweetSpotsPage({
 
         {/* header */}
         <header className="mt-6 max-w-[60ch]">
-          <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
+          <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
             {program.spots.length} {program.spots.length === 1 ? 'redemption' : 'redemptions'}
           </span>
           <h1 className="mt-3 text-balance font-display text-[32px] font-semibold leading-[1.06] tracking-[-0.02em] text-text sm:text-[46px]">
@@ -132,14 +132,14 @@ export default async function ProgramSweetSpotsPage({
                       {s.route}
                     </h2>
                     <span
-                      className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em]"
+                      className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[var(--track-label)]"
                       style={{ background: chip.bg, color: chip.fg, borderColor: chip.bd }}
                     >
                       {s.cabin}
                     </span>
                     {s.confidence === 'med' && (
                       <span
-                        className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em]"
+                        className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[var(--track-label)]"
                         style={{
                           background: 'var(--color-ok-bg)',
                           color: 'var(--color-ok)',
@@ -151,7 +151,7 @@ export default async function ProgramSweetSpotsPage({
                     )}
                   </div>
                   {s.metal && (
-                    <p className="mt-1 text-[13px] font-semibold uppercase tracking-[0.06em] text-text3">
+                    <p className="mt-1 text-[13px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
                       on {s.metal} metal
                     </p>
                   )}
@@ -162,7 +162,7 @@ export default async function ProgramSweetSpotsPage({
 
                 {/* the figure — typical one-way miles */}
                 <div className="flex-shrink-0 sm:text-right">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">
+                  <div className="text-[10px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
                     ~Miles one-way
                   </div>
                   <div className="mt-1 font-display text-[24px] font-semibold leading-none tabular-nums text-text">

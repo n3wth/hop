@@ -109,14 +109,14 @@ export default function VerdictRail({
     >
       {/* LEFT — the verdict */}
       <div className="px-6 pb-9 pt-8 sm:px-10 lg:px-[52px] lg:pb-[46px] lg:pt-12">
-        <span className="mb-[26px] inline-flex items-center border-b border-white/15 pb-4 text-[12px] font-semibold uppercase tracking-[0.22em] text-hero-eyebrow">
+        <span className="mb-[26px] inline-flex items-center border-b border-white/15 pb-4 text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-hero-eyebrow">
           Best value
         </span>
 
         {usingPoints ? (
           <>
             <h1
-              className="hop-rise font-display text-[24px] font-semibold leading-[1.05] tracking-[-0.02em] text-white sm:text-[34px] lg:text-[40px]"
+              className="hop-rise text-balance font-display text-[24px] font-semibold leading-[1.05] tracking-[-0.02em] text-white sm:text-[34px] lg:text-[40px]"
               style={{ ['--hop-delay' as string]: '60ms' }}
             >
               {owns ? (
@@ -149,7 +149,7 @@ export default function VerdictRail({
           </>
         ) : (
           <h1
-            className="hop-rise font-display text-[34px] font-semibold leading-[1.02] tracking-[-0.025em] text-white sm:text-[48px] sm:leading-[1.0] lg:text-[64px] lg:leading-[0.98]"
+            className="hop-rise text-balance font-display text-[34px] font-semibold leading-[1.02] tracking-[-0.025em] text-white sm:text-[48px] sm:leading-[1.0] lg:text-[64px] lg:leading-[0.98]"
             style={{ ['--hop-delay' as string]: '60ms' }}
           >
             Pay <span className="text-gold-soft">cash.</span>
@@ -313,7 +313,7 @@ function HStat({
 }) {
   return (
     <div>
-      <div className="mb-[6px] text-[11px] font-semibold uppercase tracking-[0.16em] text-hero-label">
+      <div className="mb-[6px] text-[11px] font-semibold uppercase tracking-[var(--track-label)] text-hero-label">
         {label}
       </div>
       <div className={`hop-price text-[27px] ${accent ? 'text-mint-bright' : 'text-white'}`}>
@@ -375,7 +375,7 @@ function PickPass({ pick }: { pick: FlightOption }) {
           </div>
         </div>
         {stopLabel === 'nonstop' ? (
-          <span className="flex-shrink-0 rounded-lg bg-brand-light px-[10px] py-[5px] text-[11px] font-semibold uppercase tracking-[0.02em] text-brand">
+          <span className="flex-shrink-0 rounded-lg bg-brand-light px-[10px] py-[5px] text-[11px] font-semibold uppercase tracking-[var(--track-tag)] text-brand">
             Direct
           </span>
         ) : null}

@@ -158,7 +158,7 @@ export default function LedgerDreamCard({
           />
 
           {/* eyebrow */}
-          <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-paper px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brand">
+          <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-paper px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[var(--track-tag)] text-brand">
             <Icon name="workspace_premium" size={12} />
             {v.saveToward ? 'A dream to save toward' : 'Your dream this week'}
           </span>
@@ -173,7 +173,7 @@ export default function LedgerDreamCard({
               <span className="hop-price text-[16px] leading-none text-good">
                 {v.cpp.toFixed(1)}
               </span>
-              <span className="text-[10px] font-semibold tracking-[0.02em] text-good">¢/pt</span>
+              <span className="text-[10px] font-semibold tracking-[var(--track-label)] text-good">¢/pt</span>
             </span>
           ) : null}
 
@@ -187,7 +187,7 @@ export default function LedgerDreamCard({
               <h3 className="truncate font-display text-[34px] font-semibold leading-[1.02] tracking-[-0.02em] text-white sm:text-[40px]">
                 {v.city}
               </h3>
-              <p className="truncate text-[12.5px] font-semibold uppercase tracking-[0.1em] text-white/85">
+              <p className="truncate text-[12.5px] font-semibold uppercase tracking-[var(--track-tag)] text-white/85">
                 {v.country}
               </p>
             </div>
@@ -217,21 +217,21 @@ export default function LedgerDreamCard({
           <div className="mt-6 rounded-[var(--radius)] border border-hair bg-sunk p-4 sm:p-5">
             <div className="flex items-center gap-1.5">
               <Icon name="shield" size={12} className="text-brand" />
-              <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-text3">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
                 How you afford it
               </span>
             </div>
 
             <div className="mt-3.5 grid grid-cols-2 gap-x-4 gap-y-3.5">
               <div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">Award</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[var(--track-label)] text-text3">Award</div>
                 <div className="hop-price mt-1 text-[20px] leading-none text-text">
                   {compactMiles(v.milesNeeded)}
                   <span className="font-sans ml-1 text-[12px] font-medium text-text3">mi</span>
                 </div>
               </div>
               <div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">
+                <div className="text-[10px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
                   Cash you skip
                 </div>
                 <div className="hop-price mt-1 text-[20px] leading-none text-text">
@@ -242,7 +242,7 @@ export default function LedgerDreamCard({
 
             {/* the pool → program path */}
             <div className="mt-4 border-t border-hair pt-3.5">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">
+              <div className="text-[10px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
                 The path
               </div>
               <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[14px] font-semibold text-text">

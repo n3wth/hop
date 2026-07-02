@@ -412,7 +412,7 @@ export default function TopNav({
           </div>
           {/* "where from" — reachable on phones where the header selector hides */}
           <div className="border-b border-border px-4 py-3">
-            <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-text2">
+            <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
               Where from
             </span>
             <OriginSelector />

@@ -10,6 +10,7 @@
 // Rate-limited per-sub + per-IP BEFORE any Stripe work (each session create is
 // otherwise a free Stripe API call for a scripted caller). NEVER throws.
 
+import { checkBotId } from 'botid/server'
 import { auth0 } from '@/lib/auth0'
 import { isBillingEnabled } from '@/lib/env'
 import { checkRateLimit, clientIp } from '@/lib/rate-limit'
@@ -28,6 +29,11 @@ function json(body: Record<string, unknown>, status = 200): Response {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  const verification = await checkBotId()
+  if (verification.isBot) {
+    return json({ ok: false, error: 'Access denied' }, 403)
+  }
+
   if (!isBillingEnabled()) {
     return json({ ok: false, error: 'Billing is not available yet.' }, 503)
   }
