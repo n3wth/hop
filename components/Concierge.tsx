@@ -290,7 +290,7 @@ export default function Concierge({
   const startTiles = galleryCodes
     .map((c) => photos[c])
     .filter((p): p is ConciergePhoto => Boolean(p))
-    .slice(0, 5)
+    .slice(0, 8)
     .map((p) => ({ city: p.city, thumb: p.thumb, alt: p.alt, countryCode: p.countryCode }))
 
   return (
@@ -401,14 +401,17 @@ export default function Concierge({
             <ConversationScrollButton />
           </Conversation>
         ) : (
-          // Centered greeting that stays REACHABLE under overflow: the outer div
-          // is a plain scroll container; the inner min-h-full flex centers when
-          // short and collapses to normal top-anchored flow when the greeting is
-          // taller than the region (never `items-center` + `overflow` on one
-          // element — block-start overflow of a centered flex item can't be
-          // scrolled to, clipping the heading on short viewports).
+          // Greeting anchored in the upper third (not dead-centered) — on a tall
+          // desktop viewport, perfect vertical centering left as much empty
+          // canvas below the greeting as above it, reading as a mostly-blank
+          // page rather than a considered layout (ChatGPT/Claude's own new-chat
+          // screens anchor the same way). The outer div stays a plain scroll
+          // container; the inner min-h-full flex keeps the greeting REACHABLE
+          // under overflow (never `items-center` + `overflow` on one element —
+          // block-start overflow of a centered flex item can't be scrolled to,
+          // clipping the heading on short viewports).
           <div className="h-full overflow-y-auto py-8">
-            <div className="flex min-h-full items-center justify-center">
+            <div className="flex min-h-full items-center justify-center pb-[18vh] sm:pb-[24vh]">
               <AskStart
                 eyebrow={copy.eyebrow}
                 heading={copy.heading}
