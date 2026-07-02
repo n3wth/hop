@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import Script from 'next/script'
 import { Bricolage_Grotesque, Fraunces, Geist_Mono } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/next'
 import {
   SITE_URL,
   SITE_NAME,
@@ -150,6 +151,7 @@ export default function RootLayout({
         <ScrollToTop />
         <StructuredData />
         {children}
+        <Analytics />
         {/* Travelpayouts auto-attribution tag (project 545389). Monetizes outbound
             clicks to partner sites (the Kiwi cash deep-links in lib/booking.ts) by
             attributing them to hop's affiliate account — WITHOUT this, cash-booking

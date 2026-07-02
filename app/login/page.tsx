@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { auth0 } from '@/lib/auth0'
+import { getUserId } from '@/lib/session'
 import Logo from '@/components/Logo'
 import Icon from '@/components/Icon'
 import Button from '@/components/ui/Button'
@@ -32,13 +32,11 @@ export default async function LoginPage({
   const returnTo = safeReturnTo(sp.returnTo)
   const hasError = sp.error != null
 
-  const session = await auth0.getSession()
-  if (session) redirect(returnTo ?? '/account')
+  const userId = await getUserId()
+  if (userId) redirect('/account')
 
-  const qs = returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''
-  const signupQs = returnTo
-    ? `?screen_hint=signup&returnTo=${encodeURIComponent(returnTo)}`
-    : '?screen_hint=signup'
+  const callback = returnTo ?? '/account'
+  const googleLoginUrl = `/api/auth/signin/google?callbackURL=${encodeURIComponent(callback)}`
 
   return (
     <main className="flex min-h-dvh flex-col bg-bg">
@@ -85,8 +83,8 @@ export default async function LoginPage({
 
           {/* actions */}
           <div className="mt-8">
-            <Button href={`/auth/login${qs}`} native fullWidth>
-              Continue
+            <Button href={googleLoginUrl} native fullWidth>
+              Continue with Google
             </Button>
 
             <div className="my-5 flex items-center gap-3 text-[12px] text-text3">
@@ -95,8 +93,8 @@ export default async function LoginPage({
               <span className="h-px flex-1 bg-hair" aria-hidden />
             </div>
 
-            <Button href={`/auth/login${signupQs}`} native variant="secondary" fullWidth>
-              Create account
+            <Button href={googleLoginUrl} native variant="secondary" fullWidth>
+              Create account with Google
             </Button>
           </div>
 

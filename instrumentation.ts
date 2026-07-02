@@ -19,6 +19,7 @@ export async function register() {
   const apiKey =
     process.env.POSTHOG_KEY ??
     process.env.NEXT_PUBLIC_POSTHOG_KEY ??
+    process.env.NEXT_PUBLIC_VERCEL_HOP_POSTHOG_PROJECT_TOKEN ??
     'phc_q39ZGuvXLQuwCgCkHZYAeaUlWm5bIhx2XKMCtTdhJ7o'
 
   const sdk = new NodeSDK({
@@ -31,7 +32,10 @@ export async function register() {
     spanProcessors: [
       new PostHogSpanProcessor({
         projectToken: apiKey,
-        host: process.env.POSTHOG_HOST ?? 'https://us.i.posthog.com',
+        host:
+          process.env.POSTHOG_HOST ??
+          process.env.NEXT_PUBLIC_VERCEL_HOP_POSTHOG_HOST ??
+          'https://us.i.posthog.com',
       }),
     ],
   })

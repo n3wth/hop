@@ -59,6 +59,8 @@ export type EnvKey =
   // Autonoma secure sandbox API credentials
   | 'AUTONOMA_CLIENT_ID'
   | 'AUTONOMA_SECRET_ID'
+  // Firecrawl crawler and extraction API key (for scraping destinations and travel deals)
+  | 'FIRECRAWL_API_KEY'
 
 function read(key: EnvKey): string {
   const value = process.env[key]
@@ -104,6 +106,7 @@ export const env = {
   parallelApiKey: () => read('PARALLEL_API_KEY'),
   autonomaClientId: () => read('AUTONOMA_CLIENT_ID'),
   autonomaSecretId: () => read('AUTONOMA_SECRET_ID'),
+  firecrawlApiKey: () => read('FIRECRAWL_API_KEY'),
 }
 
 // Check helper for Parallel API status
@@ -114,6 +117,11 @@ export function isParallelEnabled(): boolean {
 // Check helper for Autonoma status
 export function isAutonomaEnabled(): boolean {
   return hasEnv('AUTONOMA_CLIENT_ID') && hasEnv('AUTONOMA_SECRET_ID')
+}
+
+// Check helper for Firecrawl status
+export function isFirecrawlEnabled(): boolean {
+  return hasEnv('FIRECRAWL_API_KEY')
 }
 
 // True when a key is present without throwing — lets a client degrade
