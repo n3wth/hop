@@ -12,7 +12,7 @@ import DegradedNote from '@/components/DegradedNote'
 import SiteFooter from '@/components/SiteFooter'
 import EditorialHeader from '@/components/EditorialHeader'
 import Icon from '@/components/Icon'
-import { ORIGIN_STORAGE_KEY } from '@/lib/origin-context'
+import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import { pageMeta } from '@/lib/seo'
 import { localISO } from '@/lib/dates'
 
@@ -110,7 +110,7 @@ export default async function DealsPage({
   const hasDeals = deals.length > 0
 
   return (
-    <AppShell user={user} pointsTotal={pointsTotal} hideSearch>
+    <AppShell user={user} pointsTotal={pointsTotal} homeAirport={homeAirport} hideSearch>
       <div className="mx-auto max-w-[var(--container-app)] xl:max-w-[var(--container-wide)] 2xl:max-w-[var(--container-xwide)]">
         {/* editorial header — centered over the full-width feed */}
         <EditorialHeader

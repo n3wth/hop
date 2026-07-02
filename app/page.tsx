@@ -6,7 +6,7 @@ import { getPrefs, type UserPrefs } from '@/lib/prefs'
 import { getUserBalances } from '@/lib/accounts'
 import { getMemoryContext, EMPTY_MEMORY_CONTEXT } from '@/lib/memory-context'
 import { walletValue } from '@/lib/valuations'
-import { ORIGIN_STORAGE_KEY } from '@/lib/origin-context'
+import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import type { SearchState } from '@/components/SearchBar'
@@ -112,7 +112,12 @@ export default async function Home() {
   // ── SIGNED IN — personalized dashboard ───────────────────────────────────
   if (user) {
     return (
-      <AppShell user={user} pointsTotal={programs > 0 ? totalPoints : undefined} hideSearch>
+      <AppShell
+        user={user}
+        pointsTotal={programs > 0 ? totalPoints : undefined}
+        homeAirport={prefs.homeAirport}
+        hideSearch
+      >
         <div className="mx-auto max-w-[var(--container-app)]">
           <SignedInHome
             first={first}

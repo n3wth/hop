@@ -8,7 +8,7 @@ import { getPrefs } from '@/lib/prefs'
 import { cityForCode } from '@/lib/airports'
 import { destinationImage } from '@/lib/images'
 import { auth0 } from '@/lib/auth0'
-import { ORIGIN_STORAGE_KEY } from '@/lib/origin-context'
+import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import { SITE_URL } from '@/lib/seo'
 import AppShell from '@/components/AppShell'
 import RouteBar from '@/components/RouteBar'
@@ -294,6 +294,7 @@ export default async function Search({
       nonstop={nonstop}
       user={user}
       pointsTotal={user ? result.balances.reduce((s, b) => s + b.balance, 0) : undefined}
+      homeAirport={prefs?.homeAirport}
     >
       {/* The results column is generous enough for the verdict hero, the 4-up
           alternatives, and the wallet, but capped tighter so it reads as a
