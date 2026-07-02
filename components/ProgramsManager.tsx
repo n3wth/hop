@@ -471,7 +471,7 @@ function AwardWalletSection({
           </div>
         </div>
         {balances.length === 0 ? (
-          <p className="border-t border-border px-5 py-3 text-[13px] text-text2 sm:px-6">
+          <p className="border-t border-border px-5 py-3 text-[14px] leading-[1.5] text-text2 sm:px-6">
             {reason
               ? `Connected, but balances didn't load (${reason}). Try Refresh.`
               : 'Connected, but no balances came back yet. Try Refresh.'}
@@ -495,7 +495,7 @@ function AwardWalletSection({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="text-[14px] font-semibold text-text">Auto-sync with AwardWallet</div>
-          <p className="mt-0.5 text-[13px] leading-[1.5] text-text2">
+          <p className="mt-0.5 text-[14px] leading-[1.5] text-text2">
             Already on AwardWallet? Connect it to keep these balances current on their own.
           </p>
         </div>

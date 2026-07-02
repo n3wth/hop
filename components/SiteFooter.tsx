@@ -23,7 +23,7 @@ export default function SiteFooter() {
           >
             {SITE_NAME}
           </Link>
-          <p className="mt-2 leading-[1.6]">
+          <p className="mt-2 text-[14px] leading-[1.6]">
             Points vs. cash — valued in ¢/pt so you always know the smarter way to book.
           </p>
         </div>

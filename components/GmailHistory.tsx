@@ -158,7 +158,7 @@ export default function GmailHistory({
         ) : null}
 
         {trips.length === 0 ? (
-          <p className="border-t border-border px-5 py-3 text-[13px] text-text2 sm:px-6">
+          <p className="border-t border-border px-5 py-3 text-[14px] leading-[1.5] text-text2 sm:px-6">
             No past trips found yet. Try Sync once you have flight or hotel
             confirmations in your inbox.
           </p>

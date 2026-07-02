@@ -109,7 +109,7 @@ function DestinationCard({
 
       {/* ── body ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-1 flex-col p-4">
-        <p className="text-[13.5px] leading-[1.5] text-text2">{d.vibe}</p>
+        <p className="text-[14px] leading-[1.5] text-text2">{d.vibe}</p>
 
         <div className="mt-4 flex items-center justify-between border-t border-hair pt-3.5">
           <span className="text-[13px] font-semibold text-text">
