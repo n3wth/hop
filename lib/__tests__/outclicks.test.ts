@@ -63,15 +63,15 @@ describe('recordOutclick', () => {
     })
   })
 
-  it('is synchronous and returns nothing — the caller never awaits the ledger', () => {
-    expect(recordOutclick(CLICK)).toBeUndefined()
+  it('returns a promise that resolves — so after() can track the write to completion', async () => {
+    await expect(recordOutclick(CLICK)).resolves.toBeUndefined()
   })
 
-  it('never throws, even if the withDb seam itself throws synchronously', () => {
+  it('never throws or rejects, even if the withDb seam itself throws synchronously', async () => {
     mockWithDb.mockImplementation(() => {
       throw new Error('boom')
     })
-    expect(() => recordOutclick(CLICK)).not.toThrow()
+    await expect(recordOutclick(CLICK)).resolves.toBeUndefined()
   })
 
   it('no-ops silently when the DB is unconfigured (withDb falls back)', () => {

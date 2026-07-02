@@ -4,11 +4,13 @@
 // links land, this table is the first-party click record we verify network
 // reporting against.
 //
-// Fire-and-forget by contract, mirroring lib/valuation-telemetry.ts:
-// recordOutclick() is synchronous (void), the insert runs behind withDb — an
-// unconfigured DB, a dead DB, or a not-yet-applied drizzle/0006_outclicks.sql
-// all degrade to a silent no-op — and nothing here can throw to or slow down
-// the redirect that triggered it.
+// Best-effort by contract: the insert runs behind withDb — an unconfigured
+// DB, a dead DB, or a not-yet-applied drizzle/0006_outclicks.sql all degrade
+// to a silent no-op — and nothing here can throw to or slow down the redirect
+// that triggered it. It RETURNS its promise (never rejects) so a route can
+// hand it to next/server's after(): on serverless, an untracked async write
+// can be cut off the moment the response is sent; after() keeps the function
+// alive until the insert settles.
 //
 // SERVER ONLY (pulls in the service-role client via withDb) — never import
 // from a client component. Anonymous by design: no user_id is recorded.
@@ -28,13 +30,14 @@ export interface Outclick {
   userAgent?: string | null
 }
 
-// Record one outclick. Synchronous (returns void) so the caller can never be
-// blocked or broken by the ledger: the insert is fired and every failure path
+// Record one outclick. Never blocks or breaks the caller: every failure path
 // is swallowed (withDb already never throws; the try/catch is belt and
-// suspenders for a synchronous throw while kicking it off).
-export function recordOutclick(click: Outclick): void {
+// suspenders for a synchronous throw while kicking it off). The returned
+// promise always resolves — await it (or pass it to after()) only to keep a
+// serverless function alive until the write settles.
+export function recordOutclick(click: Outclick): Promise<void> {
   try {
-    void withDb(undefined, async (db) => {
+    return withDb(undefined, async (db) => {
       await db.from('hop_outclicks').insert({
         kind: click.kind,
         target: click.target,
@@ -45,6 +48,7 @@ export function recordOutclick(click: Outclick): void {
       return undefined
     })
   } catch {
-    // Fire-and-forget contract: a lost click row costs analytics, never UX.
+    // Best-effort contract: a lost click row costs analytics, never UX.
+    return Promise.resolve()
   }
 }

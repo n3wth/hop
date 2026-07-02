@@ -9,7 +9,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 //   context, never a destination (no open redirect)
 
 vi.mock('@/lib/outclicks', () => ({
-  recordOutclick: vi.fn(),
+  recordOutclick: vi.fn(async () => undefined),
+}))
+
+// The ledger write is scheduled via next/server's after() so serverless
+// doesn't cut it off when the 302 returns. Outside a real Next request scope
+// (vitest, node env) after() would throw — run the callback inline instead,
+// which also lets the tests assert the write's payload synchronously.
+vi.mock('next/server', () => ({
+  after: (task: unknown) => {
+    if (typeof task === 'function') void (task as () => unknown)()
+  },
 }))
 
 import { GET } from '../route'
@@ -37,7 +47,7 @@ describe('GET /api/go/card/[id]', () => {
     expect(res.headers.get('location')).toBe(cardById('chase-ur')!.applyUrl)
   })
 
-  it('logs one outclick with program + user-agent context, fire-and-forget', async () => {
+  it('logs one outclick with program + user-agent context, post-response', async () => {
     await GET(
       request('/api/go/card/united?program=United%20MileagePlus', {
         'user-agent': 'test-agent/1.0',
