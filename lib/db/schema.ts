@@ -402,3 +402,27 @@ export const verification = pgTable('verification', {
   createdAt: timestamp('created_at'),
   updatedAt: timestamp('updated_at'),
 })
+
+// Better Auth passkey plugin — one row per registered WebAuthn credential.
+// Column set matches @better-auth/passkey's shipped `Passkey` model — do not
+// rename fields, the drizzle adapter matches by JS property name.
+export const passkey = pgTable(
+  'passkey',
+  {
+    id: text('id').primaryKey(),
+    name: text('name'),
+    publicKey: text('public_key').notNull(),
+    userId: text('user_id').notNull().references(() => user.id),
+    credentialID: text('credential_id').notNull(),
+    counter: integer('counter').notNull(),
+    deviceType: text('device_type').notNull(),
+    backedUp: boolean('backed_up').notNull(),
+    transports: text('transports'),
+    createdAt: timestamp('created_at'),
+    aaguid: text('aaguid'),
+  },
+  (t) => [
+    index('passkey_user_id_idx').on(t.userId),
+    uniqueIndex('passkey_credential_id_idx').on(t.credentialID),
+  ],
+)

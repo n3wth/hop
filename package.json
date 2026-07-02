@@ -18,6 +18,7 @@
   "dependencies": {
     "@ai-sdk/react": "^4.0.5",
     "@anthropic-ai/sdk": "^0.106.0",
+    "@better-auth/passkey": "^1.6.23",
     "@duffel/api": "^4.27.1",
     "@duffel/components": "^3.17.0",
     "@modelcontextprotocol/sdk": "^1.26.0",

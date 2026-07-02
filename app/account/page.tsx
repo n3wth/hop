@@ -1,10 +1,19 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { headers } from 'next/headers'
 import { auth0 } from '@/lib/auth0'
+import { auth } from '@/lib/auth'
+import { getUserId } from '@/lib/session'
 import { getUserAwId, getManualBalances } from '@/lib/accounts'
 import { getBalances } from '@/lib/awardwallet'
-import { hasEnv, isBillingEnabled, isGmailHistoryEnabled } from '@/lib/env'
+import {
+  hasEnv,
+  isBillingEnabled,
+  isGmailHistoryEnabled,
+  isEmailPasswordAuthEnabled,
+  isPasskeyEnabled,
+} from '@/lib/env'
 import { getTravelHistory } from '@/lib/travel-history'
 import { isGmailConnected } from '@/lib/travel-history-sync'
 import AppShell from '@/components/AppShell'
@@ -28,6 +37,8 @@ import { listStandingOrders, countActiveStandingOrders } from '@/lib/standing-or
 import { listAlerts, countUnseenAlerts } from '@/lib/standing-order-alerts'
 import { getUserTier, ALERT_LIMITS } from '@/lib/subscription'
 import BillingSection from '@/components/BillingSection'
+import SecurityPassword from '@/components/auth/SecurityPassword'
+import SecurityPasskeys, { type PasskeyInfo } from '@/components/auth/SecurityPasskeys'
 
 // Human-readable note for the AwardWallet handshake outcome (?aw=… flag the
 // OAuth start/callback routes set on their redirect back to /account).
@@ -130,6 +141,34 @@ export default async function AccountPage({
     if (awResult.ok) awBalances = awResult.data
     else awReason = awResult.reason
   }
+
+  // Security section data — resolved via getUserId()/auth.api directly (not
+  // the auth0 compat shim the rest of this file still reads through) per
+  // CLAUDE.md's stated direction for new code. Independent of every group
+  // above; degrades to "no password / no passkeys" on any failure rather than
+  // breaking the page.
+  const emailPasswordAuthEnabled = isEmailPasswordAuthEnabled()
+  const passkeyAuthEnabled = isPasskeyEnabled()
+  const [hasPassword, passkeys] = await (async () => {
+    if (!emailPasswordAuthEnabled && !passkeyAuthEnabled) return [false, [] as PasskeyInfo[]] as const
+    try {
+      const requestHeaders = await headers()
+      const securityUserId = await getUserId()
+      if (!securityUserId) return [false, [] as PasskeyInfo[]] as const
+      const [accounts, passkeyRows] = await Promise.all([
+        emailPasswordAuthEnabled
+          ? auth.api.listUserAccounts({ headers: requestHeaders }).catch(() => [])
+          : Promise.resolve([]),
+        passkeyAuthEnabled
+          ? auth.api.listPasskeys({ headers: requestHeaders }).catch(() => [])
+          : Promise.resolve([]),
+      ])
+      const hasCredentialAccount = accounts.some((a) => a.providerId === 'credential')
+      return [hasCredentialAccount, passkeyRows as PasskeyInfo[]] as const
+    } catch {
+      return [false, [] as PasskeyInfo[]] as const
+    }
+  })()
   const airlineStatuses: AirlineStatus[] = profile.airlineStatuses ?? []
 
   // AwardWallet sync already carries elite tiers under Balance.status — surface
@@ -224,6 +263,7 @@ export default async function AccountPage({
             { href: '#watches', label: 'Watches' },
             ...(billingEnabled ? [{ href: '#billing', label: 'Plan' }] : []),
             { href: '#whatif', label: 'What-if' },
+            { href: '#security', label: 'Security' },
             { href: '#developers', label: 'Developers' },
           ].map((a) => (
             <a
@@ -393,6 +433,23 @@ export default async function AccountPage({
             </p>
           </div>
           <Counterfactual programs={programBalances} />
+        </section>
+
+        {/* security — password + passkeys, for anyone who wants a way in that
+            doesn't depend on Google. A mainstream concern (not power-user
+            config), so it's its own top-level section, not folded into
+            Developers below. */}
+        <section id="security" className="mt-10 scroll-mt-24">
+          <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
+            Security
+          </h2>
+          <p className="mt-1 text-[13.5px] text-text2">
+            Add a password or a passkey so you can sign in without Google.
+          </p>
+          <div className="mt-4 space-y-4">
+            <SecurityPassword enabled={emailPasswordAuthEnabled} hasPassword={hasPassword} />
+            <SecurityPasskeys enabled={passkeyAuthEnabled} passkeys={passkeys} />
+          </div>
         </section>
 
         {/* ── GROUP 3 — DEVELOPERS ───────────────────────────────────────────

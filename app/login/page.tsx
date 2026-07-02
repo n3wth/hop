@@ -2,10 +2,12 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getUserId } from '@/lib/session'
-import { isGoogleAuthEnabled } from '@/lib/env'
+import { isGoogleAuthEnabled, isEmailPasswordAuthEnabled, isPasskeyEnabled } from '@/lib/env'
 import Logo from '@/components/Logo'
 import Icon from '@/components/Icon'
 import GoogleSignIn from '@/components/auth/GoogleSignIn'
+import EmailPasswordForm from '@/components/auth/EmailPasswordForm'
+import PasskeyButton from '@/components/auth/PasskeyButton'
 
 export const metadata: Metadata = {
   title: 'Sign in — hop',
@@ -118,6 +120,20 @@ export default async function LoginPage({
             {/* actions */}
             <div className="mt-8">
               <GoogleSignIn callbackURL={callback} enabled={isGoogleAuthEnabled()} />
+
+              <div className="my-6 flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
+                  or
+                </span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+
+              <EmailPasswordForm callbackURL={callback} enabled={isEmailPasswordAuthEnabled()} />
+
+              <div className="mt-5">
+                <PasskeyButton callbackURL={callback} enabled={isPasskeyEnabled()} />
+              </div>
             </div>
 
             {/* legal-ish footnote */}

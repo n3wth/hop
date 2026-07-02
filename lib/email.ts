@@ -132,6 +132,49 @@ export function renderAlertEmail(alert: StandingOrderAlert): {
   return { subject, text, html }
 }
 
+// Render the "verify your email" message Better Auth requests on signup
+// (emailVerification.sendVerificationEmail, lib/auth.ts). Terse, no marketing —
+// state the action, one link, done.
+export function renderVerificationEmail(url: string): { subject: string; text: string; html: string } {
+  const subject = 'Verify your hop email'
+  const text = [
+    'Confirm this email to finish setting up hop.',
+    '',
+    `Verify: ${url}`,
+    '',
+    'If you didn’t request this, ignore it.',
+  ].join('\n')
+  const html = [
+    `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1a1a1a;font-size:15px;line-height:1.5;max-width:480px">`,
+    `<p style="margin:0 0 8px;font-size:17px;font-weight:600">Verify your hop email</p>`,
+    `<p style="margin:0 0 16px;color:#555">Confirm this email to finish setting up hop.</p>`,
+    `<p style="margin:0"><a href="${escapeAttr(url)}" style="color:#0f6f6a;font-weight:600;text-decoration:underline">Verify email</a></p>`,
+    `<p style="margin:24px 0 0;color:#888;font-size:13px">If you didn’t request this, ignore it.</p>`,
+    `</div>`,
+  ].join('')
+  return { subject, text, html }
+}
+
+// Render the reset-password link (emailAndPassword.sendResetPassword, lib/auth.ts).
+export function renderResetPasswordEmail(url: string): { subject: string; text: string; html: string } {
+  const subject = 'Reset your hop password'
+  const text = [
+    'Reset your password.',
+    '',
+    `Reset: ${url}`,
+    '',
+    'This link expires in 1 hour. If you didn’t request this, ignore it.',
+  ].join('\n')
+  const html = [
+    `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1a1a1a;font-size:15px;line-height:1.5;max-width:480px">`,
+    `<p style="margin:0 0 8px;font-size:17px;font-weight:600">Reset your password</p>`,
+    `<p style="margin:0"><a href="${escapeAttr(url)}" style="color:#0f6f6a;font-weight:600;text-decoration:underline">Reset password</a></p>`,
+    `<p style="margin:24px 0 0;color:#888;font-size:13px">This link expires in 1 hour. If you didn’t request this, ignore it.</p>`,
+    `</div>`,
+  ].join('')
+  return { subject, text, html }
+}
+
 // Minimal HTML escaping for the few user/engine-derived strings we interpolate.
 function escapeHtml(s: string): string {
   return s
@@ -214,4 +257,18 @@ export async function sendSupportReply(
   const id = opts?.inReplyTo?.trim()
   const headers = id ? { 'In-Reply-To': id, References: id } : undefined
   return dispatch({ from: supportFromAddress(), to, subject, text, html: opts?.html, headers })
+}
+
+// Send the signup email-verification link (Better Auth's
+// emailVerification.sendVerificationEmail callback). Gated; never throws.
+export async function sendVerificationEmail(to: string, url: string): Promise<EmailResult> {
+  const { subject, text, html } = renderVerificationEmail(url)
+  return dispatch({ from: fromAddress(), to, subject, text, html })
+}
+
+// Send the password-reset link (Better Auth's
+// emailAndPassword.sendResetPassword callback). Gated; never throws.
+export async function sendResetPasswordEmail(to: string, url: string): Promise<EmailResult> {
+  const { subject, text, html } = renderResetPasswordEmail(url)
+  return dispatch({ from: fromAddress(), to, subject, text, html })
 }
