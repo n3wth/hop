@@ -92,7 +92,7 @@ function ManualSection({ manual }: { manual: ManualBalance[] }) {
       ) : (
         <div className="flex items-start gap-4 px-6 py-6">
           <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
-            <Icon name="loyalty" size={22} />
+            <Icon name="loyalty" size={24} weight="fill" />
           </span>
           <div className="min-w-0">
             <div className="text-[15px] font-semibold text-text">Add your points</div>
@@ -352,7 +352,7 @@ function AddProgramForm({ hasRows }: { hasRows: boolean }) {
           className="inline-flex flex-shrink-0 items-center justify-center gap-1.5 rounded-[10px] bg-brand px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:opacity-70"
         >
           {pending ? 'Adding…' : 'Add'}
-          {!pending ? <Icon name="check_circle" size={16} /> : null}
+          {!pending ? <Icon name="check_circle" size={16} weight="fill" /> : null}
         </button>
       </div>
       {error ? (
@@ -436,7 +436,7 @@ function AwardWalletSection({
               disabled={disconnecting}
               className="inline-flex items-center gap-1.5 rounded-[10px] px-3 py-2 text-[13px] font-semibold text-brand transition-colors hover:bg-brand-light disabled:opacity-60"
             >
-              <Icon name="schedule" size={16} />
+              <Icon name="refresh" size={16} />
               Refresh
             </button>
             {confirm.armed ? (

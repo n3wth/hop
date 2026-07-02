@@ -14,6 +14,7 @@ import {
   Bell,
   CalendarBlank,
   CaretDown,
+  CaretLeft,
   CaretRight,
   CaretUp,
   ChartBar,
@@ -24,8 +25,10 @@ import {
   Copy,
   CreditCard,
   CurrencyDollar,
+  EnvelopeSimple,
   GearSix,
   Globe,
+  House,
   Info,
   Lightbulb,
   List,
@@ -33,12 +36,14 @@ import {
   MagnifyingGlass,
   MapPin,
   Medal,
+  PaperPlaneRight,
   Plus,
   Receipt,
   SealPercent,
   Shield,
   SignOut,
   Star,
+  Stop,
   Suitcase,
   Tag,
   TrendUp,
@@ -50,7 +55,7 @@ import {
   X,
 } from '@phosphor-icons/react/dist/ssr'
 
-// Icon registry — name → Phosphor component (fill weight default).
+// Icon registry — name → Phosphor component (regular weight default).
 // Add new names here as the icon vocabulary grows; keep old names for compat.
 const ICONS = {
   // Core utility
@@ -67,6 +72,7 @@ const ICONS = {
   content_copy: Copy,
   expand_more: CaretDown,
   caret_up: CaretUp,
+  caret_left: CaretLeft,
   caret_right: CaretRight,
   arrow_right: ArrowRight,
   arrow_left: ArrowLeft,
@@ -76,6 +82,10 @@ const ICONS = {
   lock: Lock,
   shield: Shield,
   schedule: Clock,
+  house: House,
+  envelope: EnvelopeSimple,
+  stop: Stop,
+  paper_plane: PaperPlaneRight,
   // Travel
   flight: Airplane,
   airplane: Airplane,
@@ -107,9 +117,13 @@ const ICONS = {
 
 export type IconName = keyof typeof ICONS
 
+// The only sanctioned icon sizes. 12 = eyebrow badges / status dots,
+// 16 = inline with text, 20 = icon-only controls, 24 = feature tiles.
+export type IconSize = 12 | 16 | 20 | 24
+
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name' | 'ref'> {
   name: IconName
-  size?: number
+  size?: IconSize
   weight?: IconWeight
   /**
    * Accessible name. Provide it only when the icon carries meaning on its own
@@ -120,7 +134,7 @@ export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name' | 'ref'>
   alt?: string
 }
 
-export default function Icon({ name, size = 24, weight = 'fill', className, alt, ...rest }: IconProps) {
+export default function Icon({ name, size = 24, weight = 'regular', className, alt, ...rest }: IconProps) {
   const PhIcon = ICONS[name] as React.ComponentType<
     { size?: number; weight?: IconWeight; className?: string } & Record<string, unknown>
   >

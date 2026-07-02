@@ -126,7 +126,7 @@ function DestinationCard({
         </div>
 
         <div className="mt-2.5 flex items-center gap-1.5 text-[12px] text-text3">
-          <Icon name="loyalty" size={13} className="flex-shrink-0 text-brand" />
+          <Icon name="loyalty" size={12} className="flex-shrink-0 text-brand" />
           <span className="truncate">{d.bestProgram}</span>
         </div>
       </div>

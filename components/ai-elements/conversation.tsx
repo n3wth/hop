@@ -53,7 +53,7 @@ export function ConversationScrollButton({ className = '', ...props }: Conversat
       className={`absolute bottom-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-brand px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-brand-deep ${className}`}
       {...props}
     >
-      <Icon name="expand_more" size={15} />
+      <Icon name="expand_more" size={16} />
       Latest
     </button>
   )

@@ -161,9 +161,20 @@ the component maps them internally. Never import Phosphor directly from page/com
 import Icon from '@/components/Icon'
 
 <Icon name="flight" size={20} />
-<Icon name="check_circle" size={16} className="text-good" />
-<Icon name="shield" size={14} weight="fill" />
+<Icon name="check_circle" size={16} weight="fill" className="text-good" />
+<Icon name="shield" size={12} />
 ```
+
+### Size scale — 12 / 16 / 20 / 24 only
+
+The `size` prop is typed as the union `12 | 16 | 20 | 24`; off-scale sizes are compile errors.
+
+| Size | Use |
+|---|---|
+| `12` | Eyebrow badges, status dots, micro-labels (uppercase 10.5–12px chips) |
+| `16` | Icons inline with text (buttons, rows, notes) — the default choice |
+| `20` | Icon-only controls (close buttons, tab bar, pagers, submit orbs) |
+| `24` | Feature tiles — the `h-10`/`h-11` rounded `bg-brand-light` chips |
 
 ### Available icons
 
@@ -182,6 +193,7 @@ import Icon from '@/components/Icon'
 | `content_copy` | Copy | |
 | `expand_more` | CaretDown | Dropdown chevron |
 | `caret_up` | CaretUp | |
+| `caret_left` | CaretLeft | |
 | `caret_right` | CaretRight | |
 | `arrow_right` | ArrowRight | |
 | `arrow_left` | ArrowLeft | |
@@ -190,7 +202,11 @@ import Icon from '@/components/Icon'
 | `notifications` | Bell | |
 | `lock` | Lock | Secure checkout |
 | `shield` | Shield | Trust / verification |
-| `schedule` | Clock | Time / duration |
+| `schedule` | Clock | Time / duration only — never sync/refresh |
+| `house` | House | Home tab |
+| `envelope` | EnvelopeSimple | Gmail / email connect |
+| `stop` | Stop | Stop streaming (weight="fill") |
+| `paper_plane` | PaperPlaneRight | Send / submit in composer |
 | `flight` / `airplane` | Airplane | Flights |
 | `suitcase` | Suitcase | Luggage / trips |
 | `map_pin` | MapPin | Location |
@@ -215,9 +231,27 @@ import Icon from '@/components/Icon'
 
 ### Default weight
 
-Phosphor icons default to `regular` weight. Pass `weight="fill"` for filled variants
-(higher contrast, use for status indicators). The component accepts all Phosphor weights:
-`thin | light | regular | bold | fill | duotone`.
+The `<Icon>` component defaults to `regular` weight. `weight="fill"` is reserved for
+**status marks** (`check_circle` in confirmations/eyebrow badges, `error`, `warning`) and
+**brand feature-tile icons** (the `h-10`/`h-11` `bg-brand-light` chips). Navigation and
+utility glyphs (carets, close, menu, search, arrows, refresh, settings) stay `regular`.
+The component accepts all Phosphor weights: `thin | light | regular | bold | fill | duotone`.
+
+### One concept, one glyph
+
+| Concept | Glyph | Never |
+|---|---|---|
+| Retry / refresh / re-sync / start over | `refresh` | `swap_horiz`, `schedule`, `lightbulb` |
+| Transfer / swap (points, origin↔destination) | `swap_horiz` | — |
+| Watch / alert subscription | `notifications` (Bell) | Bell for anything else |
+| Degraded / partial data | `warning` | `notifications` |
+| Home tab | `house` | `compass` |
+| Concierge "have hop book it" | `compass` | — |
+| Gmail / email connect | `envelope` | `loyalty` |
+| Time / duration | `schedule` (Clock) | Clock for sync/refresh actions |
+| Flight content (route dividers may use `flight rotate-90`) | `flight` | `flight` as a send button |
+| Send (composer) | `paper_plane` | rotated `flight` |
+| Directional carets | `caret_left` / `caret_right` / `expand_more` / `caret_up` | CSS-rotated carets |
 
 ---
 

@@ -127,7 +127,7 @@ export default function Counterfactual({
     <div className="mt-4 rounded-[var(--radius)] border border-border bg-surface p-5 sm:p-6">
       <div className="flex items-start gap-3">
         <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
-          <Icon name="swap_horiz" size={20} />
+          <Icon name="swap_horiz" size={24} weight="fill" />
         </span>
         <div className="min-w-0">
           <p className="max-w-[58ch] text-[13px] leading-[1.55] text-text2">

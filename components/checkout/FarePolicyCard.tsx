@@ -21,7 +21,7 @@ function Row({ rule, label }: { rule: FareRule; label: 'Refundable' | 'Changeabl
   const { icon, tone } = ruleVisual(rule)
   return (
     <div className="flex items-start gap-2.5">
-      <Icon name={icon} size={16} className={`mt-px flex-shrink-0 ${tone}`} />
+      <Icon name={icon} size={16} weight={icon === 'check_circle' ? 'fill' : 'regular'} className={`mt-px flex-shrink-0 ${tone}`} />
       <span className="text-[13px] leading-[1.45] text-text">{describeFareRule(rule, label)}</span>
     </div>
   )

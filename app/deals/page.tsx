@@ -138,7 +138,7 @@ export default async function DealsPage({
             /ask so the static feed isn't a dead end. */}
         <div className="mx-auto mt-7 flex max-w-[640px] flex-col items-center justify-between gap-3 rounded-[16px] border border-border bg-surface px-5 py-4 text-center sm:flex-row sm:gap-4 sm:text-left">
           <div className="flex items-center gap-2.5">
-            <Icon name="lightbulb" size={18} className="flex-shrink-0 text-brand" />
+            <Icon name="lightbulb" size={16} className="flex-shrink-0 text-brand" />
             <span className="text-[14px] leading-[1.5] text-text2">
               <span className="font-semibold text-text">Not sure which fit?</span> Ask hop
               which of these your points can reach.

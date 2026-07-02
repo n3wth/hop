@@ -164,7 +164,7 @@ export default function Sheet({ open, onClose, title, children }: SheetProps) {
               aria-label="Close"
               className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-text3 transition-colors hover:bg-sunk hover:text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
             >
-              <Icon name="close" size={17} />
+              <Icon name="close" size={20} />
             </button>
           </div>
           {children}

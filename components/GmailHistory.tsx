@@ -90,7 +90,7 @@ export default function GmailHistory({
       <section className="mt-4 overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
         <div className="flex items-center justify-between gap-3 px-5 py-3.5 sm:px-6">
           <span className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-text2">
-            <Icon name="check_circle" size={16} />
+            <Icon name="check_circle" size={16} weight="fill" />
             <span className="truncate">
               Connected{email ? ` · ${email}` : ''}
               <span className="ml-2 font-normal text-text3">
@@ -105,7 +105,7 @@ export default function GmailHistory({
               disabled={syncing || disconnecting}
               className="inline-flex items-center gap-1.5 rounded-[10px] px-3 py-2 text-[13px] font-semibold text-brand transition-colors hover:bg-brand-light disabled:opacity-60"
             >
-              <Icon name="schedule" size={16} />
+              <Icon name="refresh" size={16} />
               {syncing ? 'Syncing…' : 'Sync'}
             </button>
             {confirm.armed ? (
@@ -204,7 +204,7 @@ export default function GmailHistory({
     <div className="mt-4 flex flex-col gap-4 rounded-[var(--radius)] border border-border bg-surface px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-4">
         <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
-          <Icon name="receipt_long" size={22} />
+          <Icon name="receipt_long" size={24} weight="fill" />
         </span>
         <div className="min-w-0">
           <div className="text-[15px] font-semibold text-text">
@@ -223,7 +223,7 @@ export default function GmailHistory({
           href="/auth/gmail/start"
           className="inline-flex flex-shrink-0 items-center gap-2 self-start rounded-[12px] bg-brand px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-brand-deep sm:self-center"
         >
-          <Icon name="shield" size={18} />
+          <Icon name="shield" size={16} />
           Connect Gmail
         </a>
       ) : (

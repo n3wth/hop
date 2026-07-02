@@ -93,7 +93,7 @@ export default function WatchThisRoute({
         disabled={pending}
         className="mt-[10px] inline-flex items-center gap-[8px] rounded-[10px] border-[1.5px] border-white/20 px-4 py-[9px] text-[13.5px] font-semibold text-white transition-colors hover:border-white/45 disabled:opacity-70"
       >
-        <Icon name="notifications" size={15} />
+        <Icon name="notifications" size={16} />
         {pending ? 'Watching…' : 'Watch this route'}
       </button>
       {status === 'limit' ? (
@@ -127,7 +127,7 @@ function Shell({
       style={{ ['--hop-delay' as string]: '260ms' }}
     >
       <span aria-hidden className="mt-[2px] flex-shrink-0 text-hero-label">
-        <Icon name={icon} size={18} />
+        <Icon name={icon} size={16} weight={icon === 'check_circle' ? 'fill' : 'regular'} />
       </span>
       <div className="min-w-0 flex-1">{children}</div>
     </div>

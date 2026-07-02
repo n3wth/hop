@@ -87,7 +87,7 @@ export default function EscalationCTA({
       <section className={frame}>
         <div className="flex items-start gap-3">
           <span className="mt-0.5 flex-shrink-0 text-brand">
-            <Icon name="check_circle" size={20} />
+            <Icon name="check_circle" size={20} weight="fill" />
           </span>
           <div className="min-w-0">
             <div className="text-[14px] font-semibold text-text">Request received</div>
@@ -193,7 +193,7 @@ export default function EscalationCTA({
 
             {error ? (
               <p role="alert" className="flex items-center gap-1.5 text-[13px] text-weak">
-                <Icon name="error" size={15} />
+                <Icon name="error" size={16} weight="fill" />
                 {error}
               </p>
             ) : null}

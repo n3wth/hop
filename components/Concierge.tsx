@@ -315,7 +315,7 @@ export default function Concierge({
             className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] font-medium text-text3 transition-colors hover:text-brand"
             title="Have a hop specialist find the award space and book it by hand"
           >
-            <Icon name="compass" size={13} />
+            <Icon name="compass" size={16} />
             <span className="hidden sm:inline">Have hop book it</span>
           </button>
           {hasThread && signedIn ? (
@@ -325,7 +325,7 @@ export default function Concierge({
               className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] font-medium text-text3 transition-colors hover:text-brand"
               title="See and edit what hop remembers about you"
             >
-              <Icon name="loyalty" size={13} />
+              <Icon name="loyalty" size={16} />
               <span className="hidden sm:inline">What hop remembers</span>
             </Link>
           ) : null}
@@ -354,7 +354,7 @@ export default function Concierge({
                 onClick={startOver}
                 className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] font-medium text-text3 transition-colors hover:text-brand"
               >
-                <Icon name="lightbulb" size={13} />
+                <Icon name="refresh" size={16} />
                 Start over
               </button>
             )
@@ -657,12 +657,12 @@ function AssistantActions({
   return (
     <div className="-mt-0.5 flex items-center gap-0.5">
       <button type="button" onClick={copy} aria-label={copied ? 'Copied' : 'Copy answer'} className={btn}>
-        <Icon name={copied ? 'check' : 'content_copy'} size={13} />
+        <Icon name={copied ? 'check' : 'content_copy'} size={16} />
         {copied ? 'Copied' : 'Copy'}
       </button>
       {onRegenerate ? (
         <button type="button" onClick={onRegenerate} aria-label="Regenerate answer" className={btn}>
-          <Icon name="refresh" size={13} />
+          <Icon name="refresh" size={16} />
           Retry
         </button>
       ) : null}
