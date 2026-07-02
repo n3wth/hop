@@ -199,8 +199,16 @@ leave unchanged.
 - `lib/email.ts#sendOwnerNotification` + `isEmailEnabled()` — unchanged delivery for the digest
   and the P1 fallback channel.
 - `lib/env.ts#hasEnv` — the flag-drift detector's only probe for keyed vars (presence checks,
-  never values; nothing secret is read or logged); flag states read via the `is*Enabled()`
-  helpers themselves so D3 can never disagree with the seam it audits.
+  never values; nothing secret is read or logged). **D3 reads two independent inputs per seam**
+  (a `FLAG_REQUIREMENTS` table in `lib/health-checks.ts`: raw `HOP_ENABLE_*` flag name → required
+  keys → composite helper): (1) the raw flag state, parsed with the same `1|true|yes` rule the
+  helpers use, and (2) key presence via `hasEnv`. Drift = `flagOn && !keysPresent`. It must NOT
+  read the composite `is*Enabled()` helpers as its flag source — several fold key presence into
+  the boolean (`isCheckoutEnabled()` is `flag && hasEnv('DUFFEL_API_KEY_TEST')`), so in the exact
+  drift case the composite reads `false` and the detector would be structurally blind. The
+  helpers still keep D3 honest the other way: a consistency assertion (for fused seams,
+  `composite === (flagOn && keysPresent)`) is unit-tested so the table can never drift from the
+  seams it audits.
 - New: `lib/health-checks.ts#runHealthChecks(inputs, now)` (pure — inputs gathered by the route,
   so the logic is unit-testable with zero env), `lib/improvement-findings.ts#{upsertFinding,markFiled,resolveFinding,listOpenFindings}`,
   `lib/linear.ts#fileIssue`, `lib/cron-heartbeat.ts#recordHeartbeat`,
