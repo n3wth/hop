@@ -14,9 +14,9 @@ export default function SiteFooter() {
       role="contentinfo"
       className="mt-16 border-t border-border text-[13px] text-text3"
     >
-      <div className="flex flex-col gap-10 py-10 md:flex-row md:items-start md:gap-16 lg:gap-20">
+      <div className="flex flex-col gap-10 py-10 lg:flex-row lg:items-start lg:justify-between lg:gap-16">
         {/* Brand — quiet, inline */}
-        <div className="max-w-[30ch]">
+        <div className="flex max-w-[30ch] flex-shrink-0 flex-col text-center lg:text-left">
           <Link
             href="/"
             className="wordmark text-[15px] leading-none text-text2 transition-colors hover:text-brand"
@@ -28,7 +28,7 @@ export default function SiteFooter() {
           </p>
 
           {/* Social Parking */}
-          <div className="mt-5 flex items-center gap-4 text-text4">
+          <div className="mt-5 flex items-center justify-center gap-4 text-text4 lg:justify-start">
             <a
               href={SITE_SOCIAL.x}
               target="_blank"
@@ -59,7 +59,9 @@ export default function SiteFooter() {
           </div>
         </div>
 
-        <FooterNav />
+        <div className="flex-1 lg:flex lg:justify-end">
+          <FooterNav />
+        </div>
       </div>
 
       {/* Legal row — final hairline row of the same footer */}

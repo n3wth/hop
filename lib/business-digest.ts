@@ -185,8 +185,9 @@ async function countActiveSubscriptions(): Promise<number | null> {
   return withDb<number | null>(null, async (db) => {
     const { count, error } = await db
       .from('hop_subscriptions')
-      .select('user_id', { count: 'exact', head: true })
-      .neq('tier', 'free')
+      .select('id', { count: 'exact', head: true })
+      .in('status', ['active', 'trialing'])
+      .gt('current_period_end', new Date().toISOString())
     if (error || typeof count !== 'number') return null
     return count
   })
