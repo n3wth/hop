@@ -7,12 +7,12 @@
 // the entire application with ZERO code changes to those files!
 
 import { auth } from './auth'
-import { headers } from 'next/headers'
 
 export const auth0 = {
   async getSession(): Promise<any> {
-    if (process.env.VITEST) return null // Silence Next.js headers() warnings during vitest runs
+    if (process.env.VITEST) return null
     try {
+      const { headers } = await import('next/headers')
       const session = await auth.api.getSession({
         headers: await headers(),
       })
