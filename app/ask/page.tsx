@@ -9,7 +9,6 @@ import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import { pageMeta } from '@/lib/seo'
 import AppShell from '@/components/AppShell'
 import Concierge, { type ConciergePhoto, type ConciergeInitialMessage } from '@/components/Concierge'
-import EscalationCTA from '@/components/EscalationCTA'
 import { destinations, topValue, imageQuery } from '@/lib/destinations'
 import { destinationImages } from '@/lib/images'
 import { getConversation } from '@/lib/conversations'
@@ -118,18 +117,15 @@ export default async function AskPage({
   // state; when on, they become real (the /auth/gmail/start route self-gates too).
   const gmailEnabled = isGmailHistoryEnabled()
 
-  // The concierge IS the page on /ask: a full-height immersive stage flush under
-  // the sticky TopNav. The empty state shows the warm guided hero centered in the
-  // stage; the first message turns the stage into the immersive thread (single
-  // scroll region, pinned composer). No marketing footer competes with the chat —
-  // the surface is the product. Concierge owns the per-state layout internally.
-  //
-  // Below the full-viewport stage sits ONE quiet affordance: "have hop book it
-  // for you" (roadmap §6 / N-290, Phase 1 — a manual concierge request, not
-  // instant booking). It's deliberately below the fold so it never competes with
-  // the chat — a user who wants a human to do the booking scrolls to find it. We
-  // pass the session email (prefill) + live points (context for the human agent),
-  // and constrain it to the same reading measure as the thread.
+  // The concierge IS the page on /ask: it fills the full-viewport stage flush
+  // under the sticky TopNav and IS the only scroll region — nothing is parked
+  // below it. The empty state centers a calm greeting in the stage; the first
+  // message swaps that middle for the streamed thread with the composer docked at
+  // the floor throughout (zero layout jump). The expert-booking request ("Have hop
+  // book it", roadmap §6 / N-290, Phase 1 — a manual concierge request, not
+  // instant booking) is reachable from the control rail as a slide-up sheet ON the
+  // surface, so it never needs a below-fold scroll. We pass the session email
+  // (prefill) + live points (context for the human agent) through to that sheet.
   return (
     <AppShell user={user} pointsTotal={totalPoints} homeAirport={homeAirport} hideSearch noPadX>
       <div className="hop-ask-stage flex flex-col">
@@ -143,10 +139,8 @@ export default async function AskPage({
           gmailEnabled={gmailEnabled}
           initialMessages={initialMessages}
           initialQuery={initialQuery}
+          escalationEmail={user?.email}
         />
-      </div>
-      <div className="hop-ask-measure px-4 pb-16 sm:px-8">
-        <EscalationCTA defaultEmail={user?.email} totalPoints={totalPoints} />
       </div>
     </AppShell>
   )

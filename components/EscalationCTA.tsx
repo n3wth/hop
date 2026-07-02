@@ -20,12 +20,22 @@ interface EscalationCTAProps {
   // Live total points at request time — passed through as context for the human
   // who follows up (never shown as a price; this isn't a quote).
   totalPoints?: number
+  // Rendered inside an already-framed container (the /ask Sheet): boots straight
+  // into the form, drops this component's own card chrome + duplicate title (the
+  // sheet header supplies both), and "Cancel" defers to onCancel (sheet close).
+  embedded?: boolean
+  onCancel?: () => void
 }
 
 type Phase = 'idle' | 'open' | 'done'
 
-export default function EscalationCTA({ defaultEmail, totalPoints }: EscalationCTAProps) {
-  const [phase, setPhase] = useState<Phase>('idle')
+export default function EscalationCTA({
+  defaultEmail,
+  totalPoints,
+  embedded = false,
+  onCancel,
+}: EscalationCTAProps) {
+  const [phase, setPhase] = useState<Phase>(embedded ? 'open' : 'idle')
   const [email, setEmail] = useState(defaultEmail ?? '')
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -67,9 +77,14 @@ export default function EscalationCTA({ defaultEmail, totalPoints }: EscalationC
 
   // Confirmation — calm and honest about what happens next (a human, not a bot,
   // and no promised turnaround we can't keep in Phase 1).
+  // Card chrome only when free-standing — inside the Sheet the panel is the frame.
+  const frame = embedded
+    ? ''
+    : 'rounded-[16px] border border-border bg-surface px-5 py-4 sm:px-6'
+
   if (phase === 'done') {
     return (
-      <section className="rounded-[16px] border border-border bg-surface px-5 py-4 sm:px-6">
+      <section className={frame}>
         <div className="flex items-start gap-3">
           <span className="mt-0.5 flex-shrink-0 text-brand">
             <Icon name="check_circle" size={20} />
@@ -124,14 +139,20 @@ export default function EscalationCTA({ defaultEmail, totalPoints }: EscalationC
   }
 
   // Open: the inline form. Email (required) + optional note. No modal — flat.
+  // Embedded (in the Sheet), the sheet header already carries the icon + title,
+  // so only the explainer + form render.
   return (
-    <section className="rounded-[16px] border border-border bg-surface px-5 py-4 sm:px-6">
+    <section className={frame}>
       <div className="flex items-start gap-3">
-        <span className="mt-0.5 flex-shrink-0 text-brand">
-          <Icon name="compass" size={20} />
-        </span>
+        {embedded ? null : (
+          <span className="mt-0.5 flex-shrink-0 text-brand">
+            <Icon name="compass" size={20} />
+          </span>
+        )}
         <div className="min-w-0 flex-1">
-          <div className="text-[14px] font-semibold text-text">Have hop book it for you</div>
+          {embedded ? null : (
+            <div className="text-[14px] font-semibold text-text">Have hop book it for you</div>
+          )}
           <p className="mt-1 max-w-[60ch] text-[13px] leading-[1.55] text-text2">
             Leave your email and anything you know about the trip. A hop specialist books it by
             hand and emails you — it&apos;s a concierge request, not an instant confirmation.
@@ -190,7 +211,10 @@ export default function EscalationCTA({ defaultEmail, totalPoints }: EscalationC
                 type="button"
                 onClick={() => {
                   setError(null)
-                  setPhase('idle')
+                  // Embedded: cancel closes the sheet (there's no teaser to
+                  // collapse back to). Free-standing: collapse to the quiet line.
+                  if (embedded && onCancel) onCancel()
+                  else setPhase('idle')
                 }}
                 disabled={pending}
                 className="rounded-[12px] px-3 py-2 text-[13px] font-semibold text-text3 transition-colors duration-200 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60"
