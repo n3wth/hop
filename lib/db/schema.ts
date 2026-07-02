@@ -185,3 +185,26 @@ export const valuationOverrides = pgTable('hop_valuation_overrides', {
   asOf: tz('as_of').notNull(),
   updatedAt: tz('updated_at').defaultNow(),
 })
+
+export const hopCustomers = pgTable('hop_customers', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull().unique(),
+  stripeCustomerId: text('stripe_customer_id').notNull().unique(),
+  createdAt: tz('created_at').defaultNow().notNull(),
+  updatedAt: tz('updated_at').defaultNow().notNull(),
+})
+
+export const hopSubscriptions = pgTable('hop_subscriptions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  customerId: uuid('customer_id')
+    .notNull()
+    .references(() => hopCustomers.id, { onDelete: 'cascade' }),
+  stripeSubscriptionId: text('stripe_subscription_id').notNull().unique(),
+  stripePriceId: text('stripe_price_id').notNull(),
+  status: text('status').notNull(),
+  currentPeriodStart: tz('current_period_start').notNull(),
+  currentPeriodEnd: tz('current_period_end').notNull(),
+  cancelAtPeriodEnd: boolean('cancel_at_period_end').notNull().default(false),
+  createdAt: tz('created_at').defaultNow().notNull(),
+  updatedAt: tz('updated_at').defaultNow().notNull(),
+})

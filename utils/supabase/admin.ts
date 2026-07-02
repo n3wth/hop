@@ -300,25 +300,71 @@ interface HopDatabase {
         }
         Relationships: []
       }
-      hop_subscriptions: {
-        // One row per user that has a non-default tier. Absent row = 'free'.
-        // Read-only today (no billing — Stripe is N-289). See CREATE TABLE in
-        // lib/subscription.ts notes.
+      hop_customers: {
         Row: {
+          id: string
           user_id: string
-          tier: string
-          updated_at: string | null
+          stripe_customer_id: string
+          created_at: string
+          updated_at: string
         }
         Insert: {
+          id?: string
           user_id: string
-          tier?: string
-          updated_at?: string | null
+          stripe_customer_id: string
+          created_at?: string
+          updated_at?: string
         }
         Update: {
-          tier?: string
-          updated_at?: string | null
+          user_id?: string
+          stripe_customer_id?: string
+          updated_at?: string
         }
         Relationships: []
+      },
+      hop_subscriptions: {
+        Row: {
+          id: string
+          customer_id: string
+          stripe_subscription_id: string
+          stripe_price_id: string
+          status: 'trialing' | 'active' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete' | 'incomplete_expired'
+          current_period_start: string
+          current_period_end: string
+          cancel_at_period_end: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          customer_id: string
+          stripe_subscription_id: string
+          stripe_price_id: string
+          status: 'trialing' | 'active' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete' | 'incomplete_expired'
+          current_period_start: string
+          current_period_end: string
+          cancel_at_period_end?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          customer_id?: string
+          stripe_subscription_id?: string
+          stripe_price_id?: string
+          status?: 'trialing' | 'active' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete' | 'incomplete_expired'
+          current_period_start?: string
+          current_period_end?: string
+          cancel_at_period_end?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hop_subscriptions_customer_id_hop_customers_id_fk"
+            columns: ["customer_id"]
+            referencedRelation: "hop_customers"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       hop_api_tokens: {
         // One row per minted "Add to Claude" token. token_hash is the SHA-256 of

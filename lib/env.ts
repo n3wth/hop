@@ -37,6 +37,14 @@ type EnvKey =
   | 'HOP_VALUATION_WORKER_URL'
   // Shared bearer secret between Vercel and the valuation Worker.
   | 'HOP_VALUATION_SYNC_SECRET'
+  // Commission Junction / Bankrate affiliate tag for card-affiliates.ts
+  | 'NEXT_PUBLIC_CJ_AFFILIATE_TAG'
+  // Stripe API credentials and prices
+  | 'STRIPE_SECRET_KEY'
+  | 'STRIPE_PUBLISHABLE_KEY'
+  | 'STRIPE_WEBHOOK_SECRET'
+  | 'NEXT_PUBLIC_STRIPE_PRICE_MONTHLY'
+  | 'NEXT_PUBLIC_STRIPE_PRICE_YEARLY'
 
 function read(key: EnvKey): string {
   const value = process.env[key]
@@ -60,6 +68,11 @@ export const env = {
   supportIngestSecret: () => read('HOP_SUPPORT_INGEST_SECRET'),
   hopValuationWorkerUrl: () => read('HOP_VALUATION_WORKER_URL'),
   hopValuationSyncSecret: () => read('HOP_VALUATION_SYNC_SECRET'),
+  stripeSecretKey: () => read('STRIPE_SECRET_KEY'),
+  stripePublishableKey: () => read('STRIPE_PUBLISHABLE_KEY'),
+  stripeWebhookSecret: () => read('STRIPE_WEBHOOK_SECRET'),
+  stripePriceMonthly: () => read('NEXT_PUBLIC_STRIPE_PRICE_MONTHLY'),
+  stripePriceYearly: () => read('NEXT_PUBLIC_STRIPE_PRICE_YEARLY'),
 }
 
 // True when a key is present without throwing — lets a client degrade

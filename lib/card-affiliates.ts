@@ -55,10 +55,11 @@ export function formatBonus(offer: Pick<CardAffiliate, 'bonusMiles' | 'bonusSpen
   return `${points} after ${spend} in ${months}`
 }
 
-// Append the hop tracking param to a base application URL. Kept tiny + pure so
-// the table below reads as plain landing pages; the ref is attached in one place.
+// Append the affiliate tracking param to a base application URL.
+// Uses NEXT_PUBLIC_CJ_AFFILIATE_TAG env var (fallback to 'hop-card' for dev).
 function ref(url: string): string {
-  return `${url}${url.includes('?') ? '&' : '?'}ref=hop-card`
+  const tag = process.env.NEXT_PUBLIC_CJ_AFFILIATE_TAG ?? 'hop-card'
+  return `${url}${url.includes('?') ? '&' : '?'}ref=${tag}`
 }
 
 // --- Affiliate table --------------------------------------------------------
