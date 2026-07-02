@@ -526,7 +526,9 @@ interface HopDatabase {
           url?: string
           program?: string | null
           user_agent?: string | null
-
+        }
+        Relationships: []
+      }
       hop_cron_heartbeats: {
         // One liveness row per vercel.json cron job, upserted fire-and-forget
         // at the end of each authorized run (lib/cron-heartbeat.ts, ADR 0007).
