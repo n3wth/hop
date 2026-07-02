@@ -104,7 +104,7 @@ export default function VerdictRail({
 
   return (
     <section
-      className="mt-[26px] grid grid-cols-1 overflow-hidden rounded-[20px] text-hero-cream lg:grid-cols-[1fr_392px] lg:rounded-[28px]"
+      className="hop-appear mt-[26px] grid grid-cols-1 overflow-hidden rounded-[20px] text-hero-cream lg:grid-cols-[1fr_392px] lg:rounded-[28px]"
       style={{ background: 'var(--color-brand)' }}
     >
       {/* LEFT — the verdict */}

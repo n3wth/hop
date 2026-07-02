@@ -37,14 +37,14 @@ export type EnvKey =
   | 'HOP_VALUATION_WORKER_URL'
   // Shared bearer secret between Vercel and the valuation Worker.
   | 'HOP_VALUATION_SYNC_SECRET'
-  // Stripe — the premium-subscription billing seam (lib/stripe.ts). Server-side
-  // secret ONLY: Checkout is Stripe-HOSTED, so there is no client-side Stripe.js
-  // and deliberately NO NEXT_PUBLIC_ Stripe key (zero client bundle weight).
-  // The webhook secret verifies event signatures; the price ids are first-class
-  // config so the checkout route never hardcodes a Stripe object id. Yearly is
-  // OPTIONAL — monthly alone validates the rail.
+  // Commission Junction / Bankrate affiliate tag for card-affiliates.ts
+  | 'NEXT_PUBLIC_CJ_AFFILIATE_TAG'
+  // Stripe API credentials and prices
   | 'STRIPE_SECRET_KEY'
+  | 'STRIPE_PUBLISHABLE_KEY'
   | 'STRIPE_WEBHOOK_SECRET'
+  | 'NEXT_PUBLIC_STRIPE_PRICE_MONTHLY'
+  | 'NEXT_PUBLIC_STRIPE_PRICE_YEARLY'
   | 'STRIPE_PRICE_ID_PRO_MONTHLY'
   | 'STRIPE_PRICE_ID_PRO_YEARLY'
   // Linear — the health sentinel's issue-filing channel (lib/linear.ts, ADR
@@ -78,7 +78,20 @@ export const env = {
   hopValuationWorkerUrl: () => read('HOP_VALUATION_WORKER_URL'),
   hopValuationSyncSecret: () => read('HOP_VALUATION_SYNC_SECRET'),
   stripeSecretKey: () => read('STRIPE_SECRET_KEY'),
+  stripePublishableKey: () => read('STRIPE_PUBLISHABLE_KEY'),
   stripeWebhookSecret: () => read('STRIPE_WEBHOOK_SECRET'),
+  stripePriceMonthly: () => {
+    const val = process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY
+    if (val && val.trim() !== '') return val
+    return read('STRIPE_PRICE_ID_PRO_MONTHLY')
+  },
+  stripePriceYearly: () => {
+    const val = process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY
+    if (val && val.trim() !== '') return val
+    const pro = process.env.STRIPE_PRICE_ID_PRO_YEARLY
+    if (pro && pro.trim() !== '') return pro
+    return ''
+  },
   stripePriceIdProMonthly: () => read('STRIPE_PRICE_ID_PRO_MONTHLY'),
   stripePriceIdProYearly: () => read('STRIPE_PRICE_ID_PRO_YEARLY'),
   linearApiKey: () => read('LINEAR_API_KEY'),

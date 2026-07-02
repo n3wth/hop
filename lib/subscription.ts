@@ -1,55 +1,44 @@
 import { withDb } from '@/lib/supabase-helpers'
 
-// Subscription tier — the gate for how many active standing-order alerts a user
-// may keep. Every user defaults to 'free' until a row says otherwise. The ONLY
-// writer is the Stripe webhook route (verify → map → setUserTier) besides
-// manual SQL — tier NEVER changes from a redirect success URL (forgeable).
-// Like every persistence helper here it degrades gracefully — a missing client,
-// missing row, or any error resolves to the fallback and NEVER throws.
-//
-// Table: hop_subscriptions (drizzle/0005_subscriptions.sql)
-//   user_id text pk           -- Auth0 sub
-//   tier text not null default 'free'   -- 'free' | 'premium'
-//   stripe_customer_id text   -- indexed; fallback attribution + the stable
-//                             -- re-link key across the auth migration
-//   stripe_subscription_id text
-//   last_event_at timestamptz -- out-of-order webhook guard
-//   updated_at timestamptz not null default now()
-
 export type Tier = 'free' | 'premium'
 
-// How many ACTIVE standing-order alerts each tier may keep. Free users get a
-// small taste; premium is effectively uncapped (the engine still carries its own
-// generous per-user ceiling — see lib/standing-orders.MAX_ORDERS_PER_USER — so a
-// runaway can't bloat the cron). Enforced in the create server action.
 export const ALERT_LIMITS: Record<Tier, number> = {
   free: 3,
   premium: Infinity,
 }
 
-const TABLE = 'hop_subscriptions'
-
-function normalizeTier(raw: unknown): Tier {
-  return raw === 'premium' ? 'premium' : 'free'
-}
-
-// This user's tier. Reads hop_subscriptions; defaults to 'free' on any miss
-// (unconfigured client, no row, error). NEVER throws.
+// Determine if the user has an active premium subscription.
 export async function getUserTier(userId: string): Promise<Tier> {
   if (!userId) return 'free'
   return withDb<Tier>('free', async (db) => {
-    const { data, error } = await db
-      .from(TABLE)
-      .select('tier')
+    // 1. Resolve Stripe customer ID mapping
+    const { data: cust, error: custErr } = await db
+      .from('hop_customers')
+      .select('id')
       .eq('user_id', userId)
       .maybeSingle()
-    if (error || !data) return 'free'
-    return normalizeTier((data as { tier: string | null }).tier)
+
+    if (custErr || !cust) return 'free'
+
+    // 2. Query active or trialing subscriptions
+    const { data: sub, error: subErr } = await db
+      .from('hop_subscriptions')
+      .select('status, current_period_end')
+      .eq('customer_id', cust.id)
+      .in('status', ['active', 'trialing'])
+      .order('current_period_end', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (subErr || !sub) return 'free'
+
+    // Verify subscription period is active
+    const isFuture = new Date(sub.current_period_end) > new Date()
+    return isFuture ? 'premium' : 'free'
   })
 }
 
-// The active-alert allowance for this user. Convenience over getUserTier +
-// ALERT_LIMITS so callers don't re-derive it.
+// Get alert cap for user based on tier.
 export async function getAlertLimit(userId: string): Promise<number> {
   const tier = await getUserTier(userId)
   return ALERT_LIMITS[tier]
