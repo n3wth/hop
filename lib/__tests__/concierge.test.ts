@@ -6,6 +6,7 @@ import {
   blocksFromText,
   stripA2UIFence,
   sanitizeProse,
+  fallbackAnswer,
   type ConciergeContext,
 } from '@/app/api/concierge/route'
 import { destinations, destinationByCode } from '@/lib/destinations'
@@ -219,5 +220,44 @@ describe('sanitizeProse() — keeps load-bearing figures from being struck out',
     expect(sanitizeProse('')).toBe('')
     // @ts-expect-error — defensive: non-string input
     expect(sanitizeProse(undefined)).toBe('')
+  })
+})
+
+describe('fallbackAnswer() — the model-unreachable path stays deterministic', () => {
+  it('leads with a destination the question actually names, by city', () => {
+    const res = fallbackAnswer('what can I do with 60000 chase points in Tokyo')
+    expect(res.answer).toContain('Tokyo')
+    expect(res.suggestions?.[0]?.city).toBe('Tokyo')
+  })
+
+  it('matches by IATA code as a whole word, not a substring', () => {
+    const res = fallbackAnswer('is NRT worth it')
+    expect(res.suggestions?.[0]?.code).toBe('NRT')
+  })
+
+  it('does not false-positive on a code embedded in another word', () => {
+    // 'ATH' (Athens) is a substring of "marathon" — must not match without a
+    // word boundary.
+    const res = fallbackAnswer('training for a marathon next month')
+    expect(res.suggestions?.some((s) => s.code === 'ATH')).toBe(false)
+  })
+
+  it('falls back to affordability-ranked picks when nothing is named and points are known', () => {
+    const res = fallbackAnswer('where should I go', { totalPoints: 50_000 })
+    expect(res.answer).toContain('50,000')
+    expect(res.suggestions?.length).toBeGreaterThan(0)
+  })
+
+  it('falls back to generic best-value picks with no question match and no points', () => {
+    const res = fallbackAnswer('hello')
+    expect(res.answer).toBe(
+      "I can't reach my travel brain right now, but here are a few of the best points-value trips on hop to get you started.",
+    )
+    expect(res.suggestions?.length).toBeGreaterThan(0)
+  })
+
+  it('a named destination takes priority over a generic points-based fallback', () => {
+    const res = fallbackAnswer('business class to Tokyo', { totalPoints: 60_000 })
+    expect(res.suggestions?.[0]?.city).toBe('Tokyo')
   })
 })
