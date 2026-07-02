@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { saveHomeAirport } from '@/app/actions/prefs'
+import { saveHomeAirport, clearSavedHomeAirport } from '@/app/actions/prefs'
 import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 
 // One persistent departure airport (the user's "where from"), shared across every
@@ -57,10 +57,12 @@ export function OriginProvider({
   const setOrigin = useCallback((iata: string | null) => {
     const next = normalizeIata(iata)
     setOriginState(next)
-    if (persistToAccount && next) {
+    if (persistToAccount) {
       // Fire-and-forget — the pill already reflects the choice locally; a
-      // failed save just means next reload falls back to the cookie.
-      saveHomeAirport(next).catch(() => {})
+      // failed save/clear just means next reload falls back to the cookie
+      // (set) or the stale saved pref (clear).
+      if (next) saveHomeAirport(next).catch(() => {})
+      else clearSavedHomeAirport().catch(() => {})
     }
     if (typeof window === 'undefined') return
     try {
