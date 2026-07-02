@@ -496,6 +496,39 @@ interface HopDatabase {
         }
         Relationships: []
       }
+      hop_outclicks: {
+        // First-party affiliate outclick ledger — one row per /api/go/*
+        // redirect (kind 'card' = the credit-card CTA). Anonymous by design:
+        // NO user_id column (click telemetry, not user data). Written
+        // fire-and-forget by lib/outclicks.ts; counted by
+        // lib/business-digest.ts. See drizzle/0006_outclicks.sql.
+        Row: {
+          id: string
+          clicked_at: string | null
+          kind: string
+          target: string
+          url: string
+          program: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          id?: string
+          clicked_at?: string | null
+          kind: string
+          target: string
+          url: string
+          program?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          kind?: string
+          target?: string
+          url?: string
+          program?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

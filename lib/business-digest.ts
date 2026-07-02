@@ -29,6 +29,13 @@ export interface WeeklyMetric {
   prev: number | null
 }
 
+// The outclick metric adds the window total across ALL kinds to the standard
+// weekly shape, so the digest keeps one line even as more outclick kinds land.
+export interface OutclickMetric extends WeeklyMetric {
+  /** All outclicks in the window regardless of kind. null when that count degraded. */
+  total: number | null
+}
+
 export interface BusinessDigest {
   /** ISO datetimes bounding the 7-day window [start, end). */
   window: { start: string; end: string }
@@ -43,6 +50,10 @@ export interface BusinessDigest {
   /** Users on a paid tier (hop_subscriptions, tier != 'free'). null = degraded
    *  — expected until that table exists/has rows. */
   activeSubscriptions: number | null
+  /** Card-affiliate outclicks (hop_outclicks, kind='card'), last 7d, plus the
+   *  window total across all kinds. null = degraded — expected until
+   *  drizzle/0006_outclicks.sql has been applied. */
+  outclicks: OutclickMetric | null
 }
 
 export interface RenderedDigest {
@@ -127,6 +138,46 @@ async function countActiveWatches(): Promise<number | null> {
   })
 }
 
+// Count hop_outclicks rows clicked in [sinceIso, untilIso), optionally
+// filtered to one kind. hop_outclicks stamps clicked_at (not created_at), so
+// it gets its own counter. The table may not exist yet (migration authored,
+// not applied) — that surfaces as a query error → null, like everything else.
+async function countOutclicksBetween(
+  kind: string | null,
+  sinceIso: string,
+  untilIso: string,
+): Promise<number | null> {
+  return withDb<number | null>(null, async (db) => {
+    let q = db
+      .from('hop_outclicks')
+      .select('id', { count: 'exact', head: true })
+      .gte('clicked_at', sinceIso)
+      .lt('clicked_at', untilIso)
+    if (kind !== null) q = q.eq('kind', kind)
+    const { count, error } = await q
+    if (error || typeof count !== 'number') return null
+    return count
+  })
+}
+
+// Card outclicks this week + last week (the standard weekly shape), plus the
+// window total across all kinds. Degrades exactly like weeklyMetric: no
+// current-week count → the whole metric is null; a degraded prev/total is
+// dropped from the copy, never invented.
+async function outclickMetric(w: {
+  start: string
+  end: string
+  prevStart: string
+}): Promise<OutclickMetric | null> {
+  const [count, prev, total] = await Promise.all([
+    countOutclicksBetween('card', w.start, w.end),
+    countOutclicksBetween('card', w.prevStart, w.start),
+    countOutclicksBetween(null, w.start, w.end),
+  ])
+  if (count === null) return null
+  return { count, prev, total }
+}
+
 // Paid subscribers (any non-free tier). The table may not exist yet — that
 // surfaces as a query error, which degrades to null exactly like everything
 // else. null on failure.
@@ -145,13 +196,14 @@ async function countActiveSubscriptions(): Promise<number | null> {
 // independent query; a failure in one degrades only that section. NEVER throws.
 export async function computeBusinessDigest(now: Date = new Date()): Promise<BusinessDigest> {
   const w = weekWindow(now)
-  const [escalations, ordersCreated, alertsFired, activeWatches, activeSubscriptions] =
+  const [escalations, ordersCreated, alertsFired, activeWatches, activeSubscriptions, outclicks] =
     await Promise.all([
       weeklyMetric('hop_escalations', w),
       weeklyMetric('hop_standing_orders', w),
       weeklyMetric('hop_standing_order_alerts', w),
       countActiveWatches(),
       countActiveSubscriptions(),
+      outclickMetric(w),
     ])
   return {
     window: { start: w.start, end: w.end },
@@ -160,6 +212,7 @@ export async function computeBusinessDigest(now: Date = new Date()): Promise<Bus
     alertsFired,
     activeWatches,
     activeSubscriptions,
+    outclicks,
   }
 }
 
@@ -228,6 +281,17 @@ function buildSections(d: BusinessDigest): Section[] {
       key: 'activeSubscriptions',
       headline: n(d.activeSubscriptions, 'paid subscriber', 'paid subscribers'),
       line: `Paid subscribers: ${d.activeSubscriptions}`,
+    })
+  }
+  if (d.outclicks) {
+    // The all-kinds window total is appended only when it differs from the
+    // card count — today card is the only kind, so the line stays terse.
+    const { count, prev, total } = d.outclicks
+    const totalSuffix = total !== null && total !== count ? ` · ${total} total` : ''
+    sections.push({
+      key: 'outclicks',
+      headline: n(count, 'card outclick', 'card outclicks'),
+      line: `Card outclicks: ${count}${vsLastWeek(prev)}${totalSuffix}`,
     })
   }
   return sections

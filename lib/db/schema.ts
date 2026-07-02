@@ -206,3 +206,25 @@ export const valuationOverrides = pgTable('hop_valuation_overrides', {
   asOf: tz('as_of').notNull(),
   updatedAt: tz('updated_at').defaultNow(),
 })
+
+// First-party affiliate outclick ledger — one row per /api/go/* redirect
+// (kind 'card' = the credit-card CTA behind a points-winning verdict). The
+// conversion baseline for the coming CJ/Impact partnership: today's applyUrls
+// are placeholder landing pages, so this table is the only first-party click
+// record. Anonymous by design: NO user_id column (click telemetry, not user
+// data). Written fire-and-forget by lib/outclicks.ts; counted by
+// lib/business-digest.ts. See drizzle/0006_outclicks.sql.
+export const outclicks = pgTable(
+  'hop_outclicks',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    clickedAt: tz('clicked_at').defaultNow(),
+    kind: text('kind').notNull(),
+    target: text('target').notNull(),
+    url: text('url').notNull(),
+    program: text('program'),
+    userAgent: text('user_agent'),
+  },
+  // The weekly business digest counts kind='card' rows inside a time window.
+  (t) => [index('hop_outclicks_kind_clicked_at_idx').on(t.kind, t.clickedAt)],
+)
