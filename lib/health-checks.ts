@@ -59,6 +59,7 @@ export type CronJob =
   | 'valuation-sync'
   | 'business-digest'
   | 'health-sentinel'
+  | 'sync-stripe'
 
 export interface CronJobSpec {
   job: CronJob
@@ -71,6 +72,7 @@ export const CRON_JOBS: readonly CronJobSpec[] = [
   { job: 'standing-orders', path: '/api/cron/standing-orders', schedule: '0 */6 * * *', expectedIntervalMs: 6 * HOUR_MS },
   { job: 'revalidate-seo', path: '/api/cron/revalidate-seo', schedule: '0 6 * * 0', expectedIntervalMs: 7 * DAY_MS },
   { job: 'valuation-sync', path: '/api/cron/valuation-sync', schedule: '30 13 * * *', expectedIntervalMs: DAY_MS },
+  { job: 'sync-stripe', path: '/api/cron/sync-stripe', schedule: '0 2 * * *', expectedIntervalMs: DAY_MS },
   { job: 'business-digest', path: '/api/cron/business-digest', schedule: '7 14 * * 1', expectedIntervalMs: 7 * DAY_MS },
   { job: 'health-sentinel', path: '/api/cron/health-sentinel', schedule: '17 11 * * *', expectedIntervalMs: DAY_MS },
 ]
