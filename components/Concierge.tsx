@@ -294,7 +294,7 @@ export default function Concierge({
     .map((p) => ({ city: p.city, thumb: p.thumb, alt: p.alt, countryCode: p.countryCode }))
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col px-4 sm:px-8 lg:px-16">
+    <div className="flex min-h-0 flex-1 flex-col px-5 sm:px-8 lg:px-12 xl:px-16">
       {/* Screen-reader live status: announces "thinking" and the settled answer
           once. Visually hidden; sighted users read the streamed text directly. */}
       <div role="status" aria-live="polite" className="sr-only">

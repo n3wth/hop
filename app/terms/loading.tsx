@@ -7,7 +7,7 @@ import LegalShellSkeleton from '@/components/LegalShellSkeleton'
 export default function Loading() {
   return (
     <AppShell hideSearch>
-      <div className="mx-auto max-w-[var(--container-app)]">
+      <div className="mx-auto max-w-[var(--container-sm)]">
         <LegalShellSkeleton />
       </div>
     </AppShell>

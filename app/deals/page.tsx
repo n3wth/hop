@@ -111,7 +111,7 @@ export default async function DealsPage({
 
   return (
     <AppShell user={user} pointsTotal={pointsTotal} homeAirport={homeAirport} hideSearch>
-      <div className="mx-auto max-w-[var(--container-app)] xl:max-w-[var(--container-wide)] 2xl:max-w-[var(--container-xwide)]">
+      <div className="mx-auto max-w-[var(--container-shell)]">
         {/* editorial header — centered over the full-width feed */}
         <EditorialHeader
           eyebrow="Sweet spots"
@@ -155,7 +155,7 @@ export default async function DealsPage({
 
         {/* the feed */}
         {hasDeals ? (
-          <section className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
+          <section className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {deals.map((dest, i) => (
               <DealCard
                 key={dest.code}
