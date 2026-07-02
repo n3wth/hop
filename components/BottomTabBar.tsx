@@ -13,7 +13,7 @@ interface TabDef {
 // The five primary surfaces, in journey order. Icons are pulled from the
 // existing Phosphor registry (components/Icon.tsx).
 const TABS: TabDef[] = [
-  { href: '/', label: 'Home', icon: 'compass' },
+  { href: '/', label: 'Home', icon: 'house' },
   { href: '/search', label: 'Search', icon: 'search' },
   { href: '/ask', label: 'Ask', icon: 'lightbulb' },
   { href: '/deals', label: 'Deals', icon: 'deals' },

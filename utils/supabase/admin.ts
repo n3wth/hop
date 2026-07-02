@@ -321,7 +321,7 @@ interface HopDatabase {
           updated_at?: string
         }
         Relationships: []
-      },
+      }
       hop_subscriptions: {
         Row: {
           id: string
@@ -527,6 +527,141 @@ interface HopDatabase {
           notified_at?: string | null
           reply_text?: string | null
           replied_at?: string | null
+        }
+        Relationships: []
+      }
+      hop_outclicks: {
+        // First-party affiliate outclick ledger — one row per /api/go/*
+        // redirect (kind 'card' = the credit-card CTA). Anonymous by design:
+        // NO user_id column (click telemetry, not user data). Written
+        // fire-and-forget by lib/outclicks.ts; counted by
+        // lib/business-digest.ts. See drizzle/0006_outclicks.sql.
+        Row: {
+          id: string
+          clicked_at: string | null
+          kind: string
+          target: string
+          url: string
+          program: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          id?: string
+          clicked_at?: string | null
+          kind: string
+          target: string
+          url: string
+          program?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          kind?: string
+          target?: string
+          url?: string
+          program?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      hop_cron_heartbeats: {
+        // One liveness row per vercel.json cron job, upserted fire-and-forget
+        // at the end of each authorized run (lib/cron-heartbeat.ts, ADR 0007).
+        // SYSTEM-SCOPED: no user_id column exists, by design. ok=false with
+        // note='disabled' means "owner switched it off" — the sentinel's D1
+        // detector only looks at last_run_at age.
+        Row: {
+          job: string
+          last_run_at: string
+          ok: boolean
+          note: string | null
+        }
+        Insert: {
+          job: string
+          last_run_at?: string
+          ok?: boolean
+          note?: string | null
+        }
+        Update: {
+          last_run_at?: string
+          ok?: boolean
+          note?: string | null
+        }
+        Relationships: []
+      }
+      hop_degradation_events: {
+        // Append-only degradation telemetry: one row per degraded source per
+        // live search (lib/degradation-telemetry.ts, ADR 0007). SYSTEM-SCOPED:
+        // no user_id, no balances, no free text — route only ever holds a
+        // validated 'AAA-BBB' IATA pair or null. Pruned to 30d by the sentinel.
+        Row: {
+          id: string
+          source: string
+          route: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          source: string
+          route?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          source?: string
+          route?: string | null
+        }
+        Relationships: []
+      }
+      hop_improvement_findings: {
+        // Idempotent, fingerprinted findings (lib/improvement-findings.ts,
+        // ADR 0007) — the durable queue between detection and delivery.
+        // fingerprint (`kind:subject`) is UNIQUE; filed_at makes filing
+        // at-most-once per episode; resolved_at drives the 7-day flap window.
+        // SYSTEM-SCOPED: no user_id column exists, by design.
+        Row: {
+          id: string
+          fingerprint: string
+          kind: string
+          severity: string
+          title: string
+          body: string
+          status: string
+          linear_issue_id: string | null
+          linear_identifier: string | null
+          delivered_via: string | null
+          first_seen_at: string | null
+          last_seen_at: string | null
+          filed_at: string | null
+          resolved_at: string | null
+        }
+        Insert: {
+          id?: string
+          fingerprint: string
+          kind: string
+          severity?: string
+          title: string
+          body: string
+          status?: string
+          linear_issue_id?: string | null
+          linear_identifier?: string | null
+          delivered_via?: string | null
+          first_seen_at?: string | null
+          last_seen_at?: string | null
+          filed_at?: string | null
+          resolved_at?: string | null
+        }
+        Update: {
+          kind?: string
+          severity?: string
+          title?: string
+          body?: string
+          status?: string
+          linear_issue_id?: string | null
+          linear_identifier?: string | null
+          delivered_via?: string | null
+          first_seen_at?: string | null
+          last_seen_at?: string | null
+          filed_at?: string | null
+          resolved_at?: string | null
         }
         Relationships: []
       }

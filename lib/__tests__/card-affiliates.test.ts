@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { cardForProgram, listCardAffiliates, formatBonus } from '../card-affiliates'
+import {
+  cardForProgram,
+  cardById,
+  cardOutclickPath,
+  listCardAffiliates,
+  formatBonus,
+} from '../card-affiliates'
 import { canonicalizeProgram } from '../programs'
 
 describe('cardForProgram() — canonicalization', () => {
@@ -38,12 +44,63 @@ describe('cardForProgram() — canonicalization', () => {
   })
 })
 
+describe('cardById() — exact id lookup for the outclick redirect', () => {
+  it('resolves a known canonical id', () => {
+    expect(cardById('chase-ur')?.cardName).toBe('Chase Sapphire Preferred')
+    expect(cardById('united')?.id).toBe('united')
+  })
+
+  it('is exact — free text is NOT canonicalized (ids come from hrefs we minted)', () => {
+    expect(cardById('United MileagePlus')).toBeUndefined()
+    expect(cardById('CHASE-UR')).toBeUndefined()
+  })
+
+  it('returns undefined for unknown/empty ids, never throws', () => {
+    expect(cardById('')).toBeUndefined()
+    expect(cardById('not-a-card')).toBeUndefined()
+    // @ts-expect-error — exercising a non-string at runtime
+    expect(() => cardById(undefined)).not.toThrow()
+  })
+})
+
+describe('cardOutclickPath() — the CTA href → redirect route contract', () => {
+  it('builds the /api/go/card path with the program as query context', () => {
+    expect(cardOutclickPath('chase-ur', 'Chase Ultimate Rewards')).toBe(
+      '/api/go/card/chase-ur?program=Chase%20Ultimate%20Rewards',
+    )
+  })
+
+  it('omits the query when there is no program context', () => {
+    expect(cardOutclickPath('united')).toBe('/api/go/card/united')
+    expect(cardOutclickPath('united', '')).toBe('/api/go/card/united')
+    expect(cardOutclickPath('united', '   ')).toBe('/api/go/card/united')
+  })
+
+  it('URL-encodes hostile input instead of letting it shape the path', () => {
+    expect(cardOutclickPath('a/b?x', 'p&q=1')).toBe('/api/go/card/a%2Fb%3Fx?program=p%26q%3D1')
+  })
+
+  it('round-trips: every table id builds a path whose id segment resolves via cardById', () => {
+    for (const id of Object.keys(listCardAffiliates())) {
+      const path = cardOutclickPath(id, 'ctx')
+      const seg = decodeURIComponent(path.slice('/api/go/card/'.length).split('?')[0])
+      expect(cardById(seg)?.id, id).toBe(id)
+    }
+  })
+})
+
 describe('affiliate table integrity', () => {
   const table = listCardAffiliates()
 
   it('is keyed by canonical program ids', () => {
     for (const key of Object.keys(table)) {
       expect(canonicalizeProgram(key)?.id, `${key} is not a canonical id`).toBe(key)
+    }
+  })
+
+  it('every card carries its own table key as its id (derived, cannot drift)', () => {
+    for (const [key, card] of Object.entries(table)) {
+      expect(card.id, key).toBe(key)
     }
   })
 

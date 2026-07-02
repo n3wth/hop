@@ -9,6 +9,7 @@ import BrandIcon from './BrandIcon'
 import SeeTheMath from './SeeTheMath'
 import CountUp from './CountUp'
 import CardAffiliateCTA from './CardAffiliateCTA'
+import WatchThisRoute from './WatchThisRoute'
 
 export interface VerdictRailProps {
   result: SearchResult
@@ -21,6 +22,10 @@ export interface VerdictRailProps {
       (or no real balances) → a value-demonstration framing + sign-in CTA, never
       a claim that the stranger owns the points. */
   hasRealBalances?: boolean
+  /** True when the visitor has a resolved Auth0 session (app/search/page.tsx).
+      Gates "Watch this route" on the pay-cash path: signed-out visitors see a
+      sign-in link instead, since a watch has to belong to someone. */
+  isSignedIn?: boolean
 }
 
 function fmt(n: number | undefined): string {
@@ -47,7 +52,12 @@ function searchUrlFrom(params: SearchResult['params']): string {
 
 // Editorial verdict hero — the magazine cover. Teal plane: headline + factual
 // subline + stat strip on the left; bunny + boarding-pass pick card on the right.
-export default function VerdictRail({ result, destPhoto, hasRealBalances = false }: VerdictRailProps) {
+export default function VerdictRail({
+  result,
+  destPhoto,
+  hasRealBalances = false,
+  isSignedIn = false,
+}: VerdictRailProps) {
   const { pick, summary, verdict, cashOption } = result
   const usingPoints = verdict === 'use-points'
   const unit = milesUnit(pick)
@@ -64,11 +74,12 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
   // When points win but we can't claim ownership, route the CTA to sign-in with
   // a returnTo so the visitor lands back on this exact search after auth.
   const returnTo = encodeURIComponent(searchUrlFrom(result.params))
+  const signInHref = `/auth/login?returnTo=${returnTo}`
   const ctaHref = !usingPoints
     ? (cashOption?.bookingUrl ?? pick?.bookingUrl ?? '#')
     : owns
       ? (pick?.bookingUrl ?? '#')
-      : `/auth/login?returnTo=${returnTo}`
+      : signInHref
 
   // M6 — first ACTION: turn this trip into a calendar event in one tap (Google
   // Calendar template, all-day, no OAuth). Carries route + dates + city + cabin
@@ -178,7 +189,7 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
             href={ctaHref}
             className="inline-flex items-center gap-[10px] rounded-[14px] bg-white px-7 py-4 text-[16px] font-semibold text-brand-ink transition-colors hover:bg-hero-white-hover"
           >
-            <Icon name="check_circle" size={19} />
+            <Icon name="check_circle" size={20} weight="fill" />
             {!usingPoints
               ? 'Book cash'
               : owns
@@ -202,7 +213,7 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
               rel="noopener noreferrer"
               className="inline-flex items-center gap-[8px] rounded-[14px] border-[1.5px] border-white/20 px-7 py-4 text-[15px] font-medium text-hero-body transition-colors hover:border-white/45 hover:text-white"
             >
-              <Icon name="calendar" size={17} />
+              <Icon name="calendar" size={16} />
               Add to calendar
             </a>
           ) : null}
@@ -219,6 +230,19 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
             the winning award's program to the card that earns its currency; renders
             nothing if no card maps. Clearly labelled "Sponsored". */}
         {usingPoints ? <CardAffiliateCTA program={pick?.program} unit={unit} /> : null}
+
+        {/* Watch this route — only on the pay-cash path ("Points don't pay off
+            here"): the clearest, unambiguous use case for a standing order. hop
+            re-runs THIS exact route/date/cabin and pings the day it crosses
+            POINTS_THRESHOLD_CPP. */}
+        {!usingPoints ? (
+          <WatchThisRoute
+            params={result.params}
+            threshold={POINTS_THRESHOLD_CPP}
+            isSignedIn={isSignedIn}
+            signInHref={signInHref}
+          />
+        ) : null}
       </div>
 
       {/* RIGHT — destination photo filling the panel, boarding-pass pick over it */}
@@ -373,7 +397,7 @@ function PickPass({ pick }: { pick: FlightOption }) {
         <div className="flex flex-1 flex-col items-center gap-[2px]">
           <div className="flex w-full items-center gap-[6px] text-brand">
             <span className="h-px flex-1 bg-border" />
-            <Icon name="flight" size={18} className="rotate-90" />
+            <Icon name="flight" size={16} className="rotate-90" />
             <span className="h-px flex-1 bg-border" />
           </div>
           <div className="text-[11px] text-text3">

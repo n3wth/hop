@@ -13,7 +13,7 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "tsBuildInfoFile": ".next/types.tsbuildinfo",
+    "tsBuildInfoFile": "node_modules/.cache/hop.tsbuildinfo",
     "plugins": [
       {
         "name": "next"

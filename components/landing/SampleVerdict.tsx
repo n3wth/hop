@@ -83,7 +83,7 @@ export default async function SampleVerdict() {
           <Logo size={150} carve="var(--color-brand-deep)" className="text-white" />
         )}
         <span className="absolute bottom-5 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.18em] text-white">
-          <Icon name="check_circle" size={14} />
+          <Icon name="check_circle" size={12} weight="fill" />
           the verdict
         </span>
       </aside>

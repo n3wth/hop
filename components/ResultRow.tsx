@@ -306,7 +306,7 @@ const ResultRow = memo(function ResultRow({ option, rank, maxCpp, index = 0, ope
               className="mt-[16px] flex w-full items-center justify-center gap-[6px] rounded-[11px] border-[1.5px] border-text bg-transparent px-3 py-[11px] text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
             >
               {actionLabel(option)}
-              <Icon name="swap_horiz" size={15} className={option.kind === 'transfer' ? '' : 'hidden'} />
+              <Icon name="swap_horiz" size={16} className={option.kind === 'transfer' ? '' : 'hidden'} />
             </a>
           </div>
         </div>

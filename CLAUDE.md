@@ -17,7 +17,7 @@ from the root.
 
 - `app/`, `components/`, `lib/`, `utils/`, `public/` — the application
 - `docs/design/` — the design source of truth: `CHOSEN-editorial.html` (canonical visual
-  reference), `copy-spec.md` (strict copy voice), `icons.json`, logo assets
+  reference), `copy-spec.md` (strict copy voice), logo assets
 - `docs/plans/` — implementation plans (e.g. the flight-optimizer plan, the Eve agent design)
 - `docs/decisions/` — **ADRs**: the load-bearing architectural decisions. Read the relevant one
   before changing a decided area (engine-as-source-of-truth, Eve co-location, delivery layer).
@@ -26,7 +26,10 @@ from the root.
 - `docs/content-plan.md` — content + destination-data strategy (sweet-spots table, SEO,
   concierge seed prompts)
 - `.claude/agents/` — specialized **review subagents** (engine-invariant, degradation, copy-voice,
-  nextjs16, eve-architecture, security); `.claude/commands/` — slash commands for the dev loop
+  nextjs16, eve-architecture, security); `.claude/commands/` — slash commands for the dev loop;
+  `.claude/workflows/` — **deterministic multi-agent orchestration scripts** (review fan-out,
+  plan panel, standing `/audit`) run via the Workflow tool — ADR 0006; read that folder's README
+  before adding one
 - `eve/` — the **Eve agent scaffold** (proactive travel agent on Vercel Eve). A separate runtime,
   deliberately **excluded** from the Next app's typecheck/lint/build (see `eve/README.md`).
 
@@ -40,7 +43,9 @@ This repo is **agent-native**: each unit of work should make the next one easier
 2. **Work** — implement in the house style: flag-gated seams (`lib/env.ts`), graceful degradation
    (`withDb`, `{ok:false}` results, never throw), engine-computed numbers only.
 3. **Review** — run the specialized reviewers in `.claude/agents/` in parallel over the diff and
-   triage P1/P2/P3 (`/review-parallel`). Taste belongs in these systems, not in ad-hoc review.
+   triage P1/P2/P3 (`/review-parallel` — backed by the `review-parallel` workflow, which adds an
+   adversarial-verification stage, wherever the Workflow tool exists). Taste belongs in these
+   systems, not in ad-hoc review.
 4. **Compound** — capture what you learned: a `docs/solutions/` entry, a CLAUDE.md rule, a new ADR,
    or a new reviewer check so the lesson auto-catches next time (`/compound`). **Teach the system,
    don't just do the task** — context given to the system pays compounding dividends.
@@ -53,16 +58,17 @@ where the next agent (you, or another LLM via `AGENTS.md`) will find it automati
 ```bash
 npm run dev            # dev server (http://localhost:3000)
 npm run build          # production build — also catches RSC/route errors
-npm run lint           # eslint (next/core-web-vitals + next/typescript)
+npm run lint           # eslint (next/core-web-vitals + next/typescript), cached
 npm test               # vitest run (one-shot)
 npm run test:watch     # vitest watch
-npx tsc --noEmit       # typecheck (strict mode)
+npm run typecheck      # tsc --noEmit (strict mode)
+npm run check          # lint + typecheck + test — the pre-ship gate (CI runs the same)
 
-# single test file / single test by name
-npx vitest run lib/cpp.test.ts
+# single test file / single test by name (tests live in lib/__tests__/)
+npx vitest run lib/__tests__/cpp.test.ts
 npx vitest run -t "ranks options by cpp"
 
-MOCK=1 npm run dev     # serve from mock fixtures (no upstream API keys needed)
+npm run dev:mock       # serve from mock fixtures (no upstream API keys needed)
 ```
 
 Vitest uses the **node** environment and only collects `lib/**/*.test.ts` and `app/**/*.test.ts`
@@ -166,7 +172,8 @@ in one round-trip.
   fabricated balances.
 - **Graceful degradation is the house style** — `lib/*` clients and DB helpers return
   `{ok:false}`/fallbacks instead of throwing, and the UI degrades per-section.
-- **Cron**: `vercel.json` runs `/api/cron/standing-orders` every 6h.
+- **Cron**: `vercel.json` runs `/api/cron/standing-orders` (every 6h), `/api/cron/revalidate-seo`
+  (weekly), and `/api/cron/valuation-sync` (daily); all guarded by `CRON_SECRET`.
 
 ## Design & copy — hold this bar on any UI change
 

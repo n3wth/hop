@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { auth0 } from '@/lib/auth0'
 import { getUserAwId, getManualBalances } from '@/lib/accounts'
 import { getBalances } from '@/lib/awardwallet'
-import { hasEnv, isGmailHistoryEnabled } from '@/lib/env'
+import { hasEnv, isBillingEnabled, isGmailHistoryEnabled } from '@/lib/env'
 import { getTravelHistory } from '@/lib/travel-history'
 import { isGmailConnected } from '@/lib/travel-history-sync'
 import AppShell from '@/components/AppShell'
@@ -24,8 +24,10 @@ import type { AirlineStatus, TravelProfile } from '@/lib/travel-profile-model'
 import StandingOrders from '@/components/StandingOrders'
 import Counterfactual from '@/components/Counterfactual'
 import type { Balance } from '@/lib/types'
-import { listStandingOrders } from '@/lib/standing-orders'
+import { listStandingOrders, countActiveStandingOrders } from '@/lib/standing-orders'
 import { listAlerts, countUnseenAlerts } from '@/lib/standing-order-alerts'
+import { getUserTier, ALERT_LIMITS } from '@/lib/subscription'
+import BillingSection from '@/components/BillingSection'
 
 // Human-readable note for the AwardWallet handshake outcome (?aw=… flag the
 // OAuth start/callback routes set on their redirect back to /account).
@@ -60,7 +62,7 @@ export default async function AccountPage({
   // Next.js 16: searchParams is async.
   searchParams,
 }: {
-  searchParams: Promise<{ aw?: string; gmail?: string }>
+  searchParams: Promise<{ aw?: string; gmail?: string; upgraded?: string }>
 }) {
   const session = await auth0.getSession()
   if (!session) redirect('/auth/login')
@@ -103,6 +105,16 @@ export default async function AccountPage({
   // The scheduled runner only re-checks when its flag is on — surface that
   // honestly so the user knows whether watches are live yet.
   const cronLive = /^(1|true|yes)$/i.test(process.env.STANDING_ORDERS_CRON_ENABLED ?? '')
+
+  // Billing (flag-gated): tier truth + the engine-computed active-alert count
+  // for the "Plan" section. Both reads degrade to their free/zero fallbacks.
+  const billingEnabled = isBillingEnabled()
+  const [tier, activeAlerts] = billingEnabled
+    ? await Promise.all([
+        u.sub ? getUserTier(u.sub) : Promise.resolve('free' as const),
+        u.sub ? countActiveStandingOrders(u.sub) : Promise.resolve(0),
+      ])
+    : (['free', 0] as const)
 
   // Gmail travel-history seam: connection state + the trips hop has learned.
   // Both helpers degrade to empty/not-connected on any failure.
@@ -164,7 +176,7 @@ export default async function AccountPage({
       <div className="mx-auto max-w-[var(--container-sm)] pb-4 pt-8 sm:pt-12">
         {/* profile hero — teal plane, matches the editorial system */}
         <section
-          className="overflow-hidden rounded-[20px] text-hero-cream lg:rounded-[var(--radius-hero)]"
+          className="overflow-hidden rounded-[var(--radius-lg)] text-hero-cream lg:rounded-[var(--radius-hero)]"
           style={{ background: 'var(--color-brand)' }}
         >
           <div className="flex flex-col gap-5 px-6 py-8 sm:flex-row sm:items-center sm:gap-6 sm:px-10">
@@ -212,6 +224,7 @@ export default async function AccountPage({
             { href: '#status', label: 'Status' },
             { href: '#trips', label: 'Trips' },
             { href: '#watches', label: 'Watches' },
+            ...(billingEnabled ? [{ href: '#billing', label: 'Plan' }] : []),
             { href: '#whatif', label: 'What-if' },
             { href: '#developers', label: 'Developers' },
           ].map((a) => (
@@ -229,7 +242,7 @@ export default async function AccountPage({
             width and the power features aren't buried below a long scroll: left
             = what hop knows about you, right = what hop does + developer access.
             Below xl it collapses back to the single readable column. */}
-        <div className="mt-12 grid grid-cols-1 items-start gap-x-12 xl:grid-cols-2">
+        <div className="mt-12 flex flex-col gap-12">
         {/* ── COLUMN A — GROUP 1 — YOUR TRAVEL PROFILE ───────────────────────
             What hop knows about you: the programs you hold and where you've
             flown. These describe your identity, so they sit together. */}
@@ -329,7 +342,7 @@ export default async function AccountPage({
         {/* ── COLUMN B — GROUP 2 + GROUP 3 ───────────────────────────────────
             What hop does for you, plus developer access. On xl this column sits
             beside the travel profile; below xl it stacks under it. */}
-        <div className="mt-14 xl:mt-0">
+        <div>
 
         {/* ── GROUP 2 — WHAT HOP DOES FOR YOU ────────────────────────────────
             The active tools: watch a route, or ask what a different stack would
@@ -358,6 +371,19 @@ export default async function AccountPage({
           <StandingOrders orders={orders} alerts={alerts} unseen={unseen} cronLive={cronLive} />
         </section>
 
+        {/* plan / billing — flag-gated: absent entirely until HOP_ENABLE_BILLING
+            + the Stripe keys are set. Sits with the watches it un-caps. Tier
+            truth is the webhook-written row; ?upgraded=1 is display only. */}
+        {billingEnabled ? (
+          <BillingSection
+            tier={tier}
+            activeCount={activeAlerts}
+            freeLimit={ALERT_LIMITS.free}
+            upgraded={sp.upgraded === '1'}
+            yearlyAvailable={hasEnv('STRIPE_PRICE_ID_PRO_YEARLY')}
+          />
+        ) : null}
+
         {/* counterfactual you — "what if I had a different points portfolio?" */}
         <section id="whatif" className="mt-10 scroll-mt-24">
           <div>
@@ -384,7 +410,7 @@ export default async function AccountPage({
 
         {/* MCP access tokens (collapsed) */}
         <section id="mcp" className="mt-6 scroll-mt-24">
-          <details className="group/mcp rounded-[16px] border border-border bg-surface">
+          <details className="group/mcp rounded-[var(--radius)] border border-border bg-surface">
             <summary className="flex cursor-pointer list-none items-center gap-2.5 px-5 py-4 transition-colors hover:bg-sunk [&::-webkit-details-marker]:hidden">
               <div className="min-w-0 flex-1">
                 <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">

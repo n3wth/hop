@@ -52,11 +52,11 @@ export default function SearchError({
 
       <div className="hop-rise mt-8 flex flex-wrap items-center justify-center gap-3" style={{ ['--hop-delay' as string]: '220ms' }}>
         <Button onClick={() => retry()}>
-          <Icon name="swap_horiz" size={18} />
+          <Icon name="refresh" size={16} />
           Try again
         </Button>
         <Button href="/search" variant="secondary">
-          <Icon name="search" size={18} />
+          <Icon name="search" size={16} />
           New search
         </Button>
         <Button href="/" variant="secondary">

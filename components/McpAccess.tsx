@@ -51,7 +51,7 @@ function CopyButton({
       }}
       className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-[10px] border border-border bg-surface px-3 py-1.5 text-[12.5px] font-semibold text-text2 transition-colors hover:text-text"
     >
-      <Icon name={copied ? 'check' : 'content_copy'} size={15} />
+      <Icon name={copied ? 'check' : 'content_copy'} size={16} />
       {copied ? 'Copied' : label}
     </button>
   )
@@ -280,7 +280,7 @@ export default function McpAccess({ initialTokens }: Props) {
   }, [client, mcpUrl, token])
 
   return (
-    <div className="mt-4 rounded-[16px] border border-border bg-surface px-6 py-6">
+    <div>
       {/* server URL */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
@@ -393,7 +393,7 @@ export default function McpAccess({ initialTokens }: Props) {
           disabled={pending}
           className="inline-flex flex-shrink-0 items-center gap-2 rounded-[12px] bg-brand px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:opacity-60"
         >
-          <Icon name="add" size={17} />
+          <Icon name="add" size={16} />
           Mint a token
         </button>
       </div>
@@ -427,7 +427,7 @@ export default function McpAccess({ initialTokens }: Props) {
                       disabled={pending}
                       className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-[10px] bg-brand px-3 py-1.5 text-[12.5px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:opacity-60"
                     >
-                      <Icon name="check" size={15} />
+                      <Icon name="check" size={16} />
                       Save
                     </button>
                     <button

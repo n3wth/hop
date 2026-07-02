@@ -20,6 +20,7 @@ import { env, isValuationSyncEnabled } from '@/lib/env'
 import { programById } from '@/lib/programs'
 import { clampCpp } from '@/lib/valuations'
 import { upsertValuationOverrides, type ValuationOverride } from '@/lib/valuation-overrides'
+import { recordHeartbeat } from '@/lib/cron-heartbeat'
 
 // This route reads live remote data and must never be cached or statically rendered.
 export const dynamic = 'force-dynamic'
@@ -65,6 +66,9 @@ function isValidEntry(programId: string, entry: WorkerValuationEntry | undefined
 
 export async function GET(request: Request) {
   if (!isEnabled()) {
+    // Liveness record (ADR 0007): being off is an owner choice, not an outage.
+    // Only for authorized callers, so a public probe can't keep it fresh.
+    if (isAuthorized(request)) recordHeartbeat('valuation-sync', false, 'disabled')
     return Response.json({ ok: false, error: 'disabled' }, { status: 503 })
   }
   if (!isAuthorized(request)) {
@@ -89,6 +93,8 @@ export async function GET(request: Request) {
   }
 
   if (!payload || !payload.ok || !payload.valuations) {
+    // Still a completed run — the cron itself worked; the upstream didn't.
+    recordHeartbeat('valuation-sync', true, 'worker-unreachable')
     return Response.json({ ok: true, applied: 0, skipped: 0, reason: 'worker unreachable' })
   }
 
@@ -104,8 +110,11 @@ export async function GET(request: Request) {
 
   const persisted = await upsertValuationOverrides(validRows)
   if (!persisted) {
+    recordHeartbeat('valuation-sync', true, 'persist-failed')
     return Response.json({ ok: true, applied: 0, skipped: validRows.length + skipped, reason: 'persist failed' })
   }
 
+  // Liveness record (ADR 0007): after the work — ran to completion.
+  recordHeartbeat('valuation-sync', true, `applied:${validRows.length} skipped:${skipped}`)
   return Response.json({ ok: true, applied: validRows.length, skipped })
 }

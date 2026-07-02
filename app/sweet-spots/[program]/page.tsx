@@ -175,7 +175,7 @@ export default async function ProgramSweetSpotsPage({
         </section>
 
         {/* accuracy caveat */}
-        <p className="mt-7 rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[13px] leading-relaxed text-text3">
+        <p className="mt-7 rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[14px] leading-relaxed text-text3">
           {VERIFY_CAVEAT}
         </p>
 

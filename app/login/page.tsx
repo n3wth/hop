@@ -48,7 +48,7 @@ export default async function LoginPage({
           href="/"
           className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-text2 transition-colors hover:text-text"
         >
-          <Icon name="expand_more" size={18} className="rotate-90" />
+          <Icon name="arrow_left" size={16} />
           Back to hop
         </Link>
       </header>

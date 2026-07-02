@@ -267,7 +267,7 @@ function VerdictCard({
     void dismissVerdict(city, b.cabin).catch(() => {})
   }
   return (
-    <div className="group flex flex-col overflow-hidden rounded-[16px] border border-border bg-surface transition-colors hover:border-brand">
+    <div className="group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface transition-colors hover:border-brand">
       <Link href={searchHref(b.code, homeAirport)} className="flex flex-col p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-baseline gap-2">
@@ -284,7 +284,7 @@ function VerdictCard({
         {/* lead with the savings — the VerdictRail hero moment, compact */}
         {econ ? <SavingsLead econ={econ} /> : null}
 
-        <p className="mt-2 text-[13px] leading-[1.5] text-text2">{b.reason}</p>
+        <p className="mt-2 text-[14px] leading-[1.5] text-text2">{b.reason}</p>
 
         {/* personalization chips — only present when the server kept them */}
         {b.fitsDays != null || b.cabin ? (
@@ -308,7 +308,7 @@ function VerdictCard({
 
         <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand">
           See the search
-          <Icon name="swap_horiz" size={14} />
+          <Icon name="swap_horiz" size={16} />
         </span>
       </Link>
 
@@ -340,9 +340,9 @@ function Compare({
   homeAirport?: string
 }) {
   return (
-    <div className="rounded-[16px] border border-border bg-surface p-4">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
       <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
-        <Icon name="swap_horiz" size={14} className="text-brand" />
+        <Icon name="swap_horiz" size={16} className="text-brand" />
         Side by side
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -350,7 +350,7 @@ function Compare({
         <CompareSide side={b.right} hasBalances={hasBalances} homeAirport={homeAirport} />
       </div>
       {b.takeaway ? (
-        <p className="mt-3 border-t border-border pt-3 text-[13px] leading-[1.5] text-text2">
+        <p className="mt-3 border-t border-border pt-3 text-[14px] leading-[1.5] text-text2">
           {b.takeaway}
         </p>
       ) : null}
@@ -372,7 +372,7 @@ function CompareSide({
   return (
     <Link
       href={searchHref(side.code, homeAirport)}
-      className="group flex flex-col rounded-[12px] border border-border bg-paper p-3 transition-colors hover:border-brand"
+      className="group flex flex-col rounded-[var(--radius)] border border-border bg-paper p-3 transition-colors hover:border-brand"
     >
       <div className="flex items-center justify-between gap-2">
         <span className="font-display text-[15px] font-semibold leading-tight text-text">{city}</span>
@@ -393,9 +393,9 @@ function Timing({ b }: { b: TimingBlock }) {
   const labelFor = (level: TimingBlock['weeks'][number]['level']) =>
     level === 'low' ? 'Cheapest' : level === 'mid' ? 'Mid' : 'Pricey'
   return (
-    <div className="rounded-[16px] border border-border bg-surface p-4">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
       <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
-        <Icon name="schedule" size={14} className="text-brand" />
+        <Icon name="schedule" size={16} className="text-brand" />
         When to go · {b.place}
       </div>
       <div className="flex items-end gap-1.5">
@@ -424,10 +424,10 @@ function Timing({ b }: { b: TimingBlock }) {
 function Weather({ b }: { b: WeatherBlock }) {
   const hasTemp = b.highC != null || b.lowC != null
   return (
-    <div className="rounded-[16px] border border-border bg-surface p-4">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
-          <Icon name="info" size={14} className="text-brand" />
+          <Icon name="info" size={16} className="text-brand" />
           {b.place} · {b.month}
         </div>
         {hasTemp ? (
@@ -438,7 +438,7 @@ function Weather({ b }: { b: WeatherBlock }) {
           </span>
         ) : null}
       </div>
-      <p className="mt-2 text-[13px] leading-[1.5] text-text2">{b.summary}</p>
+      <p className="mt-2 text-[14px] leading-[1.5] text-text2">{b.summary}</p>
     </div>
   )
 }
@@ -447,8 +447,8 @@ function Weather({ b }: { b: WeatherBlock }) {
 
 function WebNote({ b }: { b: WebNoteBlock }) {
   return (
-    <div className="rounded-[16px] border border-border bg-surface p-4">
-      <p className="text-[13px] leading-[1.55] text-text2">{b.text}</p>
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
+      <p className="text-[14px] leading-[1.5] text-text2">{b.text}</p>
       <div className="mt-2 flex items-center gap-1.5 text-[11px] text-text3">
         <Icon name="search" size={12} className="text-brand" />
         {b.url ? (
@@ -492,9 +492,9 @@ function PromptChips({ b, onChip }: { b: PromptChipsBlock; onChip?: (p: string) 
 
 function ProfileConfirm({ b }: { b: ProfileConfirmBlock }) {
   return (
-    <div className="flex items-center gap-2.5 rounded-[16px] border border-border bg-sunk p-3.5">
-      <Icon name="check_circle" size={18} className="flex-shrink-0 text-brand" />
-      <span className="text-[13px] leading-[1.5] text-text2">
+    <div className="flex items-center gap-2.5 rounded-[var(--radius-lg)] border border-border bg-sunk p-3.5">
+      <Icon name="check_circle" size={16} weight="fill" className="flex-shrink-0 text-brand" />
+      <span className="text-[14px] leading-[1.5] text-text2">
         <span className="font-semibold text-text">Got it.</span> {b.fact}
       </span>
     </div>
@@ -518,10 +518,10 @@ function ConnectGmail({
 }) {
   const live = gmailEnabled && !!onConnect
   return (
-    <div className="flex flex-col gap-2.5 rounded-[16px] border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-2.5 rounded-[var(--radius-lg)] border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-2.5">
-        <Icon name="loyalty" size={18} className="mt-0.5 flex-shrink-0 text-brand" />
-        <span className="text-[13px] leading-[1.5] text-text2">
+        <Icon name="envelope" size={16} className="mt-0.5 flex-shrink-0 text-brand" />
+        <span className="text-[14px] leading-[1.5] text-text2">
           <span className="font-semibold text-text">Connect Gmail</span>
           {b.reason ? ` ${b.reason}` : ' so hop can learn from your past trips.'}
         </span>
@@ -533,7 +533,7 @@ function ConnectGmail({
           className="flex flex-shrink-0 items-center gap-1.5 self-start rounded-full border border-border bg-surface px-3.5 py-1.5 text-[12px] font-semibold text-text transition-colors hover:border-brand hover:text-brand sm:self-auto"
         >
           Connect
-          <Icon name="swap_horiz" size={14} />
+          <Icon name="swap_horiz" size={16} />
         </button>
       ) : (
         <button
@@ -562,9 +562,9 @@ function Counterfactual({ b, homeAirport }: { b: CounterfactualBlock; homeAirpor
   const r = b.result
   if (!r) return null
   return (
-    <div className="rounded-[16px] border border-border bg-surface p-4">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
       <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
-        <Icon name="swap_horiz" size={14} className="text-brand" />
+        <Icon name="swap_horiz" size={16} className="text-brand" />
         What if · {r.label}
       </div>
       {r.unlockedCount > 0 ? (
@@ -574,7 +574,7 @@ function Counterfactual({ b, homeAirport }: { b: CounterfactualBlock; homeAirpor
           cash flights.
         </p>
       ) : (
-        <p className="text-[13px] leading-[1.5] text-text2">
+        <p className="text-[14px] leading-[1.5] text-text2">
           No new trips cross the line with that change.
         </p>
       )}

@@ -50,7 +50,7 @@ export default async function ConfirmationPage({
         {!res.ok ? (
           <div className="mt-2 flex items-start gap-4 rounded-[16px] border border-border bg-surface px-6 py-7">
             <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
-              <Icon name="info" size={22} />
+              <Icon name="info" size={24} weight="fill" />
             </span>
             <div>
               <div className="font-display text-[17px] font-semibold text-text">

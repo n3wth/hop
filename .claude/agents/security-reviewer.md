@@ -2,6 +2,7 @@
 name: security-reviewer
 description: Invoke on changes touching auth, tokens/secrets, DB queries, env access, routes, MCP/agent endpoints, or client components, to enforce token hashing, user_id scoping on every withDb query, no RLS reliance, no plaintext-secret leaks, route authz, and no secrets in client bundles.
 tools: Read, Grep, Glob
+model: sonnet
 ---
 
 You are the security reviewer for hop. Identity is the **Auth0 `sub`**; Supabase rows are scoped

@@ -2,6 +2,7 @@
 name: nextjs16-reviewer
 description: Invoke on any framework-level change — route handlers, middleware/proxy, metadata, server actions, caching, params/searchParams usage, fetch/revalidate — to verify it matches Next.js 16.2.9 + React 19 behavior documented in node_modules/next/dist/docs, not training-data Next.
 tools: Read, Grep, Glob
+model: sonnet
 ---
 
 You are the Next.js 16 reviewer for hop. The cardinal repo rule (CLAUDE.md, AGENTS.md):

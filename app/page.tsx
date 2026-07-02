@@ -6,7 +6,7 @@ import { getPrefs, type UserPrefs } from '@/lib/prefs'
 import { getUserBalances } from '@/lib/accounts'
 import { getMemoryContext, EMPTY_MEMORY_CONTEXT } from '@/lib/memory-context'
 import { walletValue } from '@/lib/valuations'
-import { ORIGIN_STORAGE_KEY } from '@/lib/origin-context'
+import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import type { SearchState } from '@/components/SearchBar'
@@ -112,8 +112,13 @@ export default async function Home() {
   // ── SIGNED IN — personalized dashboard ───────────────────────────────────
   if (user) {
     return (
-      <AppShell user={user} pointsTotal={programs > 0 ? totalPoints : undefined} hideSearch>
-        <div className="mx-auto max-w-[var(--container-app)]">
+      <AppShell
+        user={user}
+        pointsTotal={programs > 0 ? totalPoints : undefined}
+        homeAirport={prefs.homeAirport}
+        hideSearch
+      >
+        <div className="mx-auto max-w-[var(--container-shell)]">
           <SignedInHome
             first={first}
             programs={programs}
@@ -125,7 +130,7 @@ export default async function Home() {
             memory={memory}
           />
         </div>
-        <div className="mx-auto max-w-[var(--container-app)]">
+        <div className="mx-auto max-w-[var(--container-shell)]">
           <SiteFooter />
         </div>
       </AppShell>
@@ -135,7 +140,7 @@ export default async function Home() {
   // ── SIGNED OUT — marketing front door ────────────────────────────────────
   return (
     <AppShell user={null} hideSearch>
-      <div className="mx-auto flex max-w-[var(--container-app)] flex-col gap-16 pt-4 sm:gap-20 sm:pt-6 lg:gap-24 lg:pt-8">
+      <div className="mx-auto flex max-w-[var(--container-shell)] flex-col gap-16 pt-4 sm:gap-20 sm:pt-6 lg:gap-24 lg:pt-8">
         {/* ── HERO — the agent is the front door ──────────────────────────── */}
         {/* Lead with the conversational promise: a composer that opens the agent
             (routing through sign-in when they act). The verdict below is the proof. */}
@@ -167,7 +172,7 @@ export default async function Home() {
         <ConnectBand user={null} programs={0} />
       </div>
 
-      <div className="mx-auto max-w-[var(--container-app)]">
+      <div className="mx-auto max-w-[var(--container-shell)]">
         <SiteFooter />
       </div>
     </AppShell>

@@ -8,7 +8,7 @@ import { getPrefs } from '@/lib/prefs'
 import { cityForCode } from '@/lib/airports'
 import { destinationImage } from '@/lib/images'
 import { auth0 } from '@/lib/auth0'
-import { ORIGIN_STORAGE_KEY } from '@/lib/origin-context'
+import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import { SITE_URL } from '@/lib/seo'
 import AppShell from '@/components/AppShell'
 import RouteBar from '@/components/RouteBar'
@@ -222,13 +222,6 @@ export default async function Search({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  // Persistent "where from" cookie seeds the origin when the query omits one.
-  const cookieStore = await cookies()
-  const cookieOrigin = cookieStore.get(ORIGIN_STORAGE_KEY)?.value?.trim().toUpperCase()
-  const sp = await searchParams
-  const params = parseParams(sp, cookieOrigin)
-  const nonstop = parseNonstop(sp)
-
   // Auth0 session → header avatar (null when signed out).
   const session = await auth0.getSession()
   const su = session?.user
@@ -250,6 +243,17 @@ export default async function Search({
     su?.sub ? getUserBalances(su.sub) : Promise.resolve(undefined),
     su?.sub ? getPrefs(su.sub) : Promise.resolve(undefined),
   ])
+
+  // Origin precedence: explicit ?from= (inside parseParams) → saved home
+  // airport → "where from" cookie. ONE shared value feeds both the executed
+  // query (parseParams) and the origin pill (AppShell's homeAirport prop) so
+  // the pill never shows a different airport than the search actually ran.
+  const cookieStore = await cookies()
+  const cookieOrigin = cookieStore.get(ORIGIN_STORAGE_KEY)?.value?.trim().toUpperCase()
+  const originSeed = prefs?.homeAirport ?? cookieOrigin
+  const sp = await searchParams
+  const params = parseParams(sp, originSeed)
+  const nonstop = parseNonstop(sp)
   // An explicit ?nonstop=1 on THIS search always wins over any saved account
   // preference — it's a deliberate, in-the-moment choice, not a stored default.
   const effectivePrefs: TravelPrefs | undefined = nonstop
@@ -294,16 +298,22 @@ export default async function Search({
       nonstop={nonstop}
       user={user}
       pointsTotal={user ? result.balances.reduce((s, b) => s + b.balance, 0) : undefined}
+      homeAirport={params.from}
     >
-      {/* The results column is generous enough for the verdict hero, the 4-up
-          alternatives, and the wallet, but capped tighter so it reads as a
-          composed column — not an edge-to-edge sprawl on wide monitors. */}
-      <div className="mx-auto max-w-[var(--container-app)]">
+      {/* The results column rides the full-width shell — fluid under the shared
+          gutters, centered once it hits --container-shell — so the verdict hero,
+          the alternatives, and the wallet use the viewport like the nav does. */}
+      <div className="mx-auto max-w-[var(--container-shell)]">
         {/* plain trip context — route + facts, not fake masthead metadata */}
         <RouteBar result={result} hasRealBalances={hasRealBalances} nonstop={nonstop} />
 
         {/* the verdict hero */}
-        <VerdictRail result={result} destPhoto={destPhoto} hasRealBalances={hasRealBalances} />
+        <VerdictRail
+          result={result}
+          destPhoto={destPhoto}
+          hasRealBalances={hasRealBalances}
+          isSignedIn={!!user}
+        />
 
         {/* other ways to fly */}
         <ResultsList result={result} />

@@ -17,6 +17,11 @@ export function Response({ className = '', ...props }: ResponseProps) {
     <Streamdown
       className={`hop-md text-[15px] leading-[1.7] text-text sm:text-[16px] ${className}`}
       parseIncompleteMarkdown
+      // Streamed words fade in softly (the ChatGPT feel) instead of popping in.
+      // Streamdown only animates characters NEW to each render (it never
+      // re-animates already-visible text), and the reduced-motion block in
+      // globals.css forces these inline animations inert for users who opt out.
+      animated={{ animation: 'fadeIn', sep: 'word', duration: 240 }}
       {...props}
     />
   )

@@ -141,11 +141,48 @@ or the Tailwind default scale as needed until v4 custom scale support lands.
 
 ## Border Radius
 
+Four steps, nothing off-scale. An arbitrary `rounded-[Npx]` outside this scale is a defect.
+
 | Token | Value | Usage |
 |---|---|---|
+| `--radius-sm` | `10px` | Small chips, notes, compact controls |
 | `--radius` | `14px` | Standard cards, chips, inputs |
 | `--radius-lg` | `20px` | Larger cards (LedgerDream) |
 | `--radius-hero` | `28px` | Hero-scale cards on `lg:` |
+
+### Tailwind v4 namespace override — blessed
+
+`--radius-sm` and `--radius-lg` sit in Tailwind v4's stock `--radius-*` theme namespace, so
+declaring them in `@theme` **re-points the stock utilities**: `rounded-sm` renders at 10px
+(stock 0.25rem) and `rounded-lg` at 20px (stock 0.5rem). This is deliberate and blessed —
+in this codebase `rounded-sm` / `rounded-lg` **are** the tokens, byte-identical to
+`rounded-[var(--radius-sm)]` / `rounded-[var(--radius-lg)]`; either spelling is sanctioned.
+Audit at bless time (2026-07-02): zero stock `rounded-sm` call sites existed; the five stock
+`rounded-lg` call sites were already rendering at 20px and stay on-scale. Full write-up:
+`docs/solutions/2026-07-02-tailwind-v4-theme-namespace-overrides.md`. The general rule: before
+adding any `@theme` variable, check whether its name lands in a stock namespace — if it does,
+you are re-pointing an existing utility, so bless it here or pick a name outside the namespace
+(the `--track-*` tokens below chose the latter).
+
+---
+
+## Letter-spacing (tracking) tokens
+
+Three role tokens in `@theme` replace hand-rolled `tracking-[0.…em]` values. They are named
+`--track-*` — deliberately **outside** Tailwind's stock `--tracking-*` namespace — so the stock
+`tracking-wide`/`tracking-tight` utilities keep their defaults and nothing is silently
+re-pointed. There is no generated utility; use the arbitrary-value form:
+
+| Token | Value | Role | Usage |
+|---|---|---|---|
+| `--track-eyebrow` | `0.12em` | Uppercase kickers / section eyebrows | `tracking-[var(--track-eyebrow)]` |
+| `--track-label` | `0.06em` | Small uppercase captions / stat labels | `tracking-[var(--track-label)]` |
+| `--track-tag` | `0.1em` | Chips, tags, badges | `tracking-[var(--track-tag)]` |
+
+A new numeric `tracking-[0.…em]` in a diff is a defect (ESLint warns at `no-restricted-syntax`
+level; the warn count is the migration burn-down). Negative display tracking (`tracking-[-…]`,
+headline tightening) has no token and stays inline. Existing hand-rolled values convert
+opportunistically when a file is touched — no sweeps.
 
 ---
 
@@ -161,9 +198,20 @@ the component maps them internally. Never import Phosphor directly from page/com
 import Icon from '@/components/Icon'
 
 <Icon name="flight" size={20} />
-<Icon name="check_circle" size={16} className="text-good" />
-<Icon name="shield" size={14} weight="fill" />
+<Icon name="check_circle" size={16} weight="fill" className="text-good" />
+<Icon name="shield" size={12} />
 ```
+
+### Size scale — 12 / 16 / 20 / 24 only
+
+The `size` prop is typed as the union `12 | 16 | 20 | 24`; off-scale sizes are compile errors.
+
+| Size | Use |
+|---|---|
+| `12` | Eyebrow badges, status dots, micro-labels (uppercase 10.5–12px chips) |
+| `16` | Icons inline with text (buttons, rows, notes) — the default choice |
+| `20` | Icon-only controls (close buttons, tab bar, pagers, submit orbs) |
+| `24` | Feature tiles — the `h-10`/`h-11` rounded `bg-brand-light` chips |
 
 ### Available icons
 
@@ -182,6 +230,7 @@ import Icon from '@/components/Icon'
 | `content_copy` | Copy | |
 | `expand_more` | CaretDown | Dropdown chevron |
 | `caret_up` | CaretUp | |
+| `caret_left` | CaretLeft | |
 | `caret_right` | CaretRight | |
 | `arrow_right` | ArrowRight | |
 | `arrow_left` | ArrowLeft | |
@@ -190,7 +239,11 @@ import Icon from '@/components/Icon'
 | `notifications` | Bell | |
 | `lock` | Lock | Secure checkout |
 | `shield` | Shield | Trust / verification |
-| `schedule` | Clock | Time / duration |
+| `schedule` | Clock | Time / duration only — never sync/refresh |
+| `house` | House | Home tab |
+| `envelope` | EnvelopeSimple | Gmail / email connect |
+| `stop` | Stop | Stop streaming (weight="fill") |
+| `paper_plane` | PaperPlaneRight | Send / submit in composer |
 | `flight` / `airplane` | Airplane | Flights |
 | `suitcase` | Suitcase | Luggage / trips |
 | `map_pin` | MapPin | Location |
@@ -215,9 +268,27 @@ import Icon from '@/components/Icon'
 
 ### Default weight
 
-Phosphor icons default to `regular` weight. Pass `weight="fill"` for filled variants
-(higher contrast, use for status indicators). The component accepts all Phosphor weights:
-`thin | light | regular | bold | fill | duotone`.
+The `<Icon>` component defaults to `regular` weight. `weight="fill"` is reserved for
+**status marks** (`check_circle` in confirmations/eyebrow badges, `error`, `warning`) and
+**brand feature-tile icons** (the `h-10`/`h-11` `bg-brand-light` chips). Navigation and
+utility glyphs (carets, close, menu, search, arrows, refresh, settings) stay `regular`.
+The component accepts all Phosphor weights: `thin | light | regular | bold | fill | duotone`.
+
+### One concept, one glyph
+
+| Concept | Glyph | Never |
+|---|---|---|
+| Retry / refresh / re-sync / start over | `refresh` | `swap_horiz`, `schedule`, `lightbulb` |
+| Transfer / swap (points, origin↔destination) | `swap_horiz` | — |
+| Watch / alert subscription | `notifications` (Bell) | Bell for anything else |
+| Degraded / partial data | `warning` | `notifications` |
+| Home tab | `house` | `compass` |
+| Concierge "have hop book it" | `compass` | — |
+| Gmail / email connect | `envelope` | `loyalty` |
+| Time / duration | `schedule` (Clock) | Clock for sync/refresh actions |
+| Flight content (route dividers may use `flight rotate-90`) | `flight` | `flight` as a send button |
+| Send (composer) | `paper_plane` | rotated `flight` |
+| Directional carets | `caret_left` / `caret_right` / `expand_more` / `caret_up` | CSS-rotated carets |
 
 ---
 

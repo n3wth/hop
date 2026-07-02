@@ -21,8 +21,8 @@ function Row({ rule, label }: { rule: FareRule; label: 'Refundable' | 'Changeabl
   const { icon, tone } = ruleVisual(rule)
   return (
     <div className="flex items-start gap-2.5">
-      <Icon name={icon} size={16} className={`mt-px flex-shrink-0 ${tone}`} />
-      <span className="text-[13px] leading-[1.45] text-text">{describeFareRule(rule, label)}</span>
+      <Icon name={icon} size={16} weight={icon === 'check_circle' ? 'fill' : 'regular'} className={`mt-px flex-shrink-0 ${tone}`} />
+      <span className="text-[14px] leading-[1.45] text-text">{describeFareRule(rule, label)}</span>
     </div>
   )
 }
@@ -57,7 +57,7 @@ export default function FarePolicyCard({
           </p>
         </>
       ) : (
-        <p className="text-[13px] leading-[1.5] text-text2">
+        <p className="text-[14px] leading-[1.5] text-text2">
           Fare rules weren&apos;t provided for this fare. Check refund and change terms at checkout
           before you book.
         </p>

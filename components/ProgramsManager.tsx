@@ -82,7 +82,7 @@ export default function ProgramsManager({
 
 function ManualSection({ manual }: { manual: ManualBalance[] }) {
   return (
-    <section className="overflow-hidden rounded-[16px] border border-border bg-surface">
+    <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
       {manual.length > 0 ? (
         <ul>
           {manual.map((b, i) => (
@@ -92,7 +92,7 @@ function ManualSection({ manual }: { manual: ManualBalance[] }) {
       ) : (
         <div className="flex items-start gap-4 px-6 py-6">
           <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
-            <Icon name="loyalty" size={22} />
+            <Icon name="loyalty" size={24} weight="fill" />
           </span>
           <div className="min-w-0">
             <div className="text-[15px] font-semibold text-text">Add your points</div>
@@ -352,7 +352,7 @@ function AddProgramForm({ hasRows }: { hasRows: boolean }) {
           className="inline-flex flex-shrink-0 items-center justify-center gap-1.5 rounded-[10px] bg-brand px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:opacity-70"
         >
           {pending ? 'Adding…' : 'Add'}
-          {!pending ? <Icon name="check_circle" size={16} /> : null}
+          {!pending ? <Icon name="check_circle" size={16} weight="fill" /> : null}
         </button>
       </div>
       {error ? (
@@ -415,7 +415,7 @@ function AwardWalletSection({
 
   if (connected) {
     return (
-      <section className="overflow-hidden rounded-[16px] border border-border bg-surface">
+      <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
         <div className="flex items-center justify-between gap-3 px-5 py-3.5 sm:px-6">
           <span className="min-w-0 truncate text-[13px] font-semibold text-text2">
             Synced with AwardWallet
@@ -436,7 +436,7 @@ function AwardWalletSection({
               disabled={disconnecting}
               className="inline-flex items-center gap-1.5 rounded-[10px] px-3 py-2 text-[13px] font-semibold text-brand transition-colors hover:bg-brand-light disabled:opacity-60"
             >
-              <Icon name="schedule" size={16} />
+              <Icon name="refresh" size={16} />
               Refresh
             </button>
             {confirm.armed ? (
@@ -471,7 +471,7 @@ function AwardWalletSection({
           </div>
         </div>
         {balances.length === 0 ? (
-          <p className="border-t border-border px-5 py-3 text-[13px] text-text2 sm:px-6">
+          <p className="border-t border-border px-5 py-3 text-[14px] leading-[1.5] text-text2 sm:px-6">
             {reason
               ? `Connected, but balances didn't load (${reason}). Try Refresh.`
               : 'Connected, but no balances came back yet. Try Refresh.'}
@@ -491,11 +491,11 @@ function AwardWalletSection({
 
   // Not connected — secondary CTA, honest about the AwardWallet requirement.
   return (
-    <section className="rounded-[16px] border border-border bg-surface px-5 py-4 sm:px-6">
+    <section className="rounded-[var(--radius)] border border-border bg-surface px-5 py-4 sm:px-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="text-[14px] font-semibold text-text">Auto-sync with AwardWallet</div>
-          <p className="mt-0.5 text-[13px] leading-[1.5] text-text2">
+          <p className="mt-0.5 text-[14px] leading-[1.5] text-text2">
             Already on AwardWallet? Connect it to keep these balances current on their own.
           </p>
         </div>

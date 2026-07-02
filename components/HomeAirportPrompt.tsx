@@ -9,8 +9,8 @@ const DISMISS_KEY = 'hop:home-airport-prompt-dismissed'
 
 // Shown on the signed-in home when the user has no home airport yet. A warm,
 // solid-bunny prompt to set it once — then every search/deal starts from home.
-// Uses the Logo mark carved onto a solid teal chip, matching the sibling
-// icon-chip pattern (GmailHistory, ProgramsManager, AirlineStatusManager).
+// Uses the Logo mark carved onto a solid teal chip — a round icon chip matching
+// the sibling panel chips on the signed-in home (SignedInHome's loyalty chips).
 export default function HomeAirportPrompt() {
   const [done, setDone] = useState<string | null>(null)
   // Persist dismissal so the prompt stays gone on reload (it's purely a nudge —
@@ -42,9 +42,9 @@ export default function HomeAirportPrompt() {
   if (!ready || dismissed) return null
 
   return (
-    <section className="rounded-[var(--radius-lg)] border border-border bg-surface p-6 sm:p-7">
+    <section className="rounded-[var(--radius-lg)] lg:rounded-[var(--radius-hero)] border border-border bg-paper p-6 sm:p-8">
       <div className="flex items-start gap-4">
-        <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand text-brand-light">
+        <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full bg-brand text-brand-light">
           <Logo size={26} carve="var(--color-brand)" decorative />
         </span>
         <div className="min-w-0 flex-1">

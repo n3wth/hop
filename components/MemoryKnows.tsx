@@ -167,10 +167,10 @@ export default function MemoryKnows({
     pendingNoticed.length > 0 ? (
       <div>
         <h3 className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-brand">
-          <Icon name="lightbulb" size={13} />
+          <Icon name="lightbulb" size={12} />
           hop noticed
         </h3>
-        <div className="rounded-[16px] border border-border bg-brand-tint px-4">
+        <div className="rounded-[var(--radius)] border border-border bg-brand-tint px-4">
           {pendingNoticed.map((n) => (
             <NoticedRow key={n.id} fact={n} onResolved={onResolved} />
           ))}
@@ -187,10 +187,10 @@ export default function MemoryKnows({
     observed.length > 0 ? (
       <div>
         <h3 className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-text3">
-          <Icon name="trending_up" size={13} />
+          <Icon name="trending_up" size={12} />
           hop observed
         </h3>
-        <div className="rounded-[16px] border border-border bg-surface px-4">
+        <div className="rounded-[var(--radius)] border border-border bg-surface px-4">
           {observed.map((o) => (
             <div
               key={o.id}
@@ -208,9 +208,9 @@ export default function MemoryKnows({
 
   if (groups.length === 0 && !noticedBlock && !observedBlock) {
     return (
-      <div className="rounded-[16px] border border-dashed border-border bg-paper px-5 py-7 text-center">
+      <div className="rounded-[var(--radius)] border border-dashed border-border bg-paper px-5 py-7 text-center">
         <span className="grid mx-auto h-10 w-10 place-items-center rounded-full bg-brand-light text-brand">
-          <Icon name="lightbulb" size={20} />
+          <Icon name="lightbulb" size={24} weight="fill" />
         </span>
         <p className="mt-3 text-[14px] leading-[1.55] text-text2">
           hop hasn&apos;t learned anything durable about you yet. Tell it in{' '}
@@ -231,7 +231,7 @@ export default function MemoryKnows({
           <h3 className="mb-1 text-[12px] font-semibold uppercase tracking-[0.12em] text-brand">
             {g.title}
           </h3>
-          <div className="rounded-[16px] border border-border bg-surface px-4">
+          <div className="rounded-[var(--radius)] border border-border bg-surface px-4">
             {g.facts.map((f) => (
               <FactRow key={f.id} fact={f} onForgotten={onForgotten} />
             ))}

@@ -219,8 +219,8 @@ export default function TopNav({
           transition: `background ${DUR} ${EASE}, border-color ${DUR} ${EASE}`,
         }}
       >
-        <div className="h-full px-4 sm:px-8 lg:px-16">
-        <div className="mx-auto flex h-full max-w-[1180px] items-center gap-4 sm:gap-5 lg:gap-7">
+        <div className="h-full px-5 sm:px-8 lg:px-12 xl:px-16">
+        <div className="mx-auto flex h-full max-w-[var(--container-shell)] items-center gap-4 sm:gap-5 lg:gap-7">
           {/* logo — left. Stays the SAME size whether at top or scrolled; only its
               vertical position shifts as the header height contracts (76→56px). */}
           <div className="flex flex-shrink-0 items-center gap-[11px]">
@@ -302,7 +302,17 @@ export default function TopNav({
             </>
           )}
 
-          {/* spacer pushes the right cluster to the far edge (desktop only) */}
+          {/* spacer pushes the right cluster to the far edge (desktop only).
+              Taste call (2026-07, full-width-shell gap fix): this row stays
+              at --container-shell width on purpose, matching the rest of
+              this bar and the "Chrome aligns with content" decision from the
+              full-width 2026 shell PR — this is persistent nav chrome, not a
+              content row, and generous open space between the logo/nav and
+              the account cluster at wide viewports is standard for
+              Airbnb/Linear-class full-bleed headers, not a layout bug.
+              (Contrast with RouteBar/PointsPanel below, which ARE content
+              rows and got capped back to --container-app because their two
+              clusters read as visually related and now sit stranded apart.) */}
           <div className="hidden flex-1 md:block" />
 
           {/* right cluster — origin + account sit together as one tidy group so

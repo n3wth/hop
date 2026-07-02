@@ -142,7 +142,7 @@ export default function ConciergeHero({
           className="hop-rise inline-flex items-center gap-2 rounded-full bg-brand-deep px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-hero-eyebrow"
           style={{ ['--hop-delay' as string]: '40ms' }}
         >
-          <Icon name="lightbulb" size={13} />
+          <Icon name="lightbulb" size={12} />
           {copy.eyebrow}
         </span>
 
@@ -224,7 +224,7 @@ export default function ConciergeHero({
                 href="/account"
                 className="flex items-center gap-1.5 rounded-full border border-wallet-active bg-wallet-active/15 px-3.5 py-1.5 text-[12px] font-semibold text-hero-white-hover transition-colors hover:bg-wallet-active/25"
               >
-                <Icon name="loyalty" size={14} className="flex-shrink-0" />
+                <Icon name="loyalty" size={16} className="flex-shrink-0" />
                 Add your programs
               </Link>
             ) : null}
@@ -237,7 +237,7 @@ export default function ConciergeHero({
                 onClick={onConnectGmail}
                 className="flex items-center gap-1.5 rounded-full border border-brand-muted bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-hero-label transition-colors hover:border-wallet-active hover:text-hero-white-hover"
               >
-                <Icon name="loyalty" size={14} className="flex-shrink-0" />
+                <Icon name="envelope" size={16} className="flex-shrink-0" />
                 Connect Gmail to learn from past trips
               </button>
             ) : (
@@ -247,7 +247,7 @@ export default function ConciergeHero({
                 title="Coming soon — let hop learn from your past trips"
                 className="flex cursor-not-allowed items-center gap-1.5 rounded-full border border-brand-muted bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-hero-label"
               >
-                <Icon name="loyalty" size={14} className="flex-shrink-0" />
+                <Icon name="envelope" size={16} className="flex-shrink-0" />
                 Connect Gmail to learn from past trips
                 <span className="rounded-full bg-brand-deep px-1.5 py-px text-[10px] uppercase tracking-wide text-hero-body">
                   Soon
@@ -258,7 +258,7 @@ export default function ConciergeHero({
               href="/account"
               className="flex items-center gap-1.5 rounded-full border border-brand-muted bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-hero-label transition-colors hover:border-wallet-active hover:text-hero-white-hover"
             >
-              <Icon name="info" size={14} className="flex-shrink-0" />
+              <Icon name="info" size={16} className="flex-shrink-0" />
               What hop remembers
             </Link>
           </div>

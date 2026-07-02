@@ -45,3 +45,16 @@ export async function setHomeAirport(userId: string, code: string): Promise<bool
     return !error
   })
 }
+
+// Unset the saved home airport (e.g. the origin pill's "Clear") without
+// touching travel_prefs/travel_profile. A no-op (not an error) when the user
+// has no row yet.
+export async function clearHomeAirport(userId: string): Promise<boolean> {
+  return withDb(false, async (db) => {
+    const { error } = await db
+      .from(TABLE)
+      .update({ home_airport: null, updated_at: new Date().toISOString() })
+      .eq('user_id', userId)
+    return !error
+  })
+}

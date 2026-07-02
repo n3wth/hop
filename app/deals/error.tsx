@@ -52,11 +52,11 @@ export default function DealsError({
 
       <div className="hop-rise mt-8 flex flex-wrap items-center justify-center gap-3" style={{ ['--hop-delay' as string]: '220ms' }}>
         <Button onClick={() => retry()}>
-          <Icon name="swap_horiz" size={18} />
+          <Icon name="refresh" size={16} />
           Try again
         </Button>
         <Button href="/ask" variant="secondary">
-          <Icon name="flight" size={18} />
+          <Icon name="flight" size={16} />
           Ask hop
         </Button>
         <Button href="/" variant="secondary">

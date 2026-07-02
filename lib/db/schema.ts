@@ -19,6 +19,7 @@ import {
   boolean,
   jsonb,
   timestamp,
+  index,
 } from 'drizzle-orm/pg-core'
 
 const tz = (name: string) => timestamp(name, { withTimezone: true })
@@ -97,6 +98,26 @@ export const memoryOutcomes = pgTable('hop_memory_outcomes', {
   cabin: text('cabin'),
   createdAt: tz('created_at').defaultNow(),
 })
+
+// Premium subscription state — one row per user with a non-default tier
+// (absent row = 'free'). Written ONLY by the Stripe webhook route via
+// lib/subscription.ts#setUserTier (verified events; refs we minted).
+// stripe_customer_id is the fallback-attribution key for lifecycle events that
+// arrive without our metadata AND the stable re-link key across the auth
+// migration (docs/plans/auth-db-migration.md). last_event_at guards against
+// out-of-order webhook delivery. See drizzle/0005_subscriptions.sql.
+export const subscriptions = pgTable(
+  'hop_subscriptions',
+  {
+    userId: text('user_id').primaryKey(),
+    tier: text('tier').notNull().default('free'),
+    stripeCustomerId: text('stripe_customer_id'),
+    stripeSubscriptionId: text('stripe_subscription_id'),
+    lastEventAt: tz('last_event_at'),
+    updatedAt: tz('updated_at').defaultNow(),
+  },
+  (t) => [index('hop_subscriptions_stripe_customer_id_idx').on(t.stripeCustomerId)],
+)
 
 export const bookings = pgTable('hop_bookings', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -207,4 +228,76 @@ export const hopSubscriptions = pgTable('hop_subscriptions', {
   cancelAtPeriodEnd: boolean('cancel_at_period_end').notNull().default(false),
   createdAt: tz('created_at').defaultNow().notNull(),
   updatedAt: tz('updated_at').defaultNow().notNull(),
+})
+
+// First-party affiliate outclick ledger — one row per /api/go/* redirect
+// (kind 'card' = the credit-card CTA behind a points-winning verdict). The
+// conversion baseline for the coming CJ/Impact partnership: today's applyUrls
+// are placeholder landing pages, so this table is the only first-party click
+// record. Anonymous by design: NO user_id column (click telemetry, not user
+// data). Written fire-and-forget by lib/outclicks.ts; counted by
+// lib/business-digest.ts. See drizzle/0006_outclicks.sql.
+export const outclicks = pgTable(
+  'hop_outclicks',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    clickedAt: tz('clicked_at').defaultNow(),
+    kind: text('kind').notNull(),
+    target: text('target').notNull(),
+    url: text('url').notNull(),
+    program: text('program'),
+    userAgent: text('user_agent'),
+  },
+  // The weekly business digest counts kind='card' rows inside a time window.
+  (t) => [index('hop_outclicks_kind_clicked_at_idx').on(t.kind, t.clickedAt)],
+)
+
+// ── Self-improvement loop (ADR 0007) — three SYSTEM-SCOPED tables ───────────
+// No user_id column exists on any of them, by design: no user row, balance,
+// or free text can ever land in this system. See drizzle/0007_self_improvement.sql.
+
+// One liveness row per vercel.json cron job, upserted fire-and-forget by
+// lib/cron-heartbeat.ts at the end of each authorized run. ok=false with
+// note='disabled' = owner choice, not an outage — the sentinel's D1 detector
+// only looks at last_run_at age.
+export const cronHeartbeats = pgTable('hop_cron_heartbeats', {
+  job: text('job').primaryKey(),
+  lastRunAt: tz('last_run_at').defaultNow().notNull(),
+  ok: boolean('ok').notNull().default(true),
+  note: text('note'),
+})
+
+// Append-only degradation telemetry: one row per degraded source per live
+// search (lib/degradation-telemetry.ts). route only ever holds a validated
+// 'AAA-BBB' IATA pair or null. Pruned to 30 days by the sentinel.
+export const degradationEvents = pgTable(
+  'hop_degradation_events',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    source: text('source').notNull(),
+    route: text('route'),
+    createdAt: tz('created_at').defaultNow(),
+  },
+  (t) => [index('hop_degradation_events_created_at_idx').on(t.createdAt)],
+)
+
+// Idempotent, fingerprinted findings (lib/improvement-findings.ts): the
+// durable queue between detection and delivery. fingerprint (`kind:subject`)
+// is UNIQUE — re-detection updates/reopens the row; filed_at makes filing
+// at-most-once per episode; resolved_at drives the 7-day flap window.
+export const improvementFindings = pgTable('hop_improvement_findings', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  fingerprint: text('fingerprint').notNull().unique(),
+  kind: text('kind').notNull(),
+  severity: text('severity').notNull().default('p3'),
+  title: text('title').notNull(),
+  body: text('body').notNull(),
+  status: text('status').notNull().default('open'),
+  linearIssueId: text('linear_issue_id'),
+  linearIdentifier: text('linear_identifier'),
+  deliveredVia: text('delivered_via'),
+  firstSeenAt: tz('first_seen_at').defaultNow().notNull(),
+  lastSeenAt: tz('last_seen_at').defaultNow().notNull(),
+  filedAt: tz('filed_at'),
+  resolvedAt: tz('resolved_at'),
 })
