@@ -9,7 +9,9 @@ import { clampCpp, listValuations, MAX_CPP, MIN_CPP } from '@/lib/valuations'
 import { getValuationOverrides, type ValuationOverride } from '@/lib/valuation-overrides'
 
 // Keep in sync with the Worker's copy (hop-valuations Worker source).
-const MIN_SAMPLES_TO_TRUST = 20
+// Exported so the health sentinel's valuation-drift detector
+// (lib/health-checks.ts, D5) reuses ADR 0005's trust gate verbatim.
+export const MIN_SAMPLES_TO_TRUST = 20
 const OVERRIDE_FRESHNESS_DAYS = 14
 const OVERRIDE_FRESHNESS_MS = OVERRIDE_FRESHNESS_DAYS * 24 * 60 * 60 * 1000
 

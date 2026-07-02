@@ -3,7 +3,7 @@
 // importing a client never throws, and tests can run without real keys.
 // Never logs secret values.
 
-type EnvKey =
+export type EnvKey =
   | 'DUFFEL_API_KEY_LIVE'
   // TEST-mode token (duffel_test_…) — native cash checkout books against this
   // ONLY. Orders/payments must never touch the live key (real money).
@@ -47,6 +47,13 @@ type EnvKey =
   | 'STRIPE_WEBHOOK_SECRET'
   | 'STRIPE_PRICE_ID_PRO_MONTHLY'
   | 'STRIPE_PRICE_ID_PRO_YEARLY'
+  // Linear — the health sentinel's issue-filing channel (lib/linear.ts, ADR
+  // 0007). The ONE runtime key the self-improvement loop adds to Vercel: blast
+  // radius is "can create issues in one team", and the key is never logged.
+  // Absent → filing degrades to detect-and-record (findings accumulate in
+  // hop_improvement_findings; P1s fall back to the owner email).
+  | 'LINEAR_API_KEY'
+  | 'LINEAR_TEAM_ID'
 
 function read(key: EnvKey): string {
   const value = process.env[key]
@@ -74,6 +81,8 @@ export const env = {
   stripeWebhookSecret: () => read('STRIPE_WEBHOOK_SECRET'),
   stripePriceIdProMonthly: () => read('STRIPE_PRICE_ID_PRO_MONTHLY'),
   stripePriceIdProYearly: () => read('STRIPE_PRICE_ID_PRO_YEARLY'),
+  linearApiKey: () => read('LINEAR_API_KEY'),
+  linearTeamId: () => read('LINEAR_TEAM_ID'),
 }
 
 // True when a key is present without throwing — lets a client degrade
@@ -169,5 +178,21 @@ export function isInferredFactsEnabled(): boolean {
 // HOP_ENABLE_OBSERVED_OUTCOMES once the table is created.
 export function isObservedOutcomesEnabled(): boolean {
   const flag = process.env.HOP_ENABLE_OBSERVED_OUTCOMES ?? ''
+  return /^(1|true|yes)$/i.test(flag.trim())
+}
+
+// The self-improvement loop (ADR 0007 — degradation telemetry + the daily
+// health sentinel) is GATED behind an explicit flag ONLY — detection is
+// DETERMINISTIC (counted rows, timestamp math, named constants; no LLM), so
+// like the observed-outcomes seam it needs no key to detect. Off by default:
+// recordDegradation() returns before touching anything, the sentinel route
+// answers 503 disabled, and heartbeat READS degrade to null. The deploy is a
+// byte-for-byte no-op until flipped, with ONE recorded exception: heartbeat
+// WRITES are deliberately ungated (see ADR 0007's exception list). Filing
+// findings as Linear issues additionally requires LINEAR_API_KEY +
+// LINEAR_TEAM_ID (lib/linear.ts#isLinearConfigured) — the isEmailEnabled()
+// split: detection is free, delivery needs a key.
+export function isSelfImproveEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_SELF_IMPROVE ?? ''
   return /^(1|true|yes)$/i.test(flag.trim())
 }

@@ -34,6 +34,7 @@ import {
 import { recordAlert, type StandingOrderAlert } from '@/lib/standing-order-alerts'
 import { evaluateOrder } from '@/lib/standing-orders-model'
 import { isEmailEnabled, sendAlertEmail } from '@/lib/email'
+import { recordHeartbeat } from '@/lib/cron-heartbeat'
 import type { TravelPrefs } from '@/lib/prefs-model'
 
 // This route reads per-user data and must never be cached or statically rendered.
@@ -66,6 +67,9 @@ function prefsForOrder(
 
 export async function GET(request: Request) {
   if (!isEnabled()) {
+    // Liveness record (ADR 0007): being off is an owner choice, not an outage.
+    // Only for authorized callers, so a public probe can't keep it fresh.
+    if (isAuthorized(request)) recordHeartbeat('standing-orders', false, 'disabled')
     return Response.json(
       { ok: false, disabled: true, reason: 'STANDING_ORDERS_CRON_ENABLED is off' },
       { status: 503 },
@@ -91,6 +95,10 @@ export async function GET(request: Request) {
   let alertsRecorded = 0
   let delivered = 0
   const errors: string[] = []
+  // Tally of evaluateOrder's why-not codes — counted here where evalResult is
+  // already in hand, so the heartbeat note carries the "why" with zero extra
+  // queries (ADR 0007).
+  const reasonTally: Record<string, number> = {}
 
   for (const order of orders) {
     try {
@@ -111,6 +119,9 @@ export async function GET(request: Request) {
       const result = await assembleSearch(order.params, balances, prefs)
 
       const evalResult = evaluateOrder(order, result)
+      if (evalResult.reason) {
+        reasonTally[evalResult.reason] = (reasonTally[evalResult.reason] ?? 0) + 1
+      }
       if (!evalResult.crossed || !evalResult.pick) continue
 
       crossings++
@@ -158,6 +169,21 @@ export async function GET(request: Request) {
       errors.push(`${order.id}: ${e instanceof Error ? e.message : 'error'}`)
     }
   }
+
+  // Liveness record (ADR 0007): after the work, so a fresh ok heartbeat means
+  // "ran to completion". The note tallies the run's reason codes, sorted for
+  // a stable read. Fire-and-forget — can never fail the response.
+  const reasonNote = Object.entries(reasonTally)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([reason, n]) => `${reason}:${n}`)
+    .join(' ')
+  recordHeartbeat(
+    'standing-orders',
+    true,
+    [`evaluated:${evaluated}`, `crossings:${crossings}`, reasonNote, errors.length > 0 ? `errors:${errors.length}` : '']
+      .filter(Boolean)
+      .join(' '),
+  )
 
   return Response.json({
     ok: true,

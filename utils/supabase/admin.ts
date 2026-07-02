@@ -529,6 +529,108 @@ interface HopDatabase {
         }
         Relationships: []
       }
+      hop_cron_heartbeats: {
+        // One liveness row per vercel.json cron job, upserted fire-and-forget
+        // at the end of each authorized run (lib/cron-heartbeat.ts, ADR 0007).
+        // SYSTEM-SCOPED: no user_id column exists, by design. ok=false with
+        // note='disabled' means "owner switched it off" — the sentinel's D1
+        // detector only looks at last_run_at age.
+        Row: {
+          job: string
+          last_run_at: string
+          ok: boolean
+          note: string | null
+        }
+        Insert: {
+          job: string
+          last_run_at?: string
+          ok?: boolean
+          note?: string | null
+        }
+        Update: {
+          last_run_at?: string
+          ok?: boolean
+          note?: string | null
+        }
+        Relationships: []
+      }
+      hop_degradation_events: {
+        // Append-only degradation telemetry: one row per degraded source per
+        // live search (lib/degradation-telemetry.ts, ADR 0007). SYSTEM-SCOPED:
+        // no user_id, no balances, no free text — route only ever holds a
+        // validated 'AAA-BBB' IATA pair or null. Pruned to 30d by the sentinel.
+        Row: {
+          id: string
+          source: string
+          route: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          source: string
+          route?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          source?: string
+          route?: string | null
+        }
+        Relationships: []
+      }
+      hop_improvement_findings: {
+        // Idempotent, fingerprinted findings (lib/improvement-findings.ts,
+        // ADR 0007) — the durable queue between detection and delivery.
+        // fingerprint (`kind:subject`) is UNIQUE; filed_at makes filing
+        // at-most-once per episode; resolved_at drives the 7-day flap window.
+        // SYSTEM-SCOPED: no user_id column exists, by design.
+        Row: {
+          id: string
+          fingerprint: string
+          kind: string
+          severity: string
+          title: string
+          body: string
+          status: string
+          linear_issue_id: string | null
+          linear_identifier: string | null
+          delivered_via: string | null
+          first_seen_at: string | null
+          last_seen_at: string | null
+          filed_at: string | null
+          resolved_at: string | null
+        }
+        Insert: {
+          id?: string
+          fingerprint: string
+          kind: string
+          severity?: string
+          title: string
+          body: string
+          status?: string
+          linear_issue_id?: string | null
+          linear_identifier?: string | null
+          delivered_via?: string | null
+          first_seen_at?: string | null
+          last_seen_at?: string | null
+          filed_at?: string | null
+          resolved_at?: string | null
+        }
+        Update: {
+          kind?: string
+          severity?: string
+          title?: string
+          body?: string
+          status?: string
+          linear_issue_id?: string | null
+          linear_identifier?: string | null
+          delivered_via?: string | null
+          first_seen_at?: string | null
+          last_seen_at?: string | null
+          filed_at?: string | null
+          resolved_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

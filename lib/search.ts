@@ -21,6 +21,7 @@ import { searchAwards } from '@/lib/seatsaero'
 import { getBalances } from '@/lib/awardwallet'
 import { mockCash, mockAwards, mockBalances } from '@/lib/mock'
 import { recordCppObservations } from '@/lib/valuation-telemetry'
+import { recordDegradation } from '@/lib/degradation-telemetry'
 import { canonicalizeProgram } from '@/lib/programs'
 
 export const POINTS_THRESHOLD_CPP = 2.5
@@ -320,6 +321,14 @@ export async function assembleSearch(
           (o.cashPrice ?? Infinity) < (cheapest.cashPrice ?? Infinity) ? o : cheapest,
         )
       : undefined
+
+  // Self-improvement telemetry (ADR 0007): record which sources degraded this
+  // LIVE search — fire-and-forget (void, gated, never throws), so it cannot
+  // alter degraded[], the verdict, or anything else in the result. Mirrors
+  // the recordCppObservations hook above; mock runs never record.
+  if (!useMock && degraded.length > 0) {
+    recordDegradation(degraded, { from: params.from, to: params.to })
+  }
 
   return {
     params,
