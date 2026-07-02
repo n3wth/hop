@@ -303,7 +303,9 @@ export default async function PointsBandPage({
             Today&rsquo;s deals
           </Link>
         </div>
+      </div>
 
+      <div className="mx-auto max-w-[var(--container-shell)]">
         <SiteFooter />
       </div>
     </AppShell>

@@ -334,9 +334,11 @@ export default async function DestinationGuidePage({
             Today’s deals
           </Link>
         </div>
-
-        <SiteFooter />
       </article>
+
+      <div className="mx-auto max-w-[var(--container-shell)]">
+        <SiteFooter />
+      </div>
     </AppShell>
   )
 }
