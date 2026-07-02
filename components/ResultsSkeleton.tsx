@@ -167,7 +167,7 @@ export default function ResultsSkeleton() {
 
       {/* Wallet placeholder — dark panel. Padding + the column grid collapse at
           the same breakpoints as PointsPanel (compact below lg, 4-col at lg). */}
-      <div className="mt-14 overflow-hidden rounded-[22px]" style={{ background: 'var(--color-text)' }}>
+      <div className="mt-14 overflow-hidden rounded-[22px]" style={{ background: 'var(--color-brand-ink)' }}>
         <div className="px-4 pt-[14px] sm:px-[30px] sm:pt-[18px]">
           {[0, 1, 2, 3].map((i) => (
             <div
