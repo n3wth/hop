@@ -74,6 +74,8 @@ const TABLE_MAP: Record<string, any> = {
   hop_degradation_events: schema.degradationEvents,
   hop_improvement_findings: schema.improvementFindings,
   hop_support_tickets: schema.supportTickets,
+  hop_notification_outbox: schema.notificationOutbox,
+  hop_mcp_usage: schema.mcpUsage,
 }
 
 // ── Supabase/Postgrest Query Builder Shim for Drizzle ─────────────────────

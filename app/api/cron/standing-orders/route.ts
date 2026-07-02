@@ -20,6 +20,17 @@
 // and the alert stays in-app (durable record), exactly as before. A send failure
 // (or a missing notify address) leaves `delivered=false` so the next run retries.
 //
+// OUTBOX (docs/decisions/0003-notification-delivery-abstraction.md's deferred
+// idempotent ledger): before recording/sending a crossing, we RESERVE a slot in
+// hop_notification_outbox keyed on (userId, kind:'standing_order_alert',
+// dedupeKey: the same offer fingerprint evaluateOrder already computes). This is
+// an ADDITIVE safety net on top of the existing last_notified_offer dedupe stamp
+// below — it closes the crash window between recordAlert and that stamp landing,
+// where a duplicate alert/email could otherwise slip through on the next tick. A
+// duplicate reservation skips the crossing entirely; a confirmed send marks the
+// reservation sent (permanently closing that dedupe key); a failed send releases
+// the reservation (deletes the row) so a later sweep can retry.
+//
 // NEVER throws to the platform: every order is evaluated in isolation; one
 // failure can't sink the batch. Always responds 200 (when enabled) with a summary.
 
@@ -35,7 +46,10 @@ import { recordAlert, type StandingOrderAlert } from '@/lib/standing-order-alert
 import { evaluateOrder } from '@/lib/standing-orders-model'
 import { isEmailEnabled, sendAlertEmail } from '@/lib/email'
 import { recordHeartbeat } from '@/lib/cron-heartbeat'
+import { reserve as reserveOutbox, markSent as markOutboxSent, release as releaseOutbox } from '@/lib/notification-outbox'
 import type { TravelPrefs } from '@/lib/prefs-model'
+
+const OUTBOX_KIND = 'standing_order_alert'
 
 // This route reads per-user data and must never be cached or statically rendered.
 export const dynamic = 'force-dynamic'
@@ -94,6 +108,13 @@ export async function GET(request: Request) {
   let crossings = 0
   let alertsRecorded = 0
   let delivered = 0
+  let outboxDuplicates = 0
+  // Reserve failures that are NOT a duplicate (invalid input, or — notably —
+  // the outbox table not existing yet / a db error). Surfaced separately so a
+  // pre-migration deploy (STANDING_ORDERS_CRON_ENABLED on before
+  // hop_notification_outbox exists) shows up loudly as "every crossing is
+  // being skipped" instead of silently zeroing out alertsRecorded/delivered.
+  let outboxErrors = 0
   const errors: string[] = []
   // Tally of evaluateOrder's why-not codes — counted here where evalResult is
   // already in hand, so the heartbeat note carries the "why" with zero extra
@@ -101,6 +122,10 @@ export async function GET(request: Request) {
   const reasonTally: Record<string, number> = {}
 
   for (const order of orders) {
+    // Hoisted so the outer catch can release a reservation left dangling by an
+    // unexpected throw between reserve() and its normal sent/released resolution.
+    let reservationId: string | undefined
+    let reservationResolved = false
     try {
       evaluated++
       const uid = order.userId
@@ -126,9 +151,32 @@ export async function GET(request: Request) {
 
       crossings++
 
-      // Record the durable alert FIRST (the user-facing record), then stamp the
-      // dedupe fingerprint so a transient alert-write failure doesn't suppress a
-      // retry next tick.
+      // OUTBOX RESERVATION — the idempotency gate. Same dedupe key evaluateOrder
+      // already computed (offerFingerprint), reused verbatim; no new fingerprint
+      // scheme. A duplicate reservation means this exact offer was already
+      // recorded/sent (most likely a crash before last_notified_offer landed on
+      // a prior tick) — skip the crossing entirely rather than re-alert.
+      const dedupeKey = evalResult.fingerprint
+      const reservation = dedupeKey
+        ? await reserveOutbox({
+            userId: uid,
+            kind: OUTBOX_KIND,
+            dedupeKey,
+            payload: { standingOrderId: order.id, route: evalResult.pick.route },
+          })
+        : ({ ok: false, reason: 'invalid' } as const)
+      if (!reservation.ok) {
+        if (reservation.reason === 'duplicate') outboxDuplicates++
+        else outboxErrors++
+        continue
+      }
+      reservationId = reservation.id
+
+      // Record the durable alert FIRST (the user-facing record). The dedupe
+      // fingerprint is stamped, and the reservation resolved, ONLY once we know
+      // an alert actually exists — a failed recordAlert() must leave both the
+      // fingerprint unstamped and the reservation released so the crossing gets
+      // a genuine retry next tick, not a silent "handled" state.
       const alertCpp = evalResult.cpp ?? evalResult.pick.cpp ?? order.minCpp
       const alertId = await recordAlert({
         userId: uid,
@@ -138,7 +186,14 @@ export async function GET(request: Request) {
         cpp: alertCpp,
         fingerprint: evalResult.fingerprint,
       })
-      if (alertId) alertsRecorded++
+
+      if (!alertId) {
+        outboxErrors++
+        await releaseOutbox(reservation.id)
+        reservationResolved = true
+        continue
+      }
+      alertsRecorded++
 
       if (evalResult.fingerprint) {
         await recordNotifiedOffer(uid, order.id, evalResult.fingerprint)
@@ -148,7 +203,7 @@ export async function GET(request: Request) {
       // persisted (we have its id to mark delivered), and the watch has a notify
       // address. A successful send flips `delivered=true`; any failure leaves it
       // false so the next run retries. Never throws into the batch.
-      if (emailEnabled && alertId && order.notifyEmail) {
+      if (emailEnabled && order.notifyEmail) {
         const alert: StandingOrderAlert = {
           id: alertId,
           standingOrderId: order.id,
@@ -163,10 +218,31 @@ export async function GET(request: Request) {
         if (sent.ok) {
           const marked = await markAlertDelivered(uid, alertId)
           if (marked) delivered++
+          await markOutboxSent(reservation.id)
+        } else {
+          // Send failed — release the reservation so a later sweep can retry.
+          // (Note: last_notified_offer is already stamped above regardless of
+          // send outcome, matching pre-existing behavior — that's the primary
+          // dedupe; the outbox is a second layer that only closes the crash
+          // window, not a retry driver for email sends specifically.)
+          await releaseOutbox(reservation.id)
         }
+      } else {
+        // No send was attempted (email disabled or no notify address) — the
+        // durable in-app alert IS the delivery in that case, so close out the
+        // reservation rather than leaving it open to collide with a future
+        // legitimate reserve for the same dedupe key.
+        await markOutboxSent(reservation.id)
       }
+      reservationResolved = true
     } catch (e) {
       errors.push(`${order.id}: ${e instanceof Error ? e.message : 'error'}`)
+      // An unexpected throw between reserve() and its normal resolution would
+      // otherwise leave the reservation permanently 'reserved', wrongly treated
+      // as a duplicate (and the crossing suppressed) on every future tick.
+      if (reservationId && !reservationResolved) {
+        await releaseOutbox(reservationId)
+      }
     }
   }
 
@@ -180,7 +256,14 @@ export async function GET(request: Request) {
   recordHeartbeat(
     'standing-orders',
     true,
-    [`evaluated:${evaluated}`, `crossings:${crossings}`, reasonNote, errors.length > 0 ? `errors:${errors.length}` : '']
+    [
+      `evaluated:${evaluated}`,
+      `crossings:${crossings}`,
+      reasonNote,
+      outboxDuplicates > 0 ? `outboxDuplicates:${outboxDuplicates}` : '',
+      outboxErrors > 0 ? `outboxErrors:${outboxErrors}` : '',
+      errors.length > 0 ? `errors:${errors.length}` : '',
+    ]
       .filter(Boolean)
       .join(' '),
   )
@@ -191,6 +274,8 @@ export async function GET(request: Request) {
     crossings,
     alertsRecorded,
     delivered,
+    outboxDuplicates,
+    outboxErrors,
     emailEnabled,
     durationMs: Date.now() - startedAt,
     errors: errors.length > 0 ? errors : undefined,

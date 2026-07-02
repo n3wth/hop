@@ -149,6 +149,31 @@ export const standingOrderAlerts = pgTable('hop_standing_order_alerts', {
   createdAt: tz('created_at').defaultNow(),
 })
 
+// Idempotent delivery ledger (ADR 0003's deferred "outbox ledger" — reserve /
+// mark / release semantics keyed on UNIQUE(user_id, kind, dedupe_key)). A row
+// is reserved BEFORE a notification is attempted; the unique index makes a
+// second reserve for the same (user, kind, dedupe_key) a no-op, so a crash
+// between recording an alert and stamping its dedupe fingerprint can never
+// double-send. `release()` deletes the row on a failed send so the next sweep
+// can cleanly re-reserve and retry. Pure delivery bookkeeping — no economics,
+// no household/pooling logic; `payload` is opaque delivery context only.
+export const notificationOutbox = pgTable(
+  'hop_notification_outbox',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: text('user_id').notNull(),
+    kind: text('kind').notNull(),
+    dedupeKey: text('dedupe_key').notNull(),
+    status: text('status').notNull().default('reserved'), // reserved | sent | failed | released
+    payload: jsonb('payload'),
+    createdAt: tz('created_at').defaultNow(),
+    updatedAt: tz('updated_at').defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('hop_notification_outbox_user_kind_dedupe_idx').on(t.userId, t.kind, t.dedupeKey),
+  ],
+)
+
 export const apiTokens = pgTable('hop_api_tokens', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: text('user_id').notNull(),
@@ -158,6 +183,24 @@ export const apiTokens = pgTable('hop_api_tokens', {
   createdAt: tz('created_at').defaultNow(),
   lastUsedAt: tz('last_used_at'),
 })
+
+// MCP usage log (growth-hypothesis day-30 target: first metered B2B user) —
+// one row per tool call through app/api/[transport]/route.ts. user_id is
+// nullable (stateless/unlinked calls still count, keyed by IP upstream);
+// token_id is nullable too and set-null on token revocation so a user's
+// historical usage total survives rotating/revoking a token. No economics
+// here, just a call log for metering/rate-limit visibility.
+export const mcpUsage = pgTable(
+  'hop_mcp_usage',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: text('user_id'),
+    tokenId: uuid('token_id').references(() => apiTokens.id, { onDelete: 'set null' }),
+    tool: text('tool').notNull(),
+    createdAt: tz('created_at').defaultNow(),
+  },
+  (t) => [index('hop_mcp_usage_user_id_created_at_idx').on(t.userId, t.createdAt)],
+)
 
 export const travelHistory = pgTable('hop_travel_history', {
   userId: text('user_id').primaryKey(),
