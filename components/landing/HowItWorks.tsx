@@ -57,7 +57,7 @@ export default function HowItWorks() {
           >
             <div className="flex items-center justify-between">
               <span className="grid h-11 w-11 place-items-center rounded-full bg-brand-light text-brand">
-                <Icon name={s.icon} size={22} />
+                <Icon name={s.icon} size={24} weight="fill" />
               </span>
               <span className="font-display text-[15px] font-semibold tabular-nums text-text3">
                 0{i + 1}

@@ -308,7 +308,7 @@ function VerdictCard({
 
         <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand">
           See the search
-          <Icon name="swap_horiz" size={14} />
+          <Icon name="swap_horiz" size={16} />
         </span>
       </Link>
 
@@ -342,7 +342,7 @@ function Compare({
   return (
     <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
       <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
-        <Icon name="swap_horiz" size={14} className="text-brand" />
+        <Icon name="swap_horiz" size={16} className="text-brand" />
         Side by side
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -395,7 +395,7 @@ function Timing({ b }: { b: TimingBlock }) {
   return (
     <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
       <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
-        <Icon name="schedule" size={14} className="text-brand" />
+        <Icon name="schedule" size={16} className="text-brand" />
         When to go · {b.place}
       </div>
       <div className="flex items-end gap-1.5">
@@ -427,7 +427,7 @@ function Weather({ b }: { b: WeatherBlock }) {
     <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
-          <Icon name="info" size={14} className="text-brand" />
+          <Icon name="info" size={16} className="text-brand" />
           {b.place} · {b.month}
         </div>
         {hasTemp ? (
@@ -493,7 +493,7 @@ function PromptChips({ b, onChip }: { b: PromptChipsBlock; onChip?: (p: string) 
 function ProfileConfirm({ b }: { b: ProfileConfirmBlock }) {
   return (
     <div className="flex items-center gap-2.5 rounded-[var(--radius-lg)] border border-border bg-sunk p-3.5">
-      <Icon name="check_circle" size={18} className="flex-shrink-0 text-brand" />
+      <Icon name="check_circle" size={16} weight="fill" className="flex-shrink-0 text-brand" />
       <span className="text-[13px] leading-[1.5] text-text2">
         <span className="font-semibold text-text">Got it.</span> {b.fact}
       </span>
@@ -520,7 +520,7 @@ function ConnectGmail({
   return (
     <div className="flex flex-col gap-2.5 rounded-[var(--radius-lg)] border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-2.5">
-        <Icon name="loyalty" size={18} className="mt-0.5 flex-shrink-0 text-brand" />
+        <Icon name="envelope" size={16} className="mt-0.5 flex-shrink-0 text-brand" />
         <span className="text-[13px] leading-[1.5] text-text2">
           <span className="font-semibold text-text">Connect Gmail</span>
           {b.reason ? ` ${b.reason}` : ' so hop can learn from your past trips.'}
@@ -533,7 +533,7 @@ function ConnectGmail({
           className="flex flex-shrink-0 items-center gap-1.5 self-start rounded-full border border-border bg-surface px-3.5 py-1.5 text-[12px] font-semibold text-text transition-colors hover:border-brand hover:text-brand sm:self-auto"
         >
           Connect
-          <Icon name="swap_horiz" size={14} />
+          <Icon name="swap_horiz" size={16} />
         </button>
       ) : (
         <button
@@ -564,7 +564,7 @@ function Counterfactual({ b, homeAirport }: { b: CounterfactualBlock; homeAirpor
   return (
     <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
       <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
-        <Icon name="swap_horiz" size={14} className="text-brand" />
+        <Icon name="swap_horiz" size={16} className="text-brand" />
         What if · {r.label}
       </div>
       {r.unlockedCount > 0 ? (

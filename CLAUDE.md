@@ -17,7 +17,7 @@ from the root.
 
 - `app/`, `components/`, `lib/`, `utils/`, `public/` — the application
 - `docs/design/` — the design source of truth: `CHOSEN-editorial.html` (canonical visual
-  reference), `copy-spec.md` (strict copy voice), `icons.json`, logo assets
+  reference), `copy-spec.md` (strict copy voice), logo assets
 - `docs/plans/` — implementation plans (e.g. the flight-optimizer plan, the Eve agent design)
 - `docs/decisions/` — **ADRs**: the load-bearing architectural decisions. Read the relevant one
   before changing a decided area (engine-as-source-of-truth, Eve co-location, delivery layer).

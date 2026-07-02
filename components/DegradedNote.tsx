@@ -31,7 +31,7 @@ export default function DegradedNote({ degraded }: DegradedNoteProps) {
       className="mt-[18px] flex items-start gap-[10px] rounded-[12px] border border-border bg-sunk px-[16px] py-[11px] text-[13px] leading-[1.45] text-text2"
     >
       <span className="mt-[1px] flex-shrink-0">
-        <Icon name="notifications" size={16} />
+        <Icon name="warning" size={16} weight="fill" />
       </span>
       <span>{messages.join(' ')}</span>
     </div>

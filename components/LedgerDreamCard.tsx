@@ -159,7 +159,7 @@ export default function LedgerDreamCard({
 
           {/* eyebrow */}
           <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-paper px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brand">
-            <Icon name="workspace_premium" size={13} />
+            <Icon name="workspace_premium" size={12} />
             {v.saveToward ? 'A dream to save toward' : 'Your dream this week'}
           </span>
 
@@ -216,7 +216,7 @@ export default function LedgerDreamCard({
           {/* ── THE PROOF — how you afford it, straight from the engine ────── */}
           <div className="mt-6 rounded-[var(--radius)] border border-hair bg-sunk p-4 sm:p-5">
             <div className="flex items-center gap-1.5">
-              <Icon name="shield" size={14} className="text-brand" />
+              <Icon name="shield" size={12} className="text-brand" />
               <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-text3">
                 How you afford it
               </span>
@@ -259,7 +259,7 @@ export default function LedgerDreamCard({
                   <>
                     <span className="text-brand">{v.program}</span>
                     <span className="inline-flex items-center gap-1 rounded-full bg-good-bg px-2 py-0.5 text-[11.5px] font-semibold text-good">
-                      <Icon name="check_circle" size={12} />
+                      <Icon name="check_circle" size={12} weight="fill" />
                       held directly
                     </span>
                   </>
@@ -294,7 +294,7 @@ export default function LedgerDreamCard({
               href={v.searchHref}
               className="inline-flex items-center gap-2 rounded-[var(--radius)] bg-brand px-5 py-3 text-[14.5px] font-semibold text-white transition-colors hover:bg-brand-deep"
             >
-              <Icon name="flight" size={17} />
+              <Icon name="flight" size={16} />
               {v.saveToward ? 'See the route' : 'Make it real'}
             </Link>
             <button

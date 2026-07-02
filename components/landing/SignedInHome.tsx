@@ -158,7 +158,7 @@ export default async function SignedInHome({
         ) : (
           <aside className="flex flex-col justify-center rounded-[var(--radius-lg)] border border-border bg-brand-light p-6 lg:rounded-[var(--radius-hero)]">
             <span className="grid h-11 w-11 place-items-center rounded-full bg-paper text-brand">
-              <Icon name="loyalty" size={22} />
+              <Icon name="loyalty" size={24} weight="fill" />
             </span>
             <h2 className="mt-4 font-display text-[20px] font-semibold leading-[1.1] tracking-[-0.01em] text-text">
               Connect your first program
@@ -248,7 +248,7 @@ export default async function SignedInHome({
         >
           <div>
             <span className="inline-flex items-center gap-2 rounded-full bg-brand-deep px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-mint-bright">
-              <Icon name="lightbulb" size={13} />
+              <Icon name="lightbulb" size={12} />
               Or just ask
             </span>
             <h2 className="mt-4 font-display text-[24px] font-semibold leading-[1.08] tracking-[-0.02em] text-white sm:text-[28px]">
@@ -273,7 +273,7 @@ export default async function SignedInHome({
       <section className="flex flex-col items-start gap-5 rounded-[var(--radius-lg)] border border-border bg-paper p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8 lg:rounded-[var(--radius-hero)]">
         <div className="flex items-center gap-4">
           <span className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-full bg-brand-light text-brand">
-            <Icon name="loyalty" size={24} />
+            <Icon name="loyalty" size={24} weight="fill" />
           </span>
           <div>
             <h2 className="font-display text-[19px] font-semibold leading-[1.1] tracking-[-0.01em] text-text">
@@ -291,7 +291,7 @@ export default async function SignedInHome({
             href="/account"
             className="inline-flex items-center gap-2 rounded-[var(--radius)] bg-brand px-6 py-3 text-[14.5px] font-semibold text-white transition-colors hover:bg-brand-deep"
           >
-            <Icon name="settings" size={18} />
+            <Icon name="settings" size={16} />
             {programs > 0 ? 'Manage programs' : 'Add a program'}
           </Link>
         </div>

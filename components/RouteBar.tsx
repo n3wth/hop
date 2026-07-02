@@ -49,7 +49,7 @@ export default function RouteBar({ result, hasRealBalances = false, nonstop = fa
             {from}
           </span>
           <span className="flex items-center text-brand">
-            <Icon name="flight" size={18} className="rotate-90" />
+            <Icon name="flight" size={16} className="rotate-90" />
           </span>
           <span className="font-display text-[16px] font-semibold tracking-[-0.01em] text-text">
             {to}
@@ -86,7 +86,7 @@ export default function RouteBar({ result, hasRealBalances = false, nonstop = fa
             </span>
           </div>
           <span className="flex items-center text-brand">
-            <Icon name="flight" size={30} className="rotate-90" />
+            <Icon name="flight" size={24} className="rotate-90" />
           </span>
           <div className="flex flex-col">
             <span className="font-display text-[19px] font-semibold tracking-[-0.01em] text-text">

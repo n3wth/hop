@@ -189,7 +189,7 @@ export default function VerdictRail({
             href={ctaHref}
             className="inline-flex items-center gap-[10px] rounded-[14px] bg-white px-7 py-4 text-[16px] font-semibold text-brand-ink transition-colors hover:bg-hero-white-hover"
           >
-            <Icon name="check_circle" size={19} />
+            <Icon name="check_circle" size={20} weight="fill" />
             {!usingPoints
               ? 'Book cash'
               : owns
@@ -213,7 +213,7 @@ export default function VerdictRail({
               rel="noopener noreferrer"
               className="inline-flex items-center gap-[8px] rounded-[14px] border-[1.5px] border-white/20 px-7 py-4 text-[15px] font-medium text-hero-body transition-colors hover:border-white/45 hover:text-white"
             >
-              <Icon name="calendar" size={17} />
+              <Icon name="calendar" size={16} />
               Add to calendar
             </a>
           ) : null}
@@ -397,7 +397,7 @@ function PickPass({ pick }: { pick: FlightOption }) {
         <div className="flex flex-1 flex-col items-center gap-[2px]">
           <div className="flex w-full items-center gap-[6px] text-brand">
             <span className="h-px flex-1 bg-border" />
-            <Icon name="flight" size={18} className="rotate-90" />
+            <Icon name="flight" size={16} className="rotate-90" />
             <span className="h-px flex-1 bg-border" />
           </div>
           <div className="text-[11px] text-text3">

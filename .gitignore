@@ -42,3 +42,4 @@ yarn-error.log*
 next-env.d.ts
 
 PROD_ENV_TO_SET.txt
+.claude/worktrees/

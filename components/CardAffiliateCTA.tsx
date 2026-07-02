@@ -33,7 +33,7 @@ export default function CardAffiliateCTA({ program, unit = 'miles' }: CardAffili
       style={{ ['--hop-delay' as string]: '260ms' }}
     >
       <span aria-hidden className="mt-[2px] flex-shrink-0 text-hero-label">
-        <Icon name="credit_card" size={18} />
+        <Icon name="credit_card" size={16} />
       </span>
 
       <div className="min-w-0 flex-1">
@@ -75,7 +75,7 @@ export default function CardAffiliateCTA({ program, unit = 'miles' }: CardAffili
         aria-label="Dismiss card offer"
         className="-mr-1 -mt-1 flex-shrink-0 rounded-lg p-1 text-hero-label transition-colors hover:text-white"
       >
-        <Icon name="close" size={16} />
+        <Icon name="close" size={20} />
       </button>
     </div>
   )
