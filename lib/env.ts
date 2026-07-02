@@ -292,6 +292,29 @@ export function isObservedOutcomesEnabled(): boolean {
   return /^(1|true|yes)$/i.test(flag.trim())
 }
 
+// Email/password sign-in (required verification + reset-by-email) is GATED
+// behind an explicit flag AND a working Resend key — delivery is load-bearing
+// here (a user who can't receive the verification email can never finish
+// signing up), unlike e.g. isCheckoutEnabled's payments gate. Off → GoogleSignIn
+// stays the only /login option; existing Google accounts are unaffected either
+// way. Flip HOP_ENABLE_EMAIL_PASSWORD_AUTH and set RESEND_API_KEY to enable.
+export function isEmailPasswordAuthEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_EMAIL_PASSWORD_AUTH ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && hasEnv('RESEND_API_KEY')
+}
+
+// Passkey/WebAuthn sign-in (@better-auth/passkey) is GATED behind its own
+// explicit flag — no upstream credential is needed (WebAuthn needs only the
+// `passkey` table plus the browser's platform authenticator), but flipping
+// this changes what's stored in Neon and adds a new client SDK surface, so
+// it's a deliberate opt-in rather than automatic once the table exists.
+// Flip HOP_ENABLE_PASSKEY_AUTH to enable.
+export function isPasskeyEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_PASSKEY_AUTH ?? ''
+  return /^(1|true|yes)$/i.test(flag.trim())
+}
+
 // The self-improvement loop (ADR 0007 — degradation telemetry + the daily
 // health sentinel) is GATED behind an explicit flag ONLY — detection is
 // DETERMINISTIC (counted rows, timestamp math, named constants; no LLM), so
