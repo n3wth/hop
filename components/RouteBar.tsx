@@ -18,11 +18,11 @@ export interface RouteBarProps {
 // real weight against the route codes instead of one thin run-on line.
 function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div className="flex flex-col items-end leading-none">
-      <span className="hop-num text-[18px] font-semibold text-text">
+    <div className="flex flex-col items-end leading-none text-right">
+      <span className="hop-num text-[18px] font-semibold text-text text-right">
         {value}
       </span>
-      <span className="mt-[5px] text-[11px] uppercase tracking-[var(--track-label)] text-text3">{label}</span>
+      <span className="mt-[5px] text-[11px] uppercase tracking-[var(--track-label)] text-text3 text-right">{label}</span>
     </div>
   )
 }
