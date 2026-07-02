@@ -302,20 +302,32 @@ interface HopDatabase {
       }
       hop_subscriptions: {
         // One row per user that has a non-default tier. Absent row = 'free'.
-        // Read-only today (no billing — Stripe is N-289). See CREATE TABLE in
-        // lib/subscription.ts notes.
+        // Written ONLY by the Stripe webhook (lib/subscription.ts#setUserTier).
+        // stripe_customer_id is indexed: it's the fallback-attribution key for
+        // lifecycle events without our metadata AND the stable re-link key for
+        // the auth migration. last_event_at is the out-of-order webhook guard.
+        // See drizzle/0005_subscriptions.sql.
         Row: {
           user_id: string
           tier: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          last_event_at: string | null
           updated_at: string | null
         }
         Insert: {
           user_id: string
           tier?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          last_event_at?: string | null
           updated_at?: string | null
         }
         Update: {
           tier?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          last_event_at?: string | null
           updated_at?: string | null
         }
         Relationships: []

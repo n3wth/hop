@@ -37,6 +37,16 @@ type EnvKey =
   | 'HOP_VALUATION_WORKER_URL'
   // Shared bearer secret between Vercel and the valuation Worker.
   | 'HOP_VALUATION_SYNC_SECRET'
+  // Stripe — the premium-subscription billing seam (lib/stripe.ts). Server-side
+  // secret ONLY: Checkout is Stripe-HOSTED, so there is no client-side Stripe.js
+  // and deliberately NO NEXT_PUBLIC_ Stripe key (zero client bundle weight).
+  // The webhook secret verifies event signatures; the price ids are first-class
+  // config so the checkout route never hardcodes a Stripe object id. Yearly is
+  // OPTIONAL — monthly alone validates the rail.
+  | 'STRIPE_SECRET_KEY'
+  | 'STRIPE_WEBHOOK_SECRET'
+  | 'STRIPE_PRICE_ID_PRO_MONTHLY'
+  | 'STRIPE_PRICE_ID_PRO_YEARLY'
 
 function read(key: EnvKey): string {
   const value = process.env[key]
@@ -60,6 +70,10 @@ export const env = {
   supportIngestSecret: () => read('HOP_SUPPORT_INGEST_SECRET'),
   hopValuationWorkerUrl: () => read('HOP_VALUATION_WORKER_URL'),
   hopValuationSyncSecret: () => read('HOP_VALUATION_SYNC_SECRET'),
+  stripeSecretKey: () => read('STRIPE_SECRET_KEY'),
+  stripeWebhookSecret: () => read('STRIPE_WEBHOOK_SECRET'),
+  stripePriceIdProMonthly: () => read('STRIPE_PRICE_ID_PRO_MONTHLY'),
+  stripePriceIdProYearly: () => read('STRIPE_PRICE_ID_PRO_YEARLY'),
 }
 
 // True when a key is present without throwing — lets a client degrade
@@ -101,6 +115,25 @@ export function isValuationSyncEnabled(): boolean {
   const flag = process.env.HOP_ENABLE_VALUATION_SYNC ?? ''
   const on = /^(1|true|yes)$/i.test(flag.trim())
   return on && hasEnv('HOP_VALUATION_WORKER_URL') && hasEnv('HOP_VALUATION_SYNC_SECRET')
+}
+
+// Premium billing (Stripe-hosted Checkout unlocking unlimited alerts) is GATED
+// behind an explicit flag AND the full Stripe config it needs: the secret key
+// (checkout session creation), the webhook secret (signed tier writes), and the
+// monthly price id (the thing being sold). The yearly price id is optional.
+// Off → /account shows no billing section, the checkout/webhook routes refuse
+// softly ({ok:false}/503), and the alert-cap copy stays unchanged — the deploy
+// is a byte-for-byte no-op even with Stripe keys present in Vercel. Exactly the
+// isCheckoutEnabled() double-lock pattern.
+export function isBillingEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_BILLING ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return (
+    on &&
+    hasEnv('STRIPE_SECRET_KEY') &&
+    hasEnv('STRIPE_WEBHOOK_SECRET') &&
+    hasEnv('STRIPE_PRICE_ID_PRO_MONTHLY')
+  )
 }
 
 // Durable conversation MEMORY (rolling summaries of older concierge turns) is

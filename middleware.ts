@@ -35,7 +35,10 @@ export const config = {
     // clients authenticate with a Bearer hop token (lib/api-tokens), not the
     // Auth0/Supabase session cookies this middleware refreshes. Running session
     // middleware there is pointless and could mutate cookies on a stateless,
-    // cross-origin transport. All OTHER /api/* routes still pass through.
-    '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|api/mcp|api/sse|api/message|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    // cross-origin transport. Same rationale for api/webhooks (Stripe): a
+    // cookie-less server-to-server POST authenticated by its signature —
+    // session refresh there is pointless and could mutate cookies on Stripe's
+    // client. All OTHER /api/* routes still pass through.
+    '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|api/mcp|api/sse|api/message|api/webhooks|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 }
