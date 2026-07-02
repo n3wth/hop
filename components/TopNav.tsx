@@ -33,6 +33,8 @@ export interface TopNavProps {
   pointsTotal?: number
   /** Hide the header search (e.g. on the landing page where the hero owns it). */
   hideSearch?: boolean
+  /** True only for the owner (lib/owner.ts) — shows the /admin entry point. */
+  isOwner?: boolean
 }
 
 // Crafted easing — decelerate, ~280ms. One curve drives the whole morph so the
@@ -140,6 +142,7 @@ export default function TopNav({
   user = null,
   pointsTotal,
   hideSearch = false,
+  isOwner = false,
 }: TopNavProps) {
   const pathname = usePathname()
 
@@ -329,6 +332,16 @@ export default function TopNav({
           <div className="hidden flex-shrink-0 items-center sm:flex">
             {user ? (
               <div className="flex items-center gap-3">
+                {isOwner ? (
+                  <Link
+                    href="/admin"
+                    title="Admin"
+                    aria-label="Admin"
+                    className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full border border-border bg-surface text-text2 transition-colors hover:bg-sunk"
+                  >
+                    <Icon name="shield" size={20} />
+                  </Link>
+                ) : null}
                 {pointsTotal != null ? (
                   <Link
                     href="/account"
@@ -436,9 +449,21 @@ export default function TopNav({
           </nav>
           <div className="mt-auto border-t border-border p-4">
             {user ? (
-              <Link href="/account" onClick={() => setMenuOpen(false)} className="flex items-center justify-center rounded-full border border-border bg-surface px-5 py-3 text-[15px] font-semibold text-text transition-colors hover:bg-sunk">
-                Your account
-              </Link>
+              <div className="flex flex-col gap-2">
+                {isOwner ? (
+                  <Link
+                    href="/admin"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center justify-center gap-1.5 rounded-full border border-border bg-surface px-5 py-3 text-[15px] font-semibold text-text2 transition-colors hover:bg-sunk"
+                  >
+                    <Icon name="shield" size={16} />
+                    Admin
+                  </Link>
+                ) : null}
+                <Link href="/account" onClick={() => setMenuOpen(false)} className="flex items-center justify-center rounded-full border border-border bg-surface px-5 py-3 text-[15px] font-semibold text-text transition-colors hover:bg-sunk">
+                  Your account
+                </Link>
+              </div>
             ) : (
               <a href={signInHref} className="flex items-center justify-center rounded-full bg-brand px-5 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep hop-press">
                 Sign in
