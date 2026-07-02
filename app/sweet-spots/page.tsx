@@ -51,7 +51,7 @@ export default function SweetSpotsIndexPage() {
               <Link
                 key={p.slug}
                 href={`/sweet-spots/${p.slug}`}
-                className="group flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-6 transition-colors hover:border-brand"
+                className="group flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-6 transition-[transform,border-color] duration-200 ease-[var(--ease-premium)] hover:-translate-y-[2px] hover:border-brand motion-reduce:transition-none motion-reduce:hover:translate-y-0"
               >
                 <div className="flex items-baseline justify-between gap-3">
                   <h2 className="font-display text-[22px] font-semibold leading-tight tracking-[-0.01em] text-text">

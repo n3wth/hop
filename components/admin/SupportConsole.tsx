@@ -22,7 +22,7 @@ export default function SupportConsole({
       </p>
 
       <section className="mt-8">
-        <h2 className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand">Tickets</h2>
+        <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">Tickets</h2>
         <div className="mt-3 flex flex-col gap-3">
           {tickets.length === 0 ? (
             <Empty>No support emails yet.</Empty>
@@ -33,7 +33,7 @@ export default function SupportConsole({
       </section>
 
       <section className="mt-10">
-        <h2 className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand">
+        <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">
           Booking requests
         </h2>
         <div className="mt-3 flex flex-col gap-3">

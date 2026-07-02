@@ -32,10 +32,10 @@ export default async function LedgerDream() {
       aria-label="Your dream of the week"
     >
       <div className="mb-5 flex flex-col gap-2 sm:max-w-[60ch]">
-        <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
+        <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
           The Ledger Dream
         </span>
-        <h2 className="font-display text-[26px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[34px]">
+        <h2 className="text-balance font-display text-[26px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[34px]">
           {card.saveToward ? 'A dream worth saving toward.' : 'The trip your points already bought.'}
         </h2>
         <p className="text-[15px] leading-[1.55] text-text2">

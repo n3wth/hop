@@ -53,8 +53,8 @@ function sentenceCase(s: string): string {
 // One standout award redemption, rendered as a travel-magazine card you'd want
 // to chase: a real destination photo up top (with a legibility scrim + the city
 // and its flag overlaid), then the economics — cpp value, miles, cash compare,
-// and the program that books it. Flat + on-system: no card shadow/lift; hover
-// gently scales the IMAGE inside its clipped frame and tints the border.
+// and the program that books it. Flat + on-system: no card shadow; hover adds a
+// restrained transform-only lift and tints the border.
 export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: DealCardProps) {
   const value = computeCpp(dest)
   const t = tier(value)
@@ -75,7 +75,7 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
   return (
     <Link
       href={href}
-      className="group flex min-w-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-colors hover:border-brand"
+      className="group flex min-w-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-[transform,border-color] duration-200 ease-[var(--ease-premium)] hover:-translate-y-[2px] hover:border-brand motion-reduce:transition-none motion-reduce:hover:translate-y-0"
     >
       {/* ── photo header ─────────────────────────────────────────────────── */}
       {/* The frame's background is a blurred placeholder of the photo (from its
@@ -125,7 +125,7 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
             the dark fallback, and stays distinct from the gold cpp chip */}
         {isTopFind && (
           <span
-            className="absolute left-3 top-3 inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]"
+            className="absolute left-3 top-3 inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[var(--track-eyebrow)]"
             style={{ background: 'var(--color-paper)', color: 'var(--color-brand)' }}
           >
             Best find
@@ -168,7 +168,7 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
             <h3 className="truncate font-display text-[24px] font-semibold leading-tight tracking-[-0.01em] text-white">
               {dest.city}
             </h3>
-            <p className="truncate text-[12px] font-semibold uppercase tracking-[0.08em] text-white/85">
+            <p className="truncate text-[12px] font-semibold uppercase tracking-[var(--track-label)] text-white/85">
               {dest.country}
             </p>
           </div>
@@ -182,19 +182,19 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
         {/* the economics: miles needed, cash you'd skip, best program */}
         <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3.5 border-t border-hair pt-4">
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">Miles</div>
+            <div className="text-[10px] font-semibold uppercase tracking-[var(--track-label)] text-text3">Miles</div>
             <div className="hop-price mt-1 text-[19px] leading-none text-text">
               {compactMiles(dest.typicalAwardMiles)}
             </div>
           </div>
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">vs. cash</div>
+            <div className="text-[10px] font-semibold uppercase tracking-[var(--track-label)] text-text3">vs. cash</div>
             <div className="hop-price mt-1 text-[19px] leading-none text-text">
               {cashCompare}
             </div>
           </div>
           <div className="col-span-2">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">Best via</div>
+            <div className="text-[10px] font-semibold uppercase tracking-[var(--track-label)] text-text3">Best via</div>
             <div className="mt-1 truncate text-[14px] font-semibold leading-tight text-brand">{dest.bestProgram}</div>
           </div>
         </div>

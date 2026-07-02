@@ -23,11 +23,11 @@ export default function ConnectBand({
         <div className="max-w-[48ch]">
           {signedIn ? (
             <>
-              <span className="inline-flex items-center gap-2 rounded-full bg-brand-deep px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-mint-bright">
+              <span className="inline-flex items-center gap-2 rounded-full bg-brand-deep px-3 py-1 text-[11px] font-semibold uppercase tracking-[var(--track-tag)] text-mint-bright">
                 <Icon name="check_circle" size={12} weight="fill" />
                 {programs} {programs === 1 ? 'program' : 'programs'} synced
               </span>
-              <h2 className="mt-4 font-display text-[28px] font-semibold leading-[1.06] tracking-[-0.02em] text-white sm:text-[36px]">
+              <h2 className="mt-4 text-balance font-display text-[28px] font-semibold leading-[1.06] tracking-[-0.02em] text-white sm:text-[36px]">
                 {first ? `Welcome back, ${first}.` : 'Welcome back.'}
                 <br />
                 Where to next?
@@ -39,10 +39,10 @@ export default function ConnectBand({
             </>
           ) : (
             <>
-              <span className="text-[12px] font-semibold uppercase tracking-[0.2em] text-hero-eyebrow">
+              <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-hero-eyebrow">
                 One last thing
               </span>
-              <h2 className="mt-3 font-display text-[28px] font-semibold leading-[1.06] tracking-[-0.02em] text-white sm:text-[36px]">
+              <h2 className="mt-3 text-balance font-display text-[28px] font-semibold leading-[1.06] tracking-[-0.02em] text-white sm:text-[36px]">
                 Connect your points.
                 <br />
                 Get your verdict.

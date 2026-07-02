@@ -23,8 +23,8 @@ function compactMiles(n: number): string {
 // A single wanderlust card: a real destination photo up top with the city + its
 // country flag overlaid, then the economics — "from X miles", a ¢/pt value chip
 // (colored by tier()), and the program that books it well. Flat, warm, solid: no
-// card shadow/lift; hover scales
-// the IMAGE inside its clipped frame and tints the border. Links into a real
+// card shadow; hover adds a restrained transform-only lift and tints the border.
+// Links into a real
 // search seeded for that destination so the dream is one tap from the verdict.
 function DestinationCard({
   d,
@@ -49,7 +49,7 @@ function DestinationCard({
   return (
     <Link
       href={href}
-      className={`group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-colors hover:border-brand-mint-deep${
+      className={`group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-[transform,border-color] duration-200 ease-[var(--ease-premium)] hover:-translate-y-[2px] hover:border-brand-mint-deep motion-reduce:transition-none motion-reduce:hover:translate-y-0${
         stagger ? ' hop-rise' : ''
       }`}
       style={stagger ? { ['--hop-delay' as string]: `${120 + index * 70}ms` } : undefined}
@@ -86,7 +86,7 @@ function DestinationCard({
         />
 
         {/* IATA code badge */}
-        <span className="absolute right-3 top-3 rounded-full bg-white/90 px-2 py-0.5 font-display text-[11px] font-semibold uppercase tracking-[0.1em] text-brand">
+        <span className="absolute right-3 top-3 rounded-full bg-white/90 px-2 py-0.5 font-display text-[11px] font-semibold uppercase tracking-[var(--track-tag)] text-brand">
           {d.code}
         </span>
 
@@ -100,7 +100,7 @@ function DestinationCard({
             <h3 className="truncate font-display text-[20px] font-semibold leading-[1.1] tracking-[-0.01em] text-white">
               {d.city}
             </h3>
-            <p className="truncate text-[11px] font-medium uppercase tracking-[0.08em] text-white/85">
+            <p className="truncate text-[11px] font-medium uppercase tracking-[var(--track-label)] text-white/85">
               {d.country}
             </p>
           </div>

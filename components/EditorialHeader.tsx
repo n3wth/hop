@@ -26,7 +26,7 @@ export default function EditorialHeader({
 }: EditorialHeaderProps) {
   return (
     <header className="mx-auto max-w-[60ch] pt-10 text-center sm:pt-14">
-      <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
+      <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
         {eyebrow}
       </span>
       <h1

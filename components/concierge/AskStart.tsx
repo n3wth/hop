@@ -48,7 +48,7 @@ export default function AskStart({
       className="hop-rise hop-ask-measure flex flex-col items-center text-center"
       style={{ ['--hop-delay' as string]: '40ms' }}
     >
-      <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand sm:text-[12px]">
+      <span className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand sm:text-[12px]">
         {eyebrow}
       </span>
 

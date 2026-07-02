@@ -136,7 +136,7 @@ const ResultRow = memo(function ResultRow({ option, rank, maxCpp, index = 0, ope
       >
         <div className="flex items-start justify-between">
           <BrandIcon code={option.airlineCode} name={option.airline} size={46} />
-          <span className="mt-[3px] font-display text-[12px] font-semibold uppercase tracking-[0.06em] text-text3">
+          <span className="mt-[3px] font-display text-[12px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
             {rankLabel(option, rank)}
           </span>
         </div>
@@ -146,7 +146,7 @@ const ResultRow = memo(function ResultRow({ option, rank, maxCpp, index = 0, ope
           <div className="font-display text-[19px] font-semibold leading-[1.1] text-text">
             {option.airline}
           </div>
-          <div className="mt-[5px] text-[12.5px] tracking-[0.02em] text-text3">
+          <div className="mt-[5px] text-[12.5px] tracking-[var(--track-label)] text-text3">
             {option.direct ? 'Direct · ' : ''}
             {option.route}
             {option.durationMin != null ? ` · ${dur}` : ''}
@@ -280,7 +280,7 @@ const ResultRow = memo(function ResultRow({ option, rank, maxCpp, index = 0, ope
             {/* transfer steps */}
             {option.kind === 'transfer' && transfers.length > 0 && (
               <div className="mt-[14px] rounded-[10px] bg-brand-tint px-[12px] py-[10px]">
-                <div className="mb-[6px] text-[11px] font-semibold uppercase tracking-[0.08em] text-brand">
+                <div className="mb-[6px] text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
                   How to book
                 </div>
                 <ol className="space-y-[5px] text-[12.5px] leading-[1.45] text-text2">

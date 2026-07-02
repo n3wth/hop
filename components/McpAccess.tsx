@@ -73,7 +73,7 @@ function ConfigBlock({
   return (
     <div className="mt-3 rounded-[12px] border border-border bg-sunk px-4 py-3">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text2">
+        <div className="text-[11px] font-semibold uppercase tracking-[var(--track-label)] text-text2">
           {label}
         </div>
         <CopyButton value={copyValue} label={copyLabel} />
@@ -284,7 +284,7 @@ export default function McpAccess({ initialTokens }: Props) {
       {/* server URL */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text2">
+          <div className="text-[11px] font-semibold uppercase tracking-[var(--track-label)] text-text2">
             MCP server URL
           </div>
           <code className="mt-1 block truncate font-mono text-[13.5px] text-text">{mcpUrl}</code>
@@ -300,7 +300,7 @@ export default function McpAccess({ initialTokens }: Props) {
 
       {/* client selector */}
       <div className="mt-4">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text2">
+        <div className="text-[11px] font-semibold uppercase tracking-[var(--track-label)] text-text2">
           Your MCP client
         </div>
         <div className="mt-2 flex flex-wrap gap-2">

@@ -99,25 +99,25 @@ export default function ResultsSkeleton() {
         {/* LEFT — headline + subline + stat strip (on-brand: tint shimmer on teal) */}
         <div className="px-6 pb-9 pt-8 sm:px-10 lg:px-[52px] lg:pb-[46px] lg:pt-12">
           <div className="mb-[26px] border-b border-white/15 pb-4">
-            <span className="block h-[12px] w-[110px] rounded-[6px] bg-white/15" />
+            <span className="hop-skeleton-dark block h-[12px] w-[110px] rounded-[6px]" />
           </div>
           <div className="space-y-[14px]">
-            <span className="block h-[52px] w-[78%] rounded-[10px] bg-white/15" />
-            <span className="block h-[52px] w-[58%] rounded-[10px] bg-white/15" />
+            <span className="hop-skeleton-dark block h-[52px] w-[78%] rounded-[10px]" />
+            <span className="hop-skeleton-dark block h-[52px] w-[58%] rounded-[10px]" />
           </div>
           <div className="mt-7 space-y-[10px]">
-            <span className="block h-[15px] w-[70%] rounded-[6px] bg-white/10" />
-            <span className="block h-[15px] w-[52%] rounded-[6px] bg-white/10" />
+            <span className="hop-skeleton-dark block h-[15px] w-[70%] rounded-[6px]" />
+            <span className="hop-skeleton-dark block h-[15px] w-[52%] rounded-[6px]" />
           </div>
           <div className="mt-[34px] flex gap-4">
-            <span className="block h-[52px] w-[210px] rounded-[14px] bg-white/15" />
+            <span className="hop-skeleton-dark block h-[52px] w-[210px] rounded-[14px]" />
             <span className="block h-[52px] w-[130px] rounded-[14px] border border-white/20" />
           </div>
           <div className="mt-[42px] flex gap-10 border-t border-white/15 pt-[30px]">
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className="space-y-[8px]">
-                <span className="block h-[11px] w-[60px] rounded-[5px] bg-white/10" />
-                <span className="block h-[24px] w-[72px] rounded-[6px] bg-white/15" />
+                <span className="hop-skeleton-dark block h-[11px] w-[60px] rounded-[5px]" />
+                <span className="hop-skeleton-dark block h-[24px] w-[72px] rounded-[6px]" />
               </div>
             ))}
           </div>
@@ -131,7 +131,7 @@ export default function ResultsSkeleton() {
           style={{ background: 'var(--color-brand-deep)' }}
         >
           <div className="hidden flex-1 place-items-center pt-9 lg:grid">
-            <span className="block h-[140px] w-[140px] rounded-full bg-white/10" />
+            <span className="hop-skeleton-dark block h-[140px] w-[140px] rounded-full" />
           </div>
           <div className="mx-4 mb-5 mt-5 space-y-[14px] rounded-[18px] bg-paper p-[22px] sm:mx-[26px] sm:mb-[26px] sm:mt-6 lg:mt-0">
             <div className="flex items-center gap-[11px]">
@@ -174,20 +174,20 @@ export default function ResultsSkeleton() {
               key={i}
               className={`grid items-center gap-3 py-[16px] sm:gap-5 sm:py-[18px] [grid-template-columns:40px_1fr_auto] lg:[grid-template-columns:46px_1fr_200px_116px] ${i > 0 ? 'border-t border-white/[0.07]' : ''}`}
             >
-              <span className="block h-[40px] w-[40px] rounded-[12px] bg-white/10 lg:h-[46px] lg:w-[46px]" />
+              <span className="hop-skeleton-dark block h-[40px] w-[40px] rounded-[12px] lg:h-[46px] lg:w-[46px]" />
               <div className="space-y-[7px]">
-                <span className="block h-[14px] w-[70%] rounded-[6px] bg-white/10" />
-                <span className="block h-[12px] w-[40%] rounded-[6px] bg-white/[0.07]" />
+                <span className="hop-skeleton-dark block h-[14px] w-[70%] rounded-[6px]" />
+                <span className="hop-skeleton-dark block h-[12px] w-[40%] rounded-[6px]" />
               </div>
               {/* value bar — desktop only, matching PointsPanel */}
-              <span className="hidden h-[8px] w-full rounded-full bg-white/10 lg:block" />
-              <span className="ml-auto block h-[16px] w-[64px] rounded-[6px] bg-white/10" />
+              <span className="hop-skeleton-dark hidden h-[8px] w-full rounded-full lg:block" />
+              <span className="hop-skeleton-dark ml-auto block h-[16px] w-[64px] rounded-[6px]" />
             </div>
           ))}
         </div>
         <div className="flex items-center justify-between border-t border-white/10 bg-white/[0.03] px-4 py-[16px] sm:px-[30px] sm:py-[18px]">
-          <span className="block h-[13px] w-[220px] rounded-[6px] bg-white/10" />
-          <span className="block h-[20px] w-[56px] rounded-[6px] bg-white/10" />
+          <span className="hop-skeleton-dark block h-[13px] w-[220px] rounded-[6px]" />
+          <span className="hop-skeleton-dark block h-[20px] w-[56px] rounded-[6px]" />
         </div>
       </div>
     </div>

@@ -387,7 +387,7 @@ export default function CheckoutForm({
               <div className="text-[12px] text-text3">{activeOffer.route}</div>
             </div>
             <div className="text-right">
-              <div className="text-[10.5px] font-semibold uppercase tracking-[0.06em] text-text3">
+              <div className="text-[10.5px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
                 Total due
               </div>
               <div className="hop-price text-[18px] text-text">
@@ -633,7 +633,7 @@ export default function CheckoutForm({
           above the form there). */}
       <aside className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
         <div className="rounded-[18px] border border-border bg-paper p-6">
-          <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-text3">
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
             Your itinerary
           </div>
           <div className="flex items-center gap-3 border-b border-border pb-5 pt-3">
@@ -650,7 +650,7 @@ export default function CheckoutForm({
             {activeOffer.segments.map((s, i) => (
               <div key={i}>
                 {dateOf(s.departingAt) ? (
-                  <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-text3">
+                  <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
                     {dateOf(s.departingAt)}
                   </div>
                 ) : null}
@@ -731,7 +731,7 @@ function Field({
 }) {
   return (
     <label className={`flex flex-col gap-1.5 ${className ?? ''}`}>
-      <span className="text-[12.5px] font-semibold tracking-[0.01em] text-text2">{label}</span>
+      <span className="text-[12.5px] font-semibold tracking-[var(--track-label)] text-text2">{label}</span>
       {children}
     </label>
   )

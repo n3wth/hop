@@ -55,7 +55,7 @@ function FactRow({ fact, onForgotten }: { fact: MemoryFact; onForgotten: (id: st
     <div className="flex items-center justify-between gap-3 border-b border-hair py-3 last:border-b-0">
       <div className="min-w-0">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text3">
+          <span className="text-[11px] font-semibold uppercase tracking-[var(--track-tag)] text-text3">
             {fact.label}
           </span>
           <span className="font-display text-[15px] font-semibold tracking-[-0.01em] text-text">
@@ -166,7 +166,7 @@ export default function MemoryKnows({
   const noticedBlock =
     pendingNoticed.length > 0 ? (
       <div>
-        <h3 className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-brand">
+        <h3 className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
           <Icon name="lightbulb" size={12} />
           hop noticed
         </h3>
@@ -186,7 +186,7 @@ export default function MemoryKnows({
   const observedBlock =
     observed.length > 0 ? (
       <div>
-        <h3 className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-text3">
+        <h3 className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
           <Icon name="trending_up" size={12} />
           hop observed
         </h3>
@@ -228,7 +228,7 @@ export default function MemoryKnows({
       {noticedBlock}
       {groups.map((g) => (
         <div key={g.group}>
-          <h3 className="mb-1 text-[12px] font-semibold uppercase tracking-[0.12em] text-brand">
+          <h3 className="mb-1 text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
             {g.title}
           </h3>
           <div className="rounded-[var(--radius)] border border-border bg-surface px-4">

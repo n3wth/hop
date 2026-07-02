@@ -20,7 +20,7 @@ function Tile({
   return (
     <Link
       href={href}
-      className="group relative block h-[180px] w-[260px] flex-shrink-0 snap-start overflow-hidden rounded-[16px] border border-border sm:h-[210px] sm:w-[300px]"
+      className="group relative block h-[180px] w-[260px] flex-shrink-0 snap-start overflow-hidden rounded-[16px] border border-border transition-transform duration-200 ease-[var(--ease-premium)] hover:-translate-y-[2px] motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:h-[210px] sm:w-[300px]"
       style={{
         backgroundColor: photo?.color ?? 'var(--color-brand-deep)',
         backgroundImage: photo?.blur ? `url("${photo.blur}")` : undefined,
@@ -66,7 +66,7 @@ function Tile({
           <div className="truncate font-display text-[19px] font-semibold leading-[1.1] tracking-[-0.01em] text-white">
             {d.city}
           </div>
-          <div className="truncate text-[11px] font-medium uppercase tracking-[0.08em] text-white/85">
+          <div className="truncate text-[11px] font-medium uppercase tracking-[var(--track-label)] text-white/85">
             {d.country}
           </div>
         </div>
@@ -82,7 +82,7 @@ export default async function DestinationReel() {
 
   return (
     <section aria-label="Where your points could take you">
-      <p className="mb-4 text-center text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
+      <p className="mb-4 text-center text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
         {destinations.length} cities within reach on points
       </p>
       {/* A static row the visitor scrolls themselves, aligned to the page grid

@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withBotId } from "botid/next/config";
 
 // Next.js 16 uses Turbopack by default for both `next dev` and `next build` —
 // no opt-in config required.
@@ -18,4 +19,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// withBotId wires the same-origin proxy rewrites for the BotID challenge
+// script. Without it the classifier gets no browser signal and checkBotId()
+// flags EVERY real user as a bot in production — the /api/concierge,
+// /api/search, and /api/billing/checkout guards then 403 legitimate traffic.
+export default withBotId(nextConfig);
