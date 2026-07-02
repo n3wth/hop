@@ -22,21 +22,24 @@
 import { createHmac } from 'node:crypto'
 import { NextResponse, type NextRequest } from 'next/server'
 import { auth0 } from '@/lib/auth0'
-import { hasEnv, env } from '@/lib/env'
+import { hasEnv, env, resolveAuthSecret } from '@/lib/env'
 
 // Short-lived httpOnly cookie carrying the CSRF nonce we hand to AwardWallet and
 // re-check on the callback. Tied to this browser session only.
 export const STATE_COOKIE = 'aw_oauth_state'
 
-// Bind the OAuth `state` to the initiating Auth0 user so a captured callback URL
+// Bind the OAuth `state` to the initiating user so a captured callback URL
 // (attacker's connectedUser id + attacker's state) cannot link the attacker's
 // AwardWallet account into a VICTIM's session. The cookie stores
 // `state.hmac(state|userId)`; the callback recomputes the tag against the
-// CURRENT session sub and rejects on mismatch — an attacker's tag (bound to
-// their sub) never validates for the victim. Signed with AUTH0_SECRET (already
-// required for sessions) so the binding can't be forged client-side.
-export function stateCookieValue(state: string, userId: string): string {
-  const secret = process.env.AUTH0_SECRET ?? ''
+// CURRENT session user and rejects on mismatch — an attacker's tag (bound to
+// their id) never validates for the victim. Signed with the resolved auth
+// secret (the same key Better Auth sessions use) so the binding can't be
+// forged client-side. Returns null when no secret exists — callers FAIL CLOSED
+// rather than signing with an empty key.
+export function stateCookieValue(state: string, userId: string): string | null {
+  const secret = resolveAuthSecret()
+  if (!secret) return null
   const tag = createHmac('sha256', secret).update(`${state}|${userId}`).digest('hex')
   return `${state}.${tag}`
 }
@@ -61,6 +64,13 @@ export async function GET(req: NextRequest) {
 
   // CSRF nonce — random, opaque, validated on return. Web Crypto (edge-safe).
   const state = crypto.randomUUID()
+  const boundCookie = stateCookieValue(state, session.user.sub)
+  if (!boundCookie) {
+    // No signing secret → the user-binding can't be enforced. Fail closed.
+    const back = new URL('/account', base(req))
+    back.searchParams.set('aw', 'unconfigured')
+    return NextResponse.redirect(back)
+  }
   const redirectUri = `${base(req)}/auth/awardwallet/callback`
 
   // Build the authorization redirect. Param names follow the common OAuth-style
@@ -73,7 +83,7 @@ export async function GET(req: NextRequest) {
   // Set the nonce cookie directly on the redirect response (reliable in route
   // handlers, unlike mutating the cookies() store alongside a redirect).
   const res = NextResponse.redirect(authUrl)
-  res.cookies.set(STATE_COOKIE, stateCookieValue(state, session.user.sub), {
+  res.cookies.set(STATE_COOKIE, boundCookie, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

@@ -2,9 +2,10 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getUserId } from '@/lib/session'
+import { isGoogleAuthEnabled } from '@/lib/env'
 import Logo from '@/components/Logo'
 import Icon from '@/components/Icon'
-import Button from '@/components/ui/Button'
+import GoogleSignIn from '@/components/auth/GoogleSignIn'
 
 export const metadata: Metadata = {
   title: 'Sign in — hop',
@@ -21,8 +22,8 @@ function safeReturnTo(raw: string | string[] | undefined): string | null {
   return v
 }
 
-// Branded welcome / sign-in landing. The actual auth is Auth0 Universal Login
-// at /auth/login — this is a calm, on-brand handoff. Already signed in → /account.
+// Branded welcome / sign-in landing. Auth is Better Auth's Google social login
+// (client-initiated POST → Google). Already signed in → /account.
 export default async function LoginPage({
   searchParams,
 }: {
@@ -36,7 +37,6 @@ export default async function LoginPage({
   if (userId) redirect('/account')
 
   const callback = returnTo ?? '/account'
-  const googleLoginUrl = `/api/auth/signin/google?callbackURL=${encodeURIComponent(callback)}`
 
   return (
     <main className="flex min-h-dvh flex-col bg-bg">
@@ -83,19 +83,7 @@ export default async function LoginPage({
 
           {/* actions */}
           <div className="mt-8">
-            <Button href={googleLoginUrl} native fullWidth>
-              Continue with Google
-            </Button>
-
-            <div className="my-5 flex items-center gap-3 text-[12px] text-text3">
-              <span className="h-px flex-1 bg-hair" aria-hidden />
-              or
-              <span className="h-px flex-1 bg-hair" aria-hidden />
-            </div>
-
-            <Button href={googleLoginUrl} native variant="secondary" fullWidth>
-              Create account with Google
-            </Button>
+            <GoogleSignIn callbackURL={callback} enabled={isGoogleAuthEnabled()} />
           </div>
 
           {/* legal-ish footnote */}

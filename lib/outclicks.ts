@@ -5,7 +5,7 @@
 // reporting against.
 //
 // Best-effort by contract: the insert runs behind withDb — an unconfigured
-// DB, a dead DB, or a not-yet-applied drizzle/0006_outclicks.sql all degrade
+// DB, a dead DB, or a not-yet-migrated hop_outclicks table all degrade
 // to a silent no-op — and nothing here can throw to or slow down the redirect
 // that triggered it. It RETURNS its promise (never rejects) so a route can
 // hand it to next/server's after(): on serverless, an untracked async write

@@ -1,11 +1,9 @@
-// Drizzle schema for hop's persistence — the nine user-scoped `hop_*` tables.
+// Drizzle schema for hop's persistence — the user-scoped `hop_*` tables plus
+// Better Auth's core tables (user/session/account/verification).
 //
-// Phase A of the Auth0+Supabase → Better Auth + Neon + Drizzle migration
-// (docs/plans/auth-db-migration.md): this mirrors the EXACT shapes the existing
-// owner libs read/write (inferred from utils/supabase/admin.ts's typed schema),
-// so the data layer can be re-pointed at Drizzle behind `withDb` with the same
-// function signatures. `user_id` holds the Auth0 sub today; after the auth cutover
-// it becomes the Better Auth user.id (FK added in the final phase).
+// `user_id` on the hop_* tables holds the Better Auth user.id (post-cutover;
+// rows written before the Auth0 → Better Auth migration were keyed by the
+// Auth0 sub and are orphaned — see docs/plans/auth-db-migration.md).
 //
 // numeric() stays in Drizzle's default STRING mode — the existing code already
 // treats min_cpp/cpp/balance as `number | string` and guards with parseFloat.
@@ -20,9 +18,13 @@ import {
   jsonb,
   timestamp,
   index,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core'
 
-const tz = (name: string) => timestamp(name, { withTimezone: true })
+// mode 'string' matches the Postgrest convention every hop_* caller already
+// speaks: ISO strings in, timestamptz text out. (Drizzle's default 'date' mode
+// throws `toISOString is not a function` when handed the strings callers pass.)
+const tz = (name: string) => timestamp(name, { withTimezone: true, mode: 'string' })
 
 export const manualBalances = pgTable('hop_manual_balances', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -72,16 +74,21 @@ export const conversationSummary = pgTable('hop_conversation_summary', {
 // stated facts: each lands as a confidence-scored PENDING suggestion the user
 // confirms (→ promoted to their stated travel_profile) or dismisses (→ rejected,
 // never re-suggested). Holds NO economics. Deduped per (user, kind, value).
-export const inferredFacts = pgTable('hop_inferred_facts', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  userId: text('user_id').notNull(),
-  kind: text('kind').notNull(),
-  value: text('value').notNull(),
-  confidence: numeric('confidence').notNull().default('0'),
-  status: text('status').notNull().default('pending'),
-  createdAt: tz('created_at').defaultNow(),
-  updatedAt: tz('updated_at').defaultNow(),
-})
+export const inferredFacts = pgTable(
+  'hop_inferred_facts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: text('user_id').notNull(),
+    kind: text('kind').notNull(),
+    value: text('value').notNull(),
+    confidence: numeric('confidence').notNull().default('0'),
+    status: text('status').notNull().default('pending'),
+    createdAt: tz('created_at').defaultNow(),
+    updatedAt: tz('updated_at').defaultNow(),
+  },
+  // Dedupe target for the upsert in lib/inferred-facts (onConflict user_id,kind,value).
+  (t) => [uniqueIndex('hop_inferred_facts_user_kind_value_idx').on(t.userId, t.kind, t.value)],
+)
 
 // OBSERVED outcomes — hop's "learned from what you DO" log (M4). An append-only
 // record of discrete, EXPLICIT user signals (today: a verdict card dismissed with
@@ -98,26 +105,6 @@ export const memoryOutcomes = pgTable('hop_memory_outcomes', {
   cabin: text('cabin'),
   createdAt: tz('created_at').defaultNow(),
 })
-
-// Premium subscription state — one row per user with a non-default tier
-// (absent row = 'free'). Written ONLY by the Stripe webhook route via
-// lib/subscription.ts#setUserTier (verified events; refs we minted).
-// stripe_customer_id is the fallback-attribution key for lifecycle events that
-// arrive without our metadata AND the stable re-link key across the auth
-// migration (docs/plans/auth-db-migration.md). last_event_at guards against
-// out-of-order webhook delivery. See drizzle/0005_subscriptions.sql.
-export const subscriptions = pgTable(
-  'hop_subscriptions',
-  {
-    userId: text('user_id').primaryKey(),
-    tier: text('tier').notNull().default('free'),
-    stripeCustomerId: text('stripe_customer_id'),
-    stripeSubscriptionId: text('stripe_subscription_id'),
-    lastEventAt: tz('last_event_at'),
-    updatedAt: tz('updated_at').defaultNow(),
-  },
-  (t) => [index('hop_subscriptions_stripe_customer_id_idx').on(t.stripeCustomerId)],
-)
 
 export const bookings = pgTable('hop_bookings', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -140,6 +127,9 @@ export const standingOrders = pgTable('hop_standing_orders', {
   eligiblePrograms: text('eligible_programs').array().notNull().default([]),
   minCabin: text('min_cabin'),
   lastNotifiedOffer: text('last_notified_offer'),
+  // Delivery address for alert emails (lib/standing-orders selects/inserts it;
+  // null → in-app only). Was a Supabase-era ALTER that never made it to schema.
+  notifyEmail: text('notify_email'),
   active: boolean('active').notNull().default(true),
   createdAt: tz('created_at').defaultNow(),
 })
@@ -197,7 +187,7 @@ export const escalations = pgTable('hop_escalations', {
 // Live cents-per-point aggregates sourced from hop's own first-party cash vs
 // award observations (Cloudflare valuations Worker), read/written by
 // lib/valuation-overrides.ts. Mirrors the hop_valuation_overrides table added
-// to utils/supabase/admin.ts's typed schema. program_id is the canonical
+// (lib/valuation-overrides.ts). program_id is the canonical
 // program id from lib/programs; as_of is when the Worker last aggregated it.
 export const valuationOverrides = pgTable('hop_valuation_overrides', {
   programId: text('program_id').primaryKey(),
@@ -236,7 +226,7 @@ export const hopSubscriptions = pgTable('hop_subscriptions', {
 // are placeholder landing pages, so this table is the only first-party click
 // record. Anonymous by design: NO user_id column (click telemetry, not user
 // data). Written fire-and-forget by lib/outclicks.ts; counted by
-// lib/business-digest.ts. See drizzle/0006_outclicks.sql.
+// lib/business-digest.ts.
 export const outclicks = pgTable(
   'hop_outclicks',
   {
@@ -254,7 +244,7 @@ export const outclicks = pgTable(
 
 // ── Self-improvement loop (ADR 0007) — three SYSTEM-SCOPED tables ───────────
 // No user_id column exists on any of them, by design: no user row, balance,
-// or free text can ever land in this system. See drizzle/0007_self_improvement.sql.
+// or free text can ever land in this system.
 
 // One liveness row per vercel.json cron job, upserted fire-and-forget by
 // lib/cron-heartbeat.ts at the end of each authorized run. ok=false with
@@ -302,21 +292,27 @@ export const improvementFindings = pgTable('hop_improvement_findings', {
   resolvedAt: tz('resolved_at'),
 })
 
-export const supportTickets = pgTable('hop_support_tickets', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  messageId: text('message_id'),
-  fromEmail: text('from_email').notNull(),
-  toEmail: text('to_email'),
-  subject: text('subject'),
-  body: text('body'),
-  status: text('status').notNull().default('new'),
-  draftReply: text('draft_reply'),
-  notifiedAt: tz('notified_at'),
-  replyText: text('reply_text'),
-  repliedAt: tz('replied_at'),
-  receivedAt: tz('received_at'),
-  createdAt: tz('created_at').defaultNow(),
-})
+export const supportTickets = pgTable(
+  'hop_support_tickets',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    // Upsert key for idempotent email ingestion (SQL NULLs stay distinct, so
+    // manual tickets without a message id are unaffected by the unique index).
+    messageId: text('message_id'),
+    fromEmail: text('from_email').notNull(),
+    toEmail: text('to_email'),
+    subject: text('subject'),
+    body: text('body'),
+    status: text('status').notNull().default('new'),
+    draftReply: text('draft_reply'),
+    notifiedAt: tz('notified_at'),
+    replyText: text('reply_text'),
+    repliedAt: tz('replied_at'),
+    receivedAt: tz('received_at'),
+    createdAt: tz('created_at').defaultNow(),
+  },
+  (t) => [uniqueIndex('hop_support_tickets_message_id_idx').on(t.messageId)],
+)
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),

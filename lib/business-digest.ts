@@ -52,7 +52,7 @@ export interface BusinessDigest {
   activeSubscriptions: number | null
   /** Card-affiliate outclicks (hop_outclicks, kind='card'), last 7d, plus the
    *  window total across all kinds. null = degraded — expected until
-   *  drizzle/0006_outclicks.sql has been applied. */
+   *  the hop_outclicks migration has been applied. */
   outclicks: OutclickMetric | null
 }
 

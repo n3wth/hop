@@ -22,6 +22,9 @@ export const auth0 = {
           sub: session.user.id,
           email: session.user.email,
           name: session.user.name,
+          // Both spellings: Auth0-era call sites read `picture`, Better Auth
+          // supplies `image`.
+          picture: session.user.image,
           image: session.user.image,
         },
       }
