@@ -60,50 +60,86 @@ export async function setUserTier(
   const eventAtMs = Date.parse(meta.eventAt)
   if (!Number.isFinite(eventAtMs)) return false
   return withDb(false, async (db) => {
-    const { data, error: readError } = await db
-      .from(TABLE)
-      .select('last_event_at')
+    // 1. Get or create customer mapping
+    let { data: cust } = await db
+      .from('hop_customers')
+      .select('id')
       .eq('user_id', userId)
       .maybeSingle()
-    if (readError) return false
-    const stored = (data as { last_event_at: string | null } | null)?.last_event_at
-    if (stored) {
-      const storedMs = Date.parse(stored)
-      // Stale event — the row already reflects a newer one. Skip, report ok.
-      if (Number.isFinite(storedMs) && eventAtMs < storedMs) return true
+
+    const stripeCustomerId = meta.customerId ?? 'cus_unknown'
+
+    if (!cust) {
+      const { data: newCust, error: insErr } = await db
+        .from('hop_customers')
+        .insert({
+          user_id: userId,
+          stripe_customer_id: stripeCustomerId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select('id')
+        .maybeSingle()
+      if (insErr || !newCust) return false
+      cust = newCust
     }
-    // Only carry the Stripe ids the event actually has — an event without a
-    // customer/subscription ref must not null out ones we stored earlier
-    // (stripe_customer_id is the fallback-attribution + auth-migration key).
-    const row: {
-      user_id: string
-      tier: string
-      last_event_at: string
-      updated_at: string
-      stripe_customer_id?: string
-      stripe_subscription_id?: string
-    } = {
-      user_id: userId,
-      tier: normalizeTier(tier),
-      last_event_at: new Date(eventAtMs).toISOString(),
-      updated_at: new Date().toISOString(),
+
+    const customerId = cust.id
+
+    // 2. Resolve subscriptionId
+    const stripeSubId = meta.subscriptionId ?? 'sub_unknown'
+
+    // 3. Get existing subscription
+    const { data: existing } = await db
+      .from('hop_subscriptions')
+      .select('id, updated_at')
+      .eq('stripe_subscription_id', stripeSubId)
+      .maybeSingle()
+
+    if (existing) {
+      const storedMs = Date.parse(existing.updated_at)
+      if (Number.isFinite(storedMs) && eventAtMs < storedMs) {
+        // Skip outdated event
+        return true
+      }
     }
-    if (meta.customerId) row.stripe_customer_id = meta.customerId
-    if (meta.subscriptionId) row.stripe_subscription_id = meta.subscriptionId
-    const { error } = await db.from(TABLE).upsert(row, { onConflict: 'user_id' })
-    return !error
+
+    const payload = {
+      customer_id: customerId,
+      stripe_subscription_id: stripeSubId,
+      stripe_price_id: 'price_unknown',
+      status: tier === 'premium' ? ('active' as const) : ('canceled' as const),
+      current_period_start: new Date(eventAtMs).toISOString(),
+      current_period_end: tier === 'premium'
+        ? new Date(eventAtMs + 30 * 86400000).toISOString()
+        : new Date(eventAtMs - 86400000).toISOString(),
+      cancel_at_period_end: false,
+      updated_at: new Date(eventAtMs).toISOString(),
+    }
+
+    if (existing) {
+      const { error } = await db
+        .from('hop_subscriptions')
+        .update(payload)
+        .eq('id', existing.id)
+      return !error
+    } else {
+      const { error } = await db
+        .from('hop_subscriptions')
+        .insert({
+          ...payload,
+          created_at: new Date(eventAtMs).toISOString(),
+        })
+      return !error
+    }
   })
 }
 
-// Fallback attribution for lifecycle events that arrive without our
-// metadata.user_id: look the customer up in OUR OWN rows (written by earlier,
-// attributed events). Never trusts anything attacker-controlled — the mapping
-// only exists because we minted it. null on no match / any failure.
 export async function userIdForStripeCustomer(customerId: string): Promise<string | null> {
   if (!customerId) return null
   return withDb<string | null>(null, async (db) => {
     const { data, error } = await db
-      .from(TABLE)
+      .from('hop_customers')
       .select('user_id')
       .eq('stripe_customer_id', customerId)
       .maybeSingle()
