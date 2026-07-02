@@ -6,7 +6,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # How we work here (compound engineering)
 
-Every unit of work should make the next one easier. The full guidance lives in **`CLAUDE.md`**; read it. The essentials for any agent (Claude, Cursor, or otherwise):
+Every unit of work should make the next one easier. The full guidance lives in **`CLAUDE.md`**; read it. **If you are a smaller/less-capable model, read `docs/agent-playbook.md` first** — it encodes the operating judgment (the loop, the invariants, the design canon, the taste-call protocol, process mechanics) so you can follow it without re-deriving it. The essentials for any agent (Claude, Cursor, or otherwise):
 
 - **Loop:** Plan → Work → Review → Compound. Plan into `docs/plans/`; review with the specialized agents in `.claude/agents/`; capture every non-obvious lesson into `docs/solutions/` (searchable, YAML frontmatter) or an ADR in `docs/decisions/`. On a harness with the Workflow tool, the multi-agent lanes are already scripted — run the saved workflows in `.claude/workflows/` (`review-parallel`, `plan-panel`, `invariant-audit`) instead of improvising dispatch (ADR 0006). On any other harness or model, the `.claude/commands/*` files are the same process as plain-prose recipes — follow them manually; the loop is designed to lose cost, not shape, on smaller models (`.claude/workflows/README.md` §Model portability).
 - **Non-negotiable invariants:**
