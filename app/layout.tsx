@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import Script from 'next/script'
 import { Bricolage_Grotesque, Fraunces, Geist_Mono } from 'next/font/google'
 import {
   SITE_URL,
@@ -124,6 +125,13 @@ export default function RootLayout({
         <ScrollToTop />
         <StructuredData />
         {children}
+        {/* Travelpayouts auto-attribution tag (project 545389). Monetizes outbound
+            clicks to partner sites (the Kiwi cash deep-links in lib/booking.ts) by
+            attributing them to hop's affiliate account — WITHOUT this, cash-booking
+            clicks earn nothing. lazyOnload keeps it entirely off the critical path
+            (attribution happens at click time, not render time). No hop data is
+            sent; it only decorates outbound partner navigations. */}
+        <Script src="https://emrldtp.com/NTQ1Mzg5.js?t=545389" strategy="lazyOnload" />
       </body>
     </html>
   )

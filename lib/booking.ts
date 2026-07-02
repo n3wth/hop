@@ -46,7 +46,9 @@ export function pointsBookingUrl(opt: { airlineCode?: string; program?: string }
 }
 
 // Kiwi is deep-link ONLY in production (no public search API for affiliate flow).
-// Build a results deep-link for the route + dates.
+// Build a results deep-link for the route + dates. Affiliate ATTRIBUTION is not
+// in this URL: the Travelpayouts tag in app/layout.tsx (project 545389) decorates
+// outbound partner clicks at click time, so this stays a clean, shareable link.
 export function cashBookingUrl(params: SearchParams): string {
   const from = encodeURIComponent(params.from.trim().toUpperCase())
   const to = encodeURIComponent(params.to.trim().toUpperCase())
