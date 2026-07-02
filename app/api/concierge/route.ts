@@ -555,7 +555,10 @@ export function enrichSuggestions(
 function destinationsMentionedIn(question: string): Destination[] {
   const q = question.toLowerCase()
   return destinations.filter((d) => {
-    const cityHit = q.includes(d.city.toLowerCase())
+    // Word-boundary-aware for both: a plain substring match on the city name
+    // would false-positive ("comparison" contains "paris"), same as the code
+    // check already guarded against.
+    const cityHit = new RegExp(`\\b${d.city.toLowerCase()}\\b`).test(q)
     const codeHit = new RegExp(`\\b${d.code.toLowerCase()}\\b`).test(q)
     return cityHit || codeHit
   })
@@ -577,10 +580,15 @@ export function fallbackAnswer(question: string, context?: ConciergeContext): Co
       total !== undefined && total > 0
         ? `I can't reach my travel brain right now, but here's what I know about ${first.city} — with ~${total.toLocaleString('en-US')} points, check whether it clears the miles below.`
         : `I can't reach my travel brain right now, but here's what I know about ${first.city}.`
-  } else if (total !== undefined && total > 0) {
+  } else if (total !== undefined && total > 0 && affordableWith(total).length > 0) {
+    // affordableWith is pure and this list is tiny; recomputing here (vs.
+    // hoisting) keeps the condition and the value obviously in sync.
     picks = affordableWith(total).slice(0, 3)
     answer = `I can't reach my travel brain right now, but with ~${total.toLocaleString('en-US')} points a few standout trips come to mind — here are some great-value ideas to get you dreaming.`
   } else {
+    // Below the cheapest destination's required miles (or no points known at
+    // all) — still worth showing the best-value destinations rather than
+    // nothing, just without implying the user's balance reaches them.
     picks = [...destinations]
       .sort((a, b) => (computeCpp(b) ?? 0) - (computeCpp(a) ?? 0))
       .slice(0, 3)

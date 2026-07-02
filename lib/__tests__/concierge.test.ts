@@ -242,10 +242,28 @@ describe('fallbackAnswer() — the model-unreachable path stays deterministic', 
     expect(res.suggestions?.some((s) => s.code === 'ATH')).toBe(false)
   })
 
+  it('does not false-positive on a city name embedded in another word', () => {
+    // 'Paris' is a substring of "comparison" — must not match without a word
+    // boundary, same guard as the IATA-code path.
+    const res = fallbackAnswer('give me a comparison of a few options')
+    expect(res.suggestions?.some((s) => s.city === 'Paris')).toBe(false)
+  })
+
   it('falls back to affordability-ranked picks when nothing is named and points are known', () => {
     const res = fallbackAnswer('where should I go', { totalPoints: 50_000 })
     expect(res.answer).toContain('50,000')
     expect(res.suggestions?.length).toBeGreaterThan(0)
+  })
+
+  it('falls back to generic best-value picks when the known balance is below every destination\'s miles', () => {
+    // The cheapest destination needs 12,500 miles — 1,000 points can't reach
+    // any of them, so affordableWith() returns [] and the response must not
+    // go suggestion-less.
+    const res = fallbackAnswer('where should I go', { totalPoints: 1_000 })
+    expect(res.suggestions?.length).toBeGreaterThan(0)
+    expect(res.answer).toBe(
+      "I can't reach my travel brain right now, but here are a few of the best points-value trips on hop to get you started.",
+    )
   })
 
   it('falls back to generic best-value picks with no question match and no points', () => {
