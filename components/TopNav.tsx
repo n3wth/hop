@@ -302,7 +302,17 @@ export default function TopNav({
             </>
           )}
 
-          {/* spacer pushes the right cluster to the far edge (desktop only) */}
+          {/* spacer pushes the right cluster to the far edge (desktop only).
+              Taste call (2026-07, full-width-shell gap fix): this row stays
+              at --container-shell width on purpose, matching the rest of
+              this bar and the "Chrome aligns with content" decision from the
+              full-width 2026 shell PR — this is persistent nav chrome, not a
+              content row, and generous open space between the logo/nav and
+              the account cluster at wide viewports is standard for
+              Airbnb/Linear-class full-bleed headers, not a layout bug.
+              (Contrast with RouteBar/PointsPanel below, which ARE content
+              rows and got capped back to --container-app because their two
+              clusters read as visually related and now sit stranded apart.) */}
           <div className="hidden flex-1 md:block" />
 
           {/* right cluster — origin + account sit together as one tidy group so
