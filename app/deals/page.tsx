@@ -137,25 +137,6 @@ export default async function DealsPage({
             <span>best value first</span>
           </div>
 
-          {/* cpp legend — the color-coded ¢/pt badge on every card otherwise
-              relies on a screen-reader-only label to explain what "good"
-              means; this makes the same thresholds (lib/cpp.ts#tier) visible
-              to sighted visitors too. */}
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[12px] text-text3">
-            <span className="flex items-center gap-1.5">
-              <span className="h-[7px] w-[7px] flex-shrink-0 rounded-full" style={{ background: 'var(--color-good)' }} aria-hidden />
-              3.0¢+ strong value
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-[7px] w-[7px] flex-shrink-0 rounded-full" style={{ background: 'var(--color-ok)' }} aria-hidden />
-              1.5–3.0¢ fair value
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-[7px] w-[7px] flex-shrink-0 rounded-full bg-text3" aria-hidden />
-              below 1.5¢ weak value
-            </span>
-          </div>
-
           <DegradedNote degraded={degraded} />
         </EditorialHeader>
 
