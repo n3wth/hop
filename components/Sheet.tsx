@@ -95,10 +95,19 @@ export default function Sheet({ open, onClose, title, children }: SheetProps) {
       }
       const first = items[0]
       const last = items[items.length - 1]
-      if (e.shiftKey && document.activeElement === first) {
+      const active = document.activeElement as HTMLElement | null
+      // Focus parked OUTSIDE the cycle (the tabIndex=-1 panel after a click on
+      // non-interactive content, or anything beyond the scrim) re-enters the
+      // trap instead of tabbing into the obscured page behind the sheet.
+      if (!active || !items.includes(active)) {
+        e.preventDefault()
+        ;(e.shiftKey ? last : first).focus()
+        return
+      }
+      if (e.shiftKey && active === first) {
         e.preventDefault()
         last.focus()
-      } else if (!e.shiftKey && document.activeElement === last) {
+      } else if (!e.shiftKey && active === last) {
         e.preventDefault()
         first.focus()
       }
@@ -140,7 +149,7 @@ export default function Sheet({ open, onClose, title, children }: SheetProps) {
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`relative max-h-[85dvh] w-full overflow-y-auto rounded-t-[20px] border-t border-border bg-paper outline-none transition-transform duration-300 ease-[var(--ease-premium)] motion-reduce:transition-none ${
+        className={`relative max-h-[85dvh] w-full overflow-y-auto rounded-t-[var(--radius-lg)] border-t border-border bg-paper outline-none transition-transform duration-300 ease-[var(--ease-premium)] motion-reduce:transition-none ${
           entered ? 'translate-y-0' : 'translate-y-full'
         }`}
       >

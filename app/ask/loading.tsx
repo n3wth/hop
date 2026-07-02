@@ -17,19 +17,22 @@ export default function Loading() {
             <span className="h-[28px] w-[130px] rounded-full hop-skeleton" />
           </div>
 
-          {/* middle — the greeting centered in the scroll region */}
+          {/* middle — the greeting centered in the scroll region. Same overflow-
+              safe structure as the real surface: plain scroller outside,
+              min-h-full centering inside (never items-center on the scroller). */}
           <div className="relative min-h-0 flex-1">
-            <div className="flex h-full items-center justify-center py-8">
+            <div className="h-full overflow-y-auto py-8">
+              <div className="flex min-h-full items-center justify-center">
               <div className="hop-ask-measure flex flex-col items-center text-center">
                 {/* eyebrow */}
                 <span className="block h-[14px] w-[150px] rounded-full hop-skeleton" />
 
-                {/* heading — two calm lines */}
-                <span className="mt-5 block h-[34px] w-[70%] max-w-[360px] rounded-[var(--radius)] hop-skeleton sm:h-[44px]" />
-                <span className="mt-2.5 block h-[34px] w-[46%] max-w-[240px] rounded-[var(--radius)] hop-skeleton sm:h-[44px]" />
+                {/* heading — one line ("Where to next?"), like the real h1 */}
+                <span className="mt-5 block h-[34px] w-[58%] max-w-[300px] rounded-[var(--radius)] hop-skeleton sm:h-[44px]" />
 
-                {/* subhead */}
-                <span className="mt-4 block h-[14px] w-[62%] max-w-[380px] rounded-full hop-skeleton" />
+                {/* subhead — wraps to two lines at the 46ch measure */}
+                <span className="mt-4 block h-[14px] w-[72%] max-w-[430px] rounded-full hop-skeleton" />
+                <span className="mt-2 block h-[14px] w-[52%] max-w-[320px] rounded-full hop-skeleton" />
 
                 {/* slim destination strip */}
                 <div className="mt-8 flex flex-wrap justify-center gap-2.5">
@@ -40,6 +43,7 @@ export default function Loading() {
                     />
                   ))}
                 </div>
+              </div>
               </div>
             </div>
           </div>

@@ -401,14 +401,22 @@ export default function Concierge({
             <ConversationScrollButton />
           </Conversation>
         ) : (
-          <div className="flex h-full items-center justify-center overflow-y-auto py-8">
-            <AskStart
-              eyebrow={copy.eyebrow}
-              heading={copy.heading}
-              sub={copy.sub}
-              onStarter={send}
-              destinations={startTiles}
-            />
+          // Centered greeting that stays REACHABLE under overflow: the outer div
+          // is a plain scroll container; the inner min-h-full flex centers when
+          // short and collapses to normal top-anchored flow when the greeting is
+          // taller than the region (never `items-center` + `overflow` on one
+          // element — block-start overflow of a centered flex item can't be
+          // scrolled to, clipping the heading on short viewports).
+          <div className="h-full overflow-y-auto py-8">
+            <div className="flex min-h-full items-center justify-center">
+              <AskStart
+                eyebrow={copy.eyebrow}
+                heading={copy.heading}
+                sub={copy.sub}
+                onStarter={send}
+                destinations={startTiles}
+              />
+            </div>
           </div>
         )}
       </div>
@@ -457,7 +465,12 @@ export default function Concierge({
       {/* "Have hop book it" — a slide-up sheet ON the surface, so the expert-
           booking request is reachable WITHOUT any below-fold scroll. */}
       <Sheet open={sheetOpen} onClose={closeSheet} title="Have hop book it">
-        <EscalationCTA defaultEmail={escalationEmail} totalPoints={totalPoints} />
+        <EscalationCTA
+          defaultEmail={escalationEmail}
+          totalPoints={totalPoints}
+          embedded
+          onCancel={closeSheet}
+        />
       </Sheet>
     </div>
   )
