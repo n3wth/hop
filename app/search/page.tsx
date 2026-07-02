@@ -259,13 +259,6 @@ export default async function Search({
   const effectivePrefs: TravelPrefs | undefined = nonstop
     ? { ...prefs?.travelPrefs, maxStops: 0, preferNonstop: true }
     : prefs?.travelPrefs
-  const result = await assembleSearch(params, userBalances, effectivePrefs)
-
-  // The verdict's ownership voice ("You have the miles") is only honest when
-  // these balances are this signed-in user's own connected programs. Signed out
-  // (or signed in with nothing connected) → value-demonstration framing instead.
-  const hasRealBalances = !!userBalances && userBalances.length > 0
-
   // Destination photo for the verdict hero — the place you're heading, behind
   // the boarding pass (replaces the redundant bunny). Query the CITY skyline/
   // landscape, never the airport code (which surfaces terminals, not beauty).
@@ -273,11 +266,20 @@ export default async function Search({
   // Only query when we have a real city name — if cityForCode falls back to the
   // raw IATA code (unmapped airport), skip the photo so we never search "JFK"
   // and get a terminal. Bunny fallback covers it.
+  // Independent of the verdict engine — fetched alongside it, not after, so the
+  // photo round-trip never adds to the page's critical path.
   const destCity = cityForCode(params.to)
-  const destPhoto =
+  const [result, destPhoto] = await Promise.all([
+    assembleSearch(params, userBalances, effectivePrefs),
     destCity && destCity !== params.to
-      ? await destinationImage(`${destCity} skyline travel landmark`)
-      : null
+      ? destinationImage(`${destCity} skyline travel landmark`)
+      : Promise.resolve(null),
+  ])
+
+  // The verdict's ownership voice ("You have the miles") is only honest when
+  // these balances are this signed-in user's own connected programs. Signed out
+  // (or signed in with nothing connected) → value-demonstration framing instead.
+  const hasRealBalances = !!userBalances && userBalances.length > 0
 
   const who = whoSummary(params)
 
@@ -320,7 +322,7 @@ export default async function Search({
 
         {/* your points — the wallet stands alone; no restating heading */}
         <div className="mt-14">
-          <PointsPanel balances={result.balances} pick={result.pick} />
+          <PointsPanel balances={result.balances} pick={result.pick} isExample={!hasRealBalances} />
         </div>
 
         <SiteFooter />

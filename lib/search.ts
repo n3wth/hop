@@ -75,6 +75,12 @@ export async function assembleSearch(
       originCode: params.from,
       destCode: params.to,
       date: day ?? o.date,
+      // mockCash() bakes in a fixed sample bookingUrl (lib/mock.ts's own
+      // hardcoded SFO→LAX PARAMS) — without this, a cash CTA on a search for
+      // any OTHER route silently deep-links to the wrong airports/date/pax.
+      // Award options' bookingUrl (pointsBookingUrl) is program-scoped, not
+      // route-scoped, so it's correct as-is and left untouched.
+      ...(o.kind === 'cash' ? { bookingUrl: cashBookingUrl(params) } : {}),
     })
     cashOptions = mockCash().map(reroute)
     awardOptions = mockAwards().map(reroute)

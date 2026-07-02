@@ -83,25 +83,32 @@ export default async function DealsPage({
       }
     : null
 
-  // Header points chip + origin seed. Balances and prefs each degrade on their
-  // own — a balances failure is surfaced (the figure goes stale), a prefs
-  // failure just falls back to the default origin. Neither throws the page.
+  // Header points chip + origin seed. Balances and prefs are independent reads
+  // keyed only on su.sub — fetched together (one round trip instead of two) and
+  // still degrade on their own: a balances failure is surfaced (the figure goes
+  // stale), a prefs failure just falls back to the default origin. Neither
+  // throws the page.
   let pointsTotal: number | undefined
   let homeAirport: string | undefined
   const degraded: string[] = []
   if (user && su?.sub) {
-    try {
+    const [balancesRes, prefsRes] = await Promise.allSettled([
+      getUserBalances(su.sub),
+      getPrefs(su.sub),
+    ])
+    if (balancesRes.status === 'fulfilled') {
       // Unified per-user balances (manual + AwardWallet) for the header chip.
-      const real = await getUserBalances(su.sub)
-      if (real.length > 0) pointsTotal = real.reduce((s, b) => s + b.balance, 0)
-    } catch {
+      if (balancesRes.value.length > 0) {
+        pointsTotal = balancesRes.value.reduce((s, b) => s + b.balance, 0)
+      }
+    } else {
       degraded.push('balances')
     }
-    try {
-      homeAirport = (await getPrefs(su.sub)).homeAirport
-    } catch {
-      // No saved origin → default. Not worth a degraded note.
+    if (prefsRes.status === 'fulfilled') {
+      homeAirport = prefsRes.value.homeAirport
     }
+    // A prefs failure just falls back to the default origin — not worth a
+    // degraded note.
   }
 
   // Origin precedence: explicit ?from= → saved home airport → "where from"
@@ -128,6 +135,25 @@ export default async function DealsPage({
             </span>
             <span className="hidden sm:inline">·</span>
             <span>best value first</span>
+          </div>
+
+          {/* cpp legend — the color-coded ¢/pt badge on every card otherwise
+              relies on a screen-reader-only label to explain what "good"
+              means; this makes the same thresholds (lib/cpp.ts#tier) visible
+              to sighted visitors too. */}
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[12px] text-text3">
+            <span className="flex items-center gap-1.5">
+              <span className="h-[7px] w-[7px] flex-shrink-0 rounded-full" style={{ background: 'var(--color-good)' }} aria-hidden />
+              3.0¢+ strong value
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-[7px] w-[7px] flex-shrink-0 rounded-full" style={{ background: 'var(--color-ok)' }} aria-hidden />
+              1.5–3.0¢ fair value
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-[7px] w-[7px] flex-shrink-0 rounded-full bg-text3" aria-hidden />
+              below 1.5¢ weak value
+            </span>
           </div>
 
           <DegradedNote degraded={degraded} />
