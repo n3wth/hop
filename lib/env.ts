@@ -54,6 +54,11 @@ export type EnvKey =
   // hop_improvement_findings; P1s fall back to the owner email).
   | 'LINEAR_API_KEY'
   | 'LINEAR_TEAM_ID'
+  // Parallel search / extraction and routing API key (for flight results & routing optimization)
+  | 'PARALLEL_API_KEY'
+  // Autonoma secure sandbox API credentials
+  | 'AUTONOMA_CLIENT_ID'
+  | 'AUTONOMA_SECRET_ID'
 
 function read(key: EnvKey): string {
   const value = process.env[key]
@@ -96,6 +101,19 @@ export const env = {
   stripePriceIdProYearly: () => read('STRIPE_PRICE_ID_PRO_YEARLY'),
   linearApiKey: () => read('LINEAR_API_KEY'),
   linearTeamId: () => read('LINEAR_TEAM_ID'),
+  parallelApiKey: () => read('PARALLEL_API_KEY'),
+  autonomaClientId: () => read('AUTONOMA_CLIENT_ID'),
+  autonomaSecretId: () => read('AUTONOMA_SECRET_ID'),
+}
+
+// Check helper for Parallel API status
+export function isParallelEnabled(): boolean {
+  return hasEnv('PARALLEL_API_KEY')
+}
+
+// Check helper for Autonoma status
+export function isAutonomaEnabled(): boolean {
+  return hasEnv('AUTONOMA_CLIENT_ID') && hasEnv('AUTONOMA_SECRET_ID')
 }
 
 // True when a key is present without throwing — lets a client degrade
