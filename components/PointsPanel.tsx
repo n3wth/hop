@@ -64,7 +64,16 @@ export default function PointsPanel({ balances, pick }: PointsPanelProps) {
   }
 
   return (
-    <section className="overflow-hidden rounded-[22px] text-hero-cream" style={{ background: 'var(--color-text)' }}>
+    // Capped at --container-app (lg+): the row grid's middle column is a
+    // flexible 1fr between the fixed-width icon/label and the fixed-width
+    // bar/balance — left unconstrained, it stretches on the full 1760px
+    // shell and strands each program's label far from its own value bar and
+    // balance. Restoring the pre-shell measure keeps the wallet a legible,
+    // tightly aligned list instead of a row with dead air down the middle.
+    <section
+      className="overflow-hidden rounded-[22px] text-hero-cream lg:max-w-[var(--container-app)]"
+      style={{ background: 'var(--color-text)' }}
+    >
       {/* no restating header — the balances + total speak for themselves */}
       <div className="px-4 pt-[14px] sm:px-[30px] sm:pt-[18px]">
         {balances.map((b, i) => {
