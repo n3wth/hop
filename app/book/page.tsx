@@ -41,7 +41,7 @@ export default async function BookPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await auth0.getSession()
-  if (!session) redirect('/auth/login?returnTo=/book')
+  if (!session) redirect('/login?returnTo=/book')
 
   const su = session.user
   const user = {

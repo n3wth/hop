@@ -65,7 +65,7 @@ export default async function AccountPage({
   searchParams: Promise<{ aw?: string; gmail?: string; upgraded?: string }>
 }) {
   const session = await auth0.getSession()
-  if (!session) redirect('/auth/login')
+  if (!session) redirect('/login')
 
   const u = session.user
   const name = u.name ?? u.email ?? 'Traveler'

@@ -23,7 +23,7 @@ export default async function ConfirmationPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await auth0.getSession()
-  if (!session) redirect('/auth/login')
+  if (!session) redirect('/login')
 
   const su = session.user
   const user = {
