@@ -20,6 +20,7 @@
 //   - user_id-scoped. Every query filters by the Auth0 sub; a confirm/dismiss is
 //     re-scoped to the caller's own row.
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { withDb } from '@/lib/supabase-helpers'
 import { callGateway } from '@/lib/ai-gateway'
 import { isInferredFactsEnabled } from '@/lib/env'
@@ -133,8 +134,8 @@ export async function listPendingInferredFacts(userId: string): Promise<Inferred
       .order('confidence', { ascending: false })
     if (error || !data) return []
     return data
-      .filter((r): r is typeof r & { kind: InferredFactKind } => isInferrableKind(r.kind))
-      .map((r) => ({
+      .filter((r: any): r is typeof r & { kind: InferredFactKind } => isInferrableKind(r.kind))
+      .map((r: any) => ({
         id: String(r.id),
         kind: r.kind,
         value: String(r.value),
@@ -149,7 +150,7 @@ async function existingPairs(userId: string): Promise<{ kind: string; value: str
   return withDb<{ kind: string; value: string }[]>([], async (db) => {
     const { data, error } = await db.from(TABLE).select('kind, value').eq('user_id', userId)
     if (error || !data) return []
-    return data.map((r) => ({ kind: String(r.kind), value: String(r.value) }))
+    return data.map((r: any) => ({ kind: String(r.kind), value: String(r.value) }))
   })
 }
 

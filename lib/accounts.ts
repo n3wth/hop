@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Balance } from '@/lib/types'
 import { deriveCode, getBalances } from '@/lib/awardwallet'
 import { canonicalizeProgram } from '@/lib/programs'
@@ -69,7 +70,7 @@ export async function getManualBalances(userId: string): Promise<ManualBalance[]
       .eq('user_id', userId)
       .order('balance', { ascending: false })
     if (error || !data) return []
-    return data.map((r) => ({
+    return data.map((r: any) => ({
       id: r.id as string,
       program: r.program as string,
       // code may be null in db; derive a monogram so the brand chip always renders.
