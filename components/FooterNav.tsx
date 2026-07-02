@@ -13,7 +13,7 @@ export default function FooterNav() {
         <nav key={section.title} aria-labelledby={`footer-${section.title.toLowerCase()}`}>
           <h2
             id={`footer-${section.title.toLowerCase()}`}
-            className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-hero-eyebrow"
+            className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2"
           >
             {section.title}
           </h2>
@@ -28,8 +28,8 @@ export default function FooterNav() {
                     aria-current={active ? 'page' : undefined}
                     className={
                       active
-                        ? 'font-semibold text-white'
-                        : 'text-hero-body transition-colors hover:text-white'
+                        ? 'font-semibold text-text'
+                        : 'text-text2 transition-colors hover:text-text'
                     }
                   >
                     {link.label}

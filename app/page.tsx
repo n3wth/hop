@@ -167,13 +167,12 @@ export default async function Home() {
 
         {/* ── HOW IT WORKS ───────────────────────────────────────────────── */}
         <HowItWorks />
-
-        {/* ── CONNECT CTA ────────────────────────────────────────────────── */}
-        <ConnectBand user={null} programs={0} />
       </div>
 
-      <div className="mx-auto max-w-[var(--container-shell)]">
-        <SiteFooter />
+      {/* CTA sits flush against the footer — one continuous block, no gap. */}
+      <div className="mx-auto mt-16 max-w-[var(--container-shell)] sm:mt-20 lg:mt-24">
+        <ConnectBand user={null} programs={0} />
+        <SiteFooter flush />
       </div>
     </AppShell>
   )
