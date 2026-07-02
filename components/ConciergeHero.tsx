@@ -135,7 +135,7 @@ export default function ConciergeHero({
         className={`relative flex flex-1 flex-col items-center px-5 text-center sm:px-10 ${
           full
             ? 'justify-center py-8'
-            : 'py-12 sm:py-16'
+            : 'py-16 sm:py-24'
         }`}
       >
         <span
@@ -147,8 +147,8 @@ export default function ConciergeHero({
         </span>
 
         <h1
-          className={`hop-rise mt-6 max-w-[18ch] text-balance font-display font-semibold leading-[1.0] tracking-[-0.03em] text-white ${
-            full ? 'text-[40px] sm:text-[64px]' : 'text-[36px] sm:text-[56px] lg:text-[64px]'
+          className={`hop-rise mt-7 max-w-[18ch] text-balance font-display font-semibold leading-[0.98] tracking-[-0.03em] text-white ${
+            full ? 'text-[40px] sm:text-[64px]' : 'text-[38px] sm:text-[60px] lg:text-[72px]'
           }`}
           style={{ ['--hop-delay' as string]: '90ms' }}
         >

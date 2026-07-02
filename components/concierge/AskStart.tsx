@@ -14,6 +14,19 @@
 // only, motion is reduced-motion-safe (.hop-rise is inert). No dark backdrop, no
 // mood gallery. Copy comes from lib/concierge-hero (one voice, shared with home).
 
+import Icon, { type IconName } from '@/components/Icon'
+
+// Grounds the greeting in what the engine actually does (CLAUDE.md's verdict
+// invariants), not marketing filler — and renders unconditionally, so the
+// empty state has real substance even when destinationImages() has nothing
+// (no UNSPLASH_ACCESS_KEY configured) rather than depending entirely on an
+// external photo API to not look sparse.
+const HOW_HOP_ANSWERS: { icon: IconName; label: string }[] = [
+  { icon: 'wallet', label: 'Your real balances' },
+  { icon: 'flight', label: 'Live award space' },
+  { icon: 'currency', label: 'Real cash prices' },
+]
+
 // A slim destination tile — a small rounded thumbnail that seeds a starter prompt
 // on tap. Serializable (the server already passes this shape down to Concierge).
 export interface AskStartDestination {
@@ -45,14 +58,14 @@ export default function AskStart({
 }: AskStartProps) {
   return (
     <div
-      className="hop-rise hop-ask-measure flex flex-col items-center text-center"
+      className="hop-rise flex w-full max-w-[880px] flex-col items-center px-2 text-center"
       style={{ ['--hop-delay' as string]: '40ms' }}
     >
       <span className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand sm:text-[12px]">
         {eyebrow}
       </span>
 
-      <h1 className="mt-4 font-display text-[30px] font-semibold leading-[1.05] tracking-[-0.02em] text-text sm:text-[40px]">
+      <h1 className="mt-4 text-balance font-display text-[32px] font-semibold leading-[1.05] tracking-[-0.02em] text-text sm:text-[42px] lg:text-[48px]">
         {heading}
       </h1>
 
@@ -60,40 +73,60 @@ export default function AskStart({
         {sub}
       </p>
 
-      {/* a quiet accent: a slim strip of paper destination thumbnails. Captions
-          sit BELOW the photo (no scrim needed), keeping it flat and editorial.
-          Tapping one seeds a starter prompt — inspiration, not a dark gallery. */}
+      {/* Grounding row — what the verdict is actually built from. Renders
+          unconditionally so the greeting has substance even without a photo
+          gallery (destinations may be empty in environments without an
+          Unsplash key). */}
+      <div className="mt-9 flex flex-wrap items-center justify-center gap-x-7 gap-y-3">
+        {HOW_HOP_ANSWERS.map((item) => (
+          <span key={item.label} className="flex items-center gap-2 text-[13px] font-medium text-text3">
+            <Icon name={item.icon} size={16} className="text-brand" />
+            {item.label}
+          </span>
+        ))}
+      </div>
+
+      {/* a proper inspiration gallery — larger paper cards than a hint-strip, so
+          the empty state reads as one deliberate scene instead of a small
+          greeting floating in a mostly-empty stage. Captions sit below the
+          photo (no scrim needed), keeping it flat and editorial. Tapping one
+          seeds a starter prompt. */}
       {destinations.length ? (
-        <div className="mt-8 flex w-full flex-wrap justify-center gap-2.5">
-          {destinations.map((d) => (
-            <button
-              key={d.city}
-              type="button"
-              onClick={() => onStarter(`Cheapest way to ${d.city}`)}
-              aria-label={`Cheapest way to ${d.city}`}
-              className="hop-press group flex w-[92px] flex-col overflow-hidden rounded-[var(--radius)] border border-border bg-paper transition-colors hover:border-brand"
-            >
-              <span className="block h-14 w-full overflow-hidden">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={d.thumb}
-                  alt=""
-                  aria-hidden
-                  loading="lazy"
-                  className="h-full w-full object-cover"
-                />
-              </span>
-              <span className="flex items-center gap-1 px-2 py-1.5">
-                <span
-                  className={`fi fi-${d.countryCode} h-[9px] w-[13px] flex-shrink-0 rounded-[1px]`}
-                  aria-hidden
-                />
-                <span className="truncate text-[11px] font-medium text-text2 transition-colors group-hover:text-brand">
-                  {d.city}
+        <div className="mt-10 w-full">
+          <p className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
+            Or get inspired
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {destinations.map((d) => (
+              <button
+                key={d.city}
+                type="button"
+                onClick={() => onStarter(`Cheapest way to ${d.city}`)}
+                aria-label={`Cheapest way to ${d.city}`}
+                className="hop-press group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-[transform,border-color] duration-200 ease-[var(--ease-premium)] hover:-translate-y-[2px] hover:border-brand motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+              >
+                <span className="block h-[110px] w-full overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={d.thumb}
+                    alt=""
+                    aria-hidden
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                  />
                 </span>
-              </span>
-            </button>
-          ))}
+                <span className="flex items-center gap-1.5 px-3 py-2.5">
+                  <span
+                    className={`fi fi-${d.countryCode} h-[10px] w-[14px] flex-shrink-0 rounded-[1px]`}
+                    aria-hidden
+                  />
+                  <span className="truncate text-[13px] font-medium text-text2 transition-colors group-hover:text-brand">
+                    {d.city}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       ) : null}
     </div>

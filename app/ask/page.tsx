@@ -110,7 +110,7 @@ export default async function AskPage({
       }
     }
   }
-  const galleryCodes = topValue(6).map((d) => d.code)
+  const galleryCodes = topValue(8).map((d) => d.code)
 
   // Whether the Gmail travel-history seam is live (env flag + Google creds). When
   // off, the in-chat / hero "Connect Gmail" affordances keep their honest "Soon"
