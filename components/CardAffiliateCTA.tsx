@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { cardForProgram } from '@/lib/card-affiliates'
+import { cardForProgram, cardOutclickPath } from '@/lib/card-affiliates'
 import Icon from './Icon'
 
 export interface CardAffiliateCTAProps {
@@ -33,17 +33,20 @@ export default function CardAffiliateCTA({ program, unit = 'miles' }: CardAffili
       style={{ ['--hop-delay' as string]: '260ms' }}
     >
       <span aria-hidden className="mt-[2px] flex-shrink-0 text-hero-label">
-        <Icon name="credit_card" size={18} />
+        <Icon name="credit_card" size={16} />
       </span>
 
       <div className="min-w-0 flex-1">
         <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-hero-label">
           Sponsored
         </div>
+        {/* Outbound clicks route through the first-party redirect (logged,
+            then 302 to the issuer). rel="sponsored noopener": network
+            compliance + correct SEO signal for an affiliate link. */}
         <a
-          href={card.applyUrl}
+          href={cardOutclickPath(card.id, program)}
           target="_blank"
-          rel="noopener sponsored"
+          rel="sponsored noopener"
           className="group inline-flex flex-wrap items-baseline gap-x-[6px] text-[14px] leading-[1.5] text-hero-body transition-colors hover:text-white"
         >
           <span>
@@ -67,6 +70,11 @@ export default function CardAffiliateCTA({ program, unit = 'miles' }: CardAffili
           </span>
         </a>
         <p className="mt-[5px] text-[12px] leading-[1.45] text-hero-label">{card.note}</p>
+        {/* Advertiser disclosure the affiliate networks require — one plain,
+            muted line. Same hero-label token as the note (AA on the teal hero). */}
+        <p className="mt-[6px] text-[12px] leading-[1.45] text-hero-label">
+          If you&rsquo;re approved, hop may earn a commission. Terms apply.
+        </p>
       </div>
 
       <button
@@ -75,7 +83,7 @@ export default function CardAffiliateCTA({ program, unit = 'miles' }: CardAffili
         aria-label="Dismiss card offer"
         className="-mr-1 -mt-1 flex-shrink-0 rounded-lg p-1 text-hero-label transition-colors hover:text-white"
       >
-        <Icon name="close" size={16} />
+        <Icon name="close" size={20} />
       </button>
     </div>
   )

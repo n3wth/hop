@@ -394,9 +394,7 @@ function CalendarPop({
               onClick={() => shift(-1)}
               className="grid h-7 w-7 place-items-center rounded-full text-text2 enabled:hover:bg-sunk disabled:cursor-not-allowed disabled:text-text3/40"
             >
-              <span className="-scale-x-100">
-                <Icon name="expand_more" size={18} className="-rotate-90" />
-              </span>
+              <Icon name="caret_left" size={20} />
             </button>
             <button
               type="button"
@@ -404,7 +402,7 @@ function CalendarPop({
               onClick={() => shift(1)}
               className="grid h-7 w-7 place-items-center rounded-full text-text2 hover:bg-sunk"
             >
-              <Icon name="expand_more" size={18} className="-rotate-90" />
+              <Icon name="caret_right" size={20} />
             </button>
           </div>
           {/* Two months side-by-side on wider viewports; a single month on
@@ -696,7 +694,7 @@ function NonstopToggle({
           nonstop ? 'border-brand bg-brand text-white' : 'border-text3'
         }`}
       >
-        {nonstop && <Icon name="check" size={11} />}
+        {nonstop && <Icon name="check" size={12} />}
       </span>
       Nonstop only
     </button>
@@ -868,7 +866,7 @@ export function SearchForm({
             onClick={swapFromTo}
             className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full border border-border bg-surface text-brand transition-colors hover:bg-sunk"
           >
-            <Icon name="swap_horiz" size={18} className="rotate-90" />
+            <Icon name="swap_horiz" size={20} className="rotate-90" />
           </button>
         </div>
 
@@ -954,7 +952,7 @@ export function SearchForm({
           type="submit"
           className="mt-1 flex h-12 items-center justify-center gap-2 rounded-xl bg-brand font-semibold text-white transition-colors hover:bg-brand-deep hop-press"
         >
-          <Icon name="search" size={18} />
+          <Icon name="search" size={16} />
           Search
         </button>
       </form>
@@ -1088,7 +1086,7 @@ export function SearchForm({
         aria-label="Search"
         className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-brand text-white transition-colors hover:bg-brand-deep hop-press"
       >
-        <Icon name="search" size={19} />
+        <Icon name="search" size={20} />
       </button>
 
       {error && (

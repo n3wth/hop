@@ -8,6 +8,8 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { saveHomeAirport, clearSavedHomeAirport } from '@/app/actions/prefs'
+import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 
 // One persistent departure airport (the user's "where from"), shared across every
 // surface so recs are anchored to where they actually fly out of. Persisted two
@@ -20,8 +22,9 @@ interface OriginContextValue {
 
 const OriginContext = createContext<OriginContextValue | null>(null)
 
-// Shared key for both the localStorage entry and the cookie.
-export const ORIGIN_STORAGE_KEY = 'hop_origin'
+// Re-exported for client consumers. Server Components must import this from
+// lib/origin-constants instead — see the note there.
+export { ORIGIN_STORAGE_KEY }
 
 // ~1 year, in seconds — long enough that the origin sticks across sessions.
 const ORIGIN_MAX_AGE = 60 * 60 * 24 * 365
@@ -37,10 +40,16 @@ function normalizeIata(raw: string | null): string | null {
 
 export function OriginProvider({
   initialOrigin = null,
+  persistToAccount = false,
   children,
 }: {
-  /** Server-seeded origin from the hop_origin cookie (SSR). */
+  /** Server-seeded origin — the signed-in user's saved home airport when
+   *  present, else the hop_origin cookie (SSR). See AppShell. */
   initialOrigin?: string | null
+  /** Signed-in users get the origin saved to their profile (hop_user_prefs)
+   *  on top of the cookie/localStorage, so it survives across devices and
+   *  cleared browser storage — not just this browser. */
+  persistToAccount?: boolean
   children: ReactNode
 }) {
   const [origin, setOriginState] = useState<string | null>(() => normalizeIata(initialOrigin))
@@ -48,6 +57,13 @@ export function OriginProvider({
   const setOrigin = useCallback((iata: string | null) => {
     const next = normalizeIata(iata)
     setOriginState(next)
+    if (persistToAccount) {
+      // Fire-and-forget — the pill already reflects the choice locally; a
+      // failed save/clear just means next reload falls back to the cookie
+      // (set) or the stale saved pref (clear).
+      if (next) saveHomeAirport(next).catch(() => {})
+      else clearSavedHomeAirport().catch(() => {})
+    }
     if (typeof window === 'undefined') return
     try {
       if (next) {
@@ -63,7 +79,7 @@ export function OriginProvider({
       // Storage can throw (private mode, blocked cookies) — the in-memory state
       // still works for the session; persistence is best-effort.
     }
-  }, [])
+  }, [persistToAccount])
 
   const value = useMemo<OriginContextValue>(() => ({ origin, setOrigin }), [origin, setOrigin])
 

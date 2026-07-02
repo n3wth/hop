@@ -49,7 +49,7 @@ function DestinationCard({
   return (
     <Link
       href={href}
-      className={`group flex flex-col overflow-hidden rounded-[18px] border border-border bg-paper transition-colors hover:border-brand-mint-deep${
+      className={`group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-colors hover:border-brand-mint-deep${
         stagger ? ' hop-rise' : ''
       }`}
       style={stagger ? { ['--hop-delay' as string]: `${120 + index * 70}ms` } : undefined}
@@ -109,7 +109,7 @@ function DestinationCard({
 
       {/* ── body ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-1 flex-col p-4">
-        <p className="text-[13.5px] leading-[1.5] text-text2">{d.vibe}</p>
+        <p className="text-[14px] leading-[1.5] text-text2">{d.vibe}</p>
 
         <div className="mt-4 flex items-center justify-between border-t border-hair pt-3.5">
           <span className="text-[13px] font-semibold text-text">
@@ -126,7 +126,7 @@ function DestinationCard({
         </div>
 
         <div className="mt-2.5 flex items-center gap-1.5 text-[12px] text-text3">
-          <Icon name="loyalty" size={13} className="flex-shrink-0 text-brand" />
+          <Icon name="loyalty" size={12} className="flex-shrink-0 text-brand" />
           <span className="truncate">{d.bestProgram}</span>
         </div>
       </div>

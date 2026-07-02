@@ -14,7 +14,7 @@ export function PromptInput({ className = '', onSubmit, children, ...props }: Pr
   return (
     <form
       onSubmit={onSubmit}
-      className={`flex items-end gap-2.5 rounded-[22px] border-2 border-border bg-paper px-3.5 py-2.5 transition-colors focus-within:border-brand ${className}`}
+      className={`flex items-end gap-2.5 rounded-[var(--radius-lg)] border-2 border-border bg-paper px-3.5 py-2.5 transition-colors focus-within:border-brand ${className}`}
       {...props}
     >
       {children}
@@ -90,9 +90,7 @@ export function PromptInputSubmit({
         className={`flex h-9 w-9 flex-shrink-0 items-center justify-center self-end rounded-full bg-brand-deep text-white transition-colors hover:bg-brand-ink ${className}`}
       >
         {/* Stop: filled square */}
-        <svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor" aria-hidden>
-          <rect width="11" height="11" rx="2" />
-        </svg>
+        <Icon name="stop" size={12} weight="fill" />
       </button>
     )
   }
@@ -106,7 +104,7 @@ export function PromptInputSubmit({
       className={`flex h-9 w-9 flex-shrink-0 items-center justify-center self-end rounded-full bg-brand text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:bg-border disabled:text-text3 ${className}`}
       {...props}
     >
-      <Icon name={isError ? 'info' : 'flight'} size={17} className={isError ? '' : 'rotate-90'} />
+      <Icon name={isError ? 'refresh' : 'paper_plane'} size={20} />
     </button>
   )
 }

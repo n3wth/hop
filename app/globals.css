@@ -64,9 +64,27 @@
   --color-aa: #c8102e;
   --color-ba: #2a5caa;
 
+  /* ── Radius scale — four steps, nothing off-scale ─────────────────────
+     Tailwind v4 namespace note: --radius-sm and --radius-lg live in the stock
+     --radius-* namespace, so they RE-POINT the stock `rounded-sm` (0.25rem →
+     10px) and `rounded-lg` (0.5rem → 20px) utilities. Blessed: in this
+     codebase `rounded-sm`/`rounded-lg` ARE the tokens — identical to
+     `rounded-[var(--radius-sm)]`/`rounded-[var(--radius-lg)]`. See
+     docs/solutions/2026-07-02-tailwind-v4-theme-namespace-overrides.md. */
+  --radius-sm: 10px;
   --radius: 14px;
   --radius-lg: 20px;
   --radius-hero: 28px;
+
+  /* ── Letter-spacing role tokens ────────────────────────────────────────
+     Deliberately named --track-*, OUTSIDE Tailwind's --tracking-* namespace,
+     so the existing stock tracking-wide/tracking-tight uses keep their stock
+     values and nothing is silently re-pointed. Use at call sites as
+     `tracking-[var(--track-*)]`. Values are the plurality of the 2026-07-02
+     census of hand-rolled tracking-[…] values — do not invent new ones. */
+  --track-eyebrow: 0.12em; /* uppercase kickers / section eyebrows */
+  --track-label: 0.06em; /* small uppercase captions / stat labels */
+  --track-tag: 0.1em; /* chips, tags, badges */
 
   /* Premium easing — single source of truth for everything we animate. */
   --ease-premium: cubic-bezier(0.2, 0, 0, 1);
@@ -123,10 +141,16 @@
   --container-article: 880px; /* long-form single article — destinations/[city] */
   --container-md: 980px; /* narrow index/listing — sweet-spots */
   --container-checkout: 1040px; /* form + sticky sidebar — book */
-  --container-app: 1180px; /* the standard app width — home, search, support, legal, deals/destinations base */
-  --container-wide: 1340px; /* wide card-grid bump — deals/destinations xl */
-  --container-xwide: 1500px; /* widest card-grid bump — deals 2xl */
+  --container-app: 1180px; /* legacy boxed width — kept for reference; app surfaces migrated to --container-shell */
+  --container-wide: 1340px; /* legacy wide card-grid bump — superseded by --container-shell */
+  --container-xwide: 1500px; /* legacy widest card-grid bump — superseded by --container-shell */
   --container-full: 1440px; /* full-bleed centered boundary states — not-found, error */
+  /* The full-width shell (Linear/Airbnb-class): app surfaces (nav, home, search,
+     deals, destinations, /ask chrome) are FLUID below this cap — content fills
+     the viewport minus the shared gutters (px-5 sm:px-8 lg:px-12 xl:px-16) —
+     and center above it. Reading surfaces stay measured on --container-sm
+     (820px) / prose measures; never put long-form text on the shell width. */
+  --container-shell: 1760px;
 }
 
 * {
@@ -151,6 +175,10 @@ body {
   font-weight: 500;
   line-height: 1.5;
   font-feature-settings: "ss01" on, "cv01" on;
+  /* Contain the vertical rubber-band so the installed/standalone app doesn't
+     bounce the whole document (the tell of a wrapped web page). Scrollable
+     regions inside still scroll normally. */
+  overscroll-behavior-y: contain;
 }
 
 /* Paper grain — a whisper-subtle tiled fractal-noise texture baked onto the
@@ -474,14 +502,167 @@ body {
   margin-top: 0;
 }
 
+/* ── Concierge streamed-markdown prose — .hop-md ─────────────────────────────
+   Streamdown renders the concierge's streamed answer tagged .hop-md (see
+   components/ai-elements/response.tsx, which also sets the base type size + ink
+   color). This scope gives that markdown a tight, editorial rhythm on the warm
+   canvas: paragraph cadence, brand links, display headings, real list markers,
+   and on-brand code / quote / table. Flat, AA, no decorative chrome. */
+.hop-md > :first-child {
+  margin-top: 0;
+}
+.hop-md > :last-child {
+  margin-bottom: 0;
+}
+
+/* Paragraph rhythm — ~0.7em between blocks, calm 1.6 leading. Body inherits the
+   ink set on the .hop-md container (response.tsx); softer copy lives in blockquote. */
+.hop-md p {
+  margin: 0 0 0.7em;
+  line-height: 1.6;
+}
+
+/* Links — brand teal with a quiet token underline that deepens on hover. */
+.hop-md a {
+  color: var(--color-brand);
+  text-decoration: underline;
+  text-decoration-color: var(--color-border);
+  text-underline-offset: 3px;
+  transition: color 0.15s ease;
+}
+.hop-md a:hover {
+  color: var(--color-brand-deep);
+}
+
+/* Headings — display face on the --text-* scale, tight leading. */
+.hop-md h1,
+.hop-md h2,
+.hop-md h3,
+.hop-md h4,
+.hop-md h5,
+.hop-md h6 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--color-text);
+  margin: 1.3em 0 0.5em;
+}
+.hop-md h1 {
+  font-size: var(--text-2xl);
+}
+.hop-md h2 {
+  font-size: var(--text-xl);
+}
+.hop-md h3 {
+  font-size: var(--text-lg);
+}
+.hop-md h4,
+.hop-md h5,
+.hop-md h6 {
+  font-size: var(--text-md);
+}
+
+/* Lists — real markers, comfortable indent, calm row rhythm. */
+.hop-md ul,
+.hop-md ol {
+  margin: 0 0 0.7em;
+  padding-left: 1.3em;
+}
+.hop-md ul {
+  list-style: disc;
+}
+.hop-md ol {
+  list-style: decimal;
+}
+.hop-md li {
+  margin: 0.2em 0;
+  line-height: 1.6;
+}
+.hop-md li::marker {
+  color: var(--color-text3);
+}
+.hop-md li > ul,
+.hop-md li > ol {
+  margin: 0.2em 0 0.3em;
+}
+
+.hop-md strong {
+  font-weight: 600;
+  color: var(--color-text);
+}
+.hop-md em {
+  font-style: italic;
+}
+
+/* Inline code — a small sunk chip, mono, subtly tightened. */
+.hop-md code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--color-sunk);
+  border: 1px solid var(--color-hair);
+  border-radius: 6px;
+  padding: 0.1em 0.36em;
+}
+
+/* Fenced blocks — a flat sunk panel; inner code sheds the inline chip styling. */
+.hop-md pre {
+  margin: 0 0 0.7em;
+  padding: 0.9em 1em;
+  background: var(--color-sunk);
+  border: 1px solid var(--color-hair);
+  border-radius: var(--radius);
+  overflow-x: auto;
+}
+.hop-md pre code {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  font-size: 0.86em;
+}
+
+/* Blockquote — a quiet brand spine, softened copy. */
+.hop-md blockquote {
+  margin: 0 0 0.7em;
+  padding-left: 0.9em;
+  border-left: 2px solid var(--color-brand-light);
+  color: var(--color-text2);
+}
+
+.hop-md hr {
+  border: 0;
+  border-top: 1px solid var(--color-hair);
+  margin: 1.2em 0;
+}
+
+/* Tables — flat hairline grid, sunk header, no fills. */
+.hop-md table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 0.7em;
+  font-size: 0.95em;
+}
+.hop-md th,
+.hop-md td {
+  border: 1px solid var(--color-hair);
+  padding: 0.4em 0.6em;
+  text-align: left;
+}
+.hop-md th {
+  background: var(--color-sunk);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
 /* ── /ask immersive chat surface ──────────────────────────────────────────
    The concierge thread is the PRIMARY surface on /ask: it fills the viewport
    below the sticky TopNav, owns the only scroll region (the message area), and
    pins the composer to the bottom. No nested card-on-bg, no double scrollbar.
-   --hop-nav mirrors the TopNav's expanded height (76px). dvh keeps the mobile
+   --hop-nav mirrors the TopNav's fixed height (72px). dvh keeps the mobile
    browser chrome from clipping the pinned composer. */
 :root {
-  --hop-nav: 76px;
+  --hop-nav: 72px;
 }
 
 /* Single-viewport stage — the concierge fills exactly the space below the nav so
@@ -489,6 +670,17 @@ body {
    The landing hero sits flush under the nav; the thread scrolls only internally. */
 .hop-ask-stage {
   height: calc(100dvh - var(--hop-nav));
+}
+
+/* The ask surface's CHROME frame — the control rail and the docked composer's
+   hairline share the SAME container as the TopNav content (--container-shell),
+   so the concierge's furniture aligns with the header above it (controls sit
+   under the avatar, the dock hairline spans the shell width). One integrated
+   surface, not a narrow column floating inside wider chrome. */
+.hop-ask-frame {
+  width: 100%;
+  max-width: var(--container-shell);
+  margin-inline: auto;
 }
 
 /* A calm reading measure for the thread — centered within the full-bleed stage
@@ -636,5 +828,12 @@ body {
   ::view-transition-old(root),
   ::view-transition-new(root) {
     animation: none !important;
+  }
+
+  /* Streamed-text word fade (streamdown `animated`) applies inline animation
+     styles per word — force them inert so streamed answers appear instantly. */
+  .hop-md * {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 }

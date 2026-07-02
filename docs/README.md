@@ -6,11 +6,11 @@ This folder stores product, design, and implementation documentation for hop.
 
 | Path | Purpose | Update cadence |
 |---|---|---|
+| `cloud-env.md` | Claude Code cloud environment template: setup script + env-var tiers. | When env keys or the setup script change |
 | `content-plan.md` | Content strategy, sweet spots seed data, SEO direction, and concierge prompt seeds. | Quarterly, plus major market changes |
 | `design/copy-spec.md` | UI copy tone and component-level copy rules. | As UI language evolves |
 | `design/CHOSEN-editorial.html` | Canonical visual reference for flat editorial design. | Only when design direction changes |
 | `design/hop-v9.html` | Prior locked visual reference and layout artifact. | Historical reference |
-| `design/icons.json` | Material symbol path data used by UI icon rendering. | When icon set changes |
 | `design/hop-logo.svg` | Canonical bunny logo vector. | Rare |
 | `plans/2026-06-28-001-feat-hop-flight-optimizer-plan.md` | Detailed implementation plan for initial optimizer build. | Historical, append-only |
 | `growth-hypothesis.md` | Forward-looking growth/business hypothesis for a funded agent-team month. | When strategy is revisited |

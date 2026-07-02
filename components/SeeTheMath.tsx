@@ -49,7 +49,7 @@ export default function SeeTheMath({ pick, cheapestCash, threshold, unit }: SeeT
           className="transition-transform duration-300 motion-reduce:transition-none"
           style={{ transform: open ? 'rotate(180deg)' : 'none' }}
         >
-          <Icon name="expand_more" size={18} />
+          <Icon name="expand_more" size={16} />
         </span>
       </button>
 
@@ -80,7 +80,7 @@ export default function SeeTheMath({ pick, cheapestCash, threshold, unit }: SeeT
             {/* threshold logic — why "use points" (or not) */}
             <div className="mt-[18px] flex items-start gap-[10px] border-t border-white/12 pt-[16px] text-[13.5px] leading-[1.55] text-hero-body">
               <span className="mt-[1px] flex-shrink-0 text-mint-bright">
-                <Icon name={clears ? 'check_circle' : 'lightbulb'} size={17} />
+                <Icon name={clears ? 'check_circle' : 'lightbulb'} size={16} weight={clears ? 'fill' : 'regular'} />
               </span>
               <p>
                 {clears ? (

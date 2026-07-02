@@ -165,7 +165,7 @@ export default function HomeAirportPicker({
         className="inline-flex flex-shrink-0 items-center justify-center gap-2 rounded-[12px] bg-brand px-6 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:opacity-70"
       >
         {pending ? 'Saving…' : cta}
-        {!pending ? <Icon name="check_circle" size={17} /> : null}
+        {!pending ? <Icon name="check_circle" size={16} weight="fill" /> : null}
       </button>
     </div>
   )

@@ -11,6 +11,14 @@
     {
       "path": "/api/cron/valuation-sync",
       "schedule": "30 13 * * *"
+    },
+    {
+      "path": "/api/cron/business-digest",
+      "schedule": "7 14 * * 1"
+    },
+    {
+      "path": "/api/cron/health-sentinel",
+      "schedule": "17 11 * * *"
     }
   ]
 }

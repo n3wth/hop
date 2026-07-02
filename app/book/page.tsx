@@ -72,7 +72,7 @@ export default async function BookPage({
             href={backHref}
             className="mb-5 inline-flex items-center gap-1.5 text-[13.5px] font-medium text-text2 transition-colors hover:text-text"
           >
-            <Icon name="arrow_left" size={15} />
+            <Icon name="arrow_left" size={16} />
             Back to results
           </Link>
         ) : null}
@@ -170,7 +170,7 @@ function Notice({
     <div className="mx-auto mt-2 max-w-[560px]">
       <div className="flex items-start gap-4 rounded-[18px] border border-border bg-surface px-4 py-6 sm:px-7 sm:py-7">
         <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
-          <Icon name={icon} size={22} />
+          <Icon name={icon} size={24} weight="fill" />
         </span>
         <div className="min-w-0">
           <div className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">

@@ -24,7 +24,7 @@ export default function ConnectBand({
           {signedIn ? (
             <>
               <span className="inline-flex items-center gap-2 rounded-full bg-brand-deep px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-mint-bright">
-                <Icon name="check_circle" size={13} />
+                <Icon name="check_circle" size={12} weight="fill" />
                 {programs} {programs === 1 ? 'program' : 'programs'} synced
               </span>
               <h2 className="mt-4 font-display text-[28px] font-semibold leading-[1.06] tracking-[-0.02em] text-white sm:text-[36px]">
@@ -62,7 +62,7 @@ export default function ConnectBand({
               href="/account"
               className="inline-flex items-center gap-2 rounded-[14px] border border-white/25 px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep"
             >
-              <Icon name="settings" size={18} />
+              <Icon name="settings" size={16} />
               Manage programs
             </Link>
           ) : (
@@ -74,7 +74,7 @@ export default function ConnectBand({
                 href="/auth/login?screen_hint=signup&returnTo=%2F"
                 className="inline-flex items-center gap-2 rounded-[14px] bg-white px-7 py-3.5 text-[15px] font-semibold text-brand-ink transition-colors hover:bg-hero-white-hover"
               >
-                <Icon name="loyalty" size={18} />
+                <Icon name="loyalty" size={16} />
                 Connect your points
               </a>
               <a

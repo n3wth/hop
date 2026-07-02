@@ -50,7 +50,7 @@ export default function Error({
 
       <div className="hop-rise mt-8 flex items-center gap-3" style={{ ['--hop-delay' as string]: '220ms' }}>
         <Button onClick={() => retry()}>
-          <Icon name="swap_horiz" size={18} />
+          <Icon name="refresh" size={16} />
           Try again
         </Button>
         <Button href="/" variant="secondary">

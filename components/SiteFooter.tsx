@@ -4,27 +4,31 @@ import { SITE_NAME, SITE_SOCIAL } from '@/lib/seo'
 
 const YEAR = new Date().getFullYear()
 
+// One compact footer. The brand block and nav columns group together on the
+// left with fixed gaps — nothing is pinned to opposite ends of the 1760px
+// shell — and the legal line is a single hairline row inside the same
+// footer, not a second bar.
 export default function SiteFooter() {
   return (
     <footer
       role="contentinfo"
-      className="mt-16 border-t border-border pt-8 text-[13px] text-text3"
+      className="mt-16 border-t border-border text-[13px] text-text3"
     >
-      <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between lg:gap-16">
-        {/* Brand */}
-        <div className="flex max-w-[28ch] flex-shrink-0 flex-col text-center lg:text-left">
+      <div className="flex flex-col gap-10 py-10 md:flex-row md:items-start md:gap-16 lg:gap-20">
+        {/* Brand — quiet, inline */}
+        <div className="max-w-[30ch]">
           <Link
             href="/"
-            className="wordmark text-[22px] leading-none text-text2 transition-colors hover:text-brand"
+            className="wordmark text-[15px] leading-none text-text2 transition-colors hover:text-brand"
           >
             {SITE_NAME}
           </Link>
-          <p className="mt-2.5 leading-[1.6]">
+          <p className="mt-2 text-[14px] leading-[1.6]">
             Points vs. cash — valued in ¢/pt so you always know the smarter way to book.
           </p>
 
           {/* Social Parking */}
-          <div className="mt-5 flex items-center justify-center gap-4 text-text4 lg:justify-start">
+          <div className="mt-5 flex items-center gap-4 text-text4">
             <a
               href={SITE_SOCIAL.x}
               target="_blank"
@@ -55,17 +59,13 @@ export default function SiteFooter() {
           </div>
         </div>
 
-        <div className="flex-1 lg:flex lg:justify-end">
-          <FooterNav />
-        </div>
+        <FooterNav />
       </div>
 
-
-
-      {/* Bottom bar */}
-      <div className="mt-8 flex items-center justify-between border-t border-hair pt-5 text-[11.5px]">
+      {/* Legal row — final hairline row of the same footer */}
+      <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 border-t border-hair py-4 text-[11.5px]">
         <span>© {YEAR} {SITE_NAME}</span>
-        <span className="hidden sm:block">Points + cash. Smarter travel.</span>
+        <span className="hidden sm:inline">Points + cash. Smarter travel.</span>
       </div>
     </footer>
   )

@@ -25,7 +25,7 @@ export type ToolHeaderProps = {
 }
 
 // A slim pill-row: icon + title + status. Hover gets a subtle surface tint.
-export function ToolHeader({ title, icon = 'lightbulb', state, className = '' }: ToolHeaderProps) {
+export function ToolHeader({ title, icon = 'settings', state, className = '' }: ToolHeaderProps) {
   const running = state === 'input-streaming' || state === 'input-available'
   const errored = state === 'output-error'
   return (
@@ -34,7 +34,7 @@ export function ToolHeader({ title, icon = 'lightbulb', state, className = '' }:
     >
       <Icon
         name={icon}
-        size={13}
+        size={16}
         className={running ? 'text-brand hop-pulse' : errored ? 'text-amber' : 'text-text3'}
       />
       <span className="flex-1 truncate text-[12px] font-medium leading-none">{title}</span>
@@ -42,14 +42,14 @@ export function ToolHeader({ title, icon = 'lightbulb', state, className = '' }:
         {running ? (
           <Loader size={11} className="text-brand" />
         ) : errored ? (
-          <Icon name="error" size={12} className="text-warn" />
+          <Icon name="error" size={12} weight="fill" className="text-warn" />
         ) : (
-          <Icon name="check_circle" size={12} className="text-brand/50" />
+          <Icon name="check_circle" size={12} weight="fill" className="text-brand/50" />
         )}
       </span>
       <Icon
         name="expand_more"
-        size={13}
+        size={16}
         className="shrink-0 text-text3/60 transition-transform group-open/tool:rotate-180"
       />
     </summary>
@@ -103,7 +103,7 @@ export function toolTitle(step: ToolActivityStep, hasBalances = false): string {
 }
 
 export function toolIcon(step: ToolActivityStep): IconName {
-  return TOOL_COPY[step.tool]?.icon ?? 'lightbulb'
+  return TOOL_COPY[step.tool]?.icon ?? 'settings'
 }
 
 export function shortDetail(detail: string): string {
@@ -139,7 +139,7 @@ export function ToolActivity({
       <div className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-text3">
         <Icon
           name={icon}
-          size={13}
+          size={16}
           className={running ? 'text-brand hop-pulse' : errored ? 'text-warn' : 'text-text3'}
         />
         <span className="flex-1 truncate text-[12px] font-medium leading-none">{title}</span>
@@ -147,9 +147,9 @@ export function ToolActivity({
           {running ? (
             <Loader size={11} className="text-brand" />
           ) : errored ? (
-            <Icon name="error" size={12} className="text-warn" />
+            <Icon name="error" size={12} weight="fill" className="text-warn" />
           ) : (
-            <Icon name="check_circle" size={12} className="text-brand/50" />
+            <Icon name="check_circle" size={12} weight="fill" className="text-brand/50" />
           )}
         </span>
       </div>

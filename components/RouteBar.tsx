@@ -22,7 +22,7 @@ function Stat({ value, label }: { value: string; label: string }) {
       <span className="hop-num text-[18px] font-semibold text-text">
         {value}
       </span>
-      <span className="mt-[5px] text-[11px] uppercase tracking-[0.06em] text-text3">{label}</span>
+      <span className="mt-[5px] text-[11px] uppercase tracking-[var(--track-label)] text-text3">{label}</span>
     </div>
   )
 }
@@ -49,7 +49,7 @@ export default function RouteBar({ result, hasRealBalances = false, nonstop = fa
             {from}
           </span>
           <span className="flex items-center text-brand">
-            <Icon name="flight" size={18} className="rotate-90" />
+            <Icon name="flight" size={16} className="rotate-90" />
           </span>
           <span className="font-display text-[16px] font-semibold tracking-[-0.01em] text-text">
             {to}
@@ -74,8 +74,13 @@ export default function RouteBar({ result, hasRealBalances = false, nonstop = fa
         </div>
       </div>
 
-      {/* FULL — wide screens (lg+). */}
-      <div className="hidden items-center justify-between pt-4 lg:flex">
+      {/* FULL — wide screens (lg+). This is a thin one-line masthead (route
+          codes balanced against a stat group), not a content block that
+          should fill the shell — capped at --container-app (the width it
+          was designed at, pre-full-width-shell) so the two clusters read as
+          a balanced line instead of drifting to opposite edges of the full
+          1760px shell with dead air stranded between them. */}
+      <div className="hidden items-center justify-between pt-4 lg:flex lg:max-w-[var(--container-app)]">
         <div className="flex items-center gap-[18px]">
           <div className="flex flex-col">
             <span className="font-display text-[19px] font-semibold tracking-[-0.01em] text-text">
@@ -86,7 +91,7 @@ export default function RouteBar({ result, hasRealBalances = false, nonstop = fa
             </span>
           </div>
           <span className="flex items-center text-brand">
-            <Icon name="flight" size={30} className="rotate-90" />
+            <Icon name="flight" size={24} className="rotate-90" />
           </span>
           <div className="flex flex-col">
             <span className="font-display text-[19px] font-semibold tracking-[-0.01em] text-text">

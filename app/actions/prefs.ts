@@ -1,7 +1,7 @@
 'use server'
 
 import { auth0 } from '@/lib/auth0'
-import { setHomeAirport } from '@/lib/prefs'
+import { setHomeAirport, clearHomeAirport } from '@/lib/prefs'
 import { getProfile, setProfile } from '@/lib/travel-profile'
 import { validateProfile, type AirlineStatus } from '@/lib/travel-profile-model'
 import { airportByCode } from '@/lib/airports'
@@ -18,6 +18,19 @@ export async function saveHomeAirport(code: string): Promise<{ ok: boolean; erro
 
   const saved = await setHomeAirport(userId, c)
   return saved ? { ok: true } : { ok: false, error: "Couldn't save — try again" }
+}
+
+// Server Action: unset the signed-in user's saved home airport (the origin
+// pill's "Clear"). Without this, a signed-in user who persisted an origin
+// would see it reappear on the next navigation — AppShell prefers the saved
+// pref over the (now-cleared) cookie.
+export async function clearSavedHomeAirport(): Promise<{ ok: boolean; error?: string }> {
+  const session = await auth0.getSession()
+  const userId = session?.user?.sub
+  if (!userId) return { ok: false, error: 'Not signed in' }
+
+  const cleared = await clearHomeAirport(userId)
+  return cleared ? { ok: true } : { ok: false, error: "Couldn't clear — try again" }
 }
 
 // Server Action: save the signed-in user's airline/hotel elite statuses into the

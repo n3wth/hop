@@ -57,13 +57,13 @@ export default function HowItWorks() {
           >
             <div className="flex items-center justify-between">
               <span className="grid h-11 w-11 place-items-center rounded-full bg-brand-light text-brand">
-                <Icon name={s.icon} size={22} />
+                <Icon name={s.icon} size={24} weight="fill" />
               </span>
               <span className="font-display text-[15px] font-semibold tabular-nums text-text3">
                 0{i + 1}
               </span>
             </div>
-            <div className="mt-5 text-[11px] font-semibold uppercase tracking-[0.12em] text-brand">
+            <div className="mt-5 text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
               {s.source}
             </div>
             <h3 className="mt-1.5 font-display text-[18px] font-semibold leading-[1.15] tracking-[-0.01em] text-text">

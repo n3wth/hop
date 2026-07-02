@@ -405,7 +405,7 @@ export default function CheckoutForm({
         {expired ? (
           <div
             role="alert"
-            className="mt-6 flex flex-wrap items-center gap-3 rounded-[12px] border border-border bg-sunk px-4 py-3.5 text-[13px] leading-[1.5] text-text"
+            className="mt-6 flex flex-wrap items-center gap-3 rounded-[12px] border border-border bg-sunk px-4 py-3.5 text-[14px] leading-[1.5] text-text"
           >
             <Icon name="schedule" size={16} className="flex-shrink-0 text-text2" />
             <span className="flex-1">The held price lapsed. Refresh to get the latest fare.</span>
@@ -536,13 +536,13 @@ export default function CheckoutForm({
         >
           <div className="mb-6 flex items-center gap-3 border-b border-hair pb-4">
             <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-brand-light text-brand">
-              <Icon name="lock" size={15} />
+              <Icon name="lock" size={16} />
             </span>
             <h2 className="font-display text-[17px] font-semibold tracking-[-0.01em] text-text">
               Payment
             </h2>
             <span className="ml-auto flex items-center gap-1.5 text-[12px] font-medium text-text3">
-              <Icon name="shield" size={13} className="text-brand" />
+              <Icon name="shield" size={12} className="text-brand" />
               Encrypted
             </span>
           </div>
@@ -580,7 +580,7 @@ export default function CheckoutForm({
           )}
 
           <p className="mt-4 flex items-start gap-1.5 text-[12px] leading-[1.5] text-text3">
-            <Icon name="info" size={13} className="mt-px flex-shrink-0" />
+            <Icon name="info" size={12} className="mt-px flex-shrink-0" />
             <span>
               Card details go straight to Duffel&apos;s PCI-compliant form — hop never sees your
               number. Test mode, so no real charge.
@@ -600,7 +600,7 @@ export default function CheckoutForm({
             role="alert"
             className="mt-5 flex items-start gap-2.5 rounded-[12px] border border-weak/20 bg-weak-bg px-4 py-3.5 text-[13.5px] leading-[1.5] text-weak"
           >
-            <Icon name="error" size={16} className="mt-px flex-shrink-0" />
+            <Icon name="error" size={16} weight="fill" className="mt-px flex-shrink-0" />
             <span>{error}</span>
           </div>
         ) : null}
@@ -614,7 +614,7 @@ export default function CheckoutForm({
           {busy ? (
             <span className="h-[18px] w-[18px] animate-spin rounded-full border-2 border-white/30 border-t-white motion-reduce:animate-none" />
           ) : (
-            <Icon name="lock" size={17} />
+            <Icon name="lock" size={16} />
           )}
           {busy ? stageLabel[stage] : expired ? 'Refresh price' : `Pay ${total}`}
         </button>
@@ -666,7 +666,7 @@ export default function CheckoutForm({
                   <div className="flex flex-1 flex-col items-center">
                     <div className="flex w-full items-center gap-1.5 text-brand">
                       <span className="h-px flex-1 bg-border" />
-                      <Icon name="flight" size={14} className="rotate-90" />
+                      <Icon name="flight" size={16} className="rotate-90" />
                       <span className="h-px flex-1 bg-border" />
                     </div>
                     {s.flightNumber ? (
@@ -809,7 +809,7 @@ function Select({
       </select>
       <Icon
         name="expand_more"
-        size={18}
+        size={16}
         className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-text3"
       />
     </div>

@@ -14,6 +14,13 @@ The thing to plan: **$ARGUMENTS**
 
 Do not write application code in this command. Research, then write the plan file. Stop there.
 
+**Panel mode (ADR 0006):** when the solution space is wide or contested — a new seam, a
+cross-cutting feature, anything where the first plan is probably not the best one — and the
+harness has the Workflow tool, prefer
+`Workflow({ name: 'plan-panel', args: { task: $ARGUMENTS } })`
+(`.claude/workflows/plan-panel.js`): three lens-forced drafts, a judge panel, one synthesized
+blueprint written to `docs/plans/`. For a narrow, well-trodden change, continue below.
+
 ## 1. Research (read before you reason — never plan from memory)
 
 Read the actual code and docs that this work touches. At minimum:
@@ -65,7 +72,7 @@ Pick a date-prefixed slug and write the plan to
    (`degraded[]`, `DegradedNote`). Persistence is **user_id-scoped in code** (service-role bypasses
    RLS) — note the scoping for every new query.
 7. **Test plan.** The vitest cases to add (`lib/**/*.test.ts` or `app/**/*.test.ts`, node env) and
-   the exact commands (`npx vitest run <file>`, `npx tsc --noEmit`, `npm run build`). Name the edge
+   the exact commands (`npx vitest run <file>`, `npm run typecheck`, `npm run build`). Name the edge
    cases: degraded sources, empty balances, idempotent re-fire, threshold boundaries (cpp exactly
    2.5).
 8. **Copy & design notes** (only if there's UI/email copy). Terse, confident, state the answer +

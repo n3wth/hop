@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import Script from 'next/script'
 import { Bricolage_Grotesque, Fraunces, Geist_Mono } from 'next/font/google'
 import {
   SITE_URL,
@@ -53,6 +54,13 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: SITE_NAME,
+    // 'default' (not 'black-translucent'): hop is a light-themed app (warm
+    // cream canvas, no dark hero spanning the top of every page) — per Apple's
+    // own guidance and PWA convention, 'black-translucent' (transparent bar,
+    // white icons) is for apps with a dark top-of-viewport; on a light canvas
+    // it renders illegible white-on-cream icons. 'default' (white bar, dark
+    // icons) is the documented, low-risk fit here — see
+    // node_modules/next/dist/docs/.../generate-metadata.md#applewebapp.
     statusBarStyle: 'default',
   },
   keywords: [
@@ -97,9 +105,27 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  // Next's `appleWebApp.capable` only emits the unprefixed
+  // `mobile-web-app-capable` (Chromium's preferred tag, since Next 15 —
+  // github.com/vercel/next.js PR #70272 dropped the Apple-prefixed one to
+  // silence a Chrome DevTools deprecation warning). But Apple's own docs
+  // (Configuring Web Applications: "apple-mobile-web-app-status-bar-style
+  // ... has no effect unless you first specify standalone mode [via
+  // apple-mobile-web-app-capable]") still key iOS standalone/status-bar
+  // behavior off the *prefixed* tag on pre-Safari-26 iOS — its absence is
+  // exactly what makes an installed hop look like a bare Safari tab instead
+  // of a native app shell (vercel/next.js issues #70272, #74248, #74524).
+  // Emit both via `other` (Next's documented custom-meta-tag escape hatch)
+  // so iOS gets the tag it actually keys standalone/status-bar behavior on.
+  other: {
+    'apple-mobile-web-app-capable': 'yes',
+  },
 }
 
 export const viewport: Viewport = {
+  // Single value, not the {media, color}[] form: hop declares colorScheme
+  // 'light' only (no dark theme), so there's no second variant to branch on —
+  // see generate-viewport.md#themecolor for when the array form is needed.
   themeColor: TEAL,
   colorScheme: 'light',
   viewportFit: 'cover',
@@ -124,6 +150,13 @@ export default function RootLayout({
         <ScrollToTop />
         <StructuredData />
         {children}
+        {/* Travelpayouts auto-attribution tag (project 545389). Monetizes outbound
+            clicks to partner sites (the Kiwi cash deep-links in lib/booking.ts) by
+            attributing them to hop's affiliate account — WITHOUT this, cash-booking
+            clicks earn nothing. lazyOnload keeps it entirely off the critical path
+            (attribution happens at click time, not render time). No hop data is
+            sent; it only decorates outbound partner navigations. */}
+        <Script src="https://emrldtp.com/NTQ1Mzg5.js?t=545389" strategy="lazyOnload" />
       </body>
     </html>
   )
