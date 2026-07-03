@@ -70,7 +70,7 @@ export default function CardAffiliateCTA({ program, unit = 'miles' }: CardAffili
                 </span>
               ) : null}
             </span>
-            <span aria-hidden className="text-mint-bright transition-transform group-hover:translate-x-[2px]">
+            <span aria-hidden className="text-mint-bright">
               →
             </span>
           </a>

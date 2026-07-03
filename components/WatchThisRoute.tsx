@@ -144,9 +144,7 @@ function ArrowLink({ href, children }: { href: string; children: React.ReactNode
       className="group mt-[6px] inline-flex items-center gap-[6px] text-[13px] font-semibold text-mint-bright transition-colors hover:text-white"
     >
       {children}
-      <span aria-hidden className="transition-transform group-hover:translate-x-[2px]">
-        →
-      </span>
+      <span aria-hidden>→</span>
     </a>
   )
 }

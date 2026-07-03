@@ -103,7 +103,7 @@ export default function AskStart({
                 type="button"
                 onClick={() => onStarter(`Cheapest way to ${d.city}`)}
                 aria-label={`Cheapest way to ${d.city}`}
-                className="hop-press group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-[transform,border-color] duration-200 ease-[var(--ease-premium)] hover:-translate-y-[2px] hover:border-brand motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+                className="hop-press group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-colors duration-200 ease-[var(--ease-premium)] hover:border-brand"
               >
                 <span className="block h-[110px] w-full overflow-hidden">
                   {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -309,14 +309,20 @@ export default async function Search({
         {/* plain trip context — route + facts, not fake masthead metadata */}
         <RouteBar result={result} hasRealBalances={hasRealBalances} nonstop={nonstop} />
 
-        {/* the verdict hero */}
-        <VerdictRail
-          result={result}
-          destPhoto={destPhoto}
-          hasRealBalances={hasRealBalances}
-          isSignedIn={!!user}
-          nonstop={nonstop}
-        />
+        {/* the verdict hero — only when there's an actual pick to render a
+            verdict about. verdict === 'none' means cash AND awards both came
+            back empty (or both degraded, see DegradedNote): there's nothing to
+            recommend, so EmptyState (below, via ResultsList) owns the page
+            instead of a confident-sounding "Pay cash" card built on dashes. */}
+        {result.pick ? (
+          <VerdictRail
+            result={result}
+            destPhoto={destPhoto}
+            hasRealBalances={hasRealBalances}
+            isSignedIn={!!user}
+            nonstop={nonstop}
+          />
+        ) : null}
 
         {/* other ways to fly */}
         <ResultsList result={result} />

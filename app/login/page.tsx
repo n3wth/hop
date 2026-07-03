@@ -46,11 +46,11 @@ export default async function LoginPage({
           single-column card. Flat ink surface, type does the work; the bunny is
           the one warm moment. */}
       <aside className="relative hidden overflow-hidden bg-brand-ink lg:flex lg:flex-col lg:justify-between lg:px-12 lg:py-10 xl:px-16">
-        <Link href="/" className="wordmark relative z-10 self-start text-[24px] leading-none text-hero-cream transition-colors hover:text-white">
-          hop
+        <Link href="/" className="relative z-10 self-start text-hero-cream transition-colors hover:text-white">
+          <Logo size={28} carve="var(--color-brand-ink)" />
         </Link>
 
-        <div className="relative z-10 max-w-[34ch]">
+        <div className="relative z-10 max-w-[420px]">
           <p className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-hero-eyebrow">
             Points or cash
           </p>
@@ -99,7 +99,7 @@ export default async function LoginPage({
 
             {/* welcome copy */}
             <div className="mt-7 text-center lg:mt-0 lg:text-left">
-              <h1 className="font-display text-[30px] font-semibold leading-[1.1] tracking-[-0.02em] text-text sm:text-[34px]">
+              <h1 className="font-display text-[34px] font-bold leading-[1.1] tracking-[-0.02em] text-text sm:text-[40px]">
                 Welcome to hop
               </h1>
               <p className="mx-auto mt-3 max-w-[34ch] text-[14.5px] leading-[1.55] text-text2 lg:mx-0">

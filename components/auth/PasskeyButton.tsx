@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { authClient } from '@/lib/auth-client'
+import Icon from '@/components/Icon'
 
 // Login-page AUTHENTICATION only (authClient.signIn.passkey) — distinct from
 // the account-page REGISTRATION flow (authClient.passkey.addPasskey), which
@@ -47,11 +48,11 @@ export default function PasskeyButton({
   }
 
   return (
-    <div className="text-center">
+    <div>
       {error ? (
         <div
           role="alert"
-          className="mb-3 rounded-[12px] border border-weak/40 bg-weak/10 px-4 py-3 text-[13.5px] leading-[1.5] text-text"
+          className="mb-4 rounded-[12px] border border-weak/40 bg-weak/10 px-4 py-3 text-[13.5px] leading-[1.5] text-text"
         >
           {error}
         </div>
@@ -60,8 +61,9 @@ export default function PasskeyButton({
         type="button"
         onClick={start}
         disabled={pending}
-        className="text-[13px] font-semibold text-text2 underline-offset-2 transition-colors hover:text-text hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center gap-3 rounded-[var(--radius)] border border-border bg-surface px-6 py-3.5 text-[15px] font-semibold text-text transition-colors hover:border-brand hover:text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-60"
       >
+        <Icon name="shield" size={20} />
         {pending ? 'Waiting for your passkey…' : 'Sign in with a passkey'}
       </button>
     </div>

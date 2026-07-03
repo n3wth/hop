@@ -20,7 +20,7 @@ function Tile({
   return (
     <Link
       href={href}
-      className="group relative block h-[180px] w-[260px] flex-shrink-0 snap-start overflow-hidden rounded-[16px] border border-border transition-transform duration-200 ease-[var(--ease-premium)] hover:-translate-y-[2px] motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:h-[210px] sm:w-[300px]"
+      className="group relative block h-[180px] w-[260px] flex-shrink-0 snap-start overflow-hidden rounded-[16px] border border-border sm:h-[210px] sm:w-[300px]"
       style={{
         backgroundColor: photo?.color ?? 'var(--color-brand-deep)',
         backgroundImage: photo?.blur ? `url("${photo.blur}")` : undefined,

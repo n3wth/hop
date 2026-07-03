@@ -167,13 +167,12 @@ export default async function Home() {
 
         {/* ── HOW IT WORKS ───────────────────────────────────────────────── */}
         <HowItWorks />
-
-        {/* ── CONNECT CTA ────────────────────────────────────────────────── */}
-        <ConnectBand user={null} programs={0} />
       </div>
 
-      <div className="mx-auto max-w-[var(--container-shell)]">
-        <SiteFooter />
+      {/* CTA + footer read as one card: teal top half, paper-white bottom half. */}
+      <div className="mx-auto mt-16 max-w-[var(--container-shell)] overflow-hidden rounded-[20px] border border-border sm:mt-20 lg:mt-24 lg:rounded-[28px]">
+        <ConnectBand user={null} programs={0} />
+        <SiteFooter flush />
       </div>
     </AppShell>
   )

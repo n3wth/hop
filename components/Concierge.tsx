@@ -312,7 +312,7 @@ export default function Concierge({
             type="button"
             onClick={() => setSheetOpen(true)}
             aria-label="Have hop book it"
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] font-medium text-text3 transition-colors hover:text-brand"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-paper px-3 py-1.5 text-[12px] font-semibold text-text2 transition-colors hover:border-brand hover:text-brand"
             title="Have a hop specialist find the award space and book it by hand"
           >
             <Icon name="compass" size={16} />
