@@ -218,10 +218,9 @@ body {
   letter-spacing: -0.02em;
 }
 
-/* Wordmark: Fraunces italic, leaning forward to echo the bunny's leap. */
+/* Wordmark: Bricolage Grotesque, matching the display headings sitewide. */
 .wordmark {
-  font-family: var(--font-wordmark-stack);
-  font-style: italic;
+  font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: -0.02em;
 }

@@ -13,8 +13,8 @@ export default function ForgotPasswordPage() {
   return (
     <main className="min-h-dvh bg-bg lg:grid lg:grid-cols-[minmax(420px,44%)_1fr]">
       <aside className="relative hidden overflow-hidden bg-brand-ink lg:flex lg:flex-col lg:justify-between lg:px-12 lg:py-10 xl:px-16">
-        <Link href="/" className="wordmark relative z-10 self-start text-[24px] leading-none text-hero-cream transition-colors hover:text-white">
-          hop
+        <Link href="/" className="relative z-10 self-start text-hero-cream transition-colors hover:text-white">
+          <Logo size={28} carve="var(--color-brand-ink)" />
         </Link>
         <div className="relative z-10 max-w-[34ch]">
           <p className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-hero-eyebrow">
