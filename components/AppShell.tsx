@@ -4,6 +4,7 @@ import TopNav, { type TopNavProps } from './TopNav'
 import BottomTabBar from './BottomTabBar'
 import { OriginProvider } from '@/lib/origin-context'
 import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
+import { isOwner } from '@/lib/owner'
 
 export interface AppShellProps extends TopNavProps {
   children: ReactNode
@@ -28,6 +29,9 @@ export default async function AppShell({
   // flash). cookies() is async in Next 16.
   const cookieStore = await cookies()
   const initialOrigin = homeAirport ?? cookieStore.get(ORIGIN_STORAGE_KEY)?.value ?? null
+  // Only the owner ever sees the admin entry point — cheap to check on every
+  // signed-in render, and the same single gate the /admin pages themselves use.
+  const ownerFlag = nav.user ? await isOwner() : false
 
   return (
     <OriginProvider initialOrigin={initialOrigin} persistToAccount={!!nav.user}>
@@ -38,7 +42,7 @@ export default async function AppShell({
         >
           Skip to content
         </a>
-        <TopNav {...nav} />
+        <TopNav {...nav} isOwner={ownerFlag} />
         <main id="main" className={noPadX ? '' : 'px-5 pb-24 sm:px-8 lg:px-12 xl:px-16'}>
           {children}
         </main>
