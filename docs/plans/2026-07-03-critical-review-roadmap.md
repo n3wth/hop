@@ -427,5 +427,14 @@ issues are stale or superseded:
 - **N-281/291 (hotels)** — keep deferred (matches this roadmap).
 - **N-292 (design modernization)** — subsumed by R1.7 + R2.5.
 
-New issues for R0.x-R3.x are created alongside this doc (same titles, `R#.#` prefixes) so Linear
-mirrors this file; this file remains the source of truth for sequencing.
+**Follow-up (not yet done):** mirror R0.x-R3.x into Linear (same titles, `R#.#` prefixes) and
+apply the reconciliation above — Linear writes were blocked in the session that produced this
+doc. This file remains the source of truth for sequencing either way. Paste-ready prompt:
+
+> In the Linear team n3wth, project "hop": create one issue per roadmap item R0.1-R3.5 from
+> docs/plans/2026-07-03-critical-review-roadmap.md (title = `R#.# <item title>`, description =
+> the item's summary + evidence refs + its continuation prompt, priority Urgent for Phase 0,
+> High for Phase 1, Medium for Phases 2-3), plus one issue for the kill/freeze list. Then apply
+> Part 4's reconciliation: close N-276/N-277 as shipped, comment on N-268/269/270 and
+> N-273/274 that they're superseded by standing orders and the R0.2 Stripe unification, and
+> link N-289 and N-292 to their R-item successors.
