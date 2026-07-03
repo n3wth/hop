@@ -310,9 +310,17 @@ card index drives `120 + index * 70ms` delays automatically.
 
 **Value bars** (VerdictRail) — width-expand on mount, transform-only.
 
-**Bunny leap** (logo mark in TopNav) — single warm moment per region on `hover:`.
+**Bunny leap** (logo mark in TopNav) — single warm moment per session, on first arrival
+(`FlyingBunny.tsx`), not on hover.
 
 One easing token: `var(--ease-premium)` (`cubic-bezier(0.16, 1, 0.32, 1)`).
+
+**No hover movement, anywhere.** `:hover`/`group-hover:` must never trigger `translate`,
+`scale`, or any other transform — no card lift, no arrow nudge, no icon shift. Hover states are
+`transition-colors` only (`hover:border-brand`, `hover:text-*`, `hover:bg-*`). This is a hard
+rule, not a per-component judgment call — if a hover state needs to feel more alive, reach for a
+color/border shift, not motion. (`.hop-press`/`.hop-press-card`'s `:active` scale-down is tap/press
+feedback on click, a distinct interaction from hover, and is unaffected by this rule.)
 
 ---
 

@@ -198,7 +198,10 @@ in one round-trip.
   (`.wordmark`).
 - **Motion**: restrained, transform-only entrance micro-interactions (`.hop-rise`, value bars,
   bunny leap) — all gated behind `prefers-reduced-motion`. Single easing token
-  `var(--ease-premium)`.
+  `var(--ease-premium)`. **No hover movement, anywhere** — `:hover`/`group-hover:` never
+  triggers `translate`/`scale` (no card lift, no arrow nudge). Hover is `transition-colors`
+  only (`hover:border-brand`, `hover:text-*`). `.hop-press`/`.hop-press-card`'s `:active`
+  scale-down is tap feedback on click, a separate interaction, and is unaffected.
 - **Copy voice (strict, see `docs/design/copy-spec.md`)**: terse, confident, plain. State the
   answer and the number. No marketing slop/clichés, no emoji spam, no over-cute bunny chatter.
   The bunny is the **logo + one warm moment per region**, never a narrator on every row.

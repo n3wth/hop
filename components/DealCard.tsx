@@ -75,7 +75,7 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
   return (
     <Link
       href={href}
-      className="group flex min-w-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-[transform,border-color] duration-200 ease-[var(--ease-premium)] hover:-translate-y-[2px] hover:border-brand motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+      className="group flex min-w-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-colors duration-200 ease-[var(--ease-premium)] hover:border-brand"
     >
       {/* ── photo header ─────────────────────────────────────────────────── */}
       {/* The frame's background is a blurred placeholder of the photo (from its
