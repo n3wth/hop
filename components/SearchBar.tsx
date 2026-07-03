@@ -186,7 +186,7 @@ function AirportField({
           id={listId}
           role="listbox"
           aria-label={label}
-          className="absolute left-0 top-[calc(100%+10px)] z-[80] max-h-[280px] w-[260px] overflow-auto rounded-xl border border-border bg-surface py-1"
+          className="absolute left-0 top-[calc(100%+10px)] z-[80] max-h-[280px] w-[260px] overflow-auto rounded-[var(--radius)] border border-border bg-surface py-1"
         >
           {results.map((a, i) => (
             <li key={a.code} id={`${optBaseId}-${i}`} role="option" aria-selected={i === active}>
@@ -380,7 +380,7 @@ function CalendarPop({
     <div ref={ref} className="relative">
       {children(open, () => setOpen((o) => !o))}
       {open && (
-        <div className="absolute left-0 top-[calc(100%+10px)] z-[60] rounded-xl border border-border bg-surface p-4">
+        <div className="absolute left-0 top-[calc(100%+10px)] z-[60] rounded-[var(--radius)] border border-border bg-surface p-4">
           {/* trip-type + stops live here (Google-Flights style), not in the search row */}
           <div className="mb-3 flex flex-col items-center gap-2 border-b border-hair pb-3">
             <TripTypeToggle oneWay={oneWay} onChange={onOneWayChange} />
@@ -525,7 +525,7 @@ function WhoPop({
     <div ref={ref} className="relative">
       {children(open, () => setOpen((o) => !o))}
       {open && (
-        <div className="absolute right-0 top-[calc(100%+10px)] z-[60] w-[260px] rounded-xl border border-border bg-surface p-4">
+        <div className="absolute right-0 top-[calc(100%+10px)] z-[60] w-[260px] rounded-[var(--radius)] border border-border bg-surface p-4">
           <div className="flex flex-col gap-4">
             <StepperRow
               label="Adults"
@@ -585,30 +585,72 @@ function CabinPop({
   children: (open: boolean, toggle: () => void) => ReactNode
 }) {
   const [open, setOpen] = useState(false)
+  const [active, setActive] = useState(0)
   const ref = usePopover(open, () => setOpen(false))
+  const listRef = useRef<HTMLUListElement>(null)
+  const baseId = useId()
+
+  // Move focus onto the list once it's in the DOM so arrow keys work
+  // immediately — a DOM-only effect (no setState), so it's exempt from the
+  // "don't setState in an effect" rule that governs `active` below.
+  useEffect(() => {
+    if (open) listRef.current?.focus()
+  }, [open])
+
+  // Reset the highlighted row to the current selection on OPEN — done inside
+  // the toggle handler (an event, not an effect) so it can't cascade renders.
+  function toggle() {
+    setOpen((o) => {
+      const next = !o
+      if (next) setActive(Math.max(0, CABIN_OPTIONS.findIndex((c) => c.value === cabin)))
+      return next
+    })
+  }
+
+  function choose(v: Cabin) {
+    onChange(v)
+    setOpen(false)
+  }
 
   return (
     <div ref={ref} className="relative">
-      {children(open, () => setOpen((o) => !o))}
+      {children(open, toggle)}
       {open && (
         <ul
+          ref={listRef}
           role="listbox"
           aria-label="Cabin"
-          className="absolute right-0 top-[calc(100%+10px)] z-[60] w-[220px] overflow-hidden rounded-xl border border-border bg-surface py-1"
+          tabIndex={-1}
+          aria-activedescendant={`${baseId}-${active}`}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault()
+              setActive((a) => Math.min(CABIN_OPTIONS.length - 1, a + 1))
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault()
+              setActive((a) => Math.max(0, a - 1))
+            } else if (e.key === 'Enter') {
+              e.preventDefault()
+              choose(CABIN_OPTIONS[active].value)
+            }
+          }}
+          className="absolute right-0 top-[calc(100%+10px)] z-[60] w-[220px] overflow-hidden rounded-[var(--radius)] border border-border bg-surface py-1 outline-none"
         >
-          {CABIN_OPTIONS.map((o) => {
+          {CABIN_OPTIONS.map((o, i) => {
             const selected = o.value === cabin
             return (
-              <li key={o.value} role="option" aria-selected={selected}>
+              <li key={o.value} id={`${baseId}-${i}`} role="option" aria-selected={selected}>
                 <button
                   type="button"
-                  onClick={() => {
-                    onChange(o.value)
-                    setOpen(false)
+                  tabIndex={-1}
+                  onMouseEnter={() => setActive(i)}
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    choose(o.value)
                   }}
                   className={`flex w-full items-center justify-between px-3.5 py-2.5 text-left text-[13.5px] font-semibold ${
-                    selected ? 'bg-sunk text-brand' : 'text-text hover:bg-sunk'
-                  }`}
+                    i === active ? 'bg-sunk' : ''
+                  } ${selected ? 'text-brand' : 'text-text'}`}
                 >
                   {o.label}
                   {selected && <Icon name="check" size={16} />}
@@ -847,7 +889,7 @@ export function SearchForm({
         }}
         className="flex flex-col gap-3"
       >
-        <div className="relative flex flex-col gap-2 rounded-xl border border-border bg-paper p-3">
+        <div className="relative flex flex-col gap-2 rounded-[var(--radius)] border border-border bg-paper p-3">
           <AirportField
             label="From"
             code={s.from}
@@ -890,7 +932,7 @@ export function SearchForm({
               type="button"
               onClick={toggle}
               aria-expanded={open}
-              className="flex w-full flex-col items-start rounded-xl border border-border bg-paper p-3 text-left"
+              className="flex w-full flex-col items-start rounded-[var(--radius)] border border-border bg-paper p-3 text-left"
             >
               <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
                 {s.oneWay ? 'Date' : 'Dates'}
@@ -915,7 +957,7 @@ export function SearchForm({
               type="button"
               onClick={toggle}
               aria-expanded={open}
-              className="flex w-full flex-col items-start rounded-xl border border-border bg-paper p-3 text-left"
+              className="flex w-full flex-col items-start rounded-[var(--radius)] border border-border bg-paper p-3 text-left"
             >
               <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
                 Who
@@ -933,7 +975,7 @@ export function SearchForm({
               type="button"
               onClick={toggle}
               aria-expanded={open}
-              className="flex w-full flex-col items-start rounded-xl border border-border bg-paper p-3 text-left"
+              className="flex w-full flex-col items-start rounded-[var(--radius)] border border-border bg-paper p-3 text-left"
             >
               <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
                 Cabin
