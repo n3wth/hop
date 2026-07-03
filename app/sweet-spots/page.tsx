@@ -102,7 +102,9 @@ export default function SweetSpotsIndexPage() {
             Run a search
           </Link>
         </div>
+      </div>
 
+      <div className="mx-auto max-w-[var(--container-shell)]">
         <SiteFooter />
       </div>
     </AppShell>

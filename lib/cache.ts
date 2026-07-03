@@ -32,7 +32,6 @@ function getRedis(): Redis | null {
 
 /** Get a value from the cache. */
 export async function cacheGet<T>(key: string): Promise<T | null> {
-  if (process.env.VITEST) return null // Disable caching during Vitest runs to prevent test leakage
   const redis = getRedis()
   if (redis) {
     try {
@@ -56,7 +55,6 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
 
 /** Set a value in the cache with a TTL (in seconds). */
 export async function cacheSet<T>(key: string, value: T, ttlSec: number): Promise<boolean> {
-  if (process.env.VITEST) return true // Disable caching during Vitest runs to prevent test leakage
   const redis = getRedis()
   if (redis) {
     try {

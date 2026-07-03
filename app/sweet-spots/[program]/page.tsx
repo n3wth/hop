@@ -192,7 +192,9 @@ export default async function ProgramSweetSpotsPage({
             Destination guides
           </Link>
         </div>
+      </div>
 
+      <div className="mx-auto max-w-[var(--container-shell)]">
         <SiteFooter />
       </div>
     </AppShell>
