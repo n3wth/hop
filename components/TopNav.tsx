@@ -51,9 +51,11 @@ const LogoLockup = memo(function LogoLockup() {
   // page. Hover is a color flip only (house rule: no hover movement).
   return (
     <Link href="/" aria-label="hop — home" className="group flex items-center gap-[9px]">
-      <span className="text-brand transition-colors group-hover:text-brand-deep">
-        <FlyingBunny size={41} carve="var(--color-bg)" />
-      </span>
+      <FlyingBunny
+        size={41}
+        carve="var(--color-bg)"
+        markClassName="text-brand transition-colors group-hover:text-brand-deep"
+      />
       <Wordmark
         size={19}
         className="mt-[3px] text-text transition-colors group-hover:text-brand"

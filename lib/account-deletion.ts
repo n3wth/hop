@@ -50,7 +50,8 @@ export async function deleteUserAccount(userId: string): Promise<DeleteAccountRe
   if (!db) return { ok: false, error: 'database not configured' }
 
   // Domain rows first (they reference nothing in auth), best-effort per table
-  // so one missing/renamed table can't block the rest of the sweep.
+  // so one missing/renamed table can't block the rest of the sweep — but
+  // every failure is logged, never silent.
   // hop_subscriptions cascades from hop_customers (FK onDelete: 'cascade').
   const domainTables = [
     manualBalances,
@@ -66,7 +67,6 @@ export async function deleteUserAccount(userId: string): Promise<DeleteAccountRe
     notificationOutbox,
     mcpUsage,
     apiTokens,
-    travelHistory,
     escalations,
     hopCustomers,
   ] as const
@@ -74,21 +74,27 @@ export async function deleteUserAccount(userId: string): Promise<DeleteAccountRe
   for (const table of domainTables) {
     try {
       await db.delete(table).where(eq(table.userId, userId))
-    } catch {
+    } catch (error) {
       // Best-effort: an un-migrated table in a fresh env is not a reason to
-      // strand the deletion; the auth rows below are the strict part.
+      // strand the deletion; the strict section below is what gates ok.
+      console.error('[account-deletion] domain-table delete failed (continuing):', error)
     }
   }
 
-  // Auth rows — strict order (children before user; no FK cascade on these).
+  // Strict section — these must actually delete before we report success.
+  // hop_travel_history holds the Google refresh token (a live credential),
+  // so a failed delete there must fail the whole operation (the user can
+  // retry) rather than strand a secret with no owning user row. Then the
+  // auth rows, children before user (no FK cascade on these).
   try {
+    await db.delete(travelHistory).where(eq(travelHistory.userId, userId))
     await db.delete(passkey).where(eq(passkey.userId, userId))
     await db.delete(session).where(eq(session.userId, userId))
     await db.delete(account).where(eq(account.userId, userId))
     await db.delete(user).where(eq(user.id, userId))
     return { ok: true }
   } catch (error) {
-    console.error('[account-deletion] failed to delete auth rows:', error)
+    console.error('[account-deletion] strict delete failed:', error)
     return { ok: false, error: 'deletion failed — try again' }
   }
 }

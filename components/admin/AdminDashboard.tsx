@@ -145,7 +145,7 @@ export default function AdminDashboard({
                   <Link
                     key={t.id}
                     href="/admin/support"
-                    className="block rounded-[12px] border border-border bg-paper px-3 py-2.5 transition-colors hover:bg-sunk"
+                    className="block rounded-[var(--radius-sm)] border border-border bg-paper px-3 py-2.5 transition-colors hover:bg-sunk"
                   >
                     <div className="truncate text-[13px] font-semibold text-text">{t.fromEmail}</div>
                     <div className="truncate text-[12px] text-text3">{t.subject || '(no subject)'}</div>
@@ -166,7 +166,7 @@ export default function AdminDashboard({
                   <Link
                     key={e.id}
                     href="/admin/support"
-                    className="block rounded-[12px] border border-border bg-paper px-3 py-2.5 transition-colors hover:bg-sunk"
+                    className="block rounded-[var(--radius-sm)] border border-border bg-paper px-3 py-2.5 transition-colors hover:bg-sunk"
                   >
                     <div className="truncate text-[13px] font-semibold text-text">{e.email}</div>
                     <div className="truncate text-[12px] text-text3">{fmtDate(e.createdAt) || 'no date'}</div>
@@ -255,7 +255,7 @@ function heartbeatStatus(
 function HeartbeatRow({ spec, heartbeat }: { spec: (typeof CRON_JOBS)[number]; heartbeat: CronHeartbeat | null }) {
   const status = heartbeatStatus(spec, heartbeat)
   return (
-    <div className="flex items-center justify-between gap-3 rounded-[12px] border border-border bg-paper px-3.5 py-2.5">
+    <div className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3.5 py-2.5">
       <div className="flex items-center gap-2.5">
         <span className={`h-2 w-2 flex-shrink-0 rounded-full ${TONE_CLASS[status.tone]}`} aria-hidden />
         <span className="text-[13px] font-semibold text-text">{spec.job}</span>
@@ -282,7 +282,7 @@ function DegradationList({ degradation }: { degradation: DegradationWindowCounts
         return (
           <div
             key={source}
-            className="flex items-center justify-between gap-3 rounded-[12px] border border-border bg-paper px-3.5 py-2.5"
+            className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3.5 py-2.5"
           >
             <span className="text-[13px] font-semibold text-text">{source}</span>
             <span className={`text-[12px] ${elevated ? 'text-warn' : 'text-text3'}`}>

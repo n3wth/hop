@@ -40,7 +40,7 @@ export default function DeleteAccount() {
             <button
               type="button"
               onClick={() => setArming(true)}
-              className="flex-shrink-0 rounded-[11px] border-[1.5px] border-border px-4 py-2 text-[13.5px] font-semibold text-weak transition-colors hover:border-weak"
+              className="flex-shrink-0 rounded-[var(--radius-sm)] border-[1.5px] border-border px-4 py-2 text-[13.5px] font-semibold text-weak transition-colors hover:border-weak"
             >
               Delete account
             </button>
@@ -50,7 +50,7 @@ export default function DeleteAccount() {
                 type="button"
                 onClick={() => setArming(false)}
                 disabled={pending}
-                className="rounded-[11px] px-3 py-2 text-[13.5px] font-semibold text-text2 transition-colors hover:text-text"
+                className="rounded-[var(--radius-sm)] px-3 py-2 text-[13.5px] font-semibold text-text2 transition-colors hover:text-text"
               >
                 Keep account
               </button>
@@ -58,7 +58,7 @@ export default function DeleteAccount() {
                 type="button"
                 onClick={confirmDelete}
                 disabled={pending}
-                className="rounded-[11px] border-[1.5px] border-weak bg-weak-bg px-4 py-2 text-[13.5px] font-semibold text-weak transition-colors hover:bg-weak hover:text-white disabled:opacity-60"
+                className="rounded-[var(--radius-sm)] border-[1.5px] border-weak bg-weak-bg px-4 py-2 text-[13.5px] font-semibold text-weak transition-colors hover:bg-weak hover:text-white disabled:opacity-60"
               >
                 {pending ? 'Deleting…' : 'Yes, delete everything'}
               </button>

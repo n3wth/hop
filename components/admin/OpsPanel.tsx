@@ -42,7 +42,7 @@ export default function OpsPanel({
           {preflight.map((row) => (
             <div
               key={row.seam}
-              className="flex flex-col gap-1 rounded-[12px] border border-border bg-paper px-3.5 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+              className="flex flex-col gap-1 rounded-[var(--radius-sm)] border border-border bg-paper px-3.5 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
             >
               <div className="flex items-center gap-2.5">
                 <StatusPill status={row.status} />
@@ -74,7 +74,7 @@ export default function OpsPanel({
                   {recentOutclicks.map((c, i) => (
                     <div
                       key={`${c.createdAt}-${i}`}
-                      className="flex items-center justify-between gap-3 rounded-[10px] border border-border bg-paper px-3 py-2"
+                      className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3 py-2"
                     >
                       <span className="text-[12.5px] font-semibold text-text">
                         {c.kind} · {c.target}
@@ -103,7 +103,7 @@ export default function OpsPanel({
               {degradationEvents.map((e, i) => (
                 <div
                   key={`${e.createdAt}-${i}`}
-                  className="rounded-[10px] border border-border bg-paper px-3 py-2"
+                  className="rounded-[var(--radius-sm)] border border-border bg-paper px-3 py-2"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-[12.5px] font-semibold text-text">
@@ -134,7 +134,7 @@ export default function OpsPanel({
                 .map((o) => (
                   <div
                     key={o.programId}
-                    className="flex items-center justify-between gap-3 rounded-[10px] border border-border bg-paper px-3 py-2"
+                    className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3 py-2"
                   >
                     <span className="text-[12.5px] font-semibold text-text">{o.programId}</span>
                     <span className="text-[12px] text-text3">
@@ -155,7 +155,7 @@ export default function OpsPanel({
               {watches.map((w) => (
                 <div
                   key={w.id}
-                  className="flex items-center justify-between gap-3 rounded-[10px] border border-border bg-paper px-3 py-2"
+                  className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3 py-2"
                 >
                   <span className="text-[12.5px] font-semibold text-text">
                     {w.params.from} → {w.params.to}
@@ -188,7 +188,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 function Empty({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-[14px] border border-dashed border-border bg-paper/50 px-4 py-6 text-center text-[13px] text-text3">
+    <div className="rounded-[var(--radius)] border border-dashed border-border bg-paper/50 px-4 py-6 text-center text-[13px] text-text3">
       {children}
     </div>
   )
@@ -196,7 +196,7 @@ function Empty({ children }: { children: ReactNode }) {
 
 function MiniStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-[14px] border border-border bg-paper p-3.5">
+    <div className="rounded-[var(--radius)] border border-border bg-paper p-3.5">
       <div className="hop-num text-[20px] font-semibold text-text">{value}</div>
       <div className="mt-0.5 text-[12px] text-text3">{label}</div>
     </div>
