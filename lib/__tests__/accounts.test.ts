@@ -409,6 +409,27 @@ describe('mergeKey — code derivation and case normalization', () => {
     expect(balances[0].code).toBeDefined()
     expect(balances[0].code.length).toBeGreaterThan(0)
   })
+
+  it('de-dupes an AwardWallet balance with no code against manual via its derived code', async () => {
+    // AwardWallet can return a program without a monogram. mergeKey must fall
+    // back to deriveCode(program) on the SYNCED side too, so it still collides
+    // with the manual entry it duplicates — and AwardWallet still wins.
+    setupDbMocks({
+      manualBalances: [{ id: '1', program: 'Amex MR', code: 'AX', balance: 50000 }],
+      awUserId: 'aw-123',
+    })
+    getBalancesMock.mockResolvedValue({
+      ok: true,
+      // code is empty → mergeKey derives 'AX' from 'Amex Membership Rewards'
+      data: [awBalance('Amex Membership Rewards', 80000, '')],
+    } as ApiResult<Balance[]>)
+
+    const balances = await getUserBalances('user-1')
+
+    expect(balances).toHaveLength(1)
+    expect(balances[0].balance).toBe(80000)
+    expect(balances[0].program).toBe('Amex Membership Rewards')
+  })
 })
 
 describe('status field preservation', () => {
