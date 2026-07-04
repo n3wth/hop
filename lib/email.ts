@@ -218,9 +218,27 @@ async function dispatch(opts: Dispatch): Promise<EmailResult> {
       ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
       ...(opts.headers ? { headers: opts.headers } : {}),
     })
-    if (error) return { ok: false, reason: 'send-failed' }
+    if (error) {
+      // Resend refused the send — most commonly the From domain isn't verified
+      // (DKIM/SPF) in Resend. Log the provider's reason (never the recipient or
+      // the key): without this line, "no email arrived" is undiagnosable from
+      // Vercel logs because this seam deliberately never throws.
+      const e = error as { name?: string; message?: string }
+      console.error('[email] resend send failed', {
+        from: opts.from,
+        subject: opts.subject,
+        error: e.name,
+        message: e.message,
+      })
+      return { ok: false, reason: 'send-failed' }
+    }
     return { ok: true, id: data?.id }
-  } catch {
+  } catch (err) {
+    console.error('[email] resend dispatch threw', {
+      from: opts.from,
+      subject: opts.subject,
+      message: err instanceof Error ? err.message : String(err),
+    })
     return { ok: false, reason: 'send-failed' }
   }
 }
