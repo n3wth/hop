@@ -77,4 +77,7 @@ Sessions with Linear/GitHub tools may fan work out instead of building:
 
 *(Runs append here — rule, date, one-line reason. Keep newest first.)*
 
+- 2026-07-04 · **Verify Linear writes took effect** (check `updatedAt` changed in the response);
+  the MCP `delegate` field silently no-ops from this integration — when a write doesn't stick,
+  comment on the issue for the owner instead of retrying blind.
 - 2026-07-04 · Initial version, adopted with the business plan + ADR 0008.
