@@ -102,7 +102,7 @@ export default async function LoginPage({
               <h1 className="font-display text-[34px] font-bold leading-[1.1] tracking-[-0.02em] text-text sm:text-[40px]">
                 Welcome to hop
               </h1>
-              <p className="mx-auto mt-3 max-w-[34ch] text-[14.5px] leading-[1.55] text-text2 lg:mx-0">
+              <p className="mt-3 text-[14.5px] leading-[1.55] text-text2">
                 Sign in to save searches, track value, and book.
               </p>
             </div>
@@ -137,7 +137,7 @@ export default async function LoginPage({
             </div>
 
             {/* legal-ish footnote */}
-            <p className="mx-auto mt-8 max-w-[38ch] text-center text-[12px] leading-[1.6] text-text3 lg:mx-0 lg:text-left">
+            <p className="mt-8 text-center text-[12px] leading-[1.6] text-text3 lg:text-left">
               By continuing you agree to our{' '}
               <Link href="/terms" className="text-text2 underline-offset-2 transition-colors hover:text-text hover:underline">
                 Terms
