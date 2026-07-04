@@ -5,11 +5,27 @@
 // Guaranteed to never throw — any Redis connection error or timeout degrades
 // silently and immediately to the in-memory fallback.
 
+import { unstable_rethrow } from 'next/navigation'
 import { Redis } from '@upstash/redis'
 
 interface CacheEntry {
   value: any
   expiresAt: number
+}
+
+// Next's static-prerender bailout: the Upstash REST call is a no-store fetch,
+// so during `next build` Next throws DynamicServerError ("Dynamic server
+// usage") through the Redis client. For a best-effort cache the MEMORY
+// fallback is semantically identical at build time (the wrapped fetch runs
+// fresh and the page stays static), so exactly this error falls through
+// SILENTLY — logging it produced ~70 scary-but-expected build errors, one per
+// cached image. Anything else is a real Redis failure and still warns.
+function isPrerenderBailout(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { digest?: unknown }).digest === 'DYNAMIC_SERVER_USAGE'
+  )
 }
 
 // In-memory cache fallback
@@ -38,7 +54,9 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
       const data = await redis.get<T>(key)
       return data
     } catch (error) {
-      console.warn(`[Cache] Redis get error for key "${key}", falling back to memory:`, error)
+      if (!isPrerenderBailout(error)) {
+        console.warn(`[Cache] Redis get error for key "${key}", falling back to memory:`, error)
+      }
     }
   }
 
@@ -61,7 +79,9 @@ export async function cacheSet<T>(key: string, value: T, ttlSec: number): Promis
       await redis.set(key, value, { ex: ttlSec })
       return true
     } catch (error) {
-      console.warn(`[Cache] Redis set error for key "${key}", falling back to memory:`, error)
+      if (!isPrerenderBailout(error)) {
+        console.warn(`[Cache] Redis set error for key "${key}", falling back to memory:`, error)
+      }
     }
   }
 
@@ -90,6 +110,10 @@ export async function cacheWrap<T>(
     await cacheSet(key, fresh, ttlSec)
     return fresh
   } catch (error) {
+    // Next control-flow errors from the wrapped fn (dynamic bailout, redirect,
+    // notFound) must propagate — re-running fn() would just throw them again
+    // after a noisy log.
+    unstable_rethrow(error)
     console.error(`[Cache] Wrap error for key "${key}", executing fresh function directly:`, error)
     return fn()
   }
@@ -112,7 +136,9 @@ export async function cacheDelete(key: string): Promise<boolean> {
       await redis.del(key)
       return true
     } catch (error) {
-      console.warn(`[Cache] Redis del error for key "${key}":`, error)
+      if (!isPrerenderBailout(error)) {
+        console.warn(`[Cache] Redis del error for key "${key}":`, error)
+      }
     }
   }
   return memoryCache.delete(key)
