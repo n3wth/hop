@@ -15,17 +15,41 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Markdown can't break the build — and the autonomy loop (ADR 0009,
+      # docs/autonomy-runbook.md) produces frequent .md-only PRs (run logs,
+      # runbook amendments, plans, ADRs). Skip install/check/build for those
+      # so the required check goes green in seconds instead of minutes. Any
+      # non-.md file in the diff → full gate. Pushes to main always run full.
+      - name: Detect markdown-only diff
+        id: docs
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch origin "$BASE_SHA" --depth=1 --quiet
+          CHANGED=$(git diff --name-only "$BASE_SHA" HEAD)
+          echo "changed files:"; echo "$CHANGED"
+          if [ -n "$CHANGED" ] && ! echo "$CHANGED" | grep -qvE '\.md$'; then
+            echo "only=true" >> "$GITHUB_OUTPUT"
+            echo "Markdown-only diff — skipping install/check/build."
+          else
+            echo "only=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v4
+        if: steps.docs.outputs.only != 'true'
         with:
           node-version: 22
           cache: npm
 
       - name: Install dependencies
+        if: steps.docs.outputs.only != 'true'
         run: npm ci
 
       # Restore Next's compiler cache so unchanged code isn't rebuilt.
       # https://nextjs.org/docs/pages/guides/ci-build-caching
       - uses: actions/cache@v4
+        if: steps.docs.outputs.only != 'true'
         with:
           path: .next/cache
           key: ${{ runner.os }}-nextjs-${{ hashFiles('package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
@@ -35,9 +59,11 @@ jobs:
       # Same gate as local `npm run check`: lint + typecheck + tests.
       # Everything runs keyless — lib/env.ts is lazy and every seam degrades.
       - name: Lint, typecheck, test
+        if: steps.docs.outputs.only != 'true'
         run: npm run check
 
       - name: Build
+        if: steps.docs.outputs.only != 'true'
         run: npm run build
 
   stale-base-check:
