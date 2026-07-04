@@ -51,7 +51,11 @@ function CopyButton({
       }}
       className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-[10px] border border-border bg-surface px-3 py-1.5 text-[12.5px] font-semibold text-text2 transition-colors hover:text-text"
     >
-      <Icon name={copied ? 'check' : 'content_copy'} size={16} />
+      {/* Re-keyed so the check settles in on every copy; reduced-motion falls
+          back to the plain icon swap. */}
+      <span key={copied ? 'check' : 'copy'} className={copied ? 'hop-check-in inline-flex' : 'inline-flex'}>
+        <Icon name={copied ? 'check' : 'content_copy'} size={16} />
+      </span>
       {copied ? 'Copied' : label}
     </button>
   )

@@ -634,7 +634,8 @@ function textOf(m: HopUIMessage): string {
 
 // Per-turn affordances under a settled assistant answer: copy the prose, and
 // (on the latest turn) re-roll it. Flat, quiet — muted until hover, color-only.
-// "Copied" is a label/icon swap, not motion, so it's reduced-motion-safe.
+// On copy, the check settles in (.hop-check-in, transform-only); reduced-motion
+// falls back to the plain label/icon swap.
 function AssistantActions({
   text,
   onRegenerate,
@@ -660,7 +661,9 @@ function AssistantActions({
   return (
     <div className="-mt-0.5 flex items-center gap-0.5">
       <button type="button" onClick={copy} aria-label={copied ? 'Copied' : 'Copy answer'} className={btn}>
-        <Icon name={copied ? 'check' : 'content_copy'} size={16} />
+        <span key={copied ? 'check' : 'copy'} className={copied ? 'hop-check-in inline-flex' : 'inline-flex'}>
+          <Icon name={copied ? 'check' : 'content_copy'} size={16} />
+        </span>
         {copied ? 'Copied' : 'Copy'}
       </button>
       {onRegenerate ? (

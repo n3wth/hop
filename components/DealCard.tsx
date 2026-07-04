@@ -53,8 +53,8 @@ function sentenceCase(s: string): string {
 // One standout award redemption, rendered as a travel-magazine card you'd want
 // to chase: a real destination photo up top (with a legibility scrim + the city
 // and its flag overlaid), then the economics — cpp value, miles, cash compare,
-// and the program that books it. Flat + on-system: no card shadow; hover adds a
-// restrained transform-only lift and tints the border.
+// and the program that books it. Flat + on-system: no card shadow; hover tints
+// the border only — never movement (house rule: no hover transforms, anywhere).
 export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: DealCardProps) {
   const value = computeCpp(dest)
   const t = tier(value)

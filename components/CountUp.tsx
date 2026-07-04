@@ -11,6 +11,12 @@ export interface CountUpProps {
   value: number
   /** How to render the live number. */
   format?: CountUpFormat
+  /** Fraction digits for 'plain'/'usd' (e.g. 2 for an exact receipt total).
+      Default keeps the original whole-number rendering. */
+  decimals?: number
+  /** Start counting when the element first scrolls into view instead of on
+      mount — for numbers below the fold, so the tick isn't spent unseen. */
+  startInView?: boolean
   prefix?: string
   suffix?: string
   durationMs?: number
@@ -19,11 +25,21 @@ export interface CountUpProps {
   style?: React.CSSProperties
 }
 
-function render(n: number, format: CountUpFormat, prefix?: string, suffix?: string): string {
+function render(
+  n: number,
+  format: CountUpFormat,
+  decimals: number | undefined,
+  prefix?: string,
+  suffix?: string
+): string {
   let body: string
-  if (format === 'usd') body = `$${Math.round(n).toLocaleString()}`
+  const opts =
+    decimals !== undefined
+      ? { minimumFractionDigits: decimals, maximumFractionDigits: decimals }
+      : undefined
+  if (format === 'usd') body = `$${opts ? n.toLocaleString(undefined, opts) : Math.round(n).toLocaleString()}`
   else if (format === 'cpp') body = `${(Math.round(n * 10) / 10).toFixed(1)}¢`
-  else body = Math.round(n).toLocaleString()
+  else body = opts ? n.toLocaleString(undefined, opts) : Math.round(n).toLocaleString()
   return `${prefix ?? ''}${body}${suffix ?? ''}`
 }
 
@@ -36,6 +52,8 @@ const prefersReducedMotion = () =>
 export default function CountUp({
   value,
   format = 'plain',
+  decimals,
+  startInView = false,
   prefix,
   suffix,
   durationMs = 900,
@@ -45,6 +63,7 @@ export default function CountUp({
 }: CountUpProps) {
   const [display, setDisplay] = useState(value)
   const rafRef = useRef<number | undefined>(undefined)
+  const rootRef = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
     // Reduced-motion (or a trivial 0 target): show the final value immediately
@@ -58,8 +77,9 @@ export default function CountUp({
       return
     }
 
-    setDisplay(0)
     let start: number | null = null
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let observer: IntersectionObserver | undefined
 
     const tick = (now: number) => {
       if (start === null) start = now
@@ -72,23 +92,45 @@ export default function CountUp({
       else setDisplay(value)
     }
 
-    const timer = setTimeout(() => {
-      rafRef.current = requestAnimationFrame(tick)
-    }, delayMs)
+    const begin = () => {
+      // Zero the display only once we're committed to animating, so a
+      // below-the-fold number never sits at 0 waiting to be seen.
+      setDisplay(0)
+      timer = setTimeout(() => {
+        rafRef.current = requestAnimationFrame(tick)
+      }, delayMs)
+    }
+
+    if (startInView && rootRef.current && typeof IntersectionObserver !== 'undefined') {
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((e) => e.isIntersecting)) {
+            observer?.disconnect()
+            observer = undefined
+            begin()
+          }
+        },
+        { threshold: 0.4 }
+      )
+      observer.observe(rootRef.current)
+    } else {
+      begin()
+    }
 
     return () => {
-      clearTimeout(timer)
+      observer?.disconnect()
+      if (timer !== undefined) clearTimeout(timer)
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
-  }, [value, durationMs, delayMs])
+  }, [value, durationMs, delayMs, startInView])
 
   // The animated number is decorative for AT — a screen reader landing mid
   // count-up would otherwise read an intermediate (or 0) figure. Hide the
   // animating value and expose the true final value once, via sr-only.
   return (
-    <span className={className} style={style}>
-      <span aria-hidden="true">{render(display, format, prefix, suffix)}</span>
-      <span className="sr-only">{render(value, format, prefix, suffix)}</span>
+    <span ref={rootRef} className={className} style={style}>
+      <span aria-hidden="true">{render(display, format, decimals, prefix, suffix)}</span>
+      <span className="sr-only">{render(value, format, decimals, prefix, suffix)}</span>
     </span>
   )
 }
