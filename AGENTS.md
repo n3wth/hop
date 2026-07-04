@@ -28,6 +28,11 @@ in the lowest open phase, respect its `blockedBy` relations and the plan's hard 
 billing does not flip until the four §3.1 gates pass), and follow the issue's embedded
 continuation prompt. Items marked **owner** are human-only — flag them, don't attempt them.
 
+**Autonomous sessions** (Claude Code routines, delegated agents): `docs/autonomy-runbook.md`
+governs your run — queue rules, hard guardrails (never merge; one item per run), the
+git-fallback mode when Linear is unreachable, and the mandatory compound step
+(`docs/autonomy-log.md` + runbook amendments).
+
 # Content data — committed snapshots, regenerable offline
 
 Destination content is grounded in **real data fetched once, offline, and committed** — the live site
