@@ -14,7 +14,8 @@ import { checkBotId } from 'botid/server'
 import { auth0 } from '@/lib/auth0'
 import { isBillingEnabled } from '@/lib/env'
 import { checkRateLimit, clientIp } from '@/lib/rate-limit'
-import { createCheckoutSession, type BillingInterval } from '@/lib/stripe'
+import { createCheckoutSession, createStripeCustomer, type BillingInterval } from '@/lib/stripe'
+import { stripeCustomerIdFor, saveStripeCustomer } from '@/lib/subscription'
 
 export const runtime = 'nodejs'
 
@@ -67,6 +68,19 @@ export async function POST(request: Request): Promise<Response> {
     // No/invalid body is fine — default to monthly.
   }
 
+  // Attach the persistent Stripe customer BEFORE minting the session, so the
+  // webhook's hop_customers lookup and getUserTier's read both resolve. If any
+  // step fails we proceed customer-less — the webhook still self-heals the
+  // mapping from the metadata.user_id ref minted below.
+  let customerId = (await stripeCustomerIdFor(userId)) ?? undefined
+  if (!customerId) {
+    const created = await createStripeCustomer({ userId, email })
+    if (created.ok) {
+      customerId = created.customerId
+      await saveStripeCustomer(userId, customerId)
+    }
+  }
+
   // Return destination. The ?upgraded=1 param is DISPLAY ONLY — tier truth is
   // written exclusively by the signed webhook, never from this redirect.
   const origin = process.env.APP_BASE_URL?.replace(/\/$/, '') || new URL(request.url).origin
@@ -74,6 +88,7 @@ export async function POST(request: Request): Promise<Response> {
     userId,
     email,
     interval,
+    customerId,
     successUrl: `${origin}/account?upgraded=1#billing`,
     cancelUrl: `${origin}/account#billing`,
   })

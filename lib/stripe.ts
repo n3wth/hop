@@ -49,6 +49,11 @@ export async function createCheckoutSession(args: {
   userId: string
   email?: string | null
   interval: BillingInterval
+  /** The persistent Stripe customer minted for this user (lib/subscription.ts
+      mapping). Attaching it is what lets the webhook and getUserTier attribute
+      the resulting subscription via hop_customers; when absent, the webhook
+      still self-heals from metadata.user_id. */
+  customerId?: string
   successUrl: string
   cancelUrl: string
 }): Promise<CheckoutSessionResult> {
@@ -65,7 +70,10 @@ export async function createCheckoutSession(args: {
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       client_reference_id: args.userId,
-      customer_email: args.email || undefined,
+      // Stripe rejects customer + customer_email together — the persistent
+      // customer wins when we have one.
+      customer: args.customerId,
+      customer_email: args.customerId ? undefined : args.email || undefined,
       metadata: { user_id: args.userId },
       subscription_data: { metadata: { user_id: args.userId } },
       success_url: args.successUrl,
@@ -73,6 +81,64 @@ export async function createCheckoutSession(args: {
     })
     if (!session.url) return { ok: false, reason: 'stripe-error' }
     return { ok: true, url: session.url }
+  } catch {
+    return { ok: false, reason: 'stripe-error' }
+  }
+}
+
+export type CustomerResult =
+  | { ok: true; customerId: string }
+  | { ok: false; reason: 'unconfigured' | 'stripe-error' }
+
+// Mint the persistent Stripe customer for a user. The caller (the checkout
+// route) stores the mapping via lib/subscription.ts#saveStripeCustomer.
+export async function createStripeCustomer(args: {
+  userId: string
+  email?: string | null
+}): Promise<CustomerResult> {
+  if (!isBillingEnabled()) return { ok: false, reason: 'unconfigured' }
+  try {
+    const { default: Stripe } = await import('stripe')
+    const stripe = new Stripe(env.stripeSecretKey())
+    const customer = await stripe.customers.create({
+      email: args.email || undefined,
+      metadata: { user_id: args.userId },
+    })
+    return { ok: true, customerId: customer.id }
+  } catch {
+    return { ok: false, reason: 'stripe-error' }
+  }
+}
+
+export type SubscriptionFetchResult =
+  | { ok: true; record: import('@/lib/billing').SubscriptionRecord; customerId?: string }
+  | { ok: false; reason: 'unconfigured' | 'stripe-error' }
+
+// Fetch a subscription's stored-state fields by id. Needed only for
+// checkout.session.completed, whose event object is the session (no period
+// fields) — the customer.subscription.* events carry everything inline.
+// Reuses the pure extractor in lib/billing.ts so there is exactly ONE
+// field-walk over Stripe's subscription shape.
+export async function retrieveSubscriptionRecord(
+  subscriptionId: string,
+): Promise<SubscriptionFetchResult> {
+  if (!isBillingEnabled()) return { ok: false, reason: 'unconfigured' }
+  try {
+    const { default: Stripe } = await import('stripe')
+    const stripe = new Stripe(env.stripeSecretKey())
+    const sub = await stripe.subscriptions.retrieve(subscriptionId)
+    const raw = sub as unknown as Record<string, unknown>
+    const { subscriptionRecordFromEvent } = await import('@/lib/billing')
+    const record = subscriptionRecordFromEvent({
+      type: 'customer.subscription.updated',
+      data: { object: raw },
+    })
+    if (!record) return { ok: false, reason: 'stripe-error' }
+    return {
+      ok: true,
+      record,
+      customerId: typeof raw.customer === 'string' ? raw.customer : undefined,
+    }
   } catch {
     return { ok: false, reason: 'stripe-error' }
   }
