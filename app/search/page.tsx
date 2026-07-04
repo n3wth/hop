@@ -10,6 +10,7 @@ import { cityForCode } from '@/lib/airports'
 import { destinationImage } from '@/lib/images'
 import { auth0 } from '@/lib/auth0'
 import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
+import { isStandingOrdersCronLive } from '@/lib/env'
 import { SITE_URL } from '@/lib/seo'
 import AppShell from '@/components/AppShell'
 import RouteBar from '@/components/RouteBar'
@@ -315,6 +316,7 @@ export default async function Search({
             hasRealBalances={hasRealBalances}
             isSignedIn={!!user}
             nonstop={nonstop}
+            watchLive={isStandingOrdersCronLive()}
           />
         ) : null}
 

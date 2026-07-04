@@ -30,6 +30,11 @@ export interface VerdictRailProps {
       prefs-model filter applied alongside it). Carried through the sign-in
       returnTo so the filter survives auth, same as cabin/children/infants. */
   nonstop?: boolean
+  /** Whether the standing-orders runner is live (lib/env.ts#
+      isStandingOrdersCronLive, resolved server-side). Drives WatchThisRoute's
+      promise copy: off → "alerts go live soon", never a ping we can't send.
+      Defaults false — fail honest when a caller forgets. */
+  watchLive?: boolean
 }
 
 function fmt(n: number | undefined): string {
@@ -69,6 +74,7 @@ export default function VerdictRail({
   hasRealBalances = false,
   isSignedIn = false,
   nonstop,
+  watchLive = false,
 }: VerdictRailProps) {
   const { pick, summary, verdict, cashOption } = result
   const usingPoints = verdict === 'use-points'
@@ -315,6 +321,7 @@ export default function VerdictRail({
             threshold={POINTS_THRESHOLD_CPP}
             isSignedIn={isSignedIn}
             signInHref={signInHref}
+            live={watchLive}
           />
         ) : null}
       </div>

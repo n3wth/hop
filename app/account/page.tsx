@@ -13,6 +13,7 @@ import {
   isGmailHistoryEnabled,
   isEmailPasswordAuthEnabled,
   isPasskeyEnabled,
+  isStandingOrdersCronLive,
 } from '@/lib/env'
 import { getTravelHistory } from '@/lib/travel-history'
 import { isGmailConnected } from '@/lib/travel-history-sync'
@@ -98,7 +99,7 @@ export default async function AccountPage({
   const awUnconfigured = !hasEnv('AWARDWALLET_CONNECT_URL')
   // The scheduled runner only re-checks when its flag is on — surface that
   // honestly so the user knows whether watches are live yet.
-  const cronLive = /^(1|true|yes)$/i.test(process.env.STANDING_ORDERS_CRON_ENABLED ?? '')
+  const cronLive = isStandingOrdersCronLive()
   const billingEnabled = isBillingEnabled()
   const gmailEnabled = isGmailHistoryEnabled()
 

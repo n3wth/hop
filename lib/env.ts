@@ -243,6 +243,16 @@ export function isGmailHistoryEnabled(): boolean {
   return on && hasEnv('GOOGLE_OAUTH_CLIENT_ID') && hasEnv('GOOGLE_OAUTH_CLIENT_SECRET')
 }
 
+// The standing-orders watcher (app/api/cron/standing-orders) only re-checks
+// watches while STANDING_ORDERS_CRON_ENABLED is truthy — byte-identical
+// matching to the cron route's own isEnabled() (no trim: if the two ever
+// disagree, it must be this one saying "not live" while the runner works,
+// never a promised ping the runner won't send). Surfaces read this so watch
+// copy stays truthful (roadmap R1.3): off → "alerts go live soon".
+export function isStandingOrdersCronLive(): boolean {
+  return /^(1|true|yes)$/i.test(process.env.STANDING_ORDERS_CRON_ENABLED ?? '')
+}
+
 // The live-valuation sync seam is GATED behind an explicit flag AND a configured
 // Worker URL + shared secret. Until BOTH are set, lib/valuation-telemetry.ts
 // no-ops (never POSTs an observation) and lib/valuations-live.ts still resolves
