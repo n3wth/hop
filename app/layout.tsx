@@ -11,6 +11,7 @@ import {
 } from '@/lib/seo'
 import StructuredData from '@/components/StructuredData'
 import ScrollToTop from '@/components/ScrollToTop'
+import PostHogBoot from '@/components/PostHogBoot'
 import './globals.css'
 
 // Display headlines: Bricolage Grotesque via next/font/google — self-hosted, preloaded.
@@ -152,6 +153,10 @@ export default function RootLayout({
         <StructuredData />
         {children}
         <Analytics />
+        {/* PostHog product analytics (R0.5) — init + pageviews on every page;
+            AppShell adds identify() for signed-in sessions. No-ops without
+            NEXT_PUBLIC_POSTHOG_KEY. */}
+        <PostHogBoot />
         {/* Travelpayouts auto-attribution tag (project 545389). Monetizes outbound
             clicks to partner sites (the Kiwi cash deep-links in lib/booking.ts) by
             attributing them to hop's affiliate account — WITHOUT this, cash-booking

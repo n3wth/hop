@@ -17,6 +17,7 @@ import AppShell from '@/components/AppShell'
 import RouteBar from '@/components/RouteBar'
 import VerdictRail from '@/components/VerdictRail'
 import ResultsList from '@/components/ResultsList'
+import SearchTelemetry from '@/components/SearchTelemetry'
 import PointsPanel from '@/components/PointsPanel'
 import SiteFooter from '@/components/SiteFooter'
 
@@ -278,6 +279,15 @@ export default async function Search({
       <div className="mx-auto max-w-[var(--container-shell)]">
         {/* plain trip context — route + facts, not fake masthead metadata */}
         <RouteBar result={result} hasRealBalances={hasRealBalances} nonstop={nonstop} />
+
+        {/* R0.5 funnel — search_ran (+ verdict_viewed when a hero rendered). */}
+        <SearchTelemetry
+          from={params.from}
+          to={params.to}
+          cabin={params.cabin}
+          travelers={seatsFor(params)}
+          verdict={result.pick ? result.verdict : undefined}
+        />
 
         {/* the verdict hero — only when there's an actual pick to render a
             verdict about. verdict === 'none' means cash AND awards both came

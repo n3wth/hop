@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { cardForProgram, cardOutclickPath } from '@/lib/card-affiliates'
+import { track } from '@/lib/posthog-client'
 import Icon from './Icon'
 
 export interface CardAffiliateCTAProps {
@@ -56,6 +57,7 @@ export default function CardAffiliateCTA({ program, unit = 'miles' }: CardAffili
             href={cardOutclickPath(card.id, program)}
             target="_blank"
             rel="sponsored noopener"
+            onClick={() => track('outclick', { kind: 'card', target: card.id })}
             className="group inline-flex flex-wrap items-baseline gap-x-[6px] text-[14px] leading-[1.5] text-hero-body transition-colors hover:text-white"
           >
             <span>

@@ -26,6 +26,7 @@ import {
   env,
 } from './env'
 import { sendVerificationEmail, sendResetPasswordEmail } from './email'
+import { captureServerEvent } from './posthog-server'
 
 // Forwards every property access to the live Drizzle client at call time.
 // Methods are bound to the real client so drizzle's internal `this` works.
@@ -80,6 +81,19 @@ export const auth = betterAuth({
   // verification of the address rather than treating it as a collision.
   account: {
     accountLinking: { enabled: true, trustedProviders: ['google'] },
+  },
+  // R0.5 funnel event #1 — signed_up fires exactly once per new user, at the
+  // moment Better Auth inserts the row (every sign-up method funnels through
+  // here). Fire-and-forget + keyed on the opaque user.id only; can never fail
+  // the sign-up itself (captureServerEvent never throws).
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user: { id: string }) => {
+          captureServerEvent('signed_up', {}, { distinctId: user.id })
+        },
+      },
+    },
   },
   // Fully inert (no route accepts it) until isEmailPasswordAuthEnabled() — same
   // "no half-configured seam" rule as socialProviders above.

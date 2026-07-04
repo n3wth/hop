@@ -9,8 +9,10 @@ import {
   updateManualBalance,
   removeManualBalance,
   findManualByProgram,
+  getManualBalances,
 } from '@/lib/accounts'
 import { canonicalizeProgram } from '@/lib/programs'
+import { captureServerEvent } from '@/lib/posthog-server'
 
 // Server Actions for the signed-in user's balance sources. Every action is gated
 // by the Auth0 session and scoped to session.user.sub so one user can never touch
@@ -90,6 +92,14 @@ export async function addProgram(
 
   const id = await addManualBalance(auth.userId, name, balance, kind)
   if (!id) return { ok: false, error: "Couldn't add — try again" }
+
+  // R0.5 funnel event #2 — first_program_added fires when this insert made the
+  // user's first program row (the activation moment). Best-effort: a degraded
+  // count read just skips the event, never the add.
+  const programs = await getManualBalances(auth.userId)
+  if (programs.length === 1) {
+    captureServerEvent('first_program_added', {}, { distinctId: auth.userId })
+  }
 
   revalidateBalances()
   return { ok: true }

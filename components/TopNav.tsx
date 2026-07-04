@@ -29,7 +29,7 @@ export interface TopNavProps {
   /** Nonstop-only filter carried over from the search that landed on this page. */
   nonstop?: boolean
   /** Auth0 session, passed from the server. Null when signed out. */
-  user?: { initial: string; name?: string; email?: string; picture?: string } | null
+  user?: { id?: string; initial: string; name?: string; email?: string; picture?: string } | null
   /** Total points across the user's programs — shown beside the avatar. */
   pointsTotal?: number
   /** Hide the header search (e.g. on the landing page where the hero owns it). */

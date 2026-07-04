@@ -16,6 +16,7 @@
 // from a client component. Anonymous by design: no user_id is recorded.
 
 import { withDb } from '@/lib/supabase-helpers'
+import { captureServerEvent } from '@/lib/posthog-server'
 
 export interface Outclick {
   /**
@@ -43,6 +44,11 @@ export interface Outclick {
 // serverless function alive until the write settles.
 export function recordOutclick(click: Outclick): Promise<void> {
   try {
+    // R0.5 funnel event #5 — the server-side outclick shadow of this ledger
+    // insert, so revenue clicks join the PostHog funnel even when client JS
+    // never ran (the /api/go/* redirect IS the click). Anonymous like the
+    // ledger row: kind + target only, no URL (it can carry query params).
+    captureServerEvent('outclick', { kind: click.kind, target: click.target })
     return withDb(undefined, async (db) => {
       await db.from('hop_outclicks').insert({
         kind: click.kind,
