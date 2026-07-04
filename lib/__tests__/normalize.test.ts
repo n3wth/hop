@@ -10,6 +10,7 @@ import {
 } from '@/lib/awardwallet'
 import { pointsBookingUrl, cashBookingUrl } from '@/lib/booking'
 import { mockCash, mockAwards, mockBalances } from '@/lib/mock'
+import { cacheClearMemory } from '@/lib/cache'
 
 const PARAMS: SearchParams = {
   from: 'SFO',
@@ -25,6 +26,9 @@ afterEach(() => {
   process.env = { ...ORIGINAL_ENV }
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
+  // searchCash caches by params (lib/duffel.ts) — clear the in-memory cache so
+  // one test's cached result can't swallow the next test's stubbed fetch.
+  cacheClearMemory()
 })
 
 describe('duffel normalizer', () => {

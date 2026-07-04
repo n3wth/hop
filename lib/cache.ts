@@ -95,6 +95,15 @@ export async function cacheWrap<T>(
   }
 }
 
+/**
+ * Test-only: drop every in-memory fallback entry (Redis is untouched).
+ * Suites that exercise cached clients (e.g. searchCash) call this between
+ * tests so a cached result from one test can't swallow the next test's fetch.
+ */
+export function cacheClearMemory(): void {
+  memoryCache.clear()
+}
+
 /** Clear a cache key. */
 export async function cacheDelete(key: string): Promise<boolean> {
   const redis = getRedis()

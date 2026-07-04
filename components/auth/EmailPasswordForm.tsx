@@ -25,6 +25,43 @@ export default function EmailPasswordForm({
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [signedUp, setSignedUp] = useState(false)
+  const [needsVerify, setNeedsVerify] = useState(false)
+  const [resend, setResend] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+
+  // Re-request the verification email for the address in the form. Uses Better
+  // Auth's own /send-verification-email endpoint (same server callback that
+  // fired at sign-up), so it degrades exactly like sign-up does when email
+  // isn't configured.
+  async function resendVerification() {
+    if (!email || resend === 'sending') return
+    setResend('sending')
+    try {
+      const res = await authClient.sendVerificationEmail({ email, callbackURL })
+      setResend(res?.error ? 'error' : 'sent')
+    } catch {
+      setResend('error')
+    }
+  }
+
+  function resendControl() {
+    if (resend === 'sent')
+      return <span className="mt-2 block text-[12.5px] text-text2">Sent — check your inbox.</span>
+    return (
+      <span className="mt-2 block text-[12.5px]">
+        {resend === 'error' ? (
+          <span className="mr-2 text-text2">Couldn&rsquo;t send.</span>
+        ) : null}
+        <button
+          type="button"
+          onClick={resendVerification}
+          disabled={resend === 'sending'}
+          className="font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {resend === 'sending' ? 'Sending…' : 'Resend verification email'}
+        </button>
+      </span>
+    )
+  }
 
   async function submit() {
     if (pending) return
@@ -50,8 +87,11 @@ export default function EmailPasswordForm({
       const res = await authClient.signIn.email({ email, password, callbackURL })
       if (res?.error) {
         const code = res.error.code ?? ''
+        const unverified = code === 'EMAIL_NOT_VERIFIED'
+        setNeedsVerify(unverified)
+        setResend('idle')
         setError(
-          code === 'EMAIL_NOT_VERIFIED'
+          unverified
             ? 'Verify your email first — check your inbox.'
             : 'Sign-in didn’t go through. Try again.',
         )
@@ -74,9 +114,10 @@ export default function EmailPasswordForm({
 
   if (signedUp) {
     return (
-      <p className="rounded-[12px] border border-hair bg-sunk px-4 py-3 text-center text-[13.5px] leading-[1.5] text-text2">
+      <div className="rounded-[12px] border border-hair bg-sunk px-4 py-3 text-center text-[13.5px] leading-[1.5] text-text2">
         Check your email to verify your account.
-      </p>
+        {resendControl()}
+      </div>
     )
   }
 
@@ -93,6 +134,7 @@ export default function EmailPasswordForm({
           className="mb-4 rounded-[12px] border border-weak/40 bg-weak/10 px-4 py-3 text-[13.5px] leading-[1.5] text-text"
         >
           {error}
+          {needsVerify ? resendControl() : null}
         </div>
       ) : null}
 
