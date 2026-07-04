@@ -234,10 +234,12 @@ export default function VerdictRail({
           </p>
         )}
 
-        <div className="mt-[34px] flex flex-wrap items-center gap-4">
+        {/* Mobile: CTAs stack full-width (a wrapped pill + ragged widths read as
+            clutter at 375px); sm+ returns to the inline row. */}
+        <div className="mt-[34px] flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
           <a
             href={ctaHref}
-            className="inline-flex items-center gap-[10px] rounded-[14px] bg-white px-7 py-4 text-[16px] font-semibold text-brand-ink transition-colors hover:bg-hero-white-hover"
+            className="inline-flex items-center justify-center gap-[10px] rounded-[14px] bg-white px-7 py-4 text-[16px] font-semibold text-brand-ink transition-colors hover:bg-hero-white-hover"
           >
             <Icon name="check_circle" size={20} weight="fill" />
             {!usingPoints
@@ -264,7 +266,7 @@ export default function VerdictRail({
               href={calUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-[8px] rounded-[14px] border-[1.5px] border-white/20 px-7 py-4 text-[15px] font-medium text-hero-body transition-colors hover:border-white/45 hover:text-white"
+              className="inline-flex items-center justify-center gap-[8px] rounded-[14px] border-[1.5px] border-white/20 px-7 py-4 text-[15px] font-medium text-hero-body transition-colors hover:border-white/45 hover:text-white"
             >
               <Icon name="calendar" size={16} />
               Add to calendar

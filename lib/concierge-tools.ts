@@ -243,6 +243,10 @@ const profilePatchSchema = z.object({
     .describe('Who the user usually travels with.'),
   cabin: z.enum(CABINS).optional()
     .describe('Preferred cabin for long trips.'),
+  fallbackCabin: z.enum(CABINS).optional()
+    .describe('The cabin they settle for when the preferred one is unavailable or not worth it — e.g. "premium economy when not flying business".'),
+  preferredAirlines: z.array(z.string()).optional()
+    .describe('Airlines the user prefers to fly, e.g. ["Alaska Airlines"]. Added to existing list.'),
   dietary: z.array(z.string()).optional()
     .describe('Dietary needs, e.g. ["vegetarian"]. Added to existing list.'),
   accessibility: z.array(z.string()).optional()
@@ -261,7 +265,7 @@ const profilePatchSchema = z.object({
 export function buildSaveProfileFactTool(userId: string | undefined) {
   return tool({
     description:
-      "Remember a DURABLE personal fact the user states about themselves for future trips (vacation days, who they travel with, preferred cabin, dietary or accessibility needs, destinations they love or want to avoid). Call this whenever the user reveals such a fact. Do NOT use it for one-off search constraints. Only record facts the user actually stated — never guess.",
+      "Remember a DURABLE personal fact the user states about themselves for future trips (vacation days, who they travel with, preferred and fallback cabins, airlines they prefer, dietary or accessibility needs, destinations they love or want to avoid). Call this whenever the user reveals such a fact. Do NOT use it for one-off search constraints. Only record facts the user actually stated — never guess.",
     inputSchema: profilePatchSchema,
     execute: async (patch): Promise<{ saved: boolean; profile: TravelProfile }> => {
       const clean = validateProfile(patch)

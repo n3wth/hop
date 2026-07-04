@@ -23,6 +23,7 @@ import type { MemoryKind } from '@/lib/memory-view'
 
 // Map a list kind → the profile field holding its entries.
 const LIST_FIELDS: Partial<Record<MemoryKind, keyof TravelProfile>> = {
+  preferredAirlines: 'preferredAirlines',
   dietary: 'dietary',
   accessibility: 'accessibility',
   lovedDestinations: 'lovedDestinations',
@@ -33,6 +34,7 @@ const SCALAR_FIELDS: Partial<Record<MemoryKind, keyof TravelProfile>> = {
   vacationDays: 'vacationDays',
   travelParty: 'travelParty',
   cabin: 'cabin',
+  fallbackCabin: 'fallbackCabin',
 }
 
 export interface ForgetResult {
