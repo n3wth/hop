@@ -14,11 +14,12 @@ export default function SupportConsole({
   escalations: Escalation[]
 }) {
   return (
-    <div className="mx-auto max-w-[var(--container-shell)] px-4 py-10 sm:px-6">
-      <h1 className="font-display text-2xl font-semibold tracking-[-0.01em] text-text">Support</h1>
+    <div className="max-w-[var(--container-shell)] px-4 py-8 sm:px-6 lg:px-8">
+      <h1 className="font-display text-2xl font-semibold tracking-[-0.01em] text-text">Inbox</h1>
       <p className="mt-1 text-[13px] text-text3">
         {tickets.length} ticket{tickets.length === 1 ? '' : 's'} · {escalations.length} booking
-        request{escalations.length === 1 ? '' : 's'}
+        request{escalations.length === 1 ? '' : 's'} · inbound via Resend, replies drafted by the
+        support agent for your review
       </p>
 
       {/* Wide screens: tickets beside booking requests; below lg they stack. */}

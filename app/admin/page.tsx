@@ -8,9 +8,6 @@ import { listOpenFindings } from '@/lib/improvement-findings'
 import { listRecentTickets } from '@/lib/support-tickets'
 import { listRecentEscalations } from '@/lib/escalation'
 import { isSelfImproveEnabled } from '@/lib/env'
-import { auth0 } from '@/lib/auth0'
-import { toNavUser } from '@/lib/nav-user'
-import AppShell from '@/components/AppShell'
 import AdminDashboard from '@/components/admin/AdminDashboard'
 
 // Owner-only ops overview — the /admin landing page. Every figure is read
@@ -29,8 +26,7 @@ export default async function AdminPage() {
   const owner = await getOwnerSession()
   if (!owner) notFound()
 
-  const [session, digest, heartbeats, degradation, findings, tickets, escalations] = await Promise.all([
-    auth0.getSession(),
+  const [digest, heartbeats, degradation, findings, tickets, escalations] = await Promise.all([
     computeBusinessDigest(),
     listHeartbeats(),
     getDegradationWindowCounts(),
@@ -39,20 +35,17 @@ export default async function AdminPage() {
     listRecentEscalations(5),
   ])
 
+  // Chrome (sidebar rail, account, nav) comes from app/admin/layout.tsx.
   return (
-    // Same chrome as every other surface (TopNav + tab bar) — /admin is an
-    // internal tool, not a separate site. The header search stays hidden.
-    <AppShell user={toNavUser(session?.user)} hideSearch>
-      <AdminDashboard
-        ownerEmail={owner.email}
-        digest={digest}
-        heartbeats={heartbeats}
-        degradation={degradation}
-        findings={findings}
-        recentTickets={tickets}
-        recentEscalations={escalations}
-        selfImproveEnabled={isSelfImproveEnabled()}
-      />
-    </AppShell>
+    <AdminDashboard
+      ownerEmail={owner.email}
+      digest={digest}
+      heartbeats={heartbeats}
+      degradation={degradation}
+      findings={findings}
+      recentTickets={tickets}
+      recentEscalations={escalations}
+      selfImproveEnabled={isSelfImproveEnabled()}
+    />
   )
 }
