@@ -3,6 +3,16 @@
 /* Streamdown renders the concierge's streamed markdown — scan its classes so v4
    doesn't purge them. */
 @source "../node_modules/streamdown/dist/index.js";
+/* v4 auto-detection scans EVERY non-gitignored text file — including agent docs
+   and config comments. A class-SHAPED placeholder there (e.g. a pipe-syntax
+   "one of these" like `tracking-[var(--a|b)]`) compiles into invalid CSS and
+   500s every page in dev. Runtime templates live only in app/ components/ lib/;
+   exclude the doc/tooling trees so prose can never break the build. */
+@source not "../.claude";
+@source not "../.cursor";
+@source not "../.agents";
+@source not "../docs";
+@source not "../eslint.config.mjs";
 
 /* hop design tokens — editorial direction (docs/design/CHOSEN-editorial.html).
    Verdict hero, boarding-pass pick, value-ranked alternatives, dark wallet.
@@ -138,8 +148,8 @@
 :root {
   --container-xs: 680px; /* a single receipt/confirmation card — book/confirmation */
   --container-sm: 820px; /* one-topic profile/detail reading column — sweet-spots/[program] (account moved to --container-shell + two-column xl grid) */
-  --container-article: 880px; /* long-form single article — destinations/[city] */
-  --container-md: 980px; /* narrow index/listing — sweet-spots */
+  --container-article: 880px; /* long-form single article (pure prose pages) */
+  --container-md: 980px; /* card-led detail/listing — destinations/[city] (prose inside capped at 70ch); sweet-spots index moved to --container-shell */
   --container-checkout: 1040px; /* form + sticky sidebar — book */
   --container-app: 1180px; /* legacy boxed width — kept for reference; app surfaces migrated to --container-shell */
   --container-wide: 1340px; /* legacy wide card-grid bump — superseded by --container-shell */

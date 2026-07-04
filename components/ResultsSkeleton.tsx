@@ -113,7 +113,9 @@ export default function ResultsSkeleton() {
             <span className="hop-skeleton-dark block h-[52px] w-[210px] rounded-[14px]" />
             <span className="block h-[52px] w-[130px] rounded-[14px] border border-white/20" />
           </div>
-          <div className="mt-[42px] flex gap-10 border-t border-white/15 pt-[30px]">
+          {/* mirrors the loaded hero's stat strip (flex-wrap, tighter mobile gaps)
+              so the skeleton never overflows at 375px where the real strip wraps */}
+          <div className="mt-8 flex flex-wrap gap-x-6 gap-y-4 border-t border-white/15 pt-7 sm:gap-10 lg:mt-[42px] lg:pt-[30px]">
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className="space-y-[8px]">
                 <span className="hop-skeleton-dark block h-[11px] w-[60px] rounded-[5px]" />

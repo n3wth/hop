@@ -13,7 +13,11 @@ import ResultsSkeleton from '@/components/ResultsSkeleton'
 export default function Loading() {
   return (
     <AppShell hideSearch>
-      <ResultsSkeleton />
+      {/* Same shell container as the loaded page (app/search/page.tsx) so the
+          skeleton and the results occupy identical bounds — no snap on load. */}
+      <div className="mx-auto max-w-[var(--container-shell)]">
+        <ResultsSkeleton />
+      </div>
     </AppShell>
   )
 }

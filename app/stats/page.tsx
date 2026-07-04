@@ -84,9 +84,9 @@ export default async function StatsPage() {
 
         <p className="mt-10 text-[13px] text-text3">As of {asOfLabel}.</p>
       </LegalShell>
-      <div className="mx-auto max-w-[var(--container-sm)]">
-        <SiteFooter />
-      </div>
+      {/* No width wrapper — SiteFooter centers itself on --container-shell, the
+          same width as the header, on every page. */}
+      <SiteFooter />
     </AppShell>
   )
 }

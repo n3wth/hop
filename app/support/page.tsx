@@ -107,7 +107,10 @@ export default async function SupportPage() {
             can skip straight to a section. The list styling overrides the
             inherited .legal-prose ul (disc bullets / indent). */}
         <nav aria-label="Help topics" className="mb-2">
-          <ul className="grid list-none grid-cols-1 gap-x-6 gap-y-1.5 !pl-0 sm:grid-cols-2">
+          {/* !list-none: .legal-prose ul (0,1,1) out-specifies the bare utility
+              (0,1,0), so without the important the discs come back and hang
+              outside the zeroed padding — bullets floating left of the column. */}
+          <ul className="grid !list-none grid-cols-1 gap-x-6 gap-y-1.5 !pl-0 sm:grid-cols-2">
             {SECTIONS.map((s) => (
               <li key={s.id} className="!mb-0">
                 <a

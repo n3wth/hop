@@ -200,7 +200,9 @@ export default async function SignedInHome({
             <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
               Trips your balances can get you to
             </span>
-            <h2 className="text-balance font-display text-[26px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[34px]">
+            {/* No text-balance: it split the short headline into two even lines
+                even when one line fit — wrap only when it must. */}
+            <h2 className="font-display text-[26px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[34px]">
               {personalized
                 ? 'Within reach.'
                 : 'Dreams worth saving toward.'}

@@ -21,7 +21,9 @@ export default function SweetSpotsIndexPage() {
 
   return (
     <AppShell user={null} hideSearch>
-      <div className="mx-auto max-w-[var(--container-md)]">
+      {/* Shell width, same as deals/destinations — the old --container-md cap
+          left this index visibly narrower than the header and sibling surfaces. */}
+      <div className="mx-auto max-w-[var(--container-shell)]">
         {/* editorial header */}
         <EditorialHeader
           eyebrow="Sweet spots"
@@ -44,7 +46,7 @@ export default function SweetSpotsIndexPage() {
         </EditorialHeader>
 
         {/* the program list — each links to its per-program guide */}
-        <section className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <section className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {programs.map((p) => {
             const lead = p.spots[0]
             return (

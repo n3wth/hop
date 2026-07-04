@@ -69,14 +69,13 @@ export default function PointsPanel({ balances, pick, isExample = false }: Point
   }
 
   return (
-    // Capped at --container-app (lg+): the row grid's middle column is a
-    // flexible 1fr between the fixed-width icon/label and the fixed-width
-    // bar/balance — left unconstrained, it stretches on the full 1760px
-    // shell and strands each program's label far from its own value bar and
-    // balance. Restoring the pre-shell measure keeps the wallet a legible,
-    // tightly aligned list instead of a row with dead air down the middle.
+    // Full shell width, same as every other search-page section (a narrower
+    // card read as a layout bug next to them). Row legibility is preserved by
+    // the grid instead: the LABEL column is capped and the VALUE BAR flexes,
+    // so extra width lengthens the bars rather than stranding labels across
+    // dead air (the problem the old --container-app cap was papering over).
     <section
-      className="overflow-hidden rounded-[22px] text-hero-cream lg:max-w-[var(--container-app)]"
+      className="overflow-hidden rounded-[22px] text-hero-cream"
       style={{ background: 'var(--color-brand-ink)' }}
     >
       {/* Example-data label — only when these balances aren't the viewer's own
@@ -102,7 +101,7 @@ export default function PointsPanel({ balances, pick, isExample = false }: Point
           return (
             <div
               key={b.code + b.program}
-              className={`grid items-center gap-3 py-[16px] sm:gap-5 sm:py-[18px] [grid-template-columns:40px_1fr_auto] lg:[grid-template-columns:46px_1fr_200px_116px] ${i > 0 ? 'border-t border-white/[0.07]' : ''}`}
+              className={`grid items-center gap-3 py-[16px] sm:gap-5 sm:py-[18px] [grid-template-columns:40px_1fr_auto] lg:[grid-template-columns:46px_minmax(0,420px)_1fr_116px] ${i > 0 ? 'border-t border-white/[0.07]' : ''}`}
             >
               <BrandIcon code={b.code} name={b.program} size={40} surface="dark" />
 

@@ -167,7 +167,7 @@ export default async function DestinationGuidePage({
     <AppShell user={null} hideSearch>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <article className="mx-auto max-w-[var(--container-article)]">
+      <article className="mx-auto max-w-[var(--container-md)]">
         {/* breadcrumb */}
         <nav aria-label="Breadcrumb" className="pt-8 text-[13px] text-text3">
           <Link href="/destinations" className="font-semibold text-brand hover:text-brand-deep">
@@ -273,11 +273,11 @@ export default async function DestinationGuidePage({
           <h2 className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">When to go</h2>
           {seasonality && normals ? (
             <>
-              <p className="mt-3 text-[15.5px] leading-relaxed text-text2">{seasonality.summary}</p>
+              <p className="mt-3 max-w-[70ch] text-[15.5px] leading-relaxed text-text2">{seasonality.summary}</p>
               <ClimateStrip normals={normals} seasonality={seasonality} />
             </>
           ) : (
-            <p className="mt-3 text-[15.5px] leading-relaxed text-text2">{season}</p>
+            <p className="mt-3 max-w-[70ch] text-[15.5px] leading-relaxed text-text2">{season}</p>
           )}
         </section>
 
@@ -288,7 +288,7 @@ export default async function DestinationGuidePage({
         {related && (
           <section className="mt-8">
             <h2 className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">Points play</h2>
-            <p className="mt-3 text-[15.5px] leading-relaxed text-text2">
+            <p className="mt-3 max-w-[70ch] text-[15.5px] leading-relaxed text-text2">
               {dest.bestProgram} is the way in. If you hold {related.program.name} miles, see its{' '}
               <Link
                 href={`/sweet-spots/${related.program.slug}`}
@@ -304,7 +304,7 @@ export default async function DestinationGuidePage({
         {/* GOOD TO KNOW */}
         <section className="mt-8">
           <h2 className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">Good to know</h2>
-          <p className="mt-3 text-[15.5px] leading-relaxed text-text2">{goodToKnow(dest)}</p>
+          <p className="mt-3 max-w-[70ch] text-[15.5px] leading-relaxed text-text2">{goodToKnow(dest)}</p>
         </section>
 
         {/* CTA — into the live tool */}
