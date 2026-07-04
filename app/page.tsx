@@ -142,12 +142,6 @@ export default async function Home() {
             directly beneath. The agent moves to the second door below. */}
         <section className="pt-2 sm:pt-4">
           <div className="mx-auto flex max-w-[64ch] flex-col items-center gap-2 text-center">
-            <span
-              className="hop-rise text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand"
-              style={{ ['--hop-delay' as string]: '40ms' }}
-            >
-              Points vs cash
-            </span>
             <h1
               className="hop-rise max-w-[16ch] text-balance font-display text-[38px] font-semibold leading-[1.02] tracking-[-0.03em] text-text sm:text-[56px] lg:text-[64px]"
               style={{ ['--hop-delay' as string]: '90ms' }}
