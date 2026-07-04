@@ -35,7 +35,9 @@ re-runs `assembleSearch` per active watch and records + emails crossings.
 
 1. `STANDING_ORDERS_CRON_ENABLED=1` — the route is `503 disabled` until truthy.
 2. `CRON_SECRET=<random>` — Vercel Cron sends it as `Authorization: Bearer`;
-   **unset means any caller can hit every cron route**, so always set it in prod.
+   **unset means every cron route 401s in production** (fail-closed,
+   `lib/cron-auth.ts`), so Vercel Cron itself would be locked out — always set
+   it in prod. Local dev without the secret stays open.
 3. Email delivery (optional but the point): `RESEND_API_KEY=<key>`, and verify the
    From domain in Resend — add Resend's **DKIM/SPF records to Cloudflare DNS** for
    `hop.flights`, or set `HOP_ALERT_EMAIL_FROM` to an already-verified domain as a
