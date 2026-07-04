@@ -14,6 +14,7 @@
 | **Claude Code routine "hop weekly invariant audit"** | Standing `/audit` sweep; fix-or-file drift | Cron, weekly (Sun 14:00 UTC), fresh session |
 | **Cursor (Linear agent)** | Mechanical, well-specced items — delegated by setting the Linear issue's delegate | Manual/interactive dispatch |
 | **Copilot coding agent** | Tiny repo-visible chores when a GitHub issue exists | Manual/interactive dispatch |
+| **Google Jules** | Free-tier mechanical work (codemods, test scaffolds, doc sweeps) — 15 tasks/day | Manual dispatch at jules.google (no Linear delegation) |
 | **charliecreates / vercel-agent** | Automatic PR review + preview screenshots | On every PR (already wired) |
 | **Owner (human)** | Merges the ADR 0009 hold list (money/identity/schema/deps). Flag flips, env/secrets, partnerships, legal | — |
 
@@ -79,6 +80,11 @@ Sessions with Linear/GitHub tools may fan work out instead of building:
   spec (tests, codemods, pattern-clones). Verify its PR passes `npm run check` before the owner
   merges; the routine's triage step treats a red Cursor PR like any other.
 - **Copilot**: assign to a GitHub issue for one-file chores. Same review bar.
+- **Jules** (free, 15 tasks/day): cheapest lane for codemods/tests/doc sweeps. It can't read
+  Linear — paste the issue's full spec into the task. Its PRs meet the same bar as everyone's:
+  `npm run check` green, review clear, merged per ADR 0009 (routines may merge them when
+  auto-tier). Devin was evaluated and skipped — ~$4.50–11 per small task, worst marginal cost
+  of the fleet.
 - Headless routine runs do not dispatch (connectors may be absent); they build.
 
 ## Owner setup that upgrades the loop (optional, any time)
