@@ -23,6 +23,7 @@ export default function AgentComposer({
   first,
   totalPoints,
   backdrop,
+  headingTag,
 }: {
   variant: 'in' | 'out'
   /** Signed-in member's first name, for the greeting. */
@@ -31,6 +32,9 @@ export default function AgentComposer({
   totalPoints?: number
   /** Optional photographic backdrop, matching the /ask hero imagery. */
   backdrop?: ConciergeHeroPhoto
+  /** Heading level — 'h2' where another element owns the page's h1 (the
+   *  signed-out home, where the verdict hero leads). Defaults to h1. */
+  headingTag?: 'h1' | 'h2'
 }) {
   const router = useRouter()
   const [value, setValue] = useState('')
@@ -63,6 +67,7 @@ export default function AgentComposer({
       density="teaser"
       signedIn={signedIn}
       photos={backdrop ? [backdrop] : []}
+      headingTag={headingTag}
     />
   )
 }

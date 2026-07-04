@@ -65,6 +65,10 @@ export interface ConciergeHeroProps {
   /** Signed in but no programs linked yet → show the "Add your programs" nudge
    *  so the visitor knows answers will sharpen once balances are connected. */
   needsPrograms?: boolean
+  /** Heading level for the hero title. Defaults to h1 (/ask, signed-in home);
+   *  pass 'h2' where another element owns the page's h1 (the signed-out home,
+   *  where the verdict hero leads and this is the second door). */
+  headingTag?: 'h1' | 'h2'
 }
 
 export default function ConciergeHero({
@@ -81,6 +85,7 @@ export default function ConciergeHero({
   gmailEnabled = false,
   onConnectGmail,
   needsPrograms = false,
+  headingTag: HeadingTag = 'h1',
 }: ConciergeHeroProps) {
   const full = density === 'full'
   const tiles = photos.slice(0, 6)
@@ -146,14 +151,14 @@ export default function ConciergeHero({
           {copy.eyebrow}
         </span>
 
-        <h1
+        <HeadingTag
           className={`hop-rise mt-7 max-w-[18ch] text-balance font-display font-semibold leading-[0.98] tracking-[-0.03em] text-white ${
             full ? 'text-[40px] sm:text-[64px]' : 'text-[38px] sm:text-[60px] lg:text-[72px]'
           }`}
           style={{ ['--hop-delay' as string]: '90ms' }}
         >
           {copy.heading}
-        </h1>
+        </HeadingTag>
 
         <p
           className="hop-rise mt-5 max-w-[52ch] text-pretty text-[15px] leading-[1.6] text-hero-body sm:text-[17px]"
