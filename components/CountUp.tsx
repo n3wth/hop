@@ -25,6 +25,11 @@ export interface CountUpProps {
   style?: React.CSSProperties
 }
 
+// Locale is PINNED to en-US: the server (Node ICU) and the client (browser ICU)
+// must produce byte-identical strings or the SSR'd final value hydration-
+// mismatches — worst on the receipt total, where cents must render exactly.
+// It also matches money()/Intl usage elsewhere (the app formats USD-style
+// throughout), so a de-DE visitor never sees "$1.234,56" on one number only.
 function render(
   n: number,
   format: CountUpFormat,
@@ -37,9 +42,10 @@ function render(
     decimals !== undefined
       ? { minimumFractionDigits: decimals, maximumFractionDigits: decimals }
       : undefined
-  if (format === 'usd') body = `$${opts ? n.toLocaleString(undefined, opts) : Math.round(n).toLocaleString()}`
+  if (format === 'usd')
+    body = `$${opts ? n.toLocaleString('en-US', opts) : Math.round(n).toLocaleString('en-US')}`
   else if (format === 'cpp') body = `${(Math.round(n * 10) / 10).toFixed(1)}¢`
-  else body = opts ? n.toLocaleString(undefined, opts) : Math.round(n).toLocaleString()
+  else body = opts ? n.toLocaleString('en-US', opts) : Math.round(n).toLocaleString('en-US')
   return `${prefix ?? ''}${body}${suffix ?? ''}`
 }
 

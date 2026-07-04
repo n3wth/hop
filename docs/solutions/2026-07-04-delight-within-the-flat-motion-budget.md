@@ -2,7 +2,7 @@
 title: Adding delight moments without breaking the flat-editorial motion budget
 date: 2026-07-04
 tags: [design, motion, micro-interactions, delight, count-up, reduced-motion, hop-appear, hop-check-in, flat-editorial]
-files: [app/globals.css, components/CountUp.tsx, components/VerdictRail.tsx, components/landing/SignedInHome.tsx, components/landing/SampleVerdict.tsx, app/book/confirmation/page.tsx, components/WatchThisRoute.tsx, components/ProgramsManager.tsx, components/McpAccess.tsx, components/Concierge.tsx]
+files: [app/globals.css, components/CountUp.tsx, components/VerdictRail.tsx, components/landing/SignedInHome.tsx, components/landing/SampleVerdict.tsx, app/book/confirmation/page.tsx, components/WatchThisRoute.tsx, components/ProgramsManager.tsx, components/McpAccess.tsx, components/Concierge.tsx, components/DealCard.tsx]
 status: solved
 ---
 
