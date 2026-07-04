@@ -157,11 +157,10 @@ export default function LedgerDreamCard({
             }}
           />
 
-          {/* eyebrow */}
-          <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-paper px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[var(--track-tag)] text-brand">
-            <Icon name="workspace_premium" size={12} />
-            {v.saveToward ? 'A dream to save toward' : 'Your dream this week'}
-          </span>
+          {/* No eyebrow pill here — the section heading directly above already
+              names the variant ("A dream worth saving toward." / "The trip your
+              points already bought."), and repeating it on the photo read as
+              duplicate chrome. The cpp chip carries the only on-photo data. */}
 
           {/* cpp chip */}
           {v.cpp !== undefined ? (

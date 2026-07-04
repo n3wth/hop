@@ -157,8 +157,12 @@ export default function RootLayout({
             attributing them to hop's affiliate account — WITHOUT this, cash-booking
             clicks earn nothing. lazyOnload keeps it entirely off the critical path
             (attribution happens at click time, not render time). No hop data is
-            sent; it only decorates outbound partner navigations. */}
-        <Script src="https://emrldtp.com/NTQ1Mzg5.js?t=545389" strategy="lazyOnload" />
+            sent; it only decorates outbound partner navigations. Production-only:
+            the tag 403s on non-whitelisted origins (localhost), spamming the
+            console — and dev clicks shouldn't attribute anyway. */}
+        {process.env.NODE_ENV === 'production' && (
+          <Script src="https://emrldtp.com/NTQ1Mzg5.js?t=545389" strategy="lazyOnload" />
+        )}
       </body>
     </html>
   )

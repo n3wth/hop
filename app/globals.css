@@ -729,9 +729,16 @@ body {
 
 /* Single-viewport stage — the concierge fills exactly the space below the nav so
    the page never scrolls vertically: nav (--hop-nav, in flow) + stage = 100dvh.
-   The landing hero sits flush under the nav; the thread scrolls only internally. */
+   The landing hero sits flush under the nav; the thread scrolls only internally.
+   Below md the top nav is hidden and the bottom tab bar (56px + safe area) owns
+   the floor instead, so the stage subtracts THAT — the composer docks above it. */
 .hop-ask-stage {
-  height: calc(100dvh - var(--hop-nav));
+  height: calc(100dvh - 56px - env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) {
+  .hop-ask-stage {
+    height: calc(100dvh - var(--hop-nav));
+  }
 }
 
 /* The ask surface's CHROME frame — the control rail and the docked composer's

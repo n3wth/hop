@@ -128,6 +128,14 @@ export default function VerdictRail({
   // multiplier applied to the figures above), never a re-derivation here.
   const seats = seatsFor(result.params)
 
+  // Pay-cash path: summary.bestCpp/bestMiles are only set when points win, so
+  // pull the closest award from the ranked options to SHOW the math that failed
+  // the bar — a specific "here's what we checked" reads like an agent's reasoning,
+  // not a shrug. Engine numbers only.
+  const bestAward = !usingPoints
+    ? result.options.find((o) => o.kind !== 'cash' && o.cpp != null && o.miles != null)
+    : undefined
+
   const airlineShort = pick?.airline.split(' ')[0] ?? 'points'
 
   return (
@@ -206,11 +214,23 @@ export default function VerdictRail({
               ? `Add your programs and hop checks if your ${unit} cover it.`
               : `Sign in to check your balances and see if your ${unit} cover it.`}
           </p>
+        ) : bestAward ? (
+          <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-hero-body" style={{ ['--hop-delay' as string]: '140ms' }}>
+            The closest award is{' '}
+            <b className="font-semibold text-white">
+              {fmt(bestAward.miles)} {milesUnit(bestAward)}
+            </b>{' '}
+            on {bestAward.program ?? bestAward.airline} — worth just{' '}
+            <b className="font-semibold text-white">{formatValue(bestAward.cpp!)}</b>, under the{' '}
+            {formatValue(POINTS_THRESHOLD_CPP)} bar where points beat cash. The{' '}
+            <b className="font-semibold text-white">${fmt(cash)}</b> fare is the better buy — your{' '}
+            {milesUnit(bestAward)} will go further somewhere else.
+          </p>
         ) : (
           <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-hero-body" style={{ ['--hop-delay' as string]: '140ms' }}>
-            No redemption clears the bar on this route. Cash is{' '}
-            <b className="font-semibold text-white">${fmt(cash)}</b> — keep your points for a trip
-            where they stretch further.
+            No award seats came back for this route and date, so there was nothing to weigh your
+            points against. Cash is <b className="font-semibold text-white">${fmt(cash)}</b> —
+            book it and your points stay put.
           </p>
         )}
 

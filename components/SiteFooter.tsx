@@ -9,7 +9,9 @@ export default function SiteFooter({ flush = false }: { flush?: boolean }) {
   return (
     <footer
       role="contentinfo"
-      className={`relative text-[13px] text-text3 ${
+      // hidden below md: on phones the bottom tab bar is the persistent nav, and
+      // a tall footer under it read as redundant chrome (2026-07 mobile pass).
+      className={`relative hidden text-[13px] text-text3 md:block ${
         flush ? 'rounded-b-[20px] bg-paper lg:rounded-b-[28px]' : 'mt-20 border-t border-border'
       }`}
     >
