@@ -187,6 +187,9 @@ in one round-trip.
   `{ok:false}`/fallbacks instead of throwing, and the UI degrades per-section.
 - **Cron**: `vercel.json` runs `/api/cron/standing-orders` (every 6h), `/api/cron/revalidate-seo`
   (weekly), and `/api/cron/valuation-sync` (daily); all guarded by `CRON_SECRET`.
+- **Ops**: turning any production capability on/off (alerts, valuation sync, self-improve,
+  billing, checkout, auth flags) is documented in `docs/ops-runbook.md`; `.env.example`
+  enumerates every env var the app reads.
 
 ## Design & copy — hold this bar on any UI change
 
