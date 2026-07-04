@@ -1,18 +1,18 @@
-import { NextResponse } from 'next/server'
-import Stripe from 'stripe'
-import { withDb } from '@/lib/supabase-helpers'
+// GET /api/cron/sync-stripe — daily reconciliation sweep: re-reads every
+// subscription from Stripe and re-writes it through the SAME lane the webhook
+// uses (lib/stripe.ts#listSubscriptionRecords → lib/subscription.ts#
+// recordSubscription), healing any webhook deliveries that were missed.
+//
+// Double-gated like every cron: CRON_SECRET AND isBillingEnabled() — with
+// Stripe keys present in Vercel but the flag off, this stays a no-op (the
+// lib/env.ts contract: the deploy is inert until the operator flips
+// HOP_ENABLE_BILLING). No direct SDK/process.env.STRIPE_* use here — the
+// Stripe seam stays lib/stripe.ts.
 
-let _stripe: Stripe | null = null
-function getStripe(): Stripe {
-  if (!_stripe) {
-    const key = process.env.STRIPE_SECRET_KEY
-    if (!key) throw new Error('Missing STRIPE_SECRET_KEY')
-    _stripe = new Stripe(key, {
-      apiVersion: '2023-10-16' as never,
-    })
-  }
-  return _stripe
-}
+import { NextResponse } from 'next/server'
+import { isBillingEnabled } from '@/lib/env'
+import { listSubscriptionRecords } from '@/lib/stripe'
+import { recordSubscription } from '@/lib/subscription'
 
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET
@@ -27,80 +27,26 @@ export async function GET(request: Request) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ ok: false, reason: 'unauthorized' }, { status: 401 })
   }
-
-  try {
-    const stripe = getStripe()
-    // Fetch all active/past_due/trialing/canceled subscriptions from Stripe
-    const subs = await stripe.subscriptions.list({
-      limit: 100,
-      status: 'all',
-    })
-
-    let syncedCount = 0
-
-    for (const sub of subs.data) {
-      if (typeof sub.customer === 'string') {
-        const ok = await syncSubscription(sub.customer, sub)
-        if (ok) syncedCount++
-      }
-    }
-
-    return NextResponse.json({ ok: true, synced: syncedCount })
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    console.error(`⚠️  Stripe subscription sync failed: ${msg}`)
-    return NextResponse.json({ ok: false, error: msg }, { status: 500 })
+  if (!isBillingEnabled()) {
+    return NextResponse.json({ ok: false, reason: 'billing-disabled' }, { status: 503 })
   }
-}
 
-async function syncSubscription(stripeCustomerId: string, sub: Stripe.Subscription): Promise<boolean> {
-  return withDb<boolean>(false, async (db) => {
-    // 1. Get customer
-    const { data: cust } = await db
-      .from('hop_customers')
-      .select('id')
-      .eq('stripe_customer_id', stripeCustomerId)
-      .maybeSingle()
+  const listed = await listSubscriptionRecords()
+  if (!listed.ok) {
+    return NextResponse.json({ ok: false, error: listed.reason }, { status: 500 })
+  }
 
-    if (!cust) return false
-
-    // 2. Check if subscription already exists
-    const { data: existing } = await db
-      .from('hop_subscriptions')
-      .select('id')
-      .eq('stripe_subscription_id', sub.id)
-      .maybeSingle()
-
-    const subObj = sub as unknown as {
-      current_period_start: number
-      current_period_end: number
-    }
-
-    const payload = {
-      customer_id: cust.id,
-      stripe_subscription_id: sub.id,
-      stripe_price_id: sub.items.data[0]?.price.id ?? '',
-      status: sub.status as 'trialing' | 'active' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete' | 'incomplete_expired',
-      current_period_start: new Date(subObj.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(subObj.current_period_end * 1000).toISOString(),
-      cancel_at_period_end: sub.cancel_at_period_end,
-      updated_at: new Date().toISOString(),
-    }
-
-    if (existing) {
-      const { error } = await db
-        .from('hop_subscriptions')
-        .update(payload)
-        .eq('id', existing.id)
-      return !error
-    } else {
-      const { error } = await db
-        .from('hop_subscriptions')
-        .insert({
-          ...payload,
-          created_at: new Date().toISOString(),
-        })
-      return !error
-    }
-  })
+  let synced = 0
+  for (const { record, customerId } of listed.items) {
+    if (!customerId) continue
+    // A list read carries no metadata user ref — attribution is our stored
+    // hop_customers mapping only; unmapped customers are skipped, not healed.
+    const outcome = await recordSubscription({
+      userId: null,
+      stripeCustomerId: customerId,
+      record,
+    })
+    if (outcome === 'ok') synced++
+  }
+  return NextResponse.json({ ok: true, synced, total: listed.items.length })
 }

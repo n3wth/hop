@@ -281,6 +281,18 @@ const searchFlightsSchema = z.object({
   depart: z.string().describe('Departure date, ISO "YYYY-MM-DD".'),
   return: z.string().optional().describe('Return date, ISO "YYYY-MM-DD", for a round trip. Omit for one-way.'),
   adults: z.number().int().min(1).optional().describe('Number of adult passengers (default 1).'),
+  children: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe('Seated children — count them whenever the traveler mentions kids; they scale the party-total pricing (default 0).'),
+  infants: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe('Lap infants — no seat, excluded from pricing (default 0).'),
 })
 
 // Build the concierge's tool set. `balances` is closed over so price_trip /
@@ -321,7 +333,7 @@ export function buildConciergeTools(balances: PriceTripBalance[], userId?: strin
       description:
         "Run hop's REAL, LIVE points-vs-cash verdict for a specific route and date — the SAME engine the /search page uses (live Duffel cash fares + seats.aero award space). Use this whenever the user gives (or you know) a specific date, or asks about ANY airport — including ones outside hop's curated destinations list (price_trip only covers those ~30). ALWAYS call this before stating a live miles/cash/CPP figure for a specific date — never invent them. Degraded sections (cash or awards unavailable) are reported honestly — say so, never fill the gap with an invented number.",
       inputSchema: searchFlightsSchema,
-      execute: async ({ from, to, depart, return: ret, adults }) =>
+      execute: async ({ from, to, depart, return: ret, adults, children, infants }) =>
         verdictSummary(
           {
             from: from.trim().toUpperCase(),
@@ -329,6 +341,10 @@ export function buildConciergeTools(balances: PriceTripBalance[], userId?: strin
             depart,
             return: ret,
             adults: Math.max(1, adults ?? 1),
+            // Party size drives the engine's total-cost scaling — a family's
+            // verdict must be priced for the whole party, not one seat.
+            ...(children ? { children: Math.max(0, children) } : {}),
+            ...(infants ? { infants: Math.max(0, infants) } : {}),
           },
           balances.map((b) => ({ program: b.program, code: '', balance: b.balance })),
         ),
