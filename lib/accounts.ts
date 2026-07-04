@@ -81,16 +81,14 @@ export async function getManualBalances(userId: string): Promise<ManualBalance[]
   })
 }
 
-// Find an existing manual program that resolves to the SAME canonical identity
-// as `program` (so "amex" and "Membership Rewards" collide on amex-mr). Falls
+// Find the row in `rows` that resolves to the SAME canonical identity as
+// `program` (so "amex" and "Membership Rewards" collide on amex-mr). Falls
 // back to a normalized exact-name match when the input doesn't canonicalize.
-// Returns the matching row, or null if the user has no equivalent program yet.
-export async function findManualByProgram(
-  userId: string,
-  program: string,
-): Promise<ManualBalance | null> {
+// Pure — callers that already hold the user's rows (e.g. addProgram, which
+// also needs the count for the first_program_added funnel event) match
+// without a second fetch.
+export function matchManualProgram(rows: ManualBalance[], program: string): ManualBalance | null {
   const target = canonicalizeProgram(program)
-  const rows = await getManualBalances(userId)
   if (target) {
     return rows.find((r) => canonicalizeProgram(r.program)?.id === target.id) ?? null
   }
@@ -98,6 +96,15 @@ export async function findManualByProgram(
   // of an unknown program still dedupes.
   const norm = program.trim().toLowerCase()
   return rows.find((r) => r.program.trim().toLowerCase() === norm) ?? null
+}
+
+// Fetch-and-match convenience over matchManualProgram. Returns the matching
+// row, or null if the user has no equivalent program yet.
+export async function findManualByProgram(
+  userId: string,
+  program: string,
+): Promise<ManualBalance | null> {
+  return matchManualProgram(await getManualBalances(userId), program)
 }
 
 // Add a program. Code is derived from the name when not supplied. Returns the

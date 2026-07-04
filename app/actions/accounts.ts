@@ -9,7 +9,11 @@ import {
   updateManualBalance,
   removeManualBalance,
   findManualByProgram,
+  getManualBalances,
+  matchManualProgram,
 } from '@/lib/accounts'
+import { FUNNEL_EVENTS } from '@/lib/analytics'
+import { captureFunnelEvent } from '@/lib/posthog-server'
 import { canonicalizeProgram } from '@/lib/programs'
 
 // Server Actions for the signed-in user's balance sources. Every action is gated
@@ -70,8 +74,10 @@ export async function addProgram(
 
   // Dedupe: if the user already holds this program (by canonical identity), fold
   // the new balance into the existing row instead of creating a duplicate, and
-  // tell them what happened.
-  const existing = await findManualByProgram(auth.userId, name)
+  // tell them what happened. One fetch serves both the dedupe match and the
+  // first-program check below.
+  const existingPrograms = await getManualBalances(auth.userId)
+  const existing = matchManualProgram(existingPrograms, name)
   if (existing) {
     const merged = existing.balance + balance
     if (merged > MAX_BALANCE) return { ok: false, error: 'That balance is too large' }
@@ -90,6 +96,21 @@ export async function addProgram(
 
   const id = await addManualBalance(auth.userId, name, balance, kind)
   if (!id) return { ok: false, error: "Couldn't add — try again" }
+
+  // Funnel event `first_program_added` (N-301 / R0.5): the user's manual
+  // wallet just went 0 → 1 — the activation moment. Keyed to the Better Auth
+  // user id; captureFunnelEvent no-ops without a PostHog key and never
+  // rejects, so awaiting it can't fail the action. Firstness reads the same
+  // pre-insert fetch the dedupe used — a degraded-to-[] read on a DB blip
+  // would in practice fail the insert too, so a stray duplicate "first" is a
+  // telemetry rounding error, never a product bug.
+  if (existingPrograms.length === 0) {
+    await captureFunnelEvent({
+      event: FUNNEL_EVENTS.firstProgramAdded,
+      distinctId: auth.userId,
+      properties: { program: name },
+    })
+  }
 
   revalidateBalances()
   return { ok: true }

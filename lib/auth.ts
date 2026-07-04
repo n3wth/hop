@@ -26,6 +26,8 @@ import {
   env,
 } from './env'
 import { sendVerificationEmail, sendResetPasswordEmail } from './email'
+import { FUNNEL_EVENTS } from './analytics'
+import { captureFunnelEvent } from './posthog-server'
 
 // Forwards every property access to the live Drizzle client at call time.
 // Methods are bound to the real client so drizzle's internal `this` works.
@@ -80,6 +82,21 @@ export const auth = betterAuth({
   // verification of the address rather than treating it as a collision.
   account: {
     accountLinking: { enabled: true, trustedProviders: ['google'] },
+  },
+  // Funnel event `signed_up` (N-301 / R0.5): user-row creation is the one
+  // choke point EVERY sign-up method passes through (Google OAuth callback,
+  // email+password) and it can never fire twice for one account. Keyed to the
+  // Better Auth user id — the distinct_id the client identify()s with.
+  // captureFunnelEvent never rejects and no-ops without a PostHog key; worst
+  // case with a key set it adds its 2s capture timeout to first sign-up only.
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          await captureFunnelEvent({ event: FUNNEL_EVENTS.signedUp, distinctId: user.id })
+        },
+      },
+    },
   },
   // Fully inert (no route accepts it) until isEmailPasswordAuthEnabled() — same
   // "no half-configured seam" rule as socialProviders above.

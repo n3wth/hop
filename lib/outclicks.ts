@@ -15,6 +15,8 @@
 // SERVER ONLY (pulls in the service-role client via withDb) — never import
 // from a client component. Anonymous by design: no user_id is recorded.
 
+import { FUNNEL_EVENTS } from '@/lib/analytics'
+import { captureFunnelEvent } from '@/lib/posthog-server'
 import { withDb } from '@/lib/supabase-helpers'
 
 export interface Outclick {
@@ -41,9 +43,14 @@ export interface Outclick {
 // suspenders for a synchronous throw while kicking it off). The returned
 // promise always resolves — await it (or pass it to after()) only to keep a
 // serverless function alive until the write settles.
+//
+// Every ledger insert also emits the funnel `outclick` event (N-301 / R0.5)
+// through the same never-throws PostHog seam — no distinctId, mirroring the
+// ledger's anonymous-by-design shape. Both writes are chained into the
+// returned promise so after() keeps the function alive for the capture too.
 export function recordOutclick(click: Outclick): Promise<void> {
   try {
-    return withDb(undefined, async (db) => {
+    const insert = withDb<undefined>(undefined, async (db) => {
       await db.from('hop_outclicks').insert({
         kind: click.kind,
         target: click.target,
@@ -53,6 +60,17 @@ export function recordOutclick(click: Outclick): Promise<void> {
       })
       return undefined
     })
+    const capture = captureFunnelEvent({
+      event: FUNNEL_EVENTS.outclick,
+      properties: {
+        kind: click.kind,
+        target: click.target,
+        url: click.url,
+        program: click.program ?? null,
+      },
+    })
+    // Both already never reject; allSettled is belt and suspenders.
+    return Promise.allSettled([insert, capture]).then(() => undefined)
   } catch {
     // Best-effort contract: a lost click row costs analytics, never UX.
     return Promise.resolve()

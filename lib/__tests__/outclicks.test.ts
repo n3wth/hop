@@ -6,10 +6,18 @@ vi.mock('@/lib/supabase-helpers', () => ({
   withDb: vi.fn(async (fallback: unknown) => fallback),
 }))
 
+// Mock the PostHog seam — the funnel `outclick` event fires beside the insert
+// (N-301) and must share the never-throws contract.
+vi.mock('@/lib/posthog-server', () => ({
+  captureFunnelEvent: vi.fn(async () => undefined),
+}))
+
 import { withDb } from '@/lib/supabase-helpers'
+import { captureFunnelEvent } from '@/lib/posthog-server'
 import { recordOutclick, type Outclick } from '@/lib/outclicks'
 
 const mockWithDb = vi.mocked(withDb)
+const mockCapture = vi.mocked(captureFunnelEvent)
 
 const CLICK: Outclick = {
   kind: 'card',
@@ -78,5 +86,29 @@ describe('recordOutclick', () => {
     // Default mock: withDb resolves straight to the fallback (no client).
     expect(() => recordOutclick(CLICK)).not.toThrow()
     expect(mockWithDb).toHaveBeenCalledTimes(1)
+  })
+
+  it('captures the funnel `outclick` event beside the ledger insert (N-301)', async () => {
+    await recordOutclick(CLICK)
+
+    expect(mockCapture).toHaveBeenCalledTimes(1)
+    expect(mockCapture).toHaveBeenCalledWith({
+      event: 'outclick',
+      properties: {
+        kind: 'card',
+        target: 'chase-ur',
+        url: CLICK.url,
+        program: 'Chase Ultimate Rewards',
+      },
+    })
+    // Anonymous by design, like the ledger row — never a user id.
+    expect(mockCapture.mock.calls[0][0]).not.toHaveProperty('distinctId')
+  })
+
+  it('still resolves when the PostHog capture seam itself throws synchronously', async () => {
+    mockCapture.mockImplementation(() => {
+      throw new Error('capture boom')
+    })
+    await expect(recordOutclick(CLICK)).resolves.toBeUndefined()
   })
 })

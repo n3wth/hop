@@ -13,6 +13,7 @@ import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import { SITE_URL } from '@/lib/seo'
 import AppShell from '@/components/AppShell'
 import RouteBar from '@/components/RouteBar'
+import SearchAnalytics from '@/components/SearchAnalytics'
 import VerdictRail from '@/components/VerdictRail'
 import ResultsList from '@/components/ResultsList'
 import PointsPanel from '@/components/PointsPanel'
@@ -300,6 +301,18 @@ export default async function Search({
           gutters, centered once it hits --container-shell — so the verdict hero,
           the alternatives, and the wallet use the viewport like the nav does. */}
       <div className="mx-auto max-w-[var(--container-shell)]">
+        {/* Funnel telemetry (N-301): search_ran + verdict_viewed, mirroring
+            the render rule below — verdict only when the hero shows. Inert
+            without NEXT_PUBLIC_POSTHOG_KEY. */}
+        <SearchAnalytics
+          userId={su?.sub ?? null}
+          origin={params.from}
+          destination={params.to}
+          verdict={result.pick ? result.verdict : null}
+          cpp={result.pick?.cpp ?? null}
+          program={result.pick?.program ?? null}
+        />
+
         {/* plain trip context — route + facts, not fake masthead metadata */}
         <RouteBar result={result} hasRealBalances={hasRealBalances} nonstop={nonstop} />
 
