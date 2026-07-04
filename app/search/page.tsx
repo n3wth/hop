@@ -11,6 +11,7 @@ import { destinationImage } from '@/lib/images'
 import { auth0 } from '@/lib/auth0'
 import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import { isStandingOrdersCronLive } from '@/lib/env'
+import { clampTravelDates, DEFAULT_DEPART } from '@/lib/travel-dates'
 import { SITE_URL } from '@/lib/seo'
 import AppShell from '@/components/AppShell'
 import RouteBar from '@/components/RouteBar'
@@ -22,23 +23,8 @@ import SiteFooter from '@/components/SiteFooter'
 const DEFAULT_PARAMS: SearchParams = {
   from: 'SFO',
   to: 'LAX',
-  depart: '2026-07-09',
-  return: '2026-07-12',
+  depart: DEFAULT_DEPART,
   adults: 1,
-}
-
-// Local-midnight ISO for today — the floor for any valid depart/return date.
-function todayISO(): string {
-  const d = new Date()
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
-// True for a well-formed "YYYY-MM-DD" string.
-function isValidISO(s: string | undefined): s is string {
-  return !!s && /^\d{4}-\d{2}-\d{2}$/.test(s)
 }
 
 const CABINS = ['economy', 'premium', 'business', 'first'] as const
@@ -75,20 +61,9 @@ function parseParams(
   // Origin and destination must differ — fall back to a sane default destination.
   if (to === from) to = from === DEFAULT_PARAMS.to ? DEFAULT_PARAMS.from : DEFAULT_PARAMS.to
 
-  const floor = todayISO()
-  const departRaw = str(q.depart)
-  // Clamp a missing/malformed/past depart up to today (or the default).
-  let depart = isValidISO(departRaw) ? departRaw : DEFAULT_PARAMS.depart
-  if (depart < floor) depart = floor > DEFAULT_PARAMS.depart ? floor : DEFAULT_PARAMS.depart
-
-  // One-way when `return` is absent. Drop a malformed or pre-departure return.
-  const retRaw = str(q.return)
-  const ret =
-    retRaw === undefined
-      ? undefined
-      : isValidISO(retRaw) && retRaw >= depart
-        ? retRaw
-        : undefined
+  // Clamp missing/malformed/past dates up to today; one-way when `return` is
+  // absent, and a malformed or pre-departure return is dropped.
+  const { depart, return: ret } = clampTravelDates(str(q.depart), str(q.return))
 
   const adultsRaw = parseInt(str(q.adults) ?? '', 10)
   const adults = Number.isFinite(adultsRaw)

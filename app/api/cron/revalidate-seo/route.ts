@@ -10,6 +10,7 @@
 import { revalidatePath } from 'next/cache'
 import { SEO_REVALIDATE_PATHS } from '@/lib/seo-routes'
 import { recordHeartbeat } from '@/lib/cron-heartbeat'
+import { isAuthorizedCron } from '@/lib/cron-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,15 +20,8 @@ function isEnabled(): boolean {
   return /^(1|true|yes)$/i.test(raw)
 }
 
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET
-  if (!secret) return true
-  const auth = request.headers.get('authorization')
-  return auth === `Bearer ${secret}`
-}
-
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) {
+  if (!isAuthorizedCron(request)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

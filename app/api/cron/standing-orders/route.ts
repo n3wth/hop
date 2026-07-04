@@ -48,6 +48,7 @@ import { isEmailEnabled, sendAlertEmail } from '@/lib/email'
 import { recordHeartbeat } from '@/lib/cron-heartbeat'
 import { reserve as reserveOutbox, markSent as markOutboxSent, release as releaseOutbox } from '@/lib/notification-outbox'
 import type { TravelPrefs } from '@/lib/prefs-model'
+import { isAuthorizedCron } from '@/lib/cron-auth'
 
 const OUTBOX_KIND = 'standing_order_alert'
 
@@ -56,17 +57,6 @@ export const dynamic = 'force-dynamic'
 
 function isEnabled(): boolean {
   return /^(1|true|yes)$/i.test(process.env.STANDING_ORDERS_CRON_ENABLED ?? '')
-}
-
-// Verify the request is from Vercel Cron (or an authorized caller). Vercel sends
-// `Authorization: Bearer ${CRON_SECRET}` when CRON_SECRET is set. When no secret
-// is configured we allow it (so local/manual runs work) — but the ENABLE flag
-// still gates real execution.
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET
-  if (!secret) return true
-  const auth = request.headers.get('authorization')
-  return auth === `Bearer ${secret}`
 }
 
 // Merge the watch's own cabin floor onto the user's stored prefs so the engine
@@ -83,13 +73,13 @@ export async function GET(request: Request) {
   if (!isEnabled()) {
     // Liveness record (ADR 0007): being off is an owner choice, not an outage.
     // Only for authorized callers, so a public probe can't keep it fresh.
-    if (isAuthorized(request)) recordHeartbeat('standing-orders', false, 'disabled')
+    if (isAuthorizedCron(request)) recordHeartbeat('standing-orders', false, 'disabled')
     return Response.json(
       { ok: false, disabled: true, reason: 'STANDING_ORDERS_CRON_ENABLED is off' },
       { status: 503 },
     )
   }
-  if (!isAuthorized(request)) {
+  if (!isAuthorizedCron(request)) {
     return Response.json({ ok: false, reason: 'unauthorized' }, { status: 401 })
   }
 

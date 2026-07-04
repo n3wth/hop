@@ -17,23 +17,14 @@
 import { computeBusinessDigest, renderBusinessDigest } from '@/lib/business-digest'
 import { isEmailEnabled, sendOwnerNotification } from '@/lib/email'
 import { recordHeartbeat } from '@/lib/cron-heartbeat'
+import { isAuthorizedCron } from '@/lib/cron-auth'
 
 // Counts live per-request data; never cache or statically render.
 export const dynamic = 'force-dynamic'
 
-// Verify the request is from Vercel Cron (or an authorized caller). Vercel
-// sends `Authorization: Bearer ${CRON_SECRET}` when CRON_SECRET is set. When no
-// secret is configured we allow it (so local/manual runs work).
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET
-  if (!secret) return true
-  const auth = request.headers.get('authorization')
-  return auth === `Bearer ${secret}`
-}
-
 export async function GET(request: Request) {
   try {
-    if (!isAuthorized(request)) {
+    if (!isAuthorizedCron(request)) {
       return Response.json({ ok: false, sent: false, reason: 'unauthorized' }, { status: 401 })
     }
     if (!isEmailEnabled()) {

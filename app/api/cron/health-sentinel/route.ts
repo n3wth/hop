@@ -39,20 +39,10 @@ import {
 } from '@/lib/improvement-findings'
 import * as placeFacts from '@/lib/place-facts'
 import * as climateNormals from '@/lib/climate-normals'
+import { isAuthorizedCron } from '@/lib/cron-auth'
 
 // Reads live per-request data; never cache or statically render.
 export const dynamic = 'force-dynamic'
-
-// Verify the request is from Vercel Cron (or an authorized caller). Vercel
-// sends `Authorization: Bearer ${CRON_SECRET}` when CRON_SECRET is set. When
-// no secret is configured we allow it (so local/manual runs work) — but the
-// ENABLE flag still gates real execution.
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET
-  if (!secret) return true
-  const auth = request.headers.get('authorization')
-  return auth === `Bearer ${secret}`
-}
 
 // D4 inputs. The regenerator scripts start emitting an explicit GENERATED_AT
 // stamp in the data-refresh PR; until a dataset carries one we degrade
@@ -108,7 +98,7 @@ async function readOverridesForDrift(): Promise<
 
 export async function GET(request: Request) {
   try {
-    if (!isAuthorized(request)) {
+    if (!isAuthorizedCron(request)) {
       return Response.json({ ok: false, error: 'unauthorized' }, { status: 401 })
     }
     if (!isSelfImproveEnabled()) {

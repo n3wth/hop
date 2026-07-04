@@ -13,18 +13,12 @@ import { NextResponse } from 'next/server'
 import { isBillingEnabled } from '@/lib/env'
 import { listSubscriptionRecords } from '@/lib/stripe'
 import { recordSubscription } from '@/lib/subscription'
-
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET
-  if (!secret) return true
-  const auth = request.headers.get('authorization')
-  return auth === `Bearer ${secret}`
-}
+import { isAuthorizedCron } from '@/lib/cron-auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) {
+  if (!isAuthorizedCron(request)) {
     return NextResponse.json({ ok: false, reason: 'unauthorized' }, { status: 401 })
   }
   if (!isBillingEnabled()) {
