@@ -42,11 +42,14 @@ describe('subscription write path — degrades, never throws, without a DB', () 
     ).toBe('no-attribution')
   })
 
-  it('reads fall back cleanly: getUserTier → free, stripeCustomerIdFor → null', async () => {
+  it('reads fall back cleanly: getUserTier → free; customer lookup distinguishes error from empty', async () => {
     expect(await getUserTier('user_1')).toBe('free')
     expect(await getUserTier('')).toBe('free')
-    expect(await stripeCustomerIdFor('user_1')).toBeNull()
-    expect(await stripeCustomerIdFor('')).toBeNull()
+    // A DB failure is {ok:false} — NOT a clean "no customer yet" — so the
+    // checkout route skips minting a duplicate Stripe customer on a blip.
+    expect(await stripeCustomerIdFor('user_1')).toEqual({ ok: false })
+    // No userId is a clean empty read, not an error.
+    expect(await stripeCustomerIdFor('')).toEqual({ ok: true, customerId: null })
   })
 
   it('saveStripeCustomer reports failure (never throws) without a DB', async () => {

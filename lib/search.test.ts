@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { verdictSummary } from '@/lib/search'
+import { verdictSummary, seatsFor } from '@/lib/search'
 
 // verdictSummary is the shared trim of assembleSearch's output that both
 // lib/mcp-tools.ts#runVerdict and the /ask concierge's search_flights tool
@@ -107,5 +107,21 @@ describe('multi-passenger economics — party totals on both legs', () => {
         Math.round((one.summary.cheapestCash ?? 0) * 2 - (one.pick?.taxes ?? 0) * 2),
       )
     }
+  })
+})
+
+// seatsFor is the exported party-size rule — the engine scales by it and the
+// UI discloses it, so it must be hardened against garbage: assembleSearch is
+// the shared funnel future tool authors call without route-level sanitizing.
+describe('seatsFor — clamps garbage party sizes', () => {
+  it('floors to whole seats and clamps negatives/NaN', () => {
+    expect(seatsFor({ adults: 1 })).toBe(1)
+    expect(seatsFor({ adults: 2, children: 1 })).toBe(3)
+    expect(seatsFor({ adults: 0 })).toBe(1)
+    expect(seatsFor({ adults: -3, children: -2 })).toBe(1)
+    expect(seatsFor({ adults: 2.9, children: 1.5 })).toBe(3)
+    expect(seatsFor({ adults: Number.NaN, children: Number.NaN })).toBe(1)
+    expect(seatsFor({ adults: 2, children: Number.NaN })).toBe(2)
+    expect(seatsFor({ adults: Number.POSITIVE_INFINITY })).toBe(1)
   })
 })

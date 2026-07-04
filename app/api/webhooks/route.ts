@@ -1,6 +1,7 @@
-// POST /api/webhooks — the Stripe webhook: the ONLY writer of subscription
-// tier state. The lane is verify (lib/stripe.ts#verifyStripeEvent) → map
-// (lib/billing.ts, pure + unit-tested) → write
+// POST /api/webhooks — the Stripe webhook: the primary writer of subscription
+// tier state (the daily sync-stripe cron reconciles missed deliveries through
+// the SAME recordSubscription lane). verify (lib/stripe.ts#verifyStripeEvent)
+// → map (lib/billing.ts, pure + unit-tested) → write
 // (lib/subscription.ts#recordSubscription). NEVER throws.
 //
 // Gated on isBillingEnabled(): off → 503 so Stripe retries later rather than

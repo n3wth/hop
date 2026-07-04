@@ -26,6 +26,18 @@ import { canonicalizeProgram } from '@/lib/programs'
 
 export const POINTS_THRESHOLD_CPP = 2.5
 
+// Seat-occupying travelers: one seat per adult + child; infants ride as lap
+// infants (no seat, no award miles). THE party-size rule — the engine scales
+// award economics by it and the UI discloses it ("Totals for N travelers"), so
+// both MUST read this one function or the label can drift from the math.
+// Hardened against garbage because assembleSearch is the shared funnel every
+// tool author calls directly: non-finite/negative/fractional counts clamp.
+export function seatsFor(params: Pick<SearchParams, 'adults' | 'children'>): number {
+  const count = (n: number | undefined): number =>
+    typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0
+  return Math.max(1, (count(params.adults) || 1) + count(params.children))
+}
+
 function isAward(option: FlightOption): boolean {
   return option.kind === 'award' || option.kind === 'transfer'
 }
@@ -57,12 +69,11 @@ export async function assembleSearch(
   // MOCK is truthy only for "1"/"true"/"yes" — "0"/"false"/"" all mean live.
   const useMock = /^(1|true|yes)$/i.test(process.env.MOCK ?? '')
 
-  // One seat per adult + child; infants ride as lap infants (no seat, no award
-  // miles). Duffel's cash total_amount already covers the WHOLE party
-  // (buildPassengers in lib/duffel.ts), while Seats.aero miles/taxes are always
-  // per-seat — so award economics are scaled to the same party total below,
-  // making both legs of every cpp comparison mean "cost to move everyone".
-  const seats = Math.max(1, (params.adults || 1) + Math.max(0, params.children ?? 0))
+  // Duffel's cash total_amount already covers the WHOLE party (buildPassengers
+  // in lib/duffel.ts), while Seats.aero miles/taxes are always per-seat — so
+  // award economics are scaled to the same party total below, making both legs
+  // of every cpp comparison mean "cost to move everyone".
+  const seats = seatsFor(params)
   if (useMock) {
     // Echo the searched route/date into the fixtures so the cards reflect the
     // query (the fixtures are authored for SFO→LAX; rewrite their route fields).
@@ -248,6 +259,11 @@ export async function assembleSearch(
     }
   })
 
+  // NOTE: `miles`/`cashCents` here are party totals for multi-passenger
+  // searches (post-scaling). cpp — the only field the valuation worker
+  // aggregates today (ADR 0005) — is per-point and scale-invariant, so the
+  // observations stay comparable; any future consumer of the raw miles field
+  // must account for party size first.
   recordCppObservations(
     awards
       .filter((o) => o.program && typeof o.cpp === 'number' && o.cpp > 0)

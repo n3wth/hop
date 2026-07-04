@@ -69,11 +69,14 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   // Attach the persistent Stripe customer BEFORE minting the session, so the
-  // webhook's hop_customers lookup and getUserTier's read both resolve. If any
-  // step fails we proceed customer-less — the webhook still self-heals the
-  // mapping from the metadata.user_id ref minted below.
-  let customerId = (await stripeCustomerIdFor(userId)) ?? undefined
-  if (!customerId) {
+  // webhook's hop_customers lookup and getUserTier's read both resolve. Mint a
+  // NEW Stripe customer only on a clean "no customer yet" read — on a lookup
+  // failure (DB blip) proceed customer-less instead, so a repeat customer never
+  // gets a duplicate Stripe customer; the webhook self-heals the mapping from
+  // the metadata.user_id ref minted below.
+  const lookup = await stripeCustomerIdFor(userId)
+  let customerId = lookup.ok ? (lookup.customerId ?? undefined) : undefined
+  if (lookup.ok && !customerId) {
     const created = await createStripeCustomer({ userId, email })
     if (created.ok) {
       customerId = created.customerId

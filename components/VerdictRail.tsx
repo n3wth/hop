@@ -1,5 +1,5 @@
 import type { FlightOption, SearchResult } from '@/lib/types'
-import { POINTS_THRESHOLD_CPP } from '@/lib/search'
+import { POINTS_THRESHOLD_CPP, seatsFor } from '@/lib/search'
 import { formatValue } from '@/lib/cpp'
 import { cityForCode } from '@/lib/airports'
 import { googleCalendarUrl } from '@/lib/calendar-link'
@@ -74,11 +74,16 @@ export default function VerdictRail({
   const usingPoints = verdict === 'use-points'
   const unit = milesUnit(pick)
   // The ownership voice ("You have the miles", "Book with X miles") is honest
-  // ONLY when these balances are the signed-in user's own. For a signed-out
-  // visitor the points belong to no one we know — so a points-winning verdict is
+  // ONLY when these balances are the signed-in user's own AND the balance
+  // actually covers the pick's (party-scaled) miles. For a signed-out visitor
+  // the points belong to no one we know — so a points-winning verdict is
   // framed as a value demonstration ("Alaska miles are worth X¢ here") with a
-  // sign-in CTA, never a claim that the stranger holds the miles.
-  const owns = usingPoints && hasRealBalances
+  // sign-in CTA, never a claim that the stranger holds the miles. A signed-in
+  // user holding SOME points but fewer than the trip needs gets the same
+  // value framing — "You have the miles" must never be arithmetically false.
+  const covers =
+    pick?.miles != null && pick?.youHave != null ? pick.youHave >= pick.miles : false
+  const owns = usingPoints && hasRealBalances && covers
   // "Book cash" must link to the actual cheapest CASH option — on a pay-cash
   // verdict `pick` may still be a weak award row, so don't use pick.bookingUrl.
   // When points win but we can't claim ownership, the primary CTA routes to
@@ -87,11 +92,18 @@ export default function VerdictRail({
   // a returnTo so the visitor lands back on this exact search after auth.
   const returnTo = encodeURIComponent(searchUrlFrom(result.params, nonstop))
   const signInHref = `/auth/login?returnTo=${returnTo}`
+  // A SIGNED-IN user who can't claim ownership (no/insufficient balance in the
+  // pick's program) must never be told to "Sign in" — route them to /account to
+  // add programs instead, carrying returnTo so R1.1's bridge can bring them
+  // back to this exact search.
+  const addProgramsHref = `/account?returnTo=${returnTo}`
   const ctaHref = !usingPoints
     ? (cashOption?.bookingUrl ?? pick?.bookingUrl ?? '#')
     : owns
       ? (pick?.bookingUrl ?? '#')
-      : signInHref
+      : isSignedIn
+        ? addProgramsHref
+        : signInHref
 
   // M6 — first ACTION: turn this trip into a calendar event in one tap (Google
   // Calendar template, all-day, no OAuth). Carries route + dates + city + cabin
@@ -112,13 +124,9 @@ export default function VerdictRail({
   const miles = summary.bestMiles
   const cash = summary.cheapestCash
 
-  // Seat-occupying travelers (adults + children; lap infants fly free). The
-  // engine scales award miles/taxes AND cash to this party size, so every
-  // figure in the hero is a party total — say so when there's more than one.
-  const seats = Math.max(
-    1,
-    (result.params.adults || 1) + Math.max(0, result.params.children ?? 0),
-  )
+  // Seat-occupying travelers — MUST be the engine's own seatsFor (the exact
+  // multiplier applied to the figures above), never a re-derivation here.
+  const seats = seatsFor(result.params)
 
   const airlineShort = pick?.airline.split(' ')[0] ?? 'points'
 
@@ -193,8 +201,10 @@ export default function VerdictRail({
             On this route, {airlineShort} {unit} are worth{' '}
             <b className="font-semibold text-white">{cpp != null ? formatValue(cpp) : '—'}</b>{' '}
             — <b className="font-semibold text-white">{fmt(miles)} {unit}</b> instead of{' '}
-            <b className="font-semibold text-white">${fmt(cash)}</b> cash. Sign in to check your
-            balances and see if your {unit} cover it.
+            <b className="font-semibold text-white">${fmt(cash)}</b> cash.{' '}
+            {isSignedIn
+              ? `Add your programs and hop checks if your ${unit} cover it.`
+              : `Sign in to check your balances and see if your ${unit} cover it.`}
           </p>
         ) : (
           <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-hero-body" style={{ ['--hop-delay' as string]: '140ms' }}>
@@ -214,7 +224,9 @@ export default function VerdictRail({
               ? 'Book cash'
               : owns
                 ? `Book with ${airlineShort} ${unit}`
-                : `Sign in to see if your ${unit} win`}
+                : isSignedIn
+                  ? 'Add your programs'
+                  : `Sign in to see if your ${unit} win`}
           </a>
           {/* See the math — sits to the RIGHT of Book; its panel expands below. */}
           {pick ? (

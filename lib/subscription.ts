@@ -1,4 +1,5 @@
 import { withDb } from '@/lib/supabase-helpers'
+import { PREMIUM_STATUSES } from '@/lib/billing'
 
 export type Tier = 'free' | 'premium'
 
@@ -20,12 +21,14 @@ export async function getUserTier(userId: string): Promise<Tier> {
 
     if (custErr || !cust) return 'free'
 
-    // 2. Query active or trialing subscriptions
+    // 2. Query entitling subscriptions — the status set is lib/billing.ts's
+    // PREMIUM_STATUSES (incl. past_due: dunning keeps premium until Stripe
+    // delivers the terminal downgrade), never a second hand-written list.
     const { data: sub, error: subErr } = await db
       .from('hop_subscriptions')
       .select('status, current_period_end')
       .eq('customer_id', cust.id)
-      .in('status', ['active', 'trialing'])
+      .in('status', [...PREMIUM_STATUSES])
       .order('current_period_end', { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -48,17 +51,24 @@ export async function getAlertLimit(userId: string): Promise<number> {
 // Writes — the hop_customers mapping and the webhook's subscription upsert.
 // All withDb-backed: fallbacks instead of throws, exactly like the reads.
 
-// The Stripe customer id we minted for this user, if any.
-export async function stripeCustomerIdFor(userId: string): Promise<string | null> {
-  if (!userId) return null
-  return withDb<string | null>(null, async (db) => {
+export type CustomerLookup =
+  | { ok: true; customerId: string | null }
+  | { ok: false }
+
+// The Stripe customer id we minted for this user, if any. A read ERROR must
+// stay distinguishable from a clean "no customer yet": on a transient DB blip
+// the checkout route proceeds customer-less (the webhook self-heals from
+// metadata.user_id) — it must NOT mint a duplicate Stripe customer.
+export async function stripeCustomerIdFor(userId: string): Promise<CustomerLookup> {
+  if (!userId) return { ok: true, customerId: null }
+  return withDb<CustomerLookup>({ ok: false }, async (db) => {
     const { data, error } = await db
       .from('hop_customers')
       .select('stripe_customer_id')
       .eq('user_id', userId)
       .maybeSingle()
-    if (error || !data?.stripe_customer_id) return null
-    return data.stripe_customer_id as string
+    if (error) return { ok: false }
+    return { ok: true, customerId: (data?.stripe_customer_id as string | undefined) ?? null }
   })
 }
 

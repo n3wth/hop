@@ -114,6 +114,46 @@ export type SubscriptionFetchResult =
   | { ok: true; record: import('@/lib/billing').SubscriptionRecord; customerId?: string }
   | { ok: false; reason: 'unconfigured' | 'stripe-error' }
 
+export type SubscriptionListResult =
+  | {
+      ok: true
+      items: Array<{ record: import('@/lib/billing').SubscriptionRecord; customerId?: string }>
+    }
+  | { ok: false; reason: 'unconfigured' | 'stripe-error' }
+
+// Reconciliation read for the daily sync cron: every subscription Stripe
+// knows about, shaped exactly like the webhook's records so the cron writes
+// through the SAME lib/subscription.ts#recordSubscription lane — no second
+// field-walk, no second writer.
+export async function listSubscriptionRecords(): Promise<SubscriptionListResult> {
+  if (!isBillingEnabled()) return { ok: false, reason: 'unconfigured' }
+  try {
+    const { default: Stripe } = await import('stripe')
+    const stripe = new Stripe(env.stripeSecretKey())
+    const subs = await stripe.subscriptions.list({ limit: 100, status: 'all' })
+    const { subscriptionRecordFromEvent } = await import('@/lib/billing')
+    const items: Array<{
+      record: import('@/lib/billing').SubscriptionRecord
+      customerId?: string
+    }> = []
+    for (const sub of subs.data) {
+      const raw = sub as unknown as Record<string, unknown>
+      const record = subscriptionRecordFromEvent({
+        type: 'customer.subscription.updated',
+        data: { object: raw },
+      })
+      if (!record) continue
+      items.push({
+        record,
+        customerId: typeof raw.customer === 'string' ? raw.customer : undefined,
+      })
+    }
+    return { ok: true, items }
+  } catch {
+    return { ok: false, reason: 'stripe-error' }
+  }
+}
+
 // Fetch a subscription's stored-state fields by id. Needed only for
 // checkout.session.completed, whose event object is the session (no period
 // fields) — the customer.subscription.* events carry everything inline.

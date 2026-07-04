@@ -31,7 +31,9 @@ export interface SubscriptionUpdate {
 // Subscription statuses that still entitle premium. `past_due` stays premium
 // while Stripe's dunning retries the card — the definitive downgrade arrives as
 // `customer.subscription.deleted` (or a terminal status) when retries exhaust.
-const PREMIUM_STATUSES = new Set(['active', 'trialing', 'past_due'])
+// Exported because lib/subscription.ts#getUserTier derives tier from the SAME
+// set — a second hand-written status list would silently drift from this one.
+export const PREMIUM_STATUSES = new Set(['active', 'trialing', 'past_due'])
 
 function str(v: unknown): string | undefined {
   return typeof v === 'string' && v.trim() ? v : undefined
