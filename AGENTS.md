@@ -29,9 +29,11 @@ billing does not flip until the four §3.1 gates pass), and follow the issue's e
 continuation prompt. Items marked **owner** are human-only — flag them, don't attempt them.
 
 **Autonomous sessions** (Claude Code routines, delegated agents): `docs/autonomy-runbook.md`
-governs your run — queue rules, hard guardrails (never merge; one item per run), the
-git-fallback mode when Linear is unreachable, and the mandatory compound step
-(`docs/autonomy-log.md` + runbook amendments).
+governs your run — queue rules, the merge policy (ADR 0009: merge only when CI is green,
+reviews are clear, and every changed path is auto-tier; the runbook's `Auto-merge:` line is the
+kill switch), hard guardrails (one item per run; flags/env/money stay human), the git-fallback
+mode when Linear is unreachable, and the mandatory compound step (`docs/autonomy-log.md` +
+runbook amendments).
 
 # Content data — committed snapshots, regenerable offline
 
