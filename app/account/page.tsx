@@ -210,7 +210,7 @@ export default async function AccountPage({
 
   return (
     <AppShell user={user} hideSearch>
-      <div className="mx-auto max-w-[var(--container-sm)] pb-4 pt-8 sm:pt-12">
+      <div className="mx-auto max-w-[var(--container-shell)] pb-4 pt-8 sm:pt-12">
         {/* profile hero — teal plane, matches the editorial system */}
         <section
           className="overflow-hidden rounded-[var(--radius-lg)] text-hero-cream lg:rounded-[var(--radius-hero)]"
@@ -280,7 +280,7 @@ export default async function AccountPage({
             width and the power features aren't buried below a long scroll: left
             = what hop knows about you, right = what hop does + developer access.
             Below xl it collapses back to the single readable column. */}
-        <div className="mt-12 flex flex-col gap-12">
+        <div className="mt-12 flex flex-col gap-12 xl:grid xl:grid-cols-2 xl:items-start xl:gap-x-16">
         {/* ── COLUMN A — GROUP 1 — YOUR TRAVEL PROFILE ───────────────────────
             What hop knows about you: the programs you hold and where you've
             flown. These describe your identity, so they sit together. */}

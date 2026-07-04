@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
+import { toNavUser } from '@/lib/nav-user'
 import type { SearchParams } from '@/lib/types'
 import { assembleSearch } from '@/lib/search'
 import type { TravelPrefs } from '@/lib/prefs-model'
@@ -225,14 +226,7 @@ export default async function Search({
   // Auth0 session → header avatar (null when signed out).
   const session = await auth0.getSession()
   const su = session?.user
-  const user = su
-    ? {
-        initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
-        name: su.name ?? su.email ?? undefined,
-        email: su.email ?? undefined,
-        picture: su.picture ?? undefined,
-      }
-    : null
+  const user = toNavUser(su)
 
   // Signed in → ground the search in this user's real balances (manual +
   // AwardWallet, merged); pass them in so no other user's data can leak. Signed

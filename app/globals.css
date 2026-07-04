@@ -137,7 +137,7 @@
    shape, not by route: */
 :root {
   --container-xs: 680px; /* a single receipt/confirmation card — book/confirmation */
-  --container-sm: 820px; /* one-topic profile/detail reading column — account, sweet-spots/[program] */
+  --container-sm: 820px; /* one-topic profile/detail reading column — sweet-spots/[program] (account moved to --container-shell + two-column xl grid) */
   --container-article: 880px; /* long-form single article — destinations/[city] */
   --container-md: 980px; /* narrow index/listing — sweet-spots */
   --container-checkout: 1040px; /* form + sticky sidebar — book */

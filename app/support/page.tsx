@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { toNavUser } from '@/lib/nav-user'
 import { auth0 } from '@/lib/auth0'
 import { getUserBalances } from '@/lib/accounts'
 import AppShell from '@/components/AppShell'
@@ -82,14 +83,7 @@ const SECTIONS: { id: string; label: string }[] = [
 export default async function SupportPage() {
   const session = await auth0.getSession()
   const su = session?.user
-  const user = su
-    ? {
-        initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
-        name: su.name ?? su.email ?? undefined,
-        email: su.email ?? undefined,
-        picture: su.picture ?? undefined,
-      }
-    : null
+  const user = toNavUser(su)
 
   let pointsTotal: number | undefined
   if (user && su?.sub) {
