@@ -63,6 +63,15 @@ export type EnvKey =
   | 'AUTONOMA_SECRET_ID'
   // Firecrawl crawler and extraction API key (for scraping destinations and travel deals)
   | 'FIRECRAWL_API_KEY'
+  // PostHog server-side capture (lib/posthog-server.ts). The write-only project
+  // token — POSTHOG_KEY (server) wins over the public client token, matching
+  // instrumentation.ts precedence. Absent → captureServerEvent is a no-op.
+  | 'POSTHOG_KEY'
+  | 'NEXT_PUBLIC_POSTHOG_KEY'
+  // Optional ingestion-host override (no trailing slash); defaults to the US
+  // cloud host in lib/posthog-server.ts when absent.
+  | 'POSTHOG_HOST'
+  | 'NEXT_PUBLIC_POSTHOG_HOST'
   // ── Identity + data (Better Auth on Neon) ─────────────────────────────────
   // Neon Postgres connection string (pooled). The Drizzle client (lib/db) and
   // Better Auth both read it lazily; absent → getDb() returns null and every
@@ -130,6 +139,8 @@ export const env = {
   autonomaClientId: () => read('AUTONOMA_CLIENT_ID'),
   autonomaSecretId: () => read('AUTONOMA_SECRET_ID'),
   firecrawlApiKey: () => read('FIRECRAWL_API_KEY'),
+  posthogKey: () => firstEnv('POSTHOG_KEY', 'NEXT_PUBLIC_POSTHOG_KEY'),
+  posthogHost: () => firstEnv('POSTHOG_HOST', 'NEXT_PUBLIC_POSTHOG_HOST'),
   databaseUrl: () => read('DATABASE_URL'),
   googleClientId: () => firstEnv('GOOGLE_CLIENT_ID', 'GOOGLE_ID'),
   googleClientSecret: () => firstEnv('GOOGLE_CLIENT_SECRET', 'GOOGLE_SECRET'),
@@ -158,6 +169,13 @@ export function isAutonomaEnabled(): boolean {
 // Check helper for Firecrawl status
 export function isFirecrawlEnabled(): boolean {
   return hasEnv('FIRECRAWL_API_KEY')
+}
+
+// Server-side PostHog capture is available when EITHER token is present
+// (lib/posthog-server.ts no-ops otherwise). Key presence is the whole gate —
+// capture is fire-and-forget observability, not a product seam.
+export function isPostHogEnabled(): boolean {
+  return hasEnv('POSTHOG_KEY') || hasEnv('NEXT_PUBLIC_POSTHOG_KEY')
 }
 
 // True when a key is present without throwing — lets a client degrade

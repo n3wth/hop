@@ -259,7 +259,11 @@ export default function TopNav({
             </>
           ) : (
             <>
-              {/* MOBILE search — compact tap pill that opens the full editable search */}
+              {/* MOBILE search — compact tap pill that opens the full editable
+                  search. On phones this pill IS the trip summary (the results
+                  page renders no separate route row below lg), so it carries
+                  the full context: route → dates → party (when >1). The route
+                  never truncates; the dates/party segment ellipsizes first. */}
               <button
                 type="button"
                 aria-label="Edit search"
@@ -267,10 +271,15 @@ export default function TopNav({
                 className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-border bg-surface px-4 py-2.5 md:hidden"
               >
                 <Icon name="search" size={16} className="flex-shrink-0 text-brand" />
-                <span className="truncate text-[13px] font-semibold text-text">
+                <span className="flex-shrink-0 text-[13px] font-semibold text-text">
                   {fromCode} → {toCode}
                 </span>
-                <span className="ml-1 truncate text-[12px] text-text3">{dates}</span>
+                <span className="min-w-0 truncate text-[12px] text-text3">
+                  {dates}
+                  {adults + childrenCount + infants > 1
+                    ? ` · ${adults + childrenCount + infants} travelers`
+                    : ''}
+                </span>
               </button>
 
               {/* DESKTOP search — full editable form, stable on scroll */}

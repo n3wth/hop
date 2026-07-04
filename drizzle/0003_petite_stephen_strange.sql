@@ -1,0 +1,1 @@
+ALTER TABLE "hop_degradation_events" ADD COLUMN "reason" text;

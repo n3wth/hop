@@ -27,7 +27,7 @@ function StatSkeleton() {
 // One alternative-card placeholder — matches ResultRow's min height + structure.
 function CardSkeleton() {
   return (
-    <div className="flex min-h-[268px] flex-col rounded-[20px] border-[1.5px] border-border bg-paper px-[22px] pb-[22px] pt-6">
+    <div className="flex min-h-[268px] flex-col rounded-[20px] border-[1.5px] border-border bg-paper px-[18px] pb-[18px] pt-5 sm:px-[22px] sm:pb-[22px] sm:pt-6">
       <div className="flex items-start justify-between">
         <span className="hop-skeleton block h-[46px] w-[46px] rounded-[12px]" />
         <Bar w="48px" h={12} />
@@ -59,34 +59,33 @@ export default function ResultsSkeleton() {
       aria-label="Loading flight results"
       className="mx-auto max-w-[var(--container-shell)]"
     >
-      {/* RouteBar placeholder — codes + flight arc on the left, a weighted stat
-          group on the right. Mirrors RouteBar (pt-4, NO bottom border) so the
-          real route line drops in without a vertical jump. */}
-      <div className="flex items-center justify-between pt-4">
+      {/* RouteBar placeholder — desktop (lg+) only, matching RouteBar: below lg
+          the TopNav "Edit search" pill carries the trip context and no route
+          row renders. Codes + arrow on the left, weighted stat group on the
+          right (pt-4, NO bottom border) so the real line drops in without a
+          vertical jump. */}
+      <div className="hidden items-center justify-between pt-4 lg:flex">
         <div className="flex items-center gap-[18px]">
           <div className="flex flex-col gap-[6px]">
             <Bar w="44px" h={19} />
             <Bar w="68px" h={11} />
           </div>
-          <span className="hop-skeleton block h-[24px] w-[24px] rounded-full lg:h-[30px] lg:w-[30px]" />
+          {/* typographic → between the codes */}
+          <Bar w="22px" h={16} />
           <div className="flex flex-col gap-[6px]">
             <Bar w="44px" h={19} />
             <Bar w="68px" h={11} />
           </div>
         </div>
 
-        {/* right-side stat group — hidden below lg, matching RouteBar's compact
-            variant which shows a thin facts line instead. */}
-        <div className="hidden items-center gap-7 lg:flex">
+        {/* right-side stat group */}
+        <div className="flex items-center gap-7">
           <StatSkeleton />
           <span className="h-9 w-px bg-hair" />
           <StatSkeleton />
           <span className="h-9 w-px bg-hair" />
           <StatSkeleton />
         </div>
-
-        {/* compact facts line — small screens only */}
-        <Bar w="150px" h={12} className="lg:hidden" />
       </div>
 
       {/* Verdict hero placeholder — teal plane. Grid + radius collapse at the
@@ -109,13 +108,14 @@ export default function ResultsSkeleton() {
             <span className="hop-skeleton-dark block h-[15px] w-[70%] rounded-[6px]" />
             <span className="hop-skeleton-dark block h-[15px] w-[52%] rounded-[6px]" />
           </div>
-          <div className="mt-[34px] flex gap-4">
-            <span className="hop-skeleton-dark block h-[52px] w-[210px] rounded-[14px]" />
-            <span className="block h-[52px] w-[130px] rounded-[14px] border border-white/20" />
+          {/* CTA row — stacks full-width below sm like the loaded hero */}
+          <div className="mt-7 flex flex-col gap-3 sm:mt-[34px] sm:flex-row sm:items-center sm:gap-4">
+            <span className="hop-skeleton-dark block h-[52px] w-full rounded-[14px] sm:w-[210px]" />
+            <span className="block h-[52px] w-full rounded-[14px] border border-white/20 sm:w-[130px]" />
           </div>
-          {/* mirrors the loaded hero's stat strip (flex-wrap, tighter mobile gaps)
-              so the skeleton never overflows at 375px where the real strip wraps */}
-          <div className="mt-8 flex flex-wrap gap-x-6 gap-y-4 border-t border-white/15 pt-7 sm:gap-10 lg:mt-[42px] lg:pt-[30px]">
+          {/* mirrors the loaded hero's stat strip — 2×2 grid on phones, flex
+              row from sm — so the skeleton swaps out with no reflow at 375px */}
+          <div className="mt-7 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-white/15 pt-6 sm:mt-8 sm:flex sm:flex-wrap sm:gap-10 sm:pt-7 lg:mt-[42px] lg:pt-[30px]">
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className="space-y-[8px]">
                 <span className="hop-skeleton-dark block h-[11px] w-[60px] rounded-[5px]" />
