@@ -22,6 +22,13 @@
       "when": 1783029117076,
       "tag": "0002_common_micromax",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1783139870667,
+      "tag": "0003_petite_stephen_strange",
+      "breakpoints": true
     }
   ]
 }
