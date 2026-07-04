@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { toNavUser } from '@/lib/nav-user'
 import { auth0 } from '@/lib/auth0'
 import { isCheckoutEnabled } from '@/lib/env'
 import { getCheckoutOffer, freshOfferForRoute } from '@/lib/duffel-orders'
@@ -44,12 +45,7 @@ export default async function BookPage({
   if (!session) redirect('/login?returnTo=/book')
 
   const su = session.user
-  const user = {
-    initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
-    name: su.name ?? undefined,
-    email: su.email ?? undefined,
-    picture: su.picture ?? undefined,
-  }
+  const user = toNavUser(su)
 
   const q = await searchParams
   const str = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)

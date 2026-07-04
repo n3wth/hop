@@ -14,36 +14,39 @@ export default function SupportConsole({
   escalations: Escalation[]
 }) {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+    <div className="mx-auto max-w-[var(--container-shell)] px-4 py-10 sm:px-6">
       <h1 className="font-display text-2xl font-semibold tracking-[-0.01em] text-text">Support</h1>
       <p className="mt-1 text-[13px] text-text3">
         {tickets.length} ticket{tickets.length === 1 ? '' : 's'} · {escalations.length} booking
         request{escalations.length === 1 ? '' : 's'}
       </p>
 
-      <section className="mt-8">
-        <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">Tickets</h2>
-        <div className="mt-3 flex flex-col gap-3">
-          {tickets.length === 0 ? (
-            <Empty>No support emails yet.</Empty>
-          ) : (
-            tickets.map((t) => <TicketCard key={t.id} ticket={t} />)
-          )}
-        </div>
-      </section>
+      {/* Wide screens: tickets beside booking requests; below lg they stack. */}
+      <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
+        <section className="mt-8">
+          <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">Tickets</h2>
+          <div className="mt-3 flex flex-col gap-3">
+            {tickets.length === 0 ? (
+              <Empty>No support emails yet.</Empty>
+            ) : (
+              tickets.map((t) => <TicketCard key={t.id} ticket={t} />)
+            )}
+          </div>
+        </section>
 
-      <section className="mt-10">
-        <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">
-          Booking requests
-        </h2>
-        <div className="mt-3 flex flex-col gap-3">
-          {escalations.length === 0 ? (
-            <Empty>No expert-booking requests yet.</Empty>
-          ) : (
-            escalations.map((e) => <EscalationCard key={e.id} esc={e} />)
-          )}
-        </div>
-      </section>
+        <section className="mt-10 lg:mt-8">
+          <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">
+            Booking requests
+          </h2>
+          <div className="mt-3 flex flex-col gap-3">
+            {escalations.length === 0 ? (
+              <Empty>No expert-booking requests yet.</Empty>
+            ) : (
+              escalations.map((e) => <EscalationCard key={e.id} esc={e} />)
+            )}
+          </div>
+        </section>
+      </div>
     </div>
   )
 }

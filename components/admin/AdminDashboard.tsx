@@ -36,7 +36,7 @@ export default function AdminDashboard({
   selfImproveEnabled,
 }: Props) {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+    <div className="mx-auto max-w-[var(--container-shell)] px-4 py-10 sm:px-6">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-semibold tracking-[-0.01em] text-text">Admin</h1>
@@ -51,7 +51,7 @@ export default function AdminDashboard({
       </div>
 
       <Section title="This week">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
           <Stat label="Booking requests" metric={digest.escalations} />
           <Stat label="New watches" metric={digest.ordersCreated} />
           <Stat label="Alerts fired" metric={digest.alertsFired} />
@@ -69,6 +69,8 @@ export default function AdminDashboard({
         </div>
       </Section>
 
+      {/* Wide screens: health + findings side by side; below lg they stack. */}
+      <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">
       <Section title="System health">
         {heartbeats === null && degradation === null ? (
           <Empty>
@@ -102,6 +104,7 @@ export default function AdminDashboard({
           </div>
         )}
       </Section>
+      </div>
 
       <Section title="Recent activity">
         <div className="grid gap-4 sm:grid-cols-2">
