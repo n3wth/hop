@@ -1,4 +1,8 @@
-import Link from 'next/link'
+import { auth0 } from '@/lib/auth0'
+import { getUserBalances } from '@/lib/accounts'
+import AppShell from '@/components/AppShell'
+import SiteFooter from '@/components/SiteFooter'
+import LegalShell from '@/components/LegalShell'
 import { getTrustStats } from '@/lib/trust-stats'
 import { pageMeta } from '@/lib/seo'
 
@@ -15,54 +19,74 @@ function fmtDegradation(n: number | null): string {
 }
 
 export default async function StatsPage() {
+  const session = await auth0.getSession()
+  const su = session?.user
+  const user = su
+    ? {
+        initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
+        name: su.name ?? su.email ?? undefined,
+        email: su.email ?? undefined,
+        picture: su.picture ?? undefined,
+      }
+    : null
+
+  let pointsTotal: number | undefined
+  if (user && su?.sub) {
+    const real = await getUserBalances(su.sub)
+    if (real.length > 0) pointsTotal = real.reduce((s, b) => s + b.balance, 0)
+  }
+
   const stats = await getTrustStats()
+  // Pacific time with an explicit zone label — the server renders in UTC, and a
+  // bare server-local time read as wrong to anyone comparing it to their clock.
   const asOfLabel = new Date(stats.asOf).toLocaleString('en-US', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'America/Los_Angeles',
+    timeZoneName: 'short',
   })
 
   return (
-    <div className="mx-auto max-w-[560px] px-4 py-16 sm:px-8">
-      <Link href="/" className="text-[14px] text-text3 hover:text-text2">
-        &larr; hop
-      </Link>
+    <AppShell user={user} pointsTotal={pointsTotal} hideSearch>
+      <LegalShell
+        eyebrow="Trust"
+        title="Trust & reliability"
+        intro="hop's engine never fabricates a number and never crashes on a dead upstream — it degrades a section instead. These are the real, computed figures behind that claim."
+      >
+        <dl className="space-y-8 border-t border-border-soft pt-8">
+          <div>
+            <dt className="text-[13px] text-text3">Live-verified pricing</dt>
+            <dd className="mt-1 font-mono text-[24px] font-semibold tracking-[-0.02em] text-text">
+              {stats.verifiedPrograms} of {stats.totalPrograms}
+            </dd>
+            <p className="mt-1 max-w-[52ch] text-[14px] leading-[1.5]">
+              loyalty programs are currently priced from hop&rsquo;s own observed cash-vs-award
+              data, not just the static baseline table.
+            </p>
+          </div>
 
-      <h1 className="mt-6 text-balance font-display text-[30px] font-semibold tracking-[-0.02em] text-text">
-        Trust &amp; reliability
-      </h1>
+          <div>
+            <dt className="text-[13px] text-text3">Degraded searches, last 24h</dt>
+            <dd className="mt-1 font-mono text-[24px] font-semibold tracking-[-0.02em] text-text">
+              cash {fmtDegradation(stats.degradation24h.cash)} · awards{' '}
+              {fmtDegradation(stats.degradation24h.awards)}
+            </dd>
+            <p className="mt-1 max-w-[52ch] text-[14px] leading-[1.5]">
+              counted times a search fell back gracefully because a cash or award source was
+              unavailable. &ldquo;unknown&rdquo; means this isn&rsquo;t being tracked right now, not
+              that nothing degraded.
+            </p>
+          </div>
+        </dl>
 
-      <p className="mt-3 max-w-[48ch] text-[16px] leading-[1.55] text-text2">
-        hop&rsquo;s engine never fabricates a number and never crashes on a dead upstream — it
-        degrades a section instead. These are the real, computed figures behind that claim.
-      </p>
-
-      <dl className="mt-10 space-y-6 border-t border-border-soft pt-8">
-        <div>
-          <dt className="text-[13px] text-text3">Live-verified pricing</dt>
-          <dd className="mt-1 font-mono text-[24px] font-semibold tracking-[-0.02em] text-text">
-            {stats.verifiedPrograms} of {stats.totalPrograms}
-          </dd>
-          <p className="mt-1 text-[14px] leading-[1.5] text-text2">
-            loyalty programs are currently priced from hop&rsquo;s own observed cash-vs-award data,
-            not just the static baseline table.
-          </p>
-        </div>
-
-        <div>
-          <dt className="text-[13px] text-text3">Degraded searches, last 24h</dt>
-          <dd className="mt-1 font-mono text-[24px] font-semibold tracking-[-0.02em] text-text">
-            cash {fmtDegradation(stats.degradation24h.cash)} · awards{' '}
-            {fmtDegradation(stats.degradation24h.awards)}
-          </dd>
-          <p className="mt-1 text-[14px] leading-[1.5] text-text2">
-            counted times a search fell back gracefully because a cash or award source was
-            unavailable. &ldquo;unknown&rdquo; means this isn&rsquo;t being tracked right now, not
-            that nothing degraded.
-          </p>
-        </div>
-      </dl>
-
-      <p className="mt-10 text-[13px] text-text3">As of {asOfLabel}.</p>
-    </div>
+        <p className="mt-10 text-[13px] text-text3">As of {asOfLabel}.</p>
+      </LegalShell>
+      <div className="mx-auto max-w-[var(--container-sm)]">
+        <SiteFooter />
+      </div>
+    </AppShell>
   )
 }

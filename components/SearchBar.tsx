@@ -131,12 +131,12 @@ function AirportField({
   }
 
   return (
-    <div ref={ref} className="relative flex min-w-0 flex-col justify-center leading-[1.05]">
+    <div ref={ref} className="group relative flex min-w-0 flex-col justify-center leading-[1.05]">
       <span
-        className={
+        className={`${
           labelClassName ??
           'text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2'
-        }
+        } transition-colors group-focus-within:text-brand`}
       >
         {label}
       </span>
@@ -176,9 +176,13 @@ function AirportField({
             if (hit) choose(hit.code)
           }
         }}
-        className={
+        // no-inner-ring: text inputs match :focus-visible even on mouse click,
+        // so the global 2px ring draws a harsh rectangle mid-pill. Focus is
+        // shown by the label flipping to brand (group-focus-within above) and
+        // the results popover opening — quieter, still visible.
+        className={`no-inner-ring ${
           inputClassName ?? 'w-full bg-transparent font-semibold text-text outline-none'
-        }
+        }`}
       />
       {open && results.length > 0 && (
         <ul
@@ -186,7 +190,7 @@ function AirportField({
           id={listId}
           role="listbox"
           aria-label={label}
-          className="absolute left-0 top-[calc(100%+10px)] z-[80] max-h-[280px] w-[260px] overflow-auto rounded-[var(--radius)] border border-border bg-surface py-1"
+          className="absolute left-0 top-[calc(100%+18px)] z-[80] max-h-[280px] w-[260px] overflow-auto rounded-[var(--radius)] border border-border bg-surface py-1"
         >
           {results.map((a, i) => (
             <li key={a.code} id={`${optBaseId}-${i}`} role="option" aria-selected={i === active}>
@@ -380,7 +384,7 @@ function CalendarPop({
     <div ref={ref} className="relative">
       {children(open, () => setOpen((o) => !o))}
       {open && (
-        <div className="absolute left-0 top-[calc(100%+10px)] z-[60] rounded-[var(--radius)] border border-border bg-surface p-4">
+        <div className="absolute left-0 top-[calc(100%+18px)] z-[60] rounded-[var(--radius)] border border-border bg-surface p-4">
           {/* trip-type + stops live here (Google-Flights style), not in the search row */}
           <div className="mb-3 flex flex-col items-center gap-2 border-b border-hair pb-3">
             <TripTypeToggle oneWay={oneWay} onChange={onOneWayChange} />
@@ -525,7 +529,7 @@ function WhoPop({
     <div ref={ref} className="relative">
       {children(open, () => setOpen((o) => !o))}
       {open && (
-        <div className="absolute right-0 top-[calc(100%+10px)] z-[60] w-[260px] rounded-[var(--radius)] border border-border bg-surface p-4">
+        <div className="absolute right-0 top-[calc(100%+18px)] z-[60] w-[260px] rounded-[var(--radius)] border border-border bg-surface p-4">
           <div className="flex flex-col gap-4">
             <StepperRow
               label="Adults"
@@ -634,7 +638,11 @@ function CabinPop({
               choose(CABIN_OPTIONS[active].value)
             }
           }}
-          className="absolute right-0 top-[calc(100%+10px)] z-[60] w-[220px] overflow-hidden rounded-[var(--radius)] border border-border bg-surface py-1 outline-none"
+          // no-inner-ring: this listbox is focused programmatically on open so
+          // arrow keys work; without the opt-out the global [tabindex] rule
+          // draws a 2px brand rectangle around the whole popover. The active
+          // row highlight is the keyboard indicator here.
+          className="no-inner-ring absolute right-0 top-[calc(100%+18px)] z-[60] w-[220px] overflow-hidden rounded-[var(--radius)] border border-border bg-surface py-1 outline-none"
         >
           {CABIN_OPTIONS.map((o, i) => {
             const selected = o.value === cabin

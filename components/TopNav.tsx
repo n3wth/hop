@@ -46,8 +46,14 @@ const DUR = '280ms'
 // (path-heavy) bunny SVG. Only the wrapper's transform animates.
 const LogoLockup = memo(function LogoLockup() {
   // Icon only — the bunny stands alone as the mark. Links to the home page.
+  // Hover is a color flip only (house rule: no hover movement) — the bunny's
+  // silhouette is currentColor, so it warms to brand teal.
   return (
-    <Link href="/" aria-label="hop — home" className="flex items-center">
+    <Link
+      href="/"
+      aria-label="hop — home"
+      className="flex items-center text-text transition-colors hover:text-brand"
+    >
       <FlyingBunny size={41} carve="var(--color-bg)" />
     </Link>
   )
@@ -168,10 +174,6 @@ export default function TopNav({
   )
 
   const [mobileOpen, setMobileOpen] = useState(false)
-  // Mobile menu sheet for hideSearch pages (landing, ask, deals, account), where
-  // the desktop nav + account block are hidden below their breakpoints. Closed on
-  // resize to md / Escape (same guard as the search sheet) so it never strands.
-  const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
 
@@ -187,11 +189,10 @@ export default function TopNav({
     return () => io.disconnect()
   }, [])
 
-  // Both mobile sheets share one controller: scroll-lock + focus-into + Tab-trap
-  // + Esc + close-on-resize-to-md (a stranded full-viewport sheet would swallow
-  // nav clicks). The returned ref is attached to each dialog.
+  // Mobile search sheet controller: scroll-lock + focus-into + Tab-trap + Esc +
+  // close-on-resize-to-md (a stranded full-viewport sheet would swallow nav
+  // clicks). The returned ref is attached to the dialog.
   const searchSheetRef = useSheet(mobileOpen, () => setMobileOpen(false))
-  const menuSheetRef = useSheet(menuOpen, () => setMenuOpen(false))
 
   // returnTo on the sign-in links: after auth, Auth0 lands the user back where
   // they were rather than dumping them on the home page.
@@ -208,8 +209,11 @@ export default function TopNav({
       {/* sentinel: while visible we're at the top (expanded) */}
       <div ref={sentinelRef} aria-hidden className="absolute left-0 top-0 h-px w-px" />
 
+      {/* Below md the bottom tab bar is the nav: on hideSearch pages the header
+          disappears entirely; on search pages it survives only as the slim
+          search-pill strip (the pill is the page's primary control, not chrome). */}
       <header
-        className="sticky top-0 z-50"
+        className={`sticky top-0 z-50 ${hideSearch ? 'hidden md:block' : ''}`}
         style={{
           height: 72,
           background: c ? 'color-mix(in srgb, var(--color-bg) 80%, transparent)' : 'transparent',
@@ -225,8 +229,9 @@ export default function TopNav({
         <div className="h-full px-5 sm:px-8 lg:px-12 xl:px-16">
         <div className="mx-auto flex h-full max-w-[var(--container-shell)] items-center gap-4 sm:gap-5 lg:gap-7">
           {/* logo — left. Stays the SAME size whether at top or scrolled; only its
-              vertical position shifts as the header height contracts (76→56px). */}
-          <div className="flex flex-shrink-0 items-center gap-[11px]">
+              vertical position shifts as the header height contracts (76→56px).
+              Hidden below md — the bottom tab bar's home bunny is the mark there. */}
+          <div className="hidden flex-shrink-0 items-center gap-[11px] md:flex">
             <LogoLockup />
           </div>
 
@@ -251,21 +256,6 @@ export default function TopNav({
                   </Link>
                 ))}
               </nav>
-              <div className="flex-1 md:hidden" />
-              {/* MOBILE affordance — on hideSearch pages the nav links (md:flex)
-                  and the account block (sm:flex) are both hidden below their
-                  breakpoints, leaving the header with nothing actionable on a
-                  phone. This hamburger (visible <md) opens the menu sheet so Sign
-                  in / nav are always reachable at 390px. */}
-              <button
-                type="button"
-                aria-label="Open menu"
-                aria-expanded={menuOpen}
-                onClick={() => setMenuOpen(true)}
-                className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full border border-border bg-surface text-text2 transition-colors hover:bg-sunk md:hidden"
-              >
-                <Icon name="menu" size={20} />
-              </button>
             </>
           ) : (
             <>
@@ -288,20 +278,6 @@ export default function TopNav({
                 <SearchForm initial={initial} variant="desktop" scrolled={c} />
               </div>
 
-              {/* MOBILE affordance (<sm) — on search/results pages the account
-                  block is hidden below sm and this branch has no hamburger, so a
-                  signed-in phone user couldn't reach their account and never saw a
-                  nav. Opens the same menu sheet (nav + account / Sign in). At ≥sm
-                  the account block itself is visible, so this hides. */}
-              <button
-                type="button"
-                aria-label="Open menu"
-                aria-expanded={menuOpen}
-                onClick={() => setMenuOpen(true)}
-                className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full border border-border bg-surface text-text2 transition-colors hover:bg-sunk sm:hidden"
-              >
-                <Icon name="menu" size={20} />
-              </button>
             </>
           )}
 
@@ -328,8 +304,9 @@ export default function TopNav({
           </div>
 
           {/* account — Auth0: avatar+logout when signed in, Sign in when out.
-              No scroll scaling — the bar stays still as you scroll. */}
-          <div className="hidden flex-shrink-0 items-center sm:flex">
+              No scroll scaling — the bar stays still as you scroll. Below md the
+              bottom tab bar's Account tab covers this. */}
+          <div className="hidden flex-shrink-0 items-center md:flex">
             {user ? (
               <div className="flex items-center gap-3">
                 {isOwner ? (
@@ -401,77 +378,6 @@ export default function TopNav({
         </div>
       )}
 
-      {/* MOBILE menu — solid sheet for hideSearch pages, so Sign in + nav are
-          always reachable at 390px (the desktop nav/account are hidden below md/sm). */}
-      {menuOpen && (
-        <div
-          ref={menuSheetRef}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Menu"
-          tabIndex={-1}
-          className="fixed inset-0 z-[70] flex flex-col bg-bg md:hidden"
-        >
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <span className="font-display text-[17px] font-semibold text-text">Menu</span>
-            <button
-              type="button"
-              aria-label="Close menu"
-              onClick={() => setMenuOpen(false)}
-              className="grid h-9 w-9 place-items-center rounded-full text-text2 hover:bg-sunk"
-            >
-              <Icon name="close" size={20} />
-            </button>
-          </div>
-          {/* "where from" — reachable on phones where the header selector hides */}
-          <div className="border-b border-border px-4 py-3">
-            <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
-              Where from
-            </span>
-            <OriginSelector />
-          </div>
-          <nav aria-label="Main" className="flex flex-col gap-1 p-4">
-            {PRIMARY_NAV.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                aria-current={isActive(l.href) ? 'page' : undefined}
-                onClick={() => setMenuOpen(false)}
-                className={
-                  isActive(l.href)
-                    ? 'rounded-[12px] bg-sunk px-4 py-3 text-[16px] font-semibold text-text'
-                    : 'rounded-[12px] px-4 py-3 text-[16px] font-semibold text-text transition-colors hover:bg-sunk'
-                }
-              >
-                {l.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="mt-auto border-t border-border p-4">
-            {user ? (
-              <div className="flex flex-col gap-2">
-                {isOwner ? (
-                  <Link
-                    href="/admin"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center justify-center gap-1.5 rounded-full border border-border bg-surface px-5 py-3 text-[15px] font-semibold text-text2 transition-colors hover:bg-sunk"
-                  >
-                    <Icon name="shield" size={16} />
-                    Admin
-                  </Link>
-                ) : null}
-                <Link href="/account" onClick={() => setMenuOpen(false)} className="flex items-center justify-center rounded-full border border-border bg-surface px-5 py-3 text-[15px] font-semibold text-text transition-colors hover:bg-sunk">
-                  Your account
-                </Link>
-              </div>
-            ) : (
-              <a href={signInHref} className="flex items-center justify-center rounded-full bg-brand px-5 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep hop-press">
-                Sign in
-              </a>
-            )}
-          </div>
-        </div>
-      )}
     </>
   )
 }

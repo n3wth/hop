@@ -11,11 +11,36 @@ export interface AccountUser {
 }
 
 // Avatar that opens a small account menu: name/email, Profile, Log out.
-// Loads the profile picture when present, falls back to the initial.
+// Picture resolution chain: stored profile picture (Google OAuth) → Gravatar
+// looked up by the account email (d=404 so a missing Gravatar errors instead of
+// serving a generic placeholder) → the initial. Email/password and passkey
+// sign-ins have no OAuth picture, so Gravatar is their only image source.
 export default function AccountMenu({ user }: { user: AccountUser }) {
   const [open, setOpen] = useState(false)
-  const [imgOk, setImgOk] = useState(true)
+  // Index into the source chain; bumped by onError so a dead URL falls through
+  // to the next source, ending at the initial.
+  const [srcIdx, setSrcIdx] = useState(0)
+  const [gravatar, setGravatar] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!user.email || typeof crypto?.subtle?.digest !== 'function') return
+    let cancelled = false
+    const email = user.email.trim().toLowerCase()
+    void crypto.subtle
+      .digest('SHA-256', new TextEncoder().encode(email))
+      .then((buf) => {
+        if (cancelled) return
+        const hex = Array.from(new Uint8Array(buf))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join('')
+        setGravatar(`https://gravatar.com/avatar/${hex}?s=160&d=404`)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [user.email])
 
   useEffect(() => {
     if (!open) return
@@ -42,18 +67,25 @@ export default function AccountMenu({ user }: { user: AccountUser }) {
         title="Account"
         className="grid h-10 w-10 cursor-pointer place-items-center overflow-hidden rounded-full bg-brand font-display text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep"
       >
-        {user.picture && imgOk ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={user.picture}
-            alt=""
-            className="h-full w-full object-cover"
-            referrerPolicy="no-referrer"
-            onError={() => setImgOk(false)}
-          />
-        ) : (
-          user.initial
-        )}
+        {(() => {
+          const sources = [user.picture, gravatar].filter(
+            (s): s is string => typeof s === 'string' && s.length > 0,
+          )
+          const src = sources[srcIdx]
+          return src ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={src}
+              src={src}
+              alt=""
+              className="h-full w-full object-cover"
+              referrerPolicy="no-referrer"
+              onError={() => setSrcIdx((i) => i + 1)}
+            />
+          ) : (
+            user.initial
+          )
+        })()}
       </button>
 
       {open ? (
