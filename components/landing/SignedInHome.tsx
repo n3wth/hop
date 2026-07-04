@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import Icon from '@/components/Icon'
+import CountUp from '@/components/CountUp'
 import HeroSearch from '@/components/landing/HeroSearch'
 import DestinationGrid from '@/components/landing/DestinationGrid'
 import AgentComposer from '@/components/landing/AgentComposer'
@@ -107,8 +108,11 @@ export default async function SignedInHome({
             <span className="text-[11.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
               Your points
             </span>
+            {/* The wallet total gets the panel's one moment: it counts up on
+                arrival (CountUp is reduced-motion-safe — instant final value).
+                The engine computed both figures; this only ticks to them. */}
             <p className="hop-price mt-2 text-[40px] leading-[1] text-text sm:text-[46px]">
-              {totalPoints.toLocaleString()}
+              <CountUp value={totalPoints} />
             </p>
             <p className="mt-1 text-[13.5px] leading-[1.5] text-text2">
               across {programs} {programs === 1 ? 'program' : 'programs'}
@@ -118,7 +122,8 @@ export default async function SignedInHome({
                 className="mt-0.5 text-[13.5px] leading-[1.5] text-text3"
                 title={WALLET_VALUE_CAVEAT}
               >
-                worth ~${pointsWorth.toLocaleString()} at typical redemption value
+                worth ~<CountUp value={pointsWorth} format="usd" delayMs={260} /> at typical
+                redemption value
               </p>
             ) : null}
 

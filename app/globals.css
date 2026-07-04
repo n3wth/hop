@@ -251,6 +251,45 @@ body {
    need touching — it simply has no animation now. The rest of the motion below
    still honors prefers-reduced-motion. */
 
+/* THE exception to still entrances: the verdict hero. Page furniture appears
+   in place; the ANSWER arrives. One element per page, one shot, opacity + a
+   4px settle — small enough that the page doesn't read as nudging upward.
+   Do not spread this to sections; that's the drift .hop-rise died of. */
+@keyframes hop-appear {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hop-appear {
+  animation: hop-appear 560ms var(--ease-premium) both;
+}
+
+/* Confirmation check settle — a one-shot scale-in for the moment an action
+   lands: the booking-confirmed ring, a watch saved, "Copied". Transform-only,
+   overshoots a hair and settles. Apply to the ICON'S wrapper (re-key it to
+   replay), never to text. Reduced-motion falls back to the instant swap. */
+@keyframes hop-check-in {
+  0% {
+    transform: scale(0.5);
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.hop-check-in {
+  animation: hop-check-in 420ms var(--ease-premium) both;
+}
+
 /* Bunny motion is scroll-driven (see FlyingBunny) — it lifts with scroll
    momentum like gravity, then springs back to rest when scrolling stops.
    Transform-only, no opacity. Not a continuous loop.
@@ -449,6 +488,12 @@ body {
     animation: none;
     opacity: 1;
     width: var(--hop-bar-w, 0%);
+  }
+  .hop-appear,
+  .hop-check-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
   .hop-collapse {
     transition: none;

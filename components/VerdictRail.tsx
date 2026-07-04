@@ -235,7 +235,14 @@ export default function VerdictRail({
           <HStat label="You pay" value={fmt(miles)} unit={unit} />
           <HStat label="Value" value={cpp != null ? formatValue(cpp) : '—'} />
           <HStat label="Cash price" value={`$${fmt(cash)}`} />
-          <HStat label="You save" value={`$${fmt(save)}`} accent />
+          {/* The accent stat ticks in LOCKSTEP with the headline (same value,
+              same delay/duration) — one figure moving in two places reads as
+              one system. Only this stat counts; four counters is a slot machine. */}
+          <HStat
+            label="You save"
+            value={usingPoints ? <CountUp value={save} format="usd" delayMs={420} /> : `$${fmt(save)}`}
+            accent
+          />
         </div>
 
         {/* Affiliate CTA — only on a points-winning verdict, never on cash. Maps
@@ -319,7 +326,7 @@ function HStat({
   accent,
 }: {
   label: string
-  value: string
+  value: React.ReactNode
   unit?: string
   accent?: boolean
 }) {

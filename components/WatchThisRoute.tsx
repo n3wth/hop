@@ -72,7 +72,9 @@ export default function WatchThisRoute({
   if (status === 'success') {
     return (
       <Shell icon="check_circle">
-        <p className="text-[14px] leading-[1.5] text-hero-body">
+        {/* Post-action feedback, not page entrance: the line settles in as the
+            check pops (Shell animates the check_circle icon). */}
+        <p className="hop-text-appear text-[14px] leading-[1.5] text-hero-body">
           Watching <b className="font-semibold text-white">{route}</b> on {dates}
           {cabin}. hop pings you above <b className="font-semibold text-white">{thresholdLabel}</b>{' '}
           /point.
@@ -129,7 +131,14 @@ function Shell({
       className="hop-rise mt-5 flex items-start gap-3 rounded-[14px] border-[1.5px] border-white/15 bg-white/[0.04] px-4 py-[14px]"
       style={{ ['--hop-delay' as string]: '260ms' }}
     >
-      <span aria-hidden className="mt-[2px] flex-shrink-0 text-hero-label">
+      {/* check_circle only ever renders after the save succeeds, so its settle
+          is action feedback (hop-check-in), never load-time motion. */}
+      <span
+        aria-hidden
+        className={`mt-[2px] flex-shrink-0 text-hero-label ${
+          icon === 'check_circle' ? 'hop-check-in' : ''
+        }`}
+      >
         <Icon name={icon} size={16} weight={icon === 'check_circle' ? 'fill' : 'regular'} />
       </span>
       <div className="min-w-0 flex-1">{children}</div>

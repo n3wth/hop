@@ -7,6 +7,7 @@ import { getBookingByOrderId } from '@/lib/bookings'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import Icon from '@/components/Icon'
+import CountUp from '@/components/CountUp'
 import FarePolicyCard from '@/components/checkout/FarePolicyCard'
 
 // Private, per-user confirmation — keep it out of the index. (template adds "· hop".)
@@ -91,6 +92,19 @@ function money(amount?: string, currency?: string): string {
   }
 }
 
+// The receipt figure, given its one moment: a count-up to the EXACT total
+// (cents included — a receipt never rounds). Only USD animates; any other
+// currency keeps the locale-correct static Intl string rather than guessing
+// at symbols. Reduced-motion renders the final figure instantly (CountUp).
+function TotalPaid({ amount, currency }: { amount?: string; currency?: string }) {
+  const n = Number(amount)
+  const cls = 'font-display text-[22px] font-semibold tracking-[-0.01em] text-text'
+  if (amount && Number.isFinite(n) && (!currency || currency === 'USD')) {
+    return <CountUp className={cls} value={n} format="usd" decimals={2} delayMs={360} />
+  }
+  return <span className={cls}>{money(amount, currency)}</span>
+}
+
 function timeOf(iso?: string): string {
   if (!iso) return ''
   const d = new Date(iso)
@@ -117,7 +131,8 @@ function Confirmed({
         style={{ background: 'var(--color-brand)' }}
       >
         <div className="px-6 py-9 sm:px-10">
-          <span className="grid h-12 w-12 place-items-center rounded-full bg-white/15 text-white ring-1 ring-white/20">
+          {/* The check settles in once — the moment the booking lands. */}
+          <span className="hop-check-in grid h-12 w-12 place-items-center rounded-full bg-white/15 text-white ring-1 ring-white/20">
             <Icon name="check" size={24} />
           </span>
           <h1 className="mt-5 font-display text-[28px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[34px]">
@@ -179,9 +194,7 @@ function Confirmed({
         ) : null}
         <div className="flex items-center justify-between border-t border-border pt-4">
           <span className="text-[13.5px] text-text2">Total paid</span>
-          <span className="font-display text-[22px] font-semibold tracking-[-0.01em] text-text">
-            {money(order.totalAmount, order.totalCurrency)}
-          </span>
+          <TotalPaid amount={order.totalAmount} currency={order.totalCurrency} />
         </div>
       </section>
 

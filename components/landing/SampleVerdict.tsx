@@ -1,4 +1,5 @@
 import Icon from '@/components/Icon'
+import CountUp from '@/components/CountUp'
 import Logo from '@/components/Logo'
 import { destinationImage } from '@/lib/images'
 
@@ -36,9 +37,16 @@ export default async function SampleVerdict() {
         </h3>
 
         <div className="mt-2 flex items-baseline gap-3">
-          <span className="font-display text-[58px] font-semibold leading-[0.9] tracking-[-0.04em] text-mint-bright tabular-nums sm:text-[80px] lg:text-[96px]">
-            $243
-          </span>
+          {/* Same arrival as the live hero: the $ figure counts up — but only
+              once it scrolls into view, since this card sits below the fold.
+              Still the canonical worked example; CountUp just ticks to it. */}
+          <CountUp
+            className="font-display text-[58px] font-semibold leading-[0.9] tracking-[-0.04em] text-mint-bright tabular-nums sm:text-[80px] lg:text-[96px]"
+            value={243}
+            format="usd"
+            startInView
+            delayMs={180}
+          />
           <span className="font-display text-[18px] font-semibold tracking-[-0.01em] text-hero-eyebrow sm:text-[22px]">
             vs&nbsp;cash
           </span>
