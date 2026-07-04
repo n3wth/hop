@@ -66,7 +66,7 @@ function aiDraft(
 
 // Translate a plain-English watch into a StandingOrderDraft.
 //
-// Strategy mirrors lib/prefs-parser: the deterministic fallback runs first (a
+// Strategy (shared with lib/counterfactual-parser): the deterministic fallback runs first (a
 // floor we trust, offline). When the AI Gateway is configured it widens — it can
 // resolve "late March" and city names the regex can't — and on conflict the
 // regex result wins for the unambiguous fields it covers (route, explicit cpp).
