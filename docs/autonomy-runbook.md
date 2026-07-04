@@ -15,7 +15,7 @@
 | **Cursor (Linear agent)** | Mechanical, well-specced items — delegated by setting the Linear issue's delegate | Manual/interactive dispatch |
 | **Copilot coding agent** | Tiny repo-visible chores when a GitHub issue exists | Manual/interactive dispatch |
 | **charliecreates / vercel-agent** | Automatic PR review + preview screenshots | On every PR (already wired) |
-| **Owner (human)** | Merges. Flag flips, env/secrets, money, partnerships, legal | — |
+| **Owner (human)** | Merges the ADR 0009 hold list (money/identity/schema/deps). Flag flips, env/secrets, partnerships, legal | — |
 
 ## Queue rules (which item a run may pick)
 
@@ -41,16 +41,30 @@
    exists; otherwise follow `.claude/commands/*` as prose.
 4. Verify: `npm run check` and `npm run build`, plus the item's own test plan.
 5. Push the session's designated branch; open **one ready-for-review PR** titled with the item
-   id (e.g. `N-297 R0.1 …`). **Never merge** — merging is class (c), human-only.
-6. Sync work state: update the Linear issue if tools are reachable; otherwise put
+   id (e.g. `N-297 R0.1 …`). Merge it (or a prior run's PR) only per the Merge policy below.
+6. **Waste guard**: if triage finds nothing actionable and no eligible queue item exists, end
+   the run with no PR — and never re-file a blocker already recorded in `docs/autonomy-log.md`.
+7. Sync work state: update the Linear issue if tools are reachable; otherwise put
    `Linear sync needed: <id> → <state>` in the PR body (the next interactive session applies it).
-7. **Compound (mandatory)**: append a dated entry to `docs/autonomy-log.md` (item, outcome, PR,
+8. **Compound (mandatory)**: append a dated entry to `docs/autonomy-log.md` (item, outcome, PR,
    surprises). Non-obvious fixes → `docs/solutions/`. If a rule would have prevented a problem
    this run hit, amend **this file** in the same PR under Amendments.
 
+## Merge policy (ADR 0009)
+
+**Auto-merge: on**  *(kill switch — flip to `off` in one docs commit and every routine stops
+merging on its next run; no trigger changes needed)*
+
+Merge a PR only when ALL hold: CI green (`check` + build on the head commit) · no unresolved
+review threads or unaddressed actionable bot findings · diff entirely within the picked item's
+written scope · **every** changed path outside ADR 0009's hold list (migrations/schema, money +
+identity code, `lib/env.ts` flags/keys, middleware, `vercel.json`, dependency changes, displayed
+prices, `eve/`). A partially-held PR is entirely held. Merge-commit method, delete the branch,
+sync Linear. Doubt → hold with a PR comment saying why; a held PR is a success.
+
 ## Hard guardrails (violating any is a defect, not initiative)
 
-- **Never merge a PR.** Never enable auto-merge.
+- **Merging outside the ADR 0009 policy above** — including when `Auto-merge: off`.
 - **Never** flip `HOP_ENABLE_*` flags, edit env/secrets, run migrations against prod, or touch
   payment/booking/auth beyond the picked item's written spec. The live Duffel key is untouchable.
 - **Never** generate an economic number; never weaken the never-throw or user-scoping invariants.
@@ -77,6 +91,8 @@ Sessions with Linear/GitHub tools may fan work out instead of building:
 
 *(Runs append here — rule, date, one-line reason. Keep newest first.)*
 
+- 2026-07-04 · **Tiered autonomous merge adopted (ADR 0009)** — owner-authorized; guardrail
+  changed from "never merge" to "merge per policy"; `Auto-merge: on` line is the kill switch.
 - 2026-07-04 · **Verify Linear writes took effect** (check `updatedAt` changed in the response);
   the MCP `delegate` field silently no-ops from this integration — when a write doesn't stick,
   comment on the issue for the owner instead of retrying blind.
