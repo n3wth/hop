@@ -18,9 +18,15 @@
 import { withDb } from '@/lib/supabase-helpers'
 
 export interface Outclick {
-  /** Outclick family, e.g. 'card' (the credit-card affiliate CTA). */
+  /**
+   * Outclick family: 'card' (the credit-card affiliate CTA, /api/go/card) or
+   * 'cash' (the Kiwi cash-booking CTA, /api/go/kiwi).
+   */
   kind: string
-  /** What was clicked — for kind 'card', the canonical card id. */
+  /**
+   * What was clicked — for kind 'card', the canonical card id; for kind
+   * 'cash', the route as "AAA-BBB" (or 'unknown').
+   */
   target: string
   /** The destination URL the route redirected to. */
   url: string
