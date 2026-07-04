@@ -5,6 +5,11 @@ import { searchCash } from '@/lib/duffel'
 import { clampTravelDates } from '@/lib/travel-dates'
 
 export async function GET(request: Request) {
+  // Dev-only: this handler hits a paid upstream with no auth or rate limit, so
+  // it must not be reachable in production — use /api/search (rate-limited).
+  if (process.env.NODE_ENV === 'production') {
+    return Response.json({ ok: false, error: 'Not found' }, { status: 404 })
+  }
   const q = new URL(request.url).searchParams
   const adults = parseInt(q.get('adults') ?? '', 10)
   const { depart, return: ret } = clampTravelDates(

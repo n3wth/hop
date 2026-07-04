@@ -157,7 +157,17 @@ export default function VerdictRail({
 
         {usingPoints ? (
           <>
+            {/* The visual headline splits the sentence across the h1 and the
+                oversized count-up below it, so the h1 carries the FULL verdict
+                sentence as an aria-label and the count-up row is aria-hidden —
+                a screen reader hears one complete sentence, not a fragment
+                followed by an animating number. */}
             <h1
+              aria-label={
+                owns
+                  ? `Use your ${airlineShort} ${unit} and save $${fmt(save)} vs cash.`
+                  : `${airlineShort} ${unit} win here — by $${fmt(save)} vs cash.`
+              }
               className="hop-rise text-balance font-display text-[24px] font-semibold leading-[1.05] tracking-[-0.02em] text-white sm:text-[34px] lg:text-[40px]"
               style={{ ['--hop-delay' as string]: '60ms' }}
             >
@@ -173,8 +183,10 @@ export default function VerdictRail({
             </h1>
 
             {/* The hero moment — the dollar value, oversized and confident. The
-                count-up lands here. Tight tracking, tabular for a clean tick. */}
+                count-up lands here. Tight tracking, tabular for a clean tick.
+                aria-hidden: the h1's aria-label already speaks this figure. */}
             <div
+              aria-hidden
               className="hop-rise mt-[10px] flex items-baseline gap-3 sm:mt-3"
               style={{ ['--hop-delay' as string]: '110ms' }}
             >

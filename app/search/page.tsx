@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import { toNavUser } from '@/lib/nav-user'
 import type { SearchParams } from '@/lib/types'
-import { assembleSearch } from '@/lib/search'
+import { assembleSearch, seatsFor } from '@/lib/search'
 import type { TravelPrefs } from '@/lib/prefs-model'
 import { getUserBalances } from '@/lib/accounts'
 import { getPrefs } from '@/lib/prefs'
@@ -295,8 +295,10 @@ export default async function Search({
           />
         ) : null}
 
-        {/* other ways to fly */}
-        <ResultsList result={result} />
+        {/* other ways to fly — travelers is the engine's own seatsFor (the
+            multiplier already applied to every figure), so the party-basis
+            note can never disagree with the numbers it describes. */}
+        <ResultsList result={result} travelers={seatsFor(params)} />
 
         {/* your points — the wallet stands alone; no restating heading */}
         <div className="mt-14">

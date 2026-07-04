@@ -17,6 +17,24 @@ const nextConfig: NextConfig = {
     // (Next 16 optimizePackageImports.md)
     optimizePackageImports: ['@phosphor-icons/react'],
   },
+  // Baseline security headers on every response. No CSP yet (Next inlines
+  // scripts; a nonce rollout is its own change) — these four are the safe,
+  // breakage-free floor: no framing (clickjacking of /account//admin), no
+  // MIME sniffing, tight referrers, and no powerful browser APIs.
+  // (Next 16 headers.md)
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+        ],
+      },
+    ];
+  },
 };
 
 // withBotId wires the same-origin proxy rewrites for the BotID challenge

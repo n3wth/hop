@@ -24,6 +24,7 @@ export const STATIC_SEO_ROUTES: StaticSeoRoute[] = [
   { path: '/sweet-spots', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/points', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/ask', changeFrequency: 'weekly', priority: 0.7 },
+  { path: '/stats', changeFrequency: 'weekly', priority: 0.4 },
   { path: '/support', changeFrequency: 'monthly', priority: 0.4 },
   { path: '/privacy', changeFrequency: 'yearly', priority: 0.3 },
   { path: '/terms', changeFrequency: 'yearly', priority: 0.3 },
