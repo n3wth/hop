@@ -21,7 +21,8 @@ import { searchAwards } from '@/lib/seatsaero'
 import { getBalances } from '@/lib/awardwallet'
 import { mockCash, mockAwards, mockBalances } from '@/lib/mock'
 import { recordCppObservations } from '@/lib/valuation-telemetry'
-import { recordDegradation } from '@/lib/degradation-telemetry'
+import { iataRouteCode, recordDegradation, sanitizeReason } from '@/lib/degradation-telemetry'
+import { captureServerEvent } from '@/lib/posthog-server'
 import { canonicalizeProgram } from '@/lib/programs'
 
 export const POINTS_THRESHOLD_CPP = 2.5
@@ -65,6 +66,10 @@ export async function assembleSearch(
   let awardOptions: FlightOption[] = []
   let balances: Balance[] = []
   const degraded: string[] = []
+  // Per-source failure reasons from the upstream {ok:false} results — telemetry
+  // only (never part of SearchResult), so the incident trail says WHY a source
+  // degraded (e.g. "Duffel responded 429"), not just which one.
+  const degradedReasons: Record<string, string> = {}
 
   // MOCK is truthy only for "1"/"true"/"yes" — "0"/"false"/"" all mean live.
   const useMock = /^(1|true|yes)$/i.test(process.env.MOCK ?? '')
@@ -124,10 +129,16 @@ export async function assembleSearch(
     ])
 
     if (cashRes.ok) cashOptions = cashRes.data
-    else degraded.push('cash')
+    else {
+      degraded.push('cash')
+      degradedReasons.cash = cashRes.reason
+    }
 
     if (awardsRes.ok) awardOptions = awardsRes.data
-    else degraded.push('awards')
+    else {
+      degraded.push('awards')
+      degradedReasons.awards = awardsRes.reason
+    }
 
     if (balancesRes === null) {
       // Caller supplied balances (possibly empty) — trust them, no degrade.
@@ -369,11 +380,25 @@ export async function assembleSearch(
       : undefined
 
   // Self-improvement telemetry (ADR 0007): record which sources degraded this
-  // LIVE search — fire-and-forget (void, gated, never throws), so it cannot
-  // alter degraded[], the verdict, or anything else in the result. Mirrors
-  // the recordCppObservations hook above; mock runs never record.
+  // LIVE search AND WHY — fire-and-forget (void, gated, never throws), so it
+  // cannot alter degraded[], the verdict, or anything else in the result.
+  // Mirrors the recordCppObservations hook above; mock runs never record.
+  // Two independent sinks, independently gated: the Neon event row
+  // (HOP_ENABLE_SELF_IMPROVE) feeds the sentinel's D2 detector; the PostHog
+  // "search_degraded" event (key presence) gives ops a live, queryable trail.
+  // Both stay PII-free: no user id, validated route only, sanitized reasons.
   if (!useMock && degraded.length > 0) {
-    recordDegradation(degraded, { from: params.from, to: params.to })
+    recordDegradation(
+      degraded.map((source) => ({ source, reason: degradedReasons[source] })),
+      { from: params.from, to: params.to },
+    )
+    captureServerEvent('search_degraded', {
+      sources: degraded,
+      reasons: Object.fromEntries(
+        degraded.map((source) => [source, sanitizeReason(degradedReasons[source])]),
+      ),
+      route: iataRouteCode({ from: params.from, to: params.to }),
+    })
   }
 
   return {
