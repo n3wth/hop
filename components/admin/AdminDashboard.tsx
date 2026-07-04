@@ -7,6 +7,7 @@ import type { ImprovementFinding } from '@/lib/improvement-findings'
 import type { SupportTicket } from '@/lib/support-tickets'
 import type { Escalation } from '@/lib/escalation'
 import { CRON_JOBS } from '@/lib/health-checks'
+import Sparkline from '@/components/admin/Sparkline'
 
 interface Props {
   ownerEmail: string
@@ -36,7 +37,7 @@ export default function AdminDashboard({
   selfImproveEnabled,
 }: Props) {
   return (
-    <div className="mx-auto max-w-[var(--container-shell)] px-4 py-10 sm:px-6">
+    <div className="max-w-[var(--container-shell)] px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-semibold tracking-[-0.01em] text-text">Admin</h1>
@@ -46,12 +47,13 @@ export default function AdminDashboard({
           href="/admin/support"
           className="rounded-full border border-border bg-surface px-3.5 py-2 text-[13px] font-semibold text-text2 transition-colors hover:bg-sunk"
         >
-          Support console →
+          Inbox →
         </Link>
       </div>
 
       <Section title="This week">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+          <Stat label="Active users" metric={digest.activeUsers} sub="7-day sessions" />
           <Stat label="Booking requests" metric={digest.escalations} />
           <Stat label="New watches" metric={digest.ordersCreated} />
           <Stat label="Alerts fired" metric={digest.alertsFired} />
@@ -169,9 +171,10 @@ function Empty({ children }: { children: ReactNode }) {
   )
 }
 
-// A single stat tile — either a WeeklyMetric (count + last-week delta) or a
-// plain point-in-time number. `value === null` / `metric === null` both read
-// as "degraded", not zero — the em dash makes that visible instead of lying.
+// A single stat tile — either a WeeklyMetric (count + last-week delta + weekly
+// trend sparkline) or a plain point-in-time number. `value === null` /
+// `metric === null` both read as "degraded", not zero — the em dash makes that
+// visible instead of lying; a degraded trend simply drops the line.
 function Stat({
   label,
   metric,
@@ -185,10 +188,16 @@ function Stat({
 }) {
   const count = metric !== undefined ? metric?.count ?? null : value ?? null
   const prev = metric?.prev ?? null
+  const trend = metric?.trend ?? null
   return (
     <div className="rounded-[14px] border border-border bg-paper p-4">
       <div className="hop-num text-[22px] font-semibold text-text">{count === null ? '—' : count}</div>
       <div className="mt-1 text-[12.5px] text-text3">{label}</div>
+      {trend ? (
+        <div className="mt-2">
+          <Sparkline data={trend} label={label} />
+        </div>
+      ) : null}
       {prev !== null ? <div className="mt-1 text-[11.5px] text-text3">last week {prev}</div> : null}
       {sub ? <div className="mt-1 text-[11.5px] text-text3">{sub}</div> : null}
     </div>
