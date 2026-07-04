@@ -95,6 +95,14 @@ export async function cacheWrap<T>(
   }
 }
 
+/** Test-only: reset the in-memory fallback. In Redis-less runs (vitest, local
+    dev) every cacheSet lands in the module-level Map for the whole process, so
+    a suite that mocks fetch gets silent cache hits from an EARLIER test's
+    identical params — the fetch spy never fires. Call this between tests. */
+export function cacheClearMemory(): void {
+  memoryCache.clear()
+}
+
 /** Clear a cache key. */
 export async function cacheDelete(key: string): Promise<boolean> {
   const redis = getRedis()
