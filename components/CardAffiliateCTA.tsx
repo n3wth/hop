@@ -31,13 +31,17 @@ export default function CardAffiliateCTA({ program, unit = 'miles' }: CardAffili
     // A hairline top divider (distinct from the bordered box below it) keeps
     // this monetized module visually separate from the computed verdict math
     // above it — the stat row is hop's number, this is a paid placement, and
-    // the two should never read as one continuous block.
+    // the two should never read as one continuous block. Mobile gaps (mt-7/
+    // pt-6) match the hero's other section breaks so the left panel keeps one
+    // vertical rhythm at 375.
     <div
-      className="hop-rise mt-5 flex items-start gap-3 border-t border-white/10 pt-5"
+      className="hop-rise mt-7 border-t border-white/10 pt-6 sm:mt-5 sm:pt-5"
       style={{ ['--hop-delay' as string]: '260ms' }}
     >
-      <div className="flex flex-1 items-start gap-3 rounded-[14px] border-[1.5px] border-white/15 bg-white/[0.04] px-4 py-[14px]">
-        <span aria-hidden className="mt-[2px] flex-shrink-0 text-hero-label">
+      <div className="flex items-start gap-2.5 rounded-[14px] border-[1.5px] border-white/15 bg-white/[0.04] px-3.5 py-3 sm:gap-3 sm:px-4 sm:py-[14px]">
+        {/* leading glyph — desktop garnish only; at 375 its column steals
+            headline width and forces awkward wraps. */}
+        <span aria-hidden className="mt-[2px] hidden flex-shrink-0 text-hero-label sm:block">
           <Icon name="credit_card" size={16} />
         </span>
 
@@ -82,11 +86,13 @@ export default function CardAffiliateCTA({ program, unit = 'miles' }: CardAffili
           </p>
         </div>
 
+        {/* Dismiss — pinned top-right, negative margins keep the visual inset
+            tight while p-1.5 keeps the tap target ~32px on phones. */}
         <button
           type="button"
           onClick={() => setDismissed(true)}
           aria-label="Dismiss card offer"
-          className="-mr-1 -mt-1 flex-shrink-0 rounded-lg p-1 text-hero-label transition-colors hover:text-white"
+          className="-mr-1.5 -mt-1.5 flex-shrink-0 rounded-lg p-1.5 text-hero-label transition-colors hover:text-white"
         >
           <Icon name="close" size={20} />
         </button>

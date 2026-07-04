@@ -235,8 +235,12 @@ export default function VerdictRail({
         )}
 
         {/* Mobile: CTAs stack full-width (a wrapped pill + ragged widths read as
-            clutter at 375px); sm+ returns to the inline row. */}
-        <div className="mt-[34px] flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+            clutter at 375px); sm+ returns to the inline row. "See the math" is
+            the LAST control on purpose — its hop-collapse panel (basis-full,
+            immediately after its trigger inside this same flex-wrap container)
+            expands directly below the row, so nothing sits between the trigger
+            and its panel to visually detach them. */}
+        <div className="mt-7 flex flex-col items-stretch gap-3 sm:mt-[34px] sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
           <a
             href={ctaHref}
             className="inline-flex items-center justify-center gap-[10px] rounded-[14px] bg-white px-7 py-4 text-[16px] font-semibold text-brand-ink transition-colors hover:bg-hero-white-hover"
@@ -250,16 +254,6 @@ export default function VerdictRail({
                   ? 'Add your programs'
                   : `Sign in to see if your ${unit} win`}
           </a>
-          {/* See the math — sits to the RIGHT of Book; its panel expands below. */}
-          {pick ? (
-            <SeeTheMath
-              pick={pick}
-              cheapestCash={cash}
-              threshold={POINTS_THRESHOLD_CPP}
-              unit={unit}
-              travelers={seats}
-            />
-          ) : null}
           {/* Add to calendar — the first hop ACTION. Route + dates only; no economics. */}
           {calUrl ? (
             <a
@@ -272,9 +266,21 @@ export default function VerdictRail({
               Add to calendar
             </a>
           ) : null}
+          {/* See the math — last; its panel expands below the whole row. */}
+          {pick ? (
+            <SeeTheMath
+              pick={pick}
+              cheapestCash={cash}
+              threshold={POINTS_THRESHOLD_CPP}
+              unit={unit}
+              travelers={seats}
+            />
+          ) : null}
         </div>
 
-        <div className="hop-rise mt-8 flex flex-wrap gap-x-6 gap-y-4 border-t border-white/15 pt-7 sm:gap-10 lg:mt-[42px] lg:pt-[30px]" style={{ ['--hop-delay' as string]: '220ms' }}>
+        {/* Stat strip — a 2×2 grid on phones so the four figures read as a
+            table (flex-wrap gave a ragged 3+1 line); sm+ returns to the flex row. */}
+        <div className="hop-rise mt-7 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-white/15 pt-6 sm:mt-8 sm:flex sm:flex-wrap sm:gap-10 sm:pt-7 lg:mt-[42px] lg:pt-[30px]" style={{ ['--hop-delay' as string]: '220ms' }}>
           <HStat label="You pay" value={fmt(miles)} unit={unit} />
           <HStat label="Value" value={cpp != null ? formatValue(cpp) : '—'} />
           <HStat label="Cash price" value={`$${fmt(cash)}`} />
@@ -465,7 +471,7 @@ function PickPass({ pick }: { pick: FlightOption }) {
         <div className="flex flex-1 flex-col items-center gap-[2px]">
           <div className="flex w-full items-center gap-[6px] text-brand">
             <span className="h-px flex-1 bg-border" />
-            <Icon name="flight" size={16} className="rotate-90" />
+            <span aria-hidden className="text-[15px] font-semibold leading-none">→</span>
             <span className="h-px flex-1 bg-border" />
           </div>
           <div className="text-[11px] text-text3">

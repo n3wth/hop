@@ -3,7 +3,6 @@
 import { useCallback, useState } from 'react'
 import type { SearchResult } from '@/lib/types'
 import ResultRow from './ResultRow'
-import SectionHead from './SectionHead'
 import EmptyState from './EmptyState'
 import DegradedNote from './DegradedNote'
 import Icon from './Icon'
@@ -53,11 +52,16 @@ export default function ResultsList({ result }: ResultsListProps) {
 
   return (
     <section>
-      <div className="flex items-end justify-between">
-        {/* When there are no alternative cards, drop the "Other ways to fly"
-            heading — there are no other ways to show. */}
-        {hasCards ? <SectionHead title="Other ways to fly" note={undefined} /> : null}
-        {hasCards ? (
+      {/* Section head — ONE row sharing a single ink underline: title left,
+          expand/collapse toolbar right, both bottom-aligned on the same border
+          so they can't drift apart at 375. (Inlined rather than SectionHead so
+          the toolbar lives INSIDE the underlined row.) Dropped entirely when
+          there are no alternative cards — no other ways to show. */}
+      {hasCards ? (
+        <div className="mb-[22px] mt-14 flex items-end justify-between gap-4 border-b-[1.5px] border-text pb-4">
+          <h2 className="font-display text-[21px] font-semibold tracking-[-0.01em] text-text sm:text-[24px]">
+            Other ways to fly
+          </h2>
           <button
             type="button"
             onClick={toggleAll}
@@ -72,8 +76,8 @@ export default function ResultsList({ result }: ResultsListProps) {
               <Icon name="expand_more" size={16} />
             </span>
           </button>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       <DegradedNote degraded={degraded} />
 
