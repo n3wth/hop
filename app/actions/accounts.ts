@@ -208,6 +208,22 @@ export async function resyncGmailHistory(): Promise<Result> {
   return { ok: true, note: `Synced ${count} trip${count === 1 ? '' : 's'} from Gmail.` }
 }
 
+// --- Account deletion (the /privacy promise) ---------------------------------
+
+// Deletes every row we hold for the signed-in user (lib/account-deletion.ts),
+// including their Better Auth identity — the session cookie dies with the
+// session rows. The client redirects home on ok. Gated on the live session
+// like every other action here; never throws.
+export async function deleteAccount(): Promise<Result> {
+  const auth = await requireUser()
+  if ('error' in auth) return { ok: false, error: auth.error }
+
+  const { deleteUserAccount } = await import('@/lib/account-deletion')
+  const result = await deleteUserAccount(auth.userId)
+  if (!result.ok) return { ok: false, error: result.error ?? "Couldn't delete — try again" }
+  return { ok: true }
+}
+
 // Pages whose output depends on the user's balances.
 function revalidateBalances(): void {
   revalidatePath('/account')
