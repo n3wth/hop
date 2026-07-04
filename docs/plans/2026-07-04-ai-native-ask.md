@@ -14,10 +14,13 @@
   steps inline ("award space · seats.aero ✓ · cash · Duffel ✓ · your balances ✓"), building on
   the shipped grouped-tool-steps work (docs/plans/2026-07-02-ask-source-citations-and-tool-steps.md).
   A failed upstream renders a degraded row in-thread, DegradedNote-style — never silence.
-- [ ] **A2 — verdicts are cards, not paragraphs.** When `priceTrip`/`verdict` returns, the
-  message renders a structured mini verdict card (pick, cpp chip in tier color, miles vs cash,
-  $ saved) built from the tool-result payload. Prose narrates around the card; it never restates
-  numbers the card doesn't carry.
+- [ ] **A2 — verdicts are cards, not paragraphs.** The a2ui `verdict_card` seam already exists
+  (`app/api/concierge/route.ts` prompt §AGREEMENT); make it the primary rendering: when
+  `price_trip` (curated dataset) or `search_flights` (live `assembleSearch`) returns, the card
+  — pick, cpp chip in tier color, miles vs cash, $ saved — leads the message and prose narrates
+  around it, never restating numbers the card doesn't carry. Note: `verdict`/`sweet_spots` are
+  MCP-server tools (a different registry) — the concierge's tool contract is `price_trip` +
+  `search_flights` only, and this plan adds no new tools.
 - [ ] **A3 — actions attach to their message.** "Have hop book it" / "Watch this route" /
   "Share" sit on the verdict card they refer to. The floating top-right action row is removed;
   "What hop remembers" and "Start over" move to the composer's overflow.
@@ -46,10 +49,15 @@
 
 ## 3. Engine hooks
 
-`lib/concierge-tools.ts#priceTrip` (assembleSearch verdict), `verdict`, `sweet_spots`
-(`lib/sweet-spots.ts` — ranges only), `getUserBalances`. **Every number on a card comes from a
-tool payload; chips' text may be LLM-phrased but their actions are deterministic routes/tool
-calls; no LLM number reaches prose without a payload source.**
+The concierge's live tool contract (`lib/concierge-tools.ts`): `price_trip(code)` — deterministic
+cpp over the curated destinations dataset — and `search_flights(from,to,depart,…)` — the same
+`assembleSearch` verdict `/search` uses. Curated sweet-spot content enters via the prompt's
+dataset (ranges), not a tool. **Every number on a card comes from one of those two tool
+payloads; chips' text may be LLM-phrased but their actions are deterministic routes/tool calls;
+no LLM number reaches prose without a payload source.** The screenshot failure (fake-precise
+"$6,200 / 8.9¢/pt" with no tool call) already violates the prompt rule at
+`app/api/concierge/route.ts:370` — A5 is about *enforcement* (reviewer check + honest-range
+rendering), not a new rule.
 
 ## 4. Flags, degradation, tests, copy
 
