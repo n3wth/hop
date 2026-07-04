@@ -32,6 +32,7 @@ hold**:
   `app/api/billing/**`, `app/api/webhooks/**`, `app/api/subscriptions/**`, `lib/auth*.ts`,
   `lib/session.ts`, `lib/api-tokens.ts`, `app/api/auth/**`, checkout/`lib/duffel-orders.ts`
 - `lib/env.ts` when it adds/changes flags or keys; `middleware`/`proxy`; `vercel.json`
+- `.github/workflows/**` — CI is the merge gate itself; an agent edit could weaken it
 - `package.json`/lockfile dependency changes (supply-chain risk)
 - Any displayed price, and `eve/**` (frozen anyway)
 

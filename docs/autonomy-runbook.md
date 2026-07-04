@@ -87,6 +87,15 @@ Sessions with Linear/GitHub tools may fan work out instead of building:
   of the fleet.
 - Headless routine runs do not dispatch (connectors may be absent); they build.
 
+## Model policy (cost)
+
+The project pins **Sonnet** via `.claude/settings.json` — fresh routine sessions inherit it, so
+unattended runs never burn top-tier (Fable/Opus) subscription capacity ($200/mo Max plan; Fable
+access is temporary and priced far above Sonnet). Sonnet is the right tier for queue items;
+workflow stages that need harder judgment already raise per-stage `effort`, not the model.
+Interactive sessions may `/model opus` for gnarly architecture work — that choice is per-session
+and never persists to routines.
+
 ## Owner setup that upgrades the loop (optional, any time)
 
 - Add `LINEAR_API_KEY` + `LINEAR_TEAM_ID` to the Claude Code cloud environment → headless runs
