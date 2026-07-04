@@ -112,6 +112,14 @@ export default function VerdictRail({
   const miles = summary.bestMiles
   const cash = summary.cheapestCash
 
+  // Seat-occupying travelers (adults + children; lap infants fly free). The
+  // engine scales award miles/taxes AND cash to this party size, so every
+  // figure in the hero is a party total — say so when there's more than one.
+  const seats = Math.max(
+    1,
+    (result.params.adults || 1) + Math.max(0, result.params.children ?? 0),
+  )
+
   const airlineShort = pick?.airline.split(' ')[0] ?? 'points'
 
   return (
@@ -215,6 +223,7 @@ export default function VerdictRail({
               cheapestCash={cash}
               threshold={POINTS_THRESHOLD_CPP}
               unit={unit}
+              travelers={seats}
             />
           ) : null}
           {/* Add to calendar — the first hop ACTION. Route + dates only; no economics. */}
@@ -244,6 +253,12 @@ export default function VerdictRail({
             accent
           />
         </div>
+
+        {seats > 1 ? (
+          <p className="mt-3 text-[12px] font-medium text-hero-label">
+            Totals for {seats} travelers.
+          </p>
+        ) : null}
 
         {/* Affiliate CTA — only on a points-winning verdict, never on cash. Maps
             the winning award's program to the card that earns its currency; renders

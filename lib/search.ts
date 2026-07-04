@@ -56,6 +56,13 @@ export async function assembleSearch(
 
   // MOCK is truthy only for "1"/"true"/"yes" — "0"/"false"/"" all mean live.
   const useMock = /^(1|true|yes)$/i.test(process.env.MOCK ?? '')
+
+  // One seat per adult + child; infants ride as lap infants (no seat, no award
+  // miles). Duffel's cash total_amount already covers the WHOLE party
+  // (buildPassengers in lib/duffel.ts), while Seats.aero miles/taxes are always
+  // per-seat — so award economics are scaled to the same party total below,
+  // making both legs of every cpp comparison mean "cost to move everyone".
+  const seats = Math.max(1, (params.adults || 1) + Math.max(0, params.children ?? 0))
   if (useMock) {
     // Echo the searched route/date into the fixtures so the cards reflect the
     // query (the fixtures are authored for SFO→LAX; rewrite their route fields).
@@ -80,7 +87,16 @@ export async function assembleSearch(
       // any OTHER route silently deep-links to the wrong airports/date/pax.
       // Award options' bookingUrl (pointsBookingUrl) is program-scoped, not
       // route-scoped, so it's correct as-is and left untouched.
-      ...(o.kind === 'cash' ? { bookingUrl: cashBookingUrl(params) } : {}),
+      // Cash fixtures are authored per-seat; live Duffel returns party totals
+      // (buildPassengers). Scale so mock and live share the same semantics —
+      // otherwise the award scaling below would skew mock cpp for parties > 1.
+      ...(o.kind === 'cash'
+        ? {
+            bookingUrl: cashBookingUrl(params),
+            cashPrice: o.cashPrice != null ? o.cashPrice * seats : o.cashPrice,
+            taxes: o.taxes != null ? o.taxes * seats : o.taxes,
+          }
+        : {}),
     })
     cashOptions = mockCash().map(reroute)
     awardOptions = mockAwards().map(reroute)
@@ -158,8 +174,14 @@ export async function assembleSearch(
   // Annotate award/transfer options: compute cpp vs cheapest cash, tier,
   // youHave from balances, transfer sources, booking URL, and action intent.
   const awards: FlightOption[] = awardOptions.map((o) => {
-    const miles = o.miles ?? 0
-    const taxes = o.taxes ?? 0
+    // Upstream award miles/taxes are per-seat (Seats.aero never scales by party
+    // size); cheapestCash is a party total. Scale the award side to the party
+    // so cpp compares like-for-like — for a single seat this is a no-op. The
+    // per-seat cpp ratio is preserved: both numerator and denominator scale.
+    const partyMiles = o.miles != null ? o.miles * seats : undefined
+    const partyTaxes = o.taxes != null ? o.taxes * seats : undefined
+    const miles = partyMiles ?? 0
+    const taxes = partyTaxes ?? 0
     const value =
       cheapestCash != null && miles > 0
         ? cpp(cheapestCash, taxes, miles)
@@ -212,6 +234,8 @@ export async function assembleSearch(
 
     return {
       ...o,
+      miles: partyMiles,
+      taxes: partyTaxes,
       cpp: value,
       tier: optionTier,
       youHave: ownBalance,
