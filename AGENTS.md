@@ -18,6 +18,16 @@ Every unit of work should make the next one easier. The full guidance lives in *
 - The **`eve/`** directory is the Eve agent (a separate Vercel Eve runtime), deliberately excluded from the Next app's typecheck/lint/build — do not add it to the build graph (`eve/README.md`).
 - **Teach the system, don't just do the task.** When you learn something durable, write it where the next agent will find it automatically.
 
+# What to build next
+
+**`docs/plans/2026-07-04-business-plan.md` is the adopted business plan and the sequencing
+source of truth.** It sets pricing, revenue gates, and the phase order; its §11 is the pickup
+protocol for agents. The work queue is mirrored in Linear (team `n3wth`, project
+[hop](https://linear.app/newth/project/hop-9365da373b9a)): take the highest-priority open issue
+in the lowest open phase, respect its `blockedBy` relations and the plan's hard gates (e.g.
+billing does not flip until the four §3.1 gates pass), and follow the issue's embedded
+continuation prompt. Items marked **owner** are human-only — flag them, don't attempt them.
+
 # Content data — committed snapshots, regenerable offline
 
 Destination content is grounded in **real data fetched once, offline, and committed** — the live site

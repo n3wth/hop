@@ -18,7 +18,9 @@ from the root.
 - `app/`, `components/`, `lib/`, `public/` — the application
 - `docs/design/` — the design source of truth: `CHOSEN-editorial.html` (canonical visual
   reference), `copy-spec.md` (strict copy voice), logo assets
-- `docs/plans/` — implementation plans (e.g. the flight-optimizer plan, the Eve agent design)
+- `docs/plans/` — implementation plans (e.g. the flight-optimizer plan, the Eve agent design).
+  **`2026-07-04-business-plan.md` is the adopted business plan + sequencing source of truth —
+  start there (and the Linear `hop` project it mirrors) when deciding what to build next.**
 - `docs/decisions/` — **ADRs**: the load-bearing architectural decisions. Read the relevant one
   before changing a decided area (engine-as-source-of-truth, Eve co-location, delivery layer).
 - `docs/solutions/` — **searchable solved-problems library** (YAML frontmatter). Grep here before
