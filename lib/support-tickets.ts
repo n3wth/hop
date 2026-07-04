@@ -161,15 +161,17 @@ function rowToTicket(row: FullRow): SupportTicket | null {
   }
 }
 
-// Recent tickets, newest first (the admin console list). Empty on any failure.
-export async function listRecentTickets(limit = 100): Promise<SupportTicket[]> {
-  return withDb<SupportTicket[]>([], async (db) => {
+// Recent tickets, newest first (the admin console list). null when the db is
+// unconfigured or the read fails ("unknown", so the console can say so); [] only
+// when the table is genuinely empty. Mirrors lib/cron-heartbeat.ts#listHeartbeats.
+export async function listRecentTickets(limit = 100): Promise<SupportTicket[] | null> {
+  return withDb<SupportTicket[] | null>(null, async (db) => {
     const { data, error } = await db
       .from(TABLE)
       .select(SELECT_COLS)
       .order('created_at', { ascending: false })
       .limit(Math.min(Math.max(1, limit), 250))
-    if (error || !data) return []
+    if (error || !data) return null
     return (data as FullRow[]).map(rowToTicket).filter((t): t is SupportTicket => t !== null)
   })
 }
@@ -198,6 +200,23 @@ export async function markReplied(id: string, replyText: string): Promise<boolea
         status: 'replied',
       })
       .eq('id', id)
+    return !error
+  })
+}
+
+// Lifecycle writes the console can make on the existing status column. 'closed'
+// is the one terminal state; 'open' reopens a closed ticket. (Ingest still writes
+// 'new' and a sent reply still writes 'replied' — this union is only what the
+// owner can set by hand.)
+export type TicketLifecycleStatus = 'open' | 'closed'
+
+// Flip a ticket's status ('open' | 'closed'). Returns false on a bad id/status,
+// unconfigured db, or write error; NEVER throws.
+export async function setTicketStatus(id: string, status: TicketLifecycleStatus): Promise<boolean> {
+  if (!id) return false
+  if (status !== 'open' && status !== 'closed') return false
+  return withDb(false, async (db) => {
+    const { error } = await db.from(TABLE).update({ status }).eq('id', id)
     return !error
   })
 }

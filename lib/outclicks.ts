@@ -37,6 +37,58 @@ export interface Outclick {
   userAgent?: string | null
 }
 
+export interface OutclickRow {
+  kind: string
+  target: string
+  program: string | null
+  createdAt: string | null
+}
+
+export interface OutclickSummary {
+  /** Clicks per kind in the trailing 7 days. */
+  last7d: Record<string, number>
+  /** 7-day total across kinds. */
+  total: number
+}
+
+// The owner's revenue-reconciliation reads (/admin/ops). null = the read
+// failed/unconfigured (unknown), never a fake zero — same convention as
+// lib/cron-heartbeat.ts.
+export async function listRecentOutclicks(limit = 20): Promise<OutclickRow[] | null> {
+  return withDb<OutclickRow[] | null>(null, async (db) => {
+    const { data, error } = await db
+      .from('hop_outclicks')
+      .select('kind, target, program, created_at')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error || !data) return null
+    return (data as Array<Record<string, unknown>>).map((r) => ({
+      kind: String(r.kind ?? ''),
+      target: String(r.target ?? ''),
+      program: typeof r.program === 'string' ? r.program : null,
+      // withDb returns Postgrest-style snake_case rows.
+      createdAt: typeof r.created_at === 'string' ? r.created_at : null,
+    }))
+  })
+}
+
+export async function getOutclickSummary(now: Date = new Date()): Promise<OutclickSummary | null> {
+  return withDb<OutclickSummary | null>(null, async (db) => {
+    const since = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const { data, error } = await db
+      .from('hop_outclicks')
+      .select('kind, created_at')
+      .gte('created_at', since)
+    if (error || !data) return null
+    const last7d: Record<string, number> = {}
+    for (const row of data as Array<Record<string, unknown>>) {
+      const kind = typeof row.kind === 'string' ? row.kind : 'unknown'
+      last7d[kind] = (last7d[kind] ?? 0) + 1
+    }
+    return { last7d, total: Object.values(last7d).reduce((s, n) => s + n, 0) }
+  })
+}
+
 // Record one outclick. Never blocks or breaks the caller: every failure path
 // is swallowed (withDb already never throws; the try/catch is belt and
 // suspenders for a synchronous throw while kicking it off). The returned

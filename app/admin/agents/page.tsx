@@ -32,7 +32,9 @@ export default async function AdminAgentsPage() {
   return (
     <AgentActivity
       findings={findings}
-      tickets={tickets}
+      // listRecentTickets is null on a failed read; this surface only counts
+      // drafted/sent, so an empty list is an acceptable degradation here.
+      tickets={tickets ?? []}
       dayBuckets={mcp?.dayBuckets ?? null}
       toolCounts={mcp?.toolCounts ?? null}
       mcpWindowDays={MCP_WINDOW_DAYS}

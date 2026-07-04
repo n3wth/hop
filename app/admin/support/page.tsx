@@ -18,6 +18,8 @@ export default async function AdminSupportPage() {
   // notFound (not 403) so the route doesn't even confirm it exists to non-owners.
   if (!(await getOwnerSession())) notFound()
 
+  // null = the db read failed/unconfigured — the console renders "unavailable"
+  // for that list, distinct from a genuinely empty one.
   const [tickets, escalations] = await Promise.all([
     listRecentTickets(),
     listRecentEscalations(),

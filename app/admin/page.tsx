@@ -8,6 +8,8 @@ import { listOpenFindings } from '@/lib/improvement-findings'
 import { listRecentTickets } from '@/lib/support-tickets'
 import { listRecentEscalations } from '@/lib/escalation'
 import { isSelfImproveEnabled } from '@/lib/env'
+import { getUserCounts } from '@/lib/admin-stats'
+import { gatherOpsPreflight, countPreflightIssues } from '@/lib/admin-ops'
 import AdminDashboard from '@/components/admin/AdminDashboard'
 
 // Owner-only ops overview — the /admin landing page. Every figure is read
@@ -26,14 +28,16 @@ export default async function AdminPage() {
   const owner = await getOwnerSession()
   if (!owner) notFound()
 
-  const [digest, heartbeats, degradation, findings, tickets, escalations] = await Promise.all([
-    computeBusinessDigest(),
-    listHeartbeats(),
-    getDegradationWindowCounts(),
-    listOpenFindings(),
-    listRecentTickets(5),
-    listRecentEscalations(5),
-  ])
+  const [digest, heartbeats, degradation, findings, tickets, escalations, users] =
+    await Promise.all([
+      computeBusinessDigest(),
+      listHeartbeats(),
+      getDegradationWindowCounts(),
+      listOpenFindings(),
+      listRecentTickets(5),
+      listRecentEscalations(5),
+      getUserCounts(),
+    ])
 
   // Chrome (sidebar rail, account, nav) comes from app/admin/layout.tsx.
   return (
@@ -46,6 +50,9 @@ export default async function AdminPage() {
       recentTickets={tickets}
       recentEscalations={escalations}
       selfImproveEnabled={isSelfImproveEnabled()}
+      usersTotal={users.total}
+      usersNew7d={users.last7d}
+      preflightIssues={countPreflightIssues(gatherOpsPreflight())}
     />
   )
 }

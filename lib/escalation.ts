@@ -8,7 +8,8 @@
 // Service-role client, server-only; identity is Auth0, so we scope reads by
 // user_id in code (writes carry it too). Mirrors lib/standing-orders.ts exactly:
 // every function degrades gracefully via withDb and NEVER throws to the route or
-// the page — failures return {ok:false}/[] fallbacks.
+// the page — failures return {ok:false}/[]/null fallbacks (the admin list returns
+// null on failure so "db down" never reads as "no leads").
 //
 // SQL (run manually — this code does NOT run DDL). The CREATE TABLE lives in the
 // Drizzle migration (drizzle/0001_hop_escalations.sql, generated from the
@@ -60,6 +61,11 @@ export interface EscalationInput {
   /** Free-form trip context. */
   trip?: EscalationTrip
 }
+
+// The escalation lifecycle: 'new' (stored, untouched) → 'done' (handled). The db
+// column is free text, so reads stay `string`; writes accept only this union.
+export type EscalationStatus = 'new' | 'done'
+export const ESCALATION_STATUSES: readonly EscalationStatus[] = ['new', 'done']
 
 // A stored escalation as the manual-follow-up surface / tests read it.
 export interface Escalation {
@@ -183,17 +189,31 @@ export async function listEscalations(userId: string): Promise<Escalation[]> {
 }
 
 // ALL recent escalations, newest first — the owner-gated admin console reads this
-// (no user scoping; the route gates on owner). Empty on any failure. NEVER throws.
-export async function listRecentEscalations(limit = 100): Promise<Escalation[]> {
-  return withDb<Escalation[]>([], async (db) => {
+// (no user scoping; the route gates on owner). null when the db is unconfigured
+// or the read fails ("unknown"); [] only when genuinely empty. Mirrors
+// lib/cron-heartbeat.ts#listHeartbeats. NEVER throws.
+export async function listRecentEscalations(limit = 100): Promise<Escalation[] | null> {
+  return withDb<Escalation[] | null>(null, async (db) => {
     const { data, error } = await db
       .from(TABLE)
       .select('id, user_id, email, trip, status, created_at')
       .order('created_at', { ascending: false })
       .limit(Math.min(Math.max(1, limit), 250))
-    if (error || !data) return []
+    if (error || !data) return null
     return (data as EscalationRow[])
       .map(rowToEscalation)
       .filter((e): e is Escalation => e !== null)
+  })
+}
+
+// Flip an escalation's status — the owner marking a lead handled ('done') or
+// putting it back ('new'). Accepts only the modeled statuses. Returns false on a
+// bad id/status, unconfigured db, or write error; NEVER throws.
+export async function setEscalationStatus(id: string, status: EscalationStatus): Promise<boolean> {
+  if (!id) return false
+  if (!ESCALATION_STATUSES.includes(status)) return false
+  return withDb(false, async (db) => {
+    const { error } = await db.from(TABLE).update({ status }).eq('id', id)
+    return !error
   })
 }
