@@ -8,7 +8,7 @@ import {
   isPointsAccount,
   getBalances,
 } from '@/lib/awardwallet'
-import { pointsBookingUrl, cashBookingUrl } from '@/lib/booking'
+import { pointsBookingUrl, cashBookingUrl, kiwiSearchUrl } from '@/lib/booking'
 import { mockCash, mockAwards, mockBalances } from '@/lib/mock'
 import { cacheClearMemory } from '@/lib/cache'
 
@@ -491,11 +491,19 @@ describe('booking urls', () => {
   })
 
   it('builds a round-trip Kiwi deep-link', () => {
-    const url = cashBookingUrl(PARAMS)
+    const url = kiwiSearchUrl(PARAMS)
     expect(url).toContain('kiwi.com')
     expect(url).toContain('SFO/LAX/2026-07-09')
     expect(url).toContain('LAX/SFO/2026-07-12')
     expect(url).toContain('adults=1')
+  })
+
+  it('wraps the cash CTA in the /api/go/kiwi outclick redirect (R0.6)', () => {
+    const url = cashBookingUrl(PARAMS)
+    expect(url.startsWith('/api/go/kiwi?')).toBe(true)
+    const query = new URL(url, 'http://localhost').searchParams
+    expect(query.get('to')).toBe(kiwiSearchUrl(PARAMS))
+    expect(query.get('route')).toBe('SFO-LAX')
   })
 
   it('defaults sensibly for an unknown program/airline', () => {
@@ -531,7 +539,9 @@ describe('mock fixtures', () => {
   it('every mock option carries a tier and bookingUrl', () => {
     for (const opt of [...mockCash(), ...mockAwards()]) {
       expect(opt.tier).toBeDefined()
-      expect(opt.bookingUrl).toMatch(/^https?:\/\//)
+      // Awards deep-link out (absolute); cash goes through the first-party
+      // /api/go/kiwi outclick wrapper (same-origin path) since R0.6.
+      expect(opt.bookingUrl).toMatch(/^(https?:\/\/|\/api\/go\/kiwi\?)/)
     }
   })
 

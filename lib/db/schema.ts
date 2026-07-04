@@ -264,11 +264,12 @@ export const hopSubscriptions = pgTable('hop_subscriptions', {
 })
 
 // First-party affiliate outclick ledger — one row per /api/go/* redirect
-// (kind 'card' = the credit-card CTA behind a points-winning verdict). The
-// conversion baseline for the coming CJ/Impact partnership: today's applyUrls
-// are placeholder landing pages, so this table is the only first-party click
-// record. Anonymous by design: NO user_id column (click telemetry, not user
-// data). Written fire-and-forget by lib/outclicks.ts; counted by
+// (kind 'card' = the credit-card CTA behind a points-winning verdict;
+// kind 'cash' = the Kiwi cash-booking CTA, target = "AAA-BBB" route). The
+// reconciliation baseline for affiliate revenue: CJ/Impact card commissions
+// and Travelpayouts cash commissions are verified against these rows.
+// Anonymous by design: NO user_id column (click telemetry, not user data).
+// Written fire-and-forget by lib/outclicks.ts; counted by
 // lib/business-digest.ts.
 export const outclicks = pgTable(
   'hop_outclicks',
