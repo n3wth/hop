@@ -95,10 +95,11 @@ export async function cacheWrap<T>(
   }
 }
 
-/** Test-only: reset the in-memory fallback. In Redis-less runs (vitest, local
-    dev) every cacheSet lands in the module-level Map for the whole process, so
-    a suite that mocks fetch gets silent cache hits from an EARLIER test's
-    identical params — the fetch spy never fires. Call this between tests. */
+/**
+ * Test-only: drop every in-memory fallback entry (Redis is untouched).
+ * Suites that exercise cached clients (e.g. searchCash) call this between
+ * tests so a cached result from one test can't swallow the next test's fetch.
+ */
 export function cacheClearMemory(): void {
   memoryCache.clear()
 }

@@ -9,8 +9,8 @@ import {
   getBalances,
 } from '@/lib/awardwallet'
 import { pointsBookingUrl, cashBookingUrl } from '@/lib/booking'
-import { cacheClearMemory } from '@/lib/cache'
 import { mockCash, mockAwards, mockBalances } from '@/lib/mock'
+import { cacheClearMemory } from '@/lib/cache'
 
 const PARAMS: SearchParams = {
   from: 'SFO',
@@ -26,9 +26,8 @@ afterEach(() => {
   process.env = { ...ORIGINAL_ENV }
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
-  // searchCash/searchAwards cache successful results (lib/cache.ts in-memory
-  // fallback here — no Redis in tests). Without this reset, a later test with
-  // the same params gets a cache hit and its fetch spy never fires.
+  // searchCash caches by params (lib/duffel.ts) — clear the in-memory cache so
+  // one test's cached result can't swallow the next test's stubbed fetch.
   cacheClearMemory()
 })
 
