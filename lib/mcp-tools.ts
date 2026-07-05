@@ -11,6 +11,7 @@ import { z } from 'zod'
 import { computeCpp, topValue } from '@/lib/destinations'
 import { priceTrip, type PriceTripBalance } from '@/lib/concierge-tools'
 import { assembleSearch, verdictSummary } from '@/lib/search'
+import { clampTravelDates } from '@/lib/travel-dates'
 import { canonicalizeProgram, programById, listTransferablePrograms } from '@/lib/programs'
 import { partnersOf, transfersTo, effectiveBalanceFor } from '@/lib/transfers'
 import { cardForProgram, formatBonus } from '@/lib/card-affiliates'
@@ -104,12 +105,15 @@ export async function runVerdict(args: {
   infants?: number
   balances?: BalanceInput
 }) {
+  // MCP callers are LLMs too — clamp past/malformed dates like /api/search
+  // (year-less "August" resolved into a past year 422s Duffel every time).
+  const dates = clampTravelDates(args.depart, args.return)
   return verdictSummary(
     {
       from: args.from.trim().toUpperCase(),
       to: args.to.trim().toUpperCase(),
-      depart: args.depart,
-      return: args.return,
+      depart: dates.depart,
+      return: dates.return,
       adults: Math.max(1, args.adults ?? 1),
       // Party size drives the engine's total-cost scaling (lib/search.seatsFor)
       // — omitting these silently priced a family as a solo traveler.
