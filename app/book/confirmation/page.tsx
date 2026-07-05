@@ -6,6 +6,7 @@ import { toNavUser } from '@/lib/nav-user'
 import { auth0 } from '@/lib/auth0'
 import { getOrder } from '@/lib/duffel-orders'
 import { getBookingByOrderId } from '@/lib/bookings'
+import { loginHrefFor } from '@/lib/safe-return'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import Icon from '@/components/Icon'
@@ -26,13 +27,14 @@ export default async function ConfirmationPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
+  // Query first: the order id is this page's whole context — carry it through
+  // the login round-trip (e.g. a confirmation link opened in a fresh browser).
+  const q = await searchParams
   const session = await auth0.getSession()
-  if (!session) redirect('/login')
+  if (!session) redirect(loginHrefFor('/book/confirmation', q))
 
   const su = session.user
   const user = toNavUser(su)
-
-  const q = await searchParams
   const orderId = Array.isArray(q.order) ? q.order[0] : q.order
 
   return (
