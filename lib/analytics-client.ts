@@ -15,6 +15,11 @@ import type { FunnelEventName, FunnelEventProperties } from '@/lib/analytics'
 
 // Matches lib/posthog-server.ts / instrumentation.ts.
 const DEFAULT_HOST = 'https://us.i.posthog.com'
+// Where PostHog's own UI lives. Required whenever api_host is a reverse proxy
+// (prod routes through the managed proxy https://elephant.hop.flights via
+// NEXT_PUBLIC_POSTHOG_HOST) so toolbar/app links resolve to PostHog, not the
+// proxy. Correct and harmless when api_host is the direct ingest host too.
+const UI_HOST = 'https://us.posthog.com'
 
 type PostHogLike = {
   init: (key: string, options: Record<string, unknown>) => unknown
@@ -34,6 +39,11 @@ function getClient(): Promise<PostHogLike | null> {
     .then(({ default: posthog }) => {
       posthog.init(key, {
         api_host: (process.env.NEXT_PUBLIC_POSTHOG_HOST ?? '').trim() || DEFAULT_HOST,
+        ui_host: UI_HOST,
+        // Pin the SDK's config-defaults snapshot (PostHog's recommended value
+        // at install time) so a posthog-js upgrade can't silently change
+        // unset-option behavior under us.
+        defaults: '2026-05-30',
         // EXACTLY the five funnel events — no autocapture clicks, no
         // $pageview/$pageleave (pageviews are @vercel/analytics' job).
         autocapture: false,

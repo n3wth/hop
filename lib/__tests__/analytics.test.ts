@@ -116,6 +116,10 @@ describe('lib/analytics-client — lazy, gated, silent no-op without a key', () 
     expect(initSpy.mock.calls[0][1]).toMatchObject({
       autocapture: false,
       capture_pageview: false,
+      // Proxy-ready: ui_host must point at PostHog proper so app links resolve
+      // even when api_host is the reverse proxy; defaults pins SDK behavior.
+      ui_host: 'https://us.posthog.com',
+      defaults: '2026-05-30',
     })
     expect(captureSpy).toHaveBeenCalledWith('search_ran', { origin: 'SFO', destination: 'NRT' })
     expect(captureSpy).toHaveBeenCalledWith('verdict_viewed', {
