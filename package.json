@@ -23,6 +23,7 @@
     "@duffel/components": "^3.17.0",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "@neondatabase/serverless": "^1.1.0",
+    "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/resources": "^2.8.0",
     "@opentelemetry/sdk-node": "^0.219.0",
     "@phosphor-icons/react": "^2.1.10",
