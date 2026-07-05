@@ -18,7 +18,7 @@ fi
 echo "🔎 Starting Stripe listener to obtain webhook signing secret…"
 # The listener prints the secret and exits; we capture it.
 WEBHOOK_SECRET=$(stripe listen \
-    --forward-to localhost:3000/api/webhooks \
+    --forward-to localhost:3000/api/webhooks/stripe \
     --print-secret 2>/dev/null)
 
 # ---------- 3️⃣ Pull secret & publishable keys from Stripe CLI ----------
