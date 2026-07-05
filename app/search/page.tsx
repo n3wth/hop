@@ -226,33 +226,31 @@ export default async function Search({
   const su = session?.user
   const user = toNavUser(su)
 
-  // Signed in → ground the search in this user's real balances (manual +
-  // AwardWallet, merged); pass them in so no other user's data can leak. Signed
-  // out → undefined keeps the env-global/mock fallback inside assembleSearch.
-  // Stored travel prefs (nonstop/cabin/…) are remembered like the home airport
-  // and re-rank the verdict. Signed out → no prefs → today's cpp-only ranking.
-  const [userBalances, prefs] = await Promise.all([
-    su?.sub ? getUserBalances(su.sub) : Promise.resolve(undefined),
-    su?.sub ? getPrefs(su.sub) : Promise.resolve(undefined),
-  ])
-
-  // Origin precedence: explicit ?from= (inside parseParams) → saved home
-  // airport → "where from" cookie. ONE shared value feeds both the executed
-  // query (parseParams) and the origin pill (AppShell's homeAirport prop) so
-  // the pill never shows a different airport than the search actually ran.
+  // Fast, non-suspending inputs — searchParams/cookies never touch the
+  // network — read BEFORE the slow balances/award-space work below, so the
+  // no-destination branch can decide and render immediately instead of
+  // sitting behind it. (It used to await the same Promise.all as the results
+  // branch, so app/search/loading.tsx's results-shaped skeleton — built for
+  // the destination branch — stayed on screen for however long that upstream
+  // call took, then snapped to this structurally different prompt page.)
+  const sp = await searchParams
   const cookieStore = await cookies()
   const cookieOrigin = cookieStore.get(ORIGIN_STORAGE_KEY)?.value?.trim().toUpperCase()
-  const originSeed = prefs?.homeAirport ?? cookieOrigin
-  const sp = await searchParams
 
   // No destination named — e.g. the header's "Search" nav link — used to
   // silently run the DEFAULT_PARAMS SFO→LAX verdict and present it as if it
   // were a real result. Land on a plain search-initiation state instead: the
-  // engine only ever runs on a route the visitor actually asked for.
+  // engine only ever runs on a route the visitor actually asked for. This
+  // state doesn't run the engine, so it only needs prefs (home airport
+  // prefill) — NOT the AwardWallet-backed balances call the results branch
+  // needs; pointsTotal is simply omitted (TopNav already renders fine
+  // without it) rather than making this fast path wait on a slow call it
+  // has no use for.
   if (!hasDestination(sp)) {
-    const pointsTotal = userBalances?.reduce((s, b) => s + b.balance, 0)
+    const prefs = su?.sub ? await getPrefs(su.sub) : undefined
+    const originSeed = prefs?.homeAirport ?? cookieOrigin
     return (
-      <AppShell user={user} pointsTotal={pointsTotal} homeAirport={originSeed} hideSearch>
+      <AppShell user={user} homeAirport={originSeed} hideSearch>
         <div className="mx-auto flex min-h-[70vh] max-w-[var(--container-shell)] flex-col items-center justify-center px-2 py-16 text-center">
           <span className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand sm:text-[12px]">
             Points or cash
@@ -285,6 +283,22 @@ export default async function Search({
       </AppShell>
     )
   }
+
+  // Signed in → ground the search in this user's real balances (manual +
+  // AwardWallet, merged); pass them in so no other user's data can leak. Signed
+  // out → undefined keeps the env-global/mock fallback inside assembleSearch.
+  // Stored travel prefs (nonstop/cabin/…) are remembered like the home airport
+  // and re-rank the verdict. Signed out → no prefs → today's cpp-only ranking.
+  const [userBalances, prefs] = await Promise.all([
+    su?.sub ? getUserBalances(su.sub) : Promise.resolve(undefined),
+    su?.sub ? getPrefs(su.sub) : Promise.resolve(undefined),
+  ])
+
+  // Origin precedence: explicit ?from= (inside parseParams) → saved home
+  // airport → "where from" cookie. ONE shared value feeds both the executed
+  // query (parseParams) and the origin pill (AppShell's homeAirport prop) so
+  // the pill never shows a different airport than the search actually ran.
+  const originSeed = prefs?.homeAirport ?? cookieOrigin
 
   const params = parseParams(sp, originSeed)
   const nonstop = parseNonstop(sp)
