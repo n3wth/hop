@@ -20,10 +20,20 @@ function ready(): boolean {
   if (!booted) {
     posthog.init(key, {
       api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
+      // Where PostHog's own UI lives — required whenever api_host is a reverse
+      // proxy (prod ingests via https://elephant.hop.flights) so app/toolbar
+      // links resolve to PostHog, not the proxy. Harmless when going direct.
+      ui_host: 'https://us.posthog.com',
+      // Pin the SDK's config-defaults snapshot so a posthog-js upgrade can't
+      // silently change unset-option behavior under us.
+      defaults: '2026-05-30',
       // Pageviews on load + history changes (App Router client nav); no DOM
       // autocapture — the five funnel events are explicit and named.
       capture_pageview: 'history_change',
       autocapture: false,
+      // Anonymous visitors stay cheap anonymous events; a person profile only
+      // exists once identifyUser() runs, and earlier events merge into it.
+      person_profiles: 'identified_only',
       persistence: 'localStorage+cookie',
     })
     booted = true

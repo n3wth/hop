@@ -84,13 +84,17 @@ export const auth = betterAuth({
   },
   // R0.5 funnel event #1 — signed_up fires exactly once per new user, at the
   // moment Better Auth inserts the row (every sign-up method funnels through
-  // here). Fire-and-forget + keyed on the opaque user.id only; can never fail
-  // the sign-up itself (captureServerEvent never throws).
+  // here). Keyed on the opaque user.id only. AWAITED deliberately: better-auth
+  // awaits .after hooks, so an un-awaited capture can be frozen with the
+  // serverless function before it leaves the box. Safe to await ONLY because
+  // captureServerEvent provably never rejects and caps latency at 2s — a hook
+  // that can throw would fail the sign-up itself (see
+  // docs/solutions/2026-07-04-better-auth-after-hooks-propagate-errors.md).
   databaseHooks: {
     user: {
       create: {
         after: async (user: { id: string }) => {
-          captureServerEvent('signed_up', {}, { distinctId: user.id })
+          await captureServerEvent('signed_up', {}, { distinctId: user.id })
         },
       },
     },

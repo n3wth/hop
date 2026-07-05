@@ -100,8 +100,8 @@ export function recordOutclick(click: Outclick): Promise<void> {
     // insert, so revenue clicks join the PostHog funnel even when client JS
     // never ran (the /api/go/* redirect IS the click). Anonymous like the
     // ledger row: kind + target only, no URL (it can carry query params).
-    captureServerEvent('outclick', { kind: click.kind, target: click.target })
-    return withDb(undefined, async (db) => {
+    const capture = captureServerEvent('outclick', { kind: click.kind, target: click.target })
+    const insert = withDb<undefined>(undefined, async (db) => {
       await db.from('hop_outclicks').insert({
         kind: click.kind,
         target: click.target,
@@ -111,6 +111,10 @@ export function recordOutclick(click: Outclick): Promise<void> {
       })
       return undefined
     })
+    // Chain BOTH into the returned promise: /api/go/* hands this to after(),
+    // which must keep the function alive for the capture as well as the row.
+    // Neither ever rejects; allSettled is belt and suspenders.
+    return Promise.allSettled([insert, capture]).then(() => undefined)
   } catch {
     // Best-effort contract: a lost click row costs analytics, never UX.
     return Promise.resolve()
