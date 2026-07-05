@@ -5,12 +5,12 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Icon from './Icon'
 import FlyingBunny from './FlyingBunny'
-import Wordmark from './Wordmark'
 import AccountMenu from './AccountMenu'
 import OriginSelector from './OriginSelector'
 import { SearchForm, type SearchState, type Cabin } from './SearchBar'
 import { isoOffset } from '@/lib/dates'
 import { PRIMARY_NAV } from '@/lib/seo-routes'
+import { SITE_NAME } from '@/lib/seo'
 
 export interface TopNavProps {
   from?: string
@@ -56,10 +56,9 @@ const LogoLockup = memo(function LogoLockup() {
         carve="var(--color-bg)"
         markClassName="text-brand transition-colors group-hover:text-brand-deep"
       />
-      <Wordmark
-        size={19}
-        className="mt-[3px] text-text transition-colors group-hover:text-brand"
-      />
+      <span className="wordmark text-[19px] leading-none text-text transition-colors group-hover:text-brand">
+        {SITE_NAME}
+      </span>
     </Link>
   )
 })
