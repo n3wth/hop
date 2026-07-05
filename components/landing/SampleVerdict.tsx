@@ -80,11 +80,17 @@ export default async function SampleVerdict() {
       >
         {photo ? (
           <>
+            {/* This card sits just below the fold on a typical laptop viewport
+                and is the likely desktop LCP element — same reasoning as
+                DestinationGrid: the small thumb is plenty for a ~300px slot
+                (the 1080px `regular` is 3-4x the bytes for no visible gain),
+                and it must not be lazy (that defers it past the preload
+                scanner, delaying LCP on a near-fold image). */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={photo.url}
+              src={photo.thumb}
               alt={photo.alt}
-              loading="lazy"
+              fetchPriority="high"
               decoding="async"
               className="pointer-events-none absolute inset-0 h-full w-full object-cover"
             />

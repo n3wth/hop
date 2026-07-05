@@ -29,6 +29,7 @@ import {
 import { valuationsByName, walletValue } from '@/lib/valuations'
 import { liveValuationsByName } from '@/lib/valuations-live'
 import { effectiveBalanceFor } from '@/lib/transfers'
+import { reachableDestinations } from '@/lib/ledger-dream'
 import { POINTS_THRESHOLD_CPP } from '@/lib/search'
 import { buildConciergeTools } from '@/lib/concierge-tools'
 import { GATEWAY_MODEL } from '@/lib/ai-gateway'
@@ -571,6 +572,24 @@ function destinationsMentionedIn(question: string): Destination[] {
   })
 }
 
+// Destinations the context's real per-program balances actually reach (direct
+// or verified transfer) — not just "total points >= award" summed across every
+// currency. Mirrors lib/ledger-dream.ts#reachableDestinations; kept local
+// since context.programs (not a Balance[]) is this route's own shape. Falls
+// back to the coarse total-only affordableWith(total) when no program
+// breakdown is available at all (nothing to cross-check against) — this only
+// tightens the case where we KNOW the per-program balances and can tell they
+// don't cover the specific currency a pick needs.
+function reachablePicks(total: number, context?: ConciergeContext): Destination[] {
+  if (!context?.programs?.length) return affordableWith(total)
+  const balances: Balance[] = context.programs.map((p) => ({
+    program: p.program,
+    code: '',
+    balance: p.balance,
+  }))
+  return reachableDestinations(balances)
+}
+
 // A graceful, on-brand fallback when we can't reach the model at all.
 export function fallbackAnswer(question: string, context?: ConciergeContext): ConciergeResponse {
   const total = context?.totalPoints
@@ -587,10 +606,13 @@ export function fallbackAnswer(question: string, context?: ConciergeContext): Co
       total !== undefined && total > 0
         ? `I can't reach my travel brain right now, but here's what I know about ${first.city} — with ~${total.toLocaleString('en-US')} points, check whether it clears the miles below.`
         : `I can't reach my travel brain right now, but here's what I know about ${first.city}.`
-  } else if (total !== undefined && total > 0 && affordableWith(total).length > 0) {
-    // affordableWith is pure and this list is tiny; recomputing here (vs.
-    // hoisting) keeps the condition and the value obviously in sync.
-    picks = affordableWith(total).slice(0, 3)
+  } else if (total !== undefined && total > 0 && reachablePicks(total, context).length > 0) {
+    // affordableWith(total) sums points across every program regardless of
+    // currency — reachablePicks additionally confirms the SPECIFIC (or
+    // verified-transfer) balance toward each pick's bestProgram, same as
+    // lib/ledger-dream.ts#reachableDestinations, so this never tells someone
+    // a trip is "in reach" on points they don't hold in the right currency.
+    picks = reachablePicks(total, context).slice(0, 3)
     answer = `I can't reach my travel brain right now, but with ~${total.toLocaleString('en-US')} points a few standout trips come to mind — here are some great-value ideas to get you dreaming.`
   } else {
     // Below the cheapest destination's required miles (or no points known at

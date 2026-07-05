@@ -311,7 +311,24 @@ export default function LedgerDreamCard({
 
           {v.photo ? (
             <p className="mt-4 text-[10.5px] text-text3">
-              Photo: {v.photo.credit.name} / Unsplash
+              Photo:{' '}
+              <a
+                href={`${v.photo.credit.link}?utm_source=hop&utm_medium=referral`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline decoration-border underline-offset-2 hover:text-text2"
+              >
+                {v.photo.credit.name}
+              </a>{' '}
+              /{' '}
+              <a
+                href="https://unsplash.com/?utm_source=hop&utm_medium=referral"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline decoration-border underline-offset-2 hover:text-text2"
+              >
+                Unsplash
+              </a>
             </p>
           ) : null}
         </div>

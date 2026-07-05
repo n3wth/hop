@@ -183,7 +183,7 @@ export default async function DealsPage({
         <p className="mt-8 text-[12px] text-text3">
           Destination photography via{' '}
           <a
-            href="https://unsplash.com"
+            href="https://unsplash.com/?utm_source=hop&utm_medium=referral"
             target="_blank"
             rel="noopener noreferrer"
             className="underline decoration-border underline-offset-2 hover:text-text2"

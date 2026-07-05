@@ -13,7 +13,9 @@ export async function conciergeGallery(n = 4): Promise<ConciergeHeroPhoto[]> {
   return picks.flatMap((d) => {
     const img = photos[imageQuery(d)]
     if (!img) return []
-    return [{ thumb: img.thumb, alt: img.alt, city: d.city, countryCode: d.countryCode }]
+    return [
+      { thumb: img.thumb, alt: img.alt, city: d.city, countryCode: d.countryCode, credit: img.credit },
+    ]
   })
 }
 
@@ -32,5 +34,6 @@ export async function conciergeBackdrop(): Promise<ConciergeHeroPhoto | null> {
     alt: img.alt,
     city: top.city,
     countryCode: top.countryCode,
+    credit: img.credit,
   }
 }

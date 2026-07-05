@@ -13,10 +13,12 @@ import {
   imageQuery,
   computeCpp,
 } from '@/lib/destinations'
+import { reachableDestinations } from '@/lib/ledger-dream'
 import { withoutAvoided, EMPTY_MEMORY_CONTEXT, type MemoryContext } from '@/lib/memory-context'
 import { destinationImages } from '@/lib/images'
 import { WALLET_VALUE_CAVEAT } from '@/lib/valuations'
 import type { SearchState } from '@/components/SearchBar'
+import type { Balance } from '@/lib/types'
 
 // The personalized home for a signed-in member. NOT the marketing page — the
 // AGENT is the front door: it leads with a prominent "talk to hop" composer that
@@ -32,6 +34,7 @@ export default async function SignedInHome({
   hasHomeAirport = true,
   heroBackdrop,
   memory = EMPTY_MEMORY_CONTEXT,
+  balances = [],
 }: {
   first?: string
   programs: number
@@ -45,11 +48,20 @@ export default async function SignedInHome({
   /** Unified memory (lib/memory-context) — drops the member's stated "avoid"
       places from the feed. Defaults to the empty context → today's exact behavior. */
   memory?: MemoryContext
+  /** The member's real per-program balances. Confirms "in reach" against the
+      SPECIFIC (non-transferable) currency each destination's bestProgram
+      needs — totalPoints alone sums across every program regardless of
+      currency, so it can flag a destination reachable when the member holds
+      none of what it actually takes. Defaults to [] → today's exact fallback
+      (the totalPoints-only affordableWith gate) when a caller has nothing. */
+  balances?: Balance[]
 }) {
   // Personalized to the member's real balance; best value first. If they're
   // light on points (or programs failed), fall back to the universally great
-  // redemptions so the module is never empty.
-  const affordable = affordableWith(totalPoints)
+  // redemptions so the module is never empty. reachableDestinations() adds the
+  // per-program (or verified-transfer) confirmation on top of the raw-points
+  // affordableWith() gate — see lib/ledger-dream.ts.
+  const affordable = balances.length > 0 ? reachableDestinations(balances) : affordableWith(totalPoints)
   const personalized = affordable.length >= 4
   // M5 — compounding: drop the member's STATED "avoid" places from this
   // engine-ranked module. Value order is PRESERVED (hop leads with value; loved
