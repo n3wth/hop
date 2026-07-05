@@ -27,12 +27,13 @@ function compactMiles(n: number): string {
 // card shadow; hover adds a restrained transform-only lift and tints the border.
 // Links into a real
 // search seeded for that destination so the dream is one tap from the verdict.
-function DestinationCard({
+export function DestinationCard({
   d,
   origin,
   photo,
   index = 0,
   stagger = false,
+  viaBadge,
 }: {
   d: Destination
   origin: string
@@ -41,6 +42,10 @@ function DestinationCard({
   index?: number
   /** Opt into a staggered hop-rise entrance (marketing surfaces only). */
   stagger?: boolean
+  /** Shown when this card is only reachable via a transfer play (the
+      "Unlocked by transfer" shelf) — the source bank currency + ratio,
+      straight from lib/transfers#effectiveBalanceFor. Omitted elsewhere. */
+  viaBadge?: { source: string; ratio: string }
 }) {
   const cppVal = computeCpp(d)
   // A round trip, seeded like the header search (depart ≈ +10d, return ≈ +3d
@@ -142,6 +147,15 @@ function DestinationCard({
           <Icon name="loyalty" size={12} className="flex-shrink-0 text-brand" />
           <span className="truncate">{d.bestProgram}</span>
         </div>
+
+        {viaBadge ? (
+          <div className="mt-1.5 flex items-center gap-1.5 text-[11.5px] font-semibold text-brand">
+            <Icon name="swap_horiz" size={12} className="flex-shrink-0" />
+            <span className="truncate">
+              via {viaBadge.source} · {viaBadge.ratio}
+            </span>
+          </div>
+        ) : null}
       </div>
     </Link>
   )
