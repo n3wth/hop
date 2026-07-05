@@ -19,6 +19,7 @@ import { tool, gateway } from 'ai'
 import { z } from 'zod'
 import { computeCpp, destinationByCode } from '@/lib/destinations'
 import { POINTS_THRESHOLD_CPP, verdictSummary } from '@/lib/search'
+import { clampTravelDates } from '@/lib/travel-dates'
 import { effectiveBalanceFor } from '@/lib/transfers'
 import type { Balance } from '@/lib/types'
 import { CABINS } from '@/lib/prefs-model'
@@ -341,13 +342,19 @@ export function buildConciergeTools(balances: PriceTripBalance[], userId?: strin
       description:
         "Run hop's REAL, LIVE points-vs-cash verdict for a specific route and date — the SAME engine the /search page uses (live Duffel cash fares + seats.aero award space). Use this whenever the user gives (or you know) a specific date, or asks about ANY airport — including ones outside hop's curated destinations list (price_trip only covers those ~30). ALWAYS call this before stating a live miles/cash/CPP figure for a specific date — never invent them. Degraded sections (cash or awards unavailable) are reported honestly — say so, never fill the gap with an invented number.",
       inputSchema: searchFlightsSchema,
-      execute: async ({ from, to, depart, return: ret, adults, children, infants }) =>
-        verdictSummary(
+      execute: async ({ from, to, depart, return: ret, adults, children, infants }) => {
+        // The model resolves relative/year-less dates ("August 12-19") and can
+        // land in a PAST year -> Duffel 422 on every call. This was the first
+        // real bug the degradation telemetry caught in prod (2026-07-05,
+        // search_degraded SEA-FCO "Duffel responded 422", every attempt).
+        // Clamp exactly like /api/search does — past dates rise to today.
+        const dates = clampTravelDates(depart, ret)
+        return verdictSummary(
           {
             from: from.trim().toUpperCase(),
             to: to.trim().toUpperCase(),
-            depart,
-            return: ret,
+            depart: dates.depart,
+            return: dates.return,
             adults: Math.max(1, adults ?? 1),
             // Party size drives the engine's total-cost scaling — a family's
             // verdict must be priced for the whole party, not one seat.
@@ -355,7 +362,8 @@ export function buildConciergeTools(balances: PriceTripBalance[], userId?: strin
             ...(infants ? { infants: Math.max(0, infants) } : {}),
           },
           balances.map((b) => ({ program: b.program, code: '', balance: b.balance })),
-        ),
+        )
+      },
     }),
   }
 }

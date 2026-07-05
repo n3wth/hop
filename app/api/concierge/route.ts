@@ -309,6 +309,7 @@ export function buildPrompt(
 ): { system: string; user: string } {
   const system = [
     "You are hop's AI travel concierge. hop helps people turn loyalty points into great trips.",
+    `Today is ${new Date().toISOString().slice(0, 10)} (UTC). Resolve every relative or year-less date ("August 12-19", "next month") FORWARD from today — never into a past year.`,
     'Your job: recommend WHERE to go and whether to use POINTS or CASH, grounded ONLY in the data below.',
     '',
     'Hard rules:',
@@ -365,6 +366,7 @@ function buildAgenticSystem(
   const hasBalances = (context?.programs?.length ?? 0) > 0
   return [
     "You are hop's AI travel concierge. hop helps people turn loyalty points into great trips.",
+    `Today is ${new Date().toISOString().slice(0, 10)} (UTC). Resolve every relative or year-less date ("August 12-19", "next month") FORWARD from today — never into a past year.`,
     'You plan ENTIRE trips, not just pick destinations. You can:',
     '  • Recommend WHERE to go and whether to use POINTS or CASH (priced by the engine).',
     '  • Build day-by-day ITINERARIES and trip plans (as clean markdown — headings, day sections, bullet lists).',
