@@ -11,6 +11,7 @@ import {
   isAllowedCashOutclickUrl,
   kiwiSearchUrl,
   normalizeOutclickRoute,
+  tpKiwiAttributionUrl,
 } from '@/lib/booking'
 import type { SearchParams } from '@/lib/types'
 
@@ -29,9 +30,28 @@ describe('isAllowedCashOutclickUrl', () => {
     expect(isAllowedCashOutclickUrl('https://kiwi.com/en/')).toBe(true)
   })
 
-  it('accepts tp.media (Travelpayouts) affiliate deep-links', () => {
+  it('accepts tp.media (Travelpayouts) redirects ONLY when ?u= is a kiwi.com deep-link', () => {
     expect(isAllowedCashOutclickUrl('https://tp.media/r?marker=545389&p=100&u=https%3A%2F%2Fwww.kiwi.com')).toBe(true)
-    expect(isAllowedCashOutclickUrl('https://www.tp.media/r?marker=545389')).toBe(true)
+    expect(isAllowedCashOutclickUrl('https://www.tp.media/r?u=https%3A%2F%2Fkiwi.com%2Fen%2F')).toBe(true)
+    // exactly what our builder mints round-trips
+    expect(isAllowedCashOutclickUrl(tpKiwiAttributionUrl(kiwiSearchUrl(PARAMS)))).toBe(true)
+  })
+
+  it('rejects tp.media whose ?u= is NOT kiwi.com — tp.media/r is an open redirector', () => {
+    // The core open-redirect: tp.media forwards ?u= to ANY domain. An allowlisted
+    // OUTER host must never be enough; the inner target has to be kiwi.com too.
+    expect(isAllowedCashOutclickUrl('https://tp.media/r?marker=745576&u=https%3A%2F%2Fevil.example%2Fphish')).toBe(false)
+    // no ?u= at all — not something our builder mints
+    expect(isAllowedCashOutclickUrl('https://tp.media/r?marker=545389')).toBe(false)
+    expect(isAllowedCashOutclickUrl('https://www.tp.media/r')).toBe(false)
+    // inner target uses the same host-spoofing tricks the outer guard rejects
+    expect(isAllowedCashOutclickUrl('https://tp.media/r?u=https%3A%2F%2Fwww.kiwi.com.evil.example%2F')).toBe(false)
+    expect(isAllowedCashOutclickUrl('https://tp.media/r?u=https%3A%2F%2Fevil.kiwi.com%2F')).toBe(false)
+    // inner target is a non-https / credentialed URL
+    expect(isAllowedCashOutclickUrl('https://tp.media/r?u=http%3A%2F%2Fwww.kiwi.com%2F')).toBe(false)
+    expect(isAllowedCashOutclickUrl('https://tp.media/r?u=https%3A%2F%2Fuser%3Apass%40www.kiwi.com%2F')).toBe(false)
+    // inner is unparseable junk
+    expect(isAllowedCashOutclickUrl('https://tp.media/r?u=not-a-url')).toBe(false)
   })
 
   it('rejects javascript:, data: and other non-https schemes', () => {
@@ -101,11 +121,33 @@ describe('cashOutclickPath', () => {
   })
 })
 
+describe('tpKiwiAttributionUrl', () => {
+  it('mints the tp.media redirect with this property\'s attribution ids', () => {
+    const url = new URL(tpKiwiAttributionUrl('https://www.kiwi.com/en/'))
+    expect(url.origin + url.pathname).toBe('https://tp.media/r')
+    // The exact values Travelpayouts' link-conversion API returns for
+    // hop.flights (trs 545389) + Kiwi.com — verified 2026-07-04 against
+    // POST emrldtp.com/link-switch/v1/convert. If these drift, commissions
+    // silently stop attributing.
+    expect(url.searchParams.get('marker')).toBe('745576')
+    expect(url.searchParams.get('trs')).toBe('545389')
+    expect(url.searchParams.get('p')).toBe('4136')
+    expect(url.searchParams.get('campaign_id')).toBe('111')
+  })
+
+  it('round-trips the wrapped Kiwi deep-link through ?u= and passes the allowlist', () => {
+    const kiwi = kiwiSearchUrl(PARAMS)
+    const wrapped = tpKiwiAttributionUrl(kiwi)
+    expect(new URL(wrapped).searchParams.get('u')).toBe(kiwi)
+    expect(isAllowedCashOutclickUrl(wrapped)).toBe(true)
+  })
+})
+
 describe('cashBookingUrl (wrapper)', () => {
-  it('round-trips: the wrapped destination is the exact Kiwi deep-link and passes the allowlist', () => {
+  it('round-trips: the wrapped destination is the tp.media attribution link and passes the allowlist', () => {
     const query = new URL(cashBookingUrl(PARAMS), 'http://localhost').searchParams
     const destination = query.get('to')!
-    expect(destination).toBe(kiwiSearchUrl(PARAMS))
+    expect(destination).toBe(tpKiwiAttributionUrl(kiwiSearchUrl(PARAMS)))
     expect(isAllowedCashOutclickUrl(destination)).toBe(true)
     expect(query.get('route')).toBe('SFO-LAX')
   })

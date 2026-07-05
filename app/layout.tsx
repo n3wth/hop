@@ -157,11 +157,13 @@ export default function RootLayout({
             AppShell adds identify() for signed-in sessions. No-ops without
             NEXT_PUBLIC_POSTHOG_KEY. */}
         <PostHogBoot />
-        {/* Travelpayouts auto-attribution tag (project 545389). Monetizes outbound
-            clicks to partner sites (the Kiwi cash deep-links in lib/booking.ts) by
-            attributing them to hop's affiliate account — WITHOUT this, cash-booking
-            clicks earn nothing. lazyOnload keeps it entirely off the critical path
-            (attribution happens at click time, not render time). No hop data is
+        {/* Travelpayouts auto-attribution tag (project/trs 545389, marker
+            745576). Decorates clicks on links that point DIRECTLY at partner
+            domains. It cannot see through the same-origin /api/go/kiwi ledger
+            redirect, so the cash CTAs do NOT rely on it — lib/booking.ts
+            #cashBookingUrl bakes attribution into the redirect destination
+            (tp.media). The tag stays for any other partner links on the page.
+            lazyOnload keeps it entirely off the critical path. No hop data is
             sent; it only decorates outbound partner navigations. Production-only:
             the tag 403s on non-whitelisted origins (localhost), spamming the
             console — and dev clicks shouldn't attribute anyway. */}
