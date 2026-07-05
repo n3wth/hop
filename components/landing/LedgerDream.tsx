@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { reachableDreamCount, type LedgerDream as LedgerDreamData } from '@/lib/ledger-dream'
-import { dreamRotationSlots } from '@/lib/verdict-shelves'
+import { dreamRotationSlots, MAX_DREAM_SLOTS } from '@/lib/verdict-shelves'
 import { resolveDreamSession } from '@/lib/dream-server'
 import { toDreamCardData, dreamSearchHref } from '@/lib/dream-view'
 import { destinationImage, destinationImages, type DestImage } from '@/lib/images'
@@ -80,9 +80,21 @@ function DreamMiniCard({
 // with no props. Renders nothing only if the engine somehow yields no
 // destination (it always returns one, even signed-out), so this is
 // effectively always shown.
-export default async function LedgerDream() {
+export default async function LedgerDream({
+  excludeCodes = [],
+}: {
+  /** Destination codes another module above already showcased (the signed-in
+      hero rotator) — the dream must ADD a place, not repeat one. Generates
+      extra slots and filters, so exclusion never empties the row. */
+  excludeCodes?: string[]
+} = {}) {
   const { balances, origin } = await resolveDreamSession()
-  const slots = dreamRotationSlots(balances)
+  const excluded = new Set(excludeCodes)
+  const raw = dreamRotationSlots(balances, MAX_DREAM_SLOTS + excluded.size)
+  const filtered = raw.filter((d) => !excluded.has(d.destination.code))
+  // Everything reachable was already in the hero → fall back to the raw slots
+  // rather than rendering nothing (the dream row is effectively always shown).
+  const slots = (filtered.length > 0 ? filtered : raw).slice(0, MAX_DREAM_SLOTS)
   const [hero, ...rest] = slots
   const variantCount = Math.max(1, reachableDreamCount(balances))
 
