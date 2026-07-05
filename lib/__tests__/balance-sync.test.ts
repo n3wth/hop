@@ -111,6 +111,27 @@ describe('validateExtracted — the clamp', () => {
     expect(out![0].code).toBe('UA')
   })
 
+  it('rejects a balance whose near occurrence is only a substring of an order number (P1 regression)', () => {
+    // The only STANDALONE "500" ($500 cert) sits far from the program; near the
+    // program, "500" exists only inside the order number 9004500. The old
+    // substring proximity check accepted it; the token-boundary check rejects it.
+    const text =
+      `United MileagePlus. Order ref 9004500.\n${'filler text. '.repeat(40)}\nSeparately, a $500 companion certificate.`
+    expect(
+      validateExtracted({ balances: [{ program: 'United MileagePlus', balance: 500 }] }, text),
+    ).toBeNull()
+  })
+
+  it('accepts a balance that appears as a standalone token near the program', () => {
+    const text = 'United MileagePlus balance: 45,230 miles. Order ref 9004500.'
+    const out = validateExtracted(
+      { balances: [{ program: 'United MileagePlus', balance: 45230 }] },
+      text,
+    )
+    expect(out).not.toBeNull()
+    expect(out![0].balance).toBe(45230)
+  })
+
   it('rejects a real number that appears nowhere near the claimed program', () => {
     // An order number 500+ chars away from the only program mention must not
     // be attributable to it on the auto-apply email rail.

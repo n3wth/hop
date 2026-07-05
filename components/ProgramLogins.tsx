@@ -43,7 +43,7 @@ export default function ProgramLogins({
       <div className="px-5 py-4 sm:px-6">
         <div className="text-[14px] font-semibold text-text">Auto-sync with your login</div>
         <p className="mt-0.5 text-[14px] leading-[1.5] text-text2">
-          hop signs in and reads your balance for you, on its own. Your password is
+          hop signs in and reads your balance automatically. Your password is
           encrypted and only ever used to sign in — never shown again.
         </p>
         {!autosyncLive ? (

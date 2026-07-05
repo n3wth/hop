@@ -126,10 +126,26 @@ function programMentionIndices(
   return out
 }
 
-// Is some occurrence of the balance (plain or comma-grouped) within
-// PROXIMITY_CHARS of some mention of the program? The attribution half of the
-// clamp: balanceAppearsInText proves the number was transcribed, this proves
-// it was transcribed from near the program it's claimed for.
+// Positions where `balance` occurs as a STANDALONE number token — the maximal
+// digit/comma run at that spot must normalize to exactly the balance. This is
+// the token-boundary check that a bare `indexOf` lacks: "500" must be its own
+// number, not a substring of an order number like "9004500" (whose only "500"
+// is interior). Scans the same maximal-token shape textNumberSet uses.
+function balanceTokenIndices(balance: number, text: string): number[] {
+  const target = String(balance)
+  const out: number[] = []
+  for (const m of text.matchAll(/\d[\d,.\s]*\d|\d/g)) {
+    const digits = m[0].replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+    if (digits === target) out.push(m.index)
+  }
+  return out
+}
+
+// Is a STANDALONE occurrence of the balance within PROXIMITY_CHARS of some
+// mention of the program? The attribution half of the clamp: balanceAppearsInText
+// proves the number was transcribed, this proves it was transcribed as a real
+// number token near the program it's claimed for — so a hallucinated balance
+// can't borrow the digits of an adjacent order/confirmation number.
 export function balanceNearProgram(
   balance: number,
   program: string,
@@ -138,13 +154,8 @@ export function balanceNearProgram(
 ): boolean {
   const mentions = programMentionIndices(program, def, lowerText)
   if (mentions.length === 0) return false
-  for (const rep of new Set([String(balance), balance.toLocaleString('en-US')])) {
-    let i = lowerText.indexOf(rep)
-    while (i !== -1) {
-      const at = i
-      if (mentions.some((m) => Math.abs(m - at) <= PROXIMITY_CHARS)) return true
-      i = lowerText.indexOf(rep, i + 1)
-    }
+  for (const at of balanceTokenIndices(balance, lowerText)) {
+    if (mentions.some((m) => Math.abs(m - at) <= PROXIMITY_CHARS)) return true
   }
   return false
 }
@@ -416,6 +427,19 @@ export async function getOrCreateSyncAlias(userId: string): Promise<string | nul
     }
     return null
   })
+}
+
+// Rotate the user's alias — delete the old row and mint a fresh one, so a
+// leaked forwarding address can be revoked. Returns the new alias, or null on
+// failure (the caller keeps showing the old one).
+export async function regenerateSyncAlias(userId: string): Promise<string | null> {
+  if (!userId) return null
+  const cleared = await withDb(false, async (db) => {
+    const { error } = await db.from('hop_sync_addresses').delete().eq('user_id', userId)
+    return !error
+  })
+  if (!cleared) return null
+  return getOrCreateSyncAlias(userId)
 }
 
 // Alias local part → userId via DB lookup, or null. Case-insensitive (mail
