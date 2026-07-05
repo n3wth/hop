@@ -19,6 +19,35 @@ Every unit of work should make the next one easier. The full guidance lives in *
 - **Teach the system, don't just do the task.** When you learn something durable, write it where the next agent will find it automatically.
 - **Never bundle a PR with unrelated WIP.** This repo runs many concurrent worktrees, so a checkout often has unrelated uncommitted changes sitting in it. Check `git status` first; if there's unrelated WIP, branch off `origin/main` in a fresh worktree, copy in only your files, and PR from there (`CLAUDE.md` § Conventions & gotchas has the exact recipe).
 
+# Worktree quickstart — any agent (Cursor, Codex, Devin, Claude, human)
+
+The unit of work is a **fresh worktree off `origin/main` → PR → merge**. Never commit to `main`
+(a git `pre-commit` hook enforces this once setup has run). The whole loop:
+
+```bash
+git worktree add /tmp/<name> origin/main -b <type>/<branch>   # fresh, isolated checkout
+cd /tmp/<name>
+scripts/setup-worktree.sh              # .env.local (MOCK=1) + npm ci + git main-guard
+scripts/setup-worktree-auth.sh         # ONLY if you need sign-in (/account, /admin):
+                                       #   pulls secrets from 1Password "Hop Local Dev",
+                                       #   runs db:migrate (needs `op` CLI signed in)
+npm run dev                            # fixtures — no upstream keys needed
+npm run check                          # lint + typecheck + tests — the pre-ship gate
+npx vitest run lib/__tests__/<f>.test.ts   # single test file; -t "name" for one test
+git commit …                           # verify `git branch --show-current` ≠ main first
+git push -u origin <type>/<branch>
+gh pr create --head <type>/<branch> --base main   # --head EXPLICITLY (worktree inference fails)
+gh pr merge <type>/<branch> --merge --auto --delete-branch
+git -C <main-checkout> worktree remove /tmp/<name>   # after merge
+```
+
+- Cursor's native worktrees run `scripts/setup-worktree.sh` automatically (`.cursor/worktrees.json`).
+- `MOCK=1` fixtures are the default; don't wire a shared `DATABASE_URL` into a worktree unless the
+  task genuinely needs persistence (parallel migrations against one Neon DB race each other).
+- Local Google sign-in uses the same OAuth client as prod (project `hop-auth`); callbacks for
+  `localhost:3000` and `:3001` are pre-authorized. `redirect_uri_mismatch` on another port → add
+  that port's callback in Cloud Console (see `docs/solutions/2026-07-05-local-google-oauth-redirect-uri.md`).
+
 # What to build next
 
 **`docs/plans/2026-07-04-business-plan.md` is the adopted business plan and the sequencing

@@ -33,5 +33,13 @@ else
   npm install
 fi
 
+# Git-native never-commit-to-main guard (scripts/hooks/pre-commit) — covers
+# every agent/tool that drives git, not just Claude Code's own hook. Written
+# to the SHARED repo config, so one run protects every worktree.
+if [ -x scripts/hooks/pre-commit ]; then
+  git config core.hooksPath scripts/hooks
+  echo "setup-worktree: core.hooksPath=scripts/hooks (main-commit guard active)."
+fi
+
 echo "setup-worktree: ready. 'npm run dev' for fixtures."
 echo "setup-worktree: for sign-in (/account, /admin), run scripts/setup-worktree-auth.sh in this worktree."
