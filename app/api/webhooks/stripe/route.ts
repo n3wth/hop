@@ -1,4 +1,4 @@
-// POST /api/webhooks — the Stripe webhook: the primary writer of subscription
+// POST /api/webhooks/stripe — the Stripe webhook: the primary writer of subscription
 // tier state (the daily sync-stripe cron reconciles missed deliveries through
 // the SAME recordSubscription lane). verify (lib/stripe.ts#verifyStripeEvent)
 // → map (lib/billing.ts, pure + unit-tested) → write

@@ -109,7 +109,7 @@ no-op even with keys present until the flag flips.
 **Turn on:** `HOP_ENABLE_BILLING=1` + `STRIPE_SECRET_KEY` +
 `STRIPE_WEBHOOK_SECRET` (tier writes happen only on signed webhook events) +
 `STRIPE_PRICE_ID_PRO_MONTHLY` (yearly id optional; `NEXT_PUBLIC_STRIPE_PRICE_*`
-aliases win when set). Point a Stripe webhook at `/api/billing/webhook`.
+aliases win when set). Point a Stripe webhook at `/api/webhooks/stripe`.
 `/api/cron/sync-stripe` (daily) reconciles tiers.
 
 **Turn off:** unset `HOP_ENABLE_BILLING` — /account hides billing, checkout and
