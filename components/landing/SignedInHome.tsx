@@ -6,6 +6,8 @@ import DestinationGrid from '@/components/landing/DestinationGrid'
 import AgentComposer from '@/components/landing/AgentComposer'
 import type { ConciergeHeroPhoto } from '@/components/ConciergeHero'
 import LedgerDream from '@/components/landing/LedgerDream'
+import TransferUnlockShelf from '@/components/landing/TransferUnlockShelf'
+import LiveValuationShelf from '@/components/landing/LiveValuationShelf'
 import HomeAirportPrompt from '@/components/HomeAirportPrompt'
 import {
   affordableWith,
@@ -258,6 +260,21 @@ export default async function SignedInHome({
           <DestinationGrid destinations={picks} origin={seed.from} photos={photos} />
         </div>
       </section>
+
+      {/* ── UNLOCKED BY TRANSFER — trips one verified transfer away ──────── */}
+      {/* Never repeats a destination already shown in "Within reach" above
+          (excludeCodes = the exact codes rendered there). Omits entirely
+          (returns null) when there's nothing left to show. */}
+      <TransferUnlockShelf
+        balances={balances}
+        excludeCodes={picks.map((d) => d.code)}
+        origin={seed.from}
+      />
+
+      {/* ── YOUR POINTS, PRICED LIVE — real observed cpp for held programs ── */}
+      {/* Ships completely dark until a program the member holds crosses the
+          live-valuation trust threshold (lib/valuations-live). */}
+      <LiveValuationShelf balances={balances} />
 
       {/* ── RUN A SEARCH — secondary fast-path ───────────────────────────── */}
       {/* The agent above is the primary way in; search is the precise fast-path
