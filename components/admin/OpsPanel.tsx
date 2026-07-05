@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHeader'
 import type { PreflightRow, PreflightStatus } from '@/lib/admin-ops'
 import type { DegradationEventRow } from '@/lib/degradation-telemetry'
 import type { ValuationOverride } from '@/lib/valuation-overrides'
@@ -31,11 +32,15 @@ export default function OpsPanel({
   recentOutclicks,
 }: Props) {
   return (
-    <div className="max-w-[var(--container-shell)] px-4 py-8 sm:px-6 lg:px-8">
-      <h1 className="font-display text-2xl font-semibold tracking-[-0.01em] text-text">Ops</h1>
-      <p className="mt-1 text-[13px] text-text3">
-        Flag seams, revenue ledger, degradation, and watches — what&apos;s actually on.
-      </p>
+    <AdminPageShell>
+      <AdminPageHeader
+        title="Ops"
+        description="Flag seams, revenue ledger, degradation, and watches — what's actually on."
+        crumbs={[
+          { label: 'Admin', href: '/admin' },
+          { label: 'Ops' },
+        ]}
+      />
 
       <Section title="Preflight">
         <div className="flex flex-col gap-2">
@@ -173,13 +178,13 @@ export default function OpsPanel({
           )}
         </Section>
       </div>
-    </div>
+    </AdminPageShell>
   )
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mt-10">
+    <section className="mt-8">
       <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">{title}</h2>
       <div className="mt-3">{children}</div>
     </section>

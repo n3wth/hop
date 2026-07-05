@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHeader'
 import type { ImprovementFinding } from '@/lib/improvement-findings'
 import type { SupportTicket } from '@/lib/support-tickets'
 import Sparkline from '@/components/admin/Sparkline'
@@ -29,28 +30,36 @@ export default function AgentActivity({
   const sent = tickets.filter((t) => t.repliedAt).length
 
   return (
-    <div className="max-w-[var(--container-shell)] px-4 py-8 sm:px-6 lg:px-8">
-      <h1 className="font-display text-2xl font-semibold tracking-[-0.01em] text-text">Agents</h1>
-      <p className="mt-1 text-[13px] text-text3">
-        What the machines did — findings filed, replies drafted, engine calls made. Dev-run
-        history lives in{' '}
-        <a
-          href="https://github.com/n3wth/hop/blob/main/docs/autonomy-log.md"
-          className="font-medium text-text2 underline-offset-2 transition-colors hover:text-text hover:underline"
-        >
-          the autonomy log
-        </a>{' '}
-        and{' '}
-        <a
-          href="https://linear.app/newth/project/hop-9365da373b9a"
-          className="font-medium text-text2 underline-offset-2 transition-colors hover:text-text hover:underline"
-        >
-          Linear
-        </a>
-        .
-      </p>
+    <AdminPageShell>
+      <AdminPageHeader
+        title="Agents"
+        description={
+          <>
+            What the machines did — findings filed, replies drafted, engine calls made. Dev-run
+            history lives in{' '}
+            <a
+              href="https://github.com/n3wth/hop/blob/main/docs/autonomy-log.md"
+              className="font-medium text-text2 underline-offset-2 transition-colors hover:text-text hover:underline"
+            >
+              the autonomy log
+            </a>{' '}
+            and{' '}
+            <a
+              href="https://linear.app/newth/project/hop-9365da373b9a"
+              className="font-medium text-text2 underline-offset-2 transition-colors hover:text-text hover:underline"
+            >
+              Linear
+            </a>
+            .
+          </>
+        }
+        crumbs={[
+          { label: 'Admin', href: '/admin' },
+          { label: 'Agents' },
+        ]}
+      />
 
-      <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
+      <div className="mt-8 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
         <Section title="Development — self-improvement loop">
           {findings === null ? (
             <Empty>Findings are unavailable.</Empty>
@@ -133,13 +142,13 @@ export default function AgentActivity({
           </div>
         )}
       </Section>
-    </div>
+    </AdminPageShell>
   )
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mt-10">
+    <section className="mt-8">
       <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">{title}</h2>
       <div className="mt-3">{children}</div>
     </section>

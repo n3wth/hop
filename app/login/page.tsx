@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 // backslash destinations so returnTo can never become an open redirect.
 
 // Branded welcome / sign-in landing. Auth is Better Auth's Google social login
-// (client-initiated POST → Google). Already signed in → /account.
+// (client-initiated POST → Google). Already signed in → returnTo or /account.
 export default async function LoginPage({
   searchParams,
 }: {
@@ -31,7 +31,7 @@ export default async function LoginPage({
   const hasError = sp.error != null
 
   const userId = await getUserId()
-  if (userId) redirect('/account')
+  if (userId) redirect(returnTo ?? '/account')
 
   const callback = returnTo ?? '/account'
 
