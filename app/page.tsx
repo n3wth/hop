@@ -18,7 +18,7 @@ import HowItWorks from '@/components/landing/HowItWorks'
 import ConnectBand from '@/components/landing/ConnectBand'
 import InspirationTeaser from '@/components/landing/InspirationTeaser'
 import DestinationReel from '@/components/landing/DestinationReel'
-import HeroPostcards from '@/components/landing/HeroPostcards'
+import HeroShowcase from '@/components/landing/HeroShowcase'
 import SignedInHome from '@/components/landing/SignedInHome'
 import { conciergeBackdrop, conciergeGallery } from '@/lib/concierge-backdrop'
 import { isoOffset } from '@/lib/dates'
@@ -144,27 +144,50 @@ export default async function Home() {
         {/* Lead with the working product: a seeded search one tap from a real
             no-auth verdict, with the canonical worked example as the proof
             directly beneath. The agent moves to the second door below. */}
-        <section className="relative pt-6 sm:pt-10 lg:pt-16">
-          {/* Floating postcards — the engine's best-value places drifting in
-              and out beside the copy (wide viewports only; the reel below
-              carries the imagery everywhere else). Degrades to nothing. */}
-          <HeroPostcards origin={homeSeed.from} />
-          <div className="mx-auto flex max-w-[64ch] flex-col items-center gap-2 text-center">
-            <h1
-              className="hop-rise max-w-[16ch] text-balance font-display text-[38px] font-semibold leading-[1.02] tracking-[-0.03em] text-text sm:text-[56px] lg:text-[64px]"
-              style={{ ['--hop-delay' as string]: '90ms' }}
-            >
-              Points or cash? Get the verdict.
-            </h1>
-            <p
-              className="hop-rise mt-1 max-w-[52ch] text-pretty text-[15px] leading-[1.6] text-text2 sm:text-[16.5px]"
-              style={{ ['--hop-delay' as string]: '140ms' }}
-            >
-              Live cash fares vs award space, priced in cents per point.
-            </p>
+        {/* isolate: the ambience wash sits at -z inside THIS stacking context,
+            above the page canvas but under every piece of hero content. */}
+        <section className="relative isolate pt-4 sm:pt-8 lg:pt-12">
+          {/* Split hero — confident type left, ONE composed showcase right:
+              a large destination photo with the engine's verdict card layered
+              on it. Imagery is structural (a grid column), never absolutely-
+              positioned ornament — see docs/design/experience-heuristics.md. */}
+          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,560px)] lg:gap-16 xl:gap-20">
+            <div>
+              <h1
+                className="hop-rise max-w-[12ch] text-balance font-display text-[40px] font-semibold leading-[1.02] tracking-[-0.03em] text-text sm:text-[54px] lg:text-[64px]"
+                style={{ ['--hop-delay' as string]: '90ms' }}
+              >
+                Points or cash? Get the verdict.
+              </h1>
+              <p
+                className="hop-rise mt-4 text-pretty text-[15px] leading-[1.6] text-text2 sm:text-[17px]"
+                style={{ ['--hop-delay' as string]: '140ms' }}
+              >
+                Live fares vs award space, priced in ¢/pt.
+              </p>
+              {/* the agent stays reachable — a secondary fast-path */}
+              <p
+                className="hop-rise mt-6 text-[13.5px] text-text2"
+                style={{ ['--hop-delay' as string]: '200ms' }}
+              >
+                Not sure where to go?{' '}
+                <Link href="/ask" className="font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline">
+                  Ask hop
+                </Link>
+              </p>
+
+              {/* phones: search leads, right after the promise — the showcase
+                  image follows. md+ uses the full-width pill below the band. */}
+              <div className="hop-rise mt-7 md:hidden" style={{ ['--hop-delay' as string]: '240ms' }}>
+                <HeroSearch initial={homeSeed} align="start" />
+              </div>
+            </div>
+
+            <HeroShowcase origin={homeSeed.from} />
           </div>
 
-          <div className="hop-rise mt-8 sm:mt-10" style={{ ['--hop-delay' as string]: '190ms' }}>
+          {/* the primary action — a real search, full width under the band */}
+          <div className="hop-rise mt-10 hidden sm:mt-12 md:block" style={{ ['--hop-delay' as string]: '190ms' }}>
             <HeroSearch initial={homeSeed} />
           </div>
 
@@ -172,14 +195,6 @@ export default async function Home() {
           <div className="mt-12 sm:mt-16 lg:mt-20">
             <SampleVerdict />
           </div>
-
-          {/* the agent stays reachable — demoted to a secondary fast-path */}
-          <p className="hop-rise mt-5 text-center text-[13.5px] text-text2" style={{ ['--hop-delay' as string]: '300ms' }}>
-            Not sure where to go?{' '}
-            <Link href="/ask" className="font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline">
-              Ask hop
-            </Link>
-          </p>
         </section>
 
         {/* ── THE DREAM, IMMEDIATELY — a reel of real destinations ───────── */}
