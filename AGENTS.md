@@ -57,6 +57,9 @@ protocol for agents. The work queue is mirrored in Linear (team `n3wth`, project
 in the lowest open phase, respect its `blockedBy` relations and the plan's hard gates (e.g.
 billing does not flip until the four §3.1 gates pass), and follow the issue's embedded
 continuation prompt. Items marked **owner** are human-only — flag them, don't attempt them.
+The **ambition layer above it** is `docs/plans/2026-07-05-media-engine-to-1m.md` (M-series,
+`M#` Linear issues): the audience/media engine toward $1M/mo. R0.x correctness still outranks
+everything; M-items never jump that queue.
 
 **Autonomous sessions** (Claude Code routines, delegated agents): `docs/autonomy-runbook.md`
 governs your run — queue rules, the merge policy (ADR 0009: merge only when CI is green,

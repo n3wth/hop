@@ -15,6 +15,7 @@ This folder stores product, design, and implementation documentation for hop.
 | `plans/2026-06-28-001-feat-hop-flight-optimizer-plan.md` | Detailed implementation plan for initial optimizer build. | Historical, append-only |
 | `plans/2026-07-04-business-plan.md` | **The adopted business plan** — positioning, pricing, cost model, GTM, execution roadmap + agent pickup protocol. Mirrored to Linear. | When a phase completes or a gate/price changes |
 | `plans/2026-07-03-critical-review-roadmap.md` | Execution detail for the R0–R3 roadmap items the business plan sequences. | When items land |
+| `plans/2026-07-05-media-engine-to-1m.md` | **The ambition layer** — M-series media/audience epics (Lenny's/Every.to model) toward $1M/mo; mirrors to Linear `M#` issues. | Monthly checkpoint (§6) or when a stream is killed |
 | `growth-hypothesis.md` | Forward-looking growth/business hypothesis for a funded agent-team month. | When strategy is revisited |
 
 ## Conventions
