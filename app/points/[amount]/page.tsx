@@ -121,7 +121,11 @@ export default async function PointsBandPage({
   const depart = isoOffset(21)
   const ret = isoOffset(28)
   const jsonLd = buildPointsJsonLd(amount, list)
-  const returnTo = encodeURIComponent(`/points/${slug}`)
+  // Post-sign-in destination is the personalized HOME, not this page: this
+  // route is force-static and always renders the reference balance, so
+  // bouncing back here can never show "your real balance" — the signed-in
+  // dashboard is where that promise is actually kept.
+  const returnTo = encodeURIComponent('/')
 
   return (
     <AppShell user={null} hideSearch>

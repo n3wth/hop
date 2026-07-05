@@ -601,7 +601,26 @@ export default function CheckoutForm({
             className="mt-5 flex items-start gap-2.5 rounded-[12px] border border-weak/20 bg-weak-bg px-4 py-3.5 text-[13.5px] leading-[1.5] text-weak"
           >
             <Icon name="error" size={16} weight="fill" className="mt-px flex-shrink-0" />
-            <span>{error}</span>
+            <span>
+              {error}
+              {/* A lapsed session is recoverable — hand them the door back in,
+                  carrying this exact checkout URL so the offer survives the
+                  round-trip. (This branch only renders client-side, after an
+                  action result, so window is always available.) */}
+              {/sign in/i.test(error) ? (
+                <>
+                  {' '}
+                  <a
+                    href={`/login?returnTo=${encodeURIComponent(
+                      window.location.pathname + window.location.search,
+                    )}`}
+                    className="font-semibold underline underline-offset-2 transition-colors hover:text-text"
+                  >
+                    Sign in to continue
+                  </a>
+                </>
+              ) : null}
+            </span>
           </div>
         ) : null}
 
