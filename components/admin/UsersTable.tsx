@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { AdminUserRow } from '@/lib/admin-users'
+import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHeader'
 
 interface Props {
   /** null = the db read failed (unavailable); [] = genuinely no matches. */
@@ -18,32 +19,34 @@ export default function UsersTable({ users, total, page, pageSize, search }: Pro
   const pageCount = Math.max(1, Math.ceil(total / pageSize))
 
   return (
-    <div className="max-w-[var(--container-shell)] px-4 py-8 sm:px-6 lg:px-8">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-semibold tracking-[-0.01em] text-text">Users</h1>
-          <p className="mt-1 text-[13px] text-text3">
-            {users === null ? 'Directory unavailable.' : `${total} registered`}
-          </p>
-        </div>
-        <form action="/admin/users" method="get" className="flex items-center gap-2">
-          <input
-            type="search"
-            name="q"
-            defaultValue={search}
-            placeholder="Search name or email"
-            className="w-56 rounded-full border border-border bg-paper px-3.5 py-2 text-[13px] text-text placeholder:text-text3 focus:border-brand focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="rounded-full border border-border bg-surface px-3.5 py-2 text-[13px] font-semibold text-text2 transition-colors hover:bg-sunk"
-          >
-            Search
-          </button>
-        </form>
-      </div>
+    <AdminPageShell>
+      <AdminPageHeader
+        title="Users"
+        description={users === null ? 'Directory unavailable.' : `${total} registered`}
+        crumbs={[
+          { label: 'Admin', href: '/admin' },
+          { label: 'Users' },
+        ]}
+        actions={
+          <form action="/admin/users" method="get" className="flex items-center gap-2">
+            <input
+              type="search"
+              name="q"
+              defaultValue={search}
+              placeholder="Search name or email"
+              className="w-56 rounded-full border border-border bg-paper px-3.5 py-2 text-[13px] text-text placeholder:text-text3 focus:border-brand focus:outline-none"
+            />
+            <button
+              type="submit"
+              className="rounded-full border border-border bg-surface px-3.5 py-2 text-[13px] font-semibold text-text2 transition-colors hover:bg-sunk"
+            >
+              Search
+            </button>
+          </form>
+        }
+      />
 
-      <div className="mt-6">
+      <div className="mt-8">
         {users === null ? (
           <Empty>Couldn&apos;t load the user directory — try again shortly.</Empty>
         ) : users.length === 0 ? (
@@ -92,7 +95,7 @@ export default function UsersTable({ users, total, page, pageSize, search }: Pro
           </PageLink>
         </div>
       ) : null}
-    </div>
+    </AdminPageShell>
   )
 }
 

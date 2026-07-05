@@ -40,7 +40,7 @@ export default function AdminNav() {
   return (
     <nav
       aria-label="Admin"
-      className="flex items-center gap-1 overflow-x-auto px-3 pb-3 lg:flex-1 lg:flex-col lg:items-stretch lg:overflow-visible lg:pb-0 lg:pt-1"
+      className="flex snap-x snap-mandatory items-center gap-1 overflow-x-auto px-3 pb-3 [-ms-overflow-style:none] [scrollbar-width:none] lg:flex-1 lg:flex-col lg:items-stretch lg:snap-none lg:overflow-visible lg:pb-0 lg:pt-1 [&::-webkit-scrollbar]:hidden"
     >
       {SURFACES.map((item) => {
         const active = isActive(item)
@@ -49,7 +49,7 @@ export default function AdminNav() {
             key={item.href}
             href={item.href}
             aria-current={active ? 'page' : undefined}
-            className={`flex flex-shrink-0 items-center gap-2.5 rounded-[10px] px-3 py-2 text-[13.5px] font-semibold transition-colors ${
+            className={`flex flex-shrink-0 snap-start items-center gap-2.5 rounded-[10px] px-3 py-2 text-[13.5px] font-semibold transition-colors ${
               active ? 'bg-sunk text-text' : 'text-text2 hover:bg-sunk hover:text-text'
             }`}
           >
@@ -60,6 +60,10 @@ export default function AdminNav() {
       })}
 
       <div className="mx-3 hidden h-px bg-hair lg:my-3 lg:block" role="presentation" />
+
+      <p className="hidden px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[var(--track-eyebrow)] text-text3 lg:block">
+        Shortcuts
+      </p>
 
       {SHORTCUTS.map((item) => (
         <Link

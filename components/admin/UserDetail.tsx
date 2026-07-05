@@ -1,5 +1,5 @@
-import Link from 'next/link'
 import type { AdminUserDetail } from '@/lib/admin-users'
+import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHeader'
 
 interface Props {
   detail: AdminUserDetail
@@ -12,26 +12,25 @@ interface Props {
 // lib/admin-users.ts#getAdminUserDetail — no client-side derivation.
 export default function UserDetail({ detail }: Props) {
   return (
-    <div className="max-w-[var(--container-shell)] px-4 py-8 sm:px-6 lg:px-8">
-      <Link href="/admin/users" className="text-[12.5px] font-medium text-text3 transition-colors hover:text-text">
-        ← Users
-      </Link>
-
-      <div className="mt-3 flex flex-wrap items-baseline justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-semibold tracking-[-0.01em] text-text">
-            {detail.name || detail.email}
-          </h1>
-          <p className="mt-1 text-[13px] text-text3">{detail.email}</p>
-        </div>
-        <span
-          className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] ${
-            detail.tier === 'premium' ? 'bg-good-bg text-good' : 'bg-sunk text-text3'
-          }`}
-        >
-          {detail.tier}
-        </span>
-      </div>
+    <AdminPageShell>
+      <AdminPageHeader
+        title={detail.name || detail.email}
+        description={detail.email}
+        crumbs={[
+          { label: 'Admin', href: '/admin' },
+          { label: 'Users', href: '/admin/users' },
+          { label: detail.name || 'User' },
+        ]}
+        actions={
+          <span
+            className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] ${
+              detail.tier === 'premium' ? 'bg-good-bg text-good' : 'bg-sunk text-text3'
+            }`}
+          >
+            {detail.tier}
+          </span>
+        }
+      />
 
       <Section title="Account">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -78,13 +77,13 @@ export default function UserDetail({ detail }: Props) {
           </div>
         )}
       </Section>
-    </div>
+    </AdminPageShell>
   )
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="mt-10">
+    <section className="mt-8">
       <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">{title}</h2>
       <div className="mt-3">{children}</div>
     </section>

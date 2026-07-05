@@ -56,6 +56,19 @@ function resolveBaseUrl(): string | undefined {
 
 const secret = resolveAuthSecret()
 
+// Local dev runs on loopback with a drifting port when multiple worktrees run
+// `next dev` at once. Better Auth adds baseURL's origin automatically, but
+// sign-in POSTs from http://127.0.0.1 vs http://localhost must both pass.
+function localTrustedOrigins(): string[] {
+  if (process.env.VERCEL_ENV === 'production') return []
+  return [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+  ]
+}
+
 export const auth = betterAuth({
   database: drizzleAdapter(lazyDb as never, { provider: 'pg', schema }),
   ...(secret ? { secret } : {}),
@@ -67,6 +80,7 @@ export const auth = betterAuth({
     'https://www.hop.flights',
     'https://hop.n3wth.com',
     'https://hop-n3wth.vercel.app',
+    ...localTrustedOrigins(),
   ],
   socialProviders: isGoogleAuthEnabled()
     ? {

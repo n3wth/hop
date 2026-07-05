@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
+import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHeader'
 import type { SupportTicket } from '@/lib/support-tickets'
 import type { Escalation, EscalationStatus } from '@/lib/escalation'
 import {
@@ -20,21 +21,29 @@ export default function SupportConsole({
   escalations: Escalation[] | null
 }) {
   return (
-    <div className="max-w-[var(--container-shell)] px-4 py-8 sm:px-6 lg:px-8">
-      <h1 className="font-display text-2xl font-semibold tracking-[-0.01em] text-text">Inbox</h1>
-      <p className="mt-1 text-[13px] text-text3">
-        {tickets === null
-          ? 'tickets unavailable'
-          : `${tickets.length} ticket${tickets.length === 1 ? '' : 's'}`}{' '}
-        ·{' '}
-        {escalations === null
-          ? 'booking requests unavailable'
-          : `${escalations.length} booking request${escalations.length === 1 ? '' : 's'}`}{' '}
-        · inbound via Resend, replies drafted by the support agent for your review
-      </p>
+    <AdminPageShell>
+      <AdminPageHeader
+        title="Inbox"
+        description={
+          <>
+            {tickets === null
+              ? 'tickets unavailable'
+              : `${tickets.length} ticket${tickets.length === 1 ? '' : 's'}`}{' '}
+            ·{' '}
+            {escalations === null
+              ? 'booking requests unavailable'
+              : `${escalations.length} booking request${escalations.length === 1 ? '' : 's'}`}{' '}
+            · inbound via Resend, replies drafted by the support agent for your review
+          </>
+        }
+        crumbs={[
+          { label: 'Admin', href: '/admin' },
+          { label: 'Inbox' },
+        ]}
+      />
 
       {/* Wide screens: tickets beside booking requests; below lg they stack. */}
-      <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
+      <div className="mt-8 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
         <section className="mt-8">
           <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">Tickets</h2>
           <div className="mt-3 flex flex-col gap-3">
@@ -63,7 +72,7 @@ export default function SupportConsole({
           </div>
         </section>
       </div>
-    </div>
+    </AdminPageShell>
   )
 }
 

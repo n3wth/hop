@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import type { BusinessDigest, WeeklyMetric } from '@/lib/business-digest'
+import type { UnitEconomics } from '@/lib/unit-economics'
 import type { CronHeartbeat } from '@/lib/cron-heartbeat'
 import type { DegradationWindowCounts } from '@/lib/degradation-telemetry'
 import type { ImprovementFinding } from '@/lib/improvement-findings'
@@ -10,6 +11,7 @@ import { CRON_JOBS } from '@/lib/health-checks'
 import { analyzeAdminHealth, analyzeAdminFindings } from '@/app/actions/admin-analysis'
 import Sparkline from '@/components/admin/Sparkline'
 import AnalyzeButton from '@/components/admin/AnalyzeButton'
+import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHeader'
 
 interface Props {
   ownerEmail: string
@@ -27,6 +29,7 @@ interface Props {
   usersNew7d: number | null
   /** Preflight seams needing attention (drift/warn) — the /admin/ops badge. */
   preflightIssues: number
+  unitEconomics: UnitEconomics
 }
 
 // The owner-gated ops overview: this week's funnel numbers, cron/degradation
@@ -46,47 +49,54 @@ export default function AdminDashboard({
   usersTotal,
   usersNew7d,
   preflightIssues,
+  unitEconomics,
 }: Props) {
   return (
-    <div className="max-w-[var(--container-shell)] px-4 py-8 sm:px-6 lg:px-8">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-semibold tracking-[-0.01em] text-text">Admin</h1>
-          <p className="mt-1 text-[13px] text-text3">Signed in as {ownerEmail}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/admin/ops"
-            className={`rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-colors ${
-              preflightIssues > 0
-                ? 'border-ok bg-ok-bg text-ok hover:bg-sunk'
-                : 'border-border bg-surface text-text2 hover:bg-sunk'
-            }`}
-          >
-            {preflightIssues > 0 ? `Ops · ${preflightIssues} to review →` : 'Ops →'}
-          </Link>
-          <Link
-            href="/admin/support"
-            className="rounded-full border border-border bg-surface px-3.5 py-2 text-[13px] font-semibold text-text2 transition-colors hover:bg-sunk"
-          >
-            Inbox →
-          </Link>
-        </div>
-      </div>
+    <AdminPageShell>
+      <AdminPageHeader
+        title="Overview"
+        description={`Signed in as ${ownerEmail}`}
+        crumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Overview' }]}
+        actions={
+          <>
+            <Link
+              href="/admin/ops"
+              className={`rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-colors ${
+                preflightIssues > 0
+                  ? 'border-ok bg-ok-bg text-ok hover:bg-sunk'
+                  : 'border-border bg-surface text-text2 hover:bg-sunk'
+              }`}
+            >
+              {preflightIssues > 0 ? `Ops · ${preflightIssues} to review →` : 'Ops →'}
+            </Link>
+            <Link
+              href="/admin/support"
+              className="rounded-full border border-border bg-surface px-3.5 py-2 text-[13px] font-semibold text-text2 transition-colors hover:bg-sunk"
+            >
+              Inbox →
+            </Link>
+          </>
+        }
+      />
+
+      <Section title="Unit economics">
+        <UnitEconomicsPanel economics={unitEconomics} />
+      </Section>
 
       <Section title="This week">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
           <Stat label="Registered users" value={usersTotal} href="/admin/users" />
-          <Stat label="New sign-ups" value={usersNew7d} sub="7 days" />
-          <Stat label="Active users" metric={digest.activeUsers} sub="7-day sessions" />
-          <Stat label="Booking requests" metric={digest.escalations} />
-          <Stat label="New watches" metric={digest.ordersCreated} />
-          <Stat label="Alerts fired" metric={digest.alertsFired} />
-          <Stat label="Active watches" value={digest.activeWatches} />
-          <Stat label="Paid subscribers" value={digest.activeSubscriptions} />
+          <Stat label="New sign-ups" value={usersNew7d} sub="7 days" href="/admin/users" />
+          <Stat label="Active users" metric={digest.activeUsers} sub="7-day sessions" href="/admin/users" />
+          <Stat label="Booking requests" metric={digest.escalations} href="/admin/support" />
+          <Stat label="New watches" metric={digest.ordersCreated} href="/admin/ops" />
+          <Stat label="Alerts fired" metric={digest.alertsFired} href="/admin/ops" />
+          <Stat label="Active watches" value={digest.activeWatches} href="/admin/ops" />
+          <Stat label="Paid subscribers" value={digest.activeSubscriptions} href="/admin/users" />
           <Stat
             label="Card outclicks"
             metric={digest.outclicks}
+            href="/admin/ops"
             sub={
               digest.outclicks && digest.outclicks.total !== null && digest.outclicks.total !== digest.outclicks.count
                 ? `${digest.outclicks.total} total`
@@ -138,7 +148,7 @@ export default function AdminDashboard({
       <Section title="Recent activity">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <h3 className="text-[12px] font-semibold text-text2">Support tickets</h3>
+            <SectionLink href="/admin/support" label="Support tickets" />
             <div className="mt-2 flex flex-col gap-2">
               {recentTickets === null ? (
                 <Empty>Tickets unavailable.</Empty>
@@ -159,7 +169,7 @@ export default function AdminDashboard({
             </div>
           </div>
           <div>
-            <h3 className="text-[12px] font-semibold text-text2">Booking requests</h3>
+            <SectionLink href="/admin/support" label="Booking requests" />
             <div className="mt-2 flex flex-col gap-2">
               {recentEscalations === null ? (
                 <Empty>Booking requests unavailable.</Empty>
@@ -181,13 +191,140 @@ export default function AdminDashboard({
           </div>
         </div>
       </Section>
+    </AdminPageShell>
+  )
+}
+
+function SectionLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex items-center gap-1 text-[12px] font-semibold text-text2 transition-colors hover:text-text"
+    >
+      {label}
+      <span aria-hidden className="text-text3">→</span>
+    </Link>
+  )
+}
+
+function UnitEconomicsPanel({ economics }: { economics: UnitEconomics }) {
+  const kinds = economics.outclicksByKind
+    ? Object.entries(economics.outclicksByKind).sort((a, b) => b[1] - a[1])
+    : null
+
+  return (
+    <div className="rounded-[14px] border border-border bg-paper p-4 sm:p-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <MoneyStat
+          label="Est. MRR"
+          value={economics.mrrUsd}
+          format="usd"
+          sub={
+            economics.activePaidCount !== null
+              ? `${economics.activePaidCount} active sub${economics.activePaidCount === 1 ? '' : 's'} · list prices`
+              : economics.mrrUsd === null
+                ? 'subscriptions unavailable'
+                : undefined
+          }
+          href="/admin/users"
+        />
+        <MoneyStat label="Infra (monthly)" value={economics.infraCostUsd} format="usd" sub="baseline constant" />
+        <MoneyStat label="LLM cost" value={economics.llmCostUsd} format="usd" sub="PostHog export not wired" />
+        <MoneyStat
+          label="Contribution"
+          value={economics.contributionUsd}
+          format="usd"
+          sub={economics.llmCostUsd === null ? 'MRR − infra (LLM omitted)' : undefined}
+        />
+      </div>
+
+      <div className="mt-4 grid gap-4 border-t border-hair pt-4 sm:grid-cols-2">
+        <div>
+          <h3 className="text-[12px] font-semibold text-text2">Outclicks · 7 days</h3>
+          {kinds === null ? (
+            <p className="mt-2 text-[13px] text-text3">Ledger unavailable.</p>
+          ) : kinds.length === 0 ? (
+            <p className="mt-2 text-[13px] text-text3">None yet.</p>
+          ) : (
+            <ul className="mt-2 flex flex-col gap-1.5">
+              {kinds.map(([kind, count]) => (
+                <li key={kind} className="flex justify-between text-[13px]">
+                  <span className="font-medium text-text">{kind}</span>
+                  <span className="text-text3">{count}</span>
+                </li>
+              ))}
+              {economics.outclicksTotal7d !== null ? (
+                <li className="flex justify-between border-t border-hair pt-1.5 text-[13px] font-semibold text-text">
+                  <span>Total</span>
+                  <span>{economics.outclicksTotal7d}</span>
+                </li>
+              ) : null}
+            </ul>
+          )}
+          <Link href="/admin/ops" className="mt-2 inline-block text-[12px] font-semibold text-text2 transition-colors hover:text-text">
+            Ops ledger →
+          </Link>
+        </div>
+        <div>
+          <h3 className="text-[12px] font-semibold text-text2">Booking pipeline</h3>
+          {economics.escalationsNew === null ? (
+            <p className="mt-2 text-[13px] text-text3">Unavailable.</p>
+          ) : (
+            <ul className="mt-2 flex flex-col gap-1.5 text-[13px]">
+              <li className="flex justify-between">
+                <span className="text-text2">Open</span>
+                <span className="font-semibold text-text">{economics.escalationsNew}</span>
+              </li>
+              <li className="flex justify-between">
+                <span className="text-text2">Done</span>
+                <span className="font-semibold text-text">{economics.escalationsDone ?? '—'}</span>
+              </li>
+            </ul>
+          )}
+          <Link href="/admin/support" className="mt-2 inline-block text-[12px] font-semibold text-text2 transition-colors hover:text-text">
+            Inbox →
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }
 
+function MoneyStat({
+  label,
+  value,
+  format,
+  sub,
+  href,
+}: {
+  label: string
+  value: number | null
+  format: 'usd'
+  sub?: string
+  href?: string
+}) {
+  const display =
+    value === null ? '—' : format === 'usd' ? `$${value.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : String(value)
+  const inner = (
+    <>
+      <div className="hop-num text-[22px] font-semibold text-text">{display}</div>
+      <div className="mt-1 text-[12.5px] text-text3">{label}</div>
+      {sub ? <div className="mt-1 text-[11.5px] text-text3">{sub}</div> : null}
+    </>
+  )
+  if (href) {
+    return (
+      <Link href={href} className="block rounded-[var(--radius-sm)] transition-colors hover:bg-sunk">
+        {inner}
+      </Link>
+    )
+  }
+  return <div>{inner}</div>
+}
+
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mt-10">
+    <section className="mt-8">
       <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">{title}</h2>
       <div className="mt-3">{children}</div>
     </section>

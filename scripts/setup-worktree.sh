@@ -33,4 +33,5 @@ else
   npm install
 fi
 
-echo "setup-worktree: ready. 'npm run dev' for fixtures, or wire a real DATABASE_URL/API keys into .env.local yourself if this task needs them."
+echo "setup-worktree: ready. 'npm run dev' for fixtures."
+echo "setup-worktree: for sign-in (/account, /admin), run scripts/setup-worktree-auth.sh in this worktree."

@@ -1,7 +1,9 @@
 'use client'
 
+import Link from 'next/link'
 import { useMemo, useState, type ReactNode } from 'react'
 import type { SweetSpotDraft, DraftStatus } from '@/lib/sweet-spot-drafts'
+import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHeader'
 import {
   createSweetSpotDraftAction,
   draftSweetSpotWhyAction,
@@ -30,31 +32,100 @@ export default function ContentConsole({
     setItems((prev) => prev.map((x) => (x.id === d.id ? d : x)))
 
   return (
-    <div className="max-w-[var(--container-shell)] px-4 py-8 sm:px-6 lg:px-8">
-      <h1 className="font-display text-2xl font-semibold tracking-[-0.01em] text-text">Content</h1>
-      <p className="mt-1 text-[13px] text-text3">
-        {drafts === null
-          ? 'drafts unavailable'
-          : `${pending.length} pending · ${approved.length} live · ${rejected.length} rejected`}{' '}
-        · sweet-spot guide entries — facts are typed in, the AI only drafts the why line
-      </p>
+    <AdminPageShell>
+      <AdminPageHeader
+        title="Content"
+        description={
+          drafts === null
+            ? 'Draft queue unavailable — database may be unconfigured.'
+            : `${pending.length} pending · ${approved.length} live · ${rejected.length} rejected · facts are typed in, the AI only drafts the why line`
+        }
+        crumbs={[
+          { label: 'Admin', href: '/admin' },
+          { label: 'Content' },
+        ]}
+        actions={
+          approved.length > 0 ? (
+            <Link
+              href="/sweet-spots"
+              className="rounded-full border border-border bg-surface px-3.5 py-2 text-[13px] font-semibold text-text2 transition-colors hover:bg-sunk"
+            >
+              View live pages →
+            </Link>
+          ) : null
+        }
+      />
+
+      {drafts === null ? (
+        <div className="mt-8 rounded-[var(--radius)] border border-weak/30 bg-weak-bg px-4 py-3 text-[13px] text-weak">
+          Couldn&apos;t load drafts. Wire <code className="font-mono text-[12px]">DATABASE_URL</code> in this
+          worktree if you need the queue.
+        </div>
+      ) : null}
+
+      <WorkflowSteps className="mt-8" />
 
       {programs.length === 0 ? (
-        <Empty>No programs to draft against yet.</Empty>
+        <Empty className="mt-6">No programs to draft against yet.</Empty>
       ) : (
         <NewDraftForm programs={programs} onCreated={onCreated} />
       )}
 
-      <QueueSection title="Pending review" items={pending} onChanged={onChanged} />
-      <QueueSection title="Live" items={approved} onChanged={onChanged} />
-      <QueueSection title="Rejected" items={rejected} onChanged={onChanged} />
-    </div>
+      <QueueSection
+        title="Pending review"
+        empty="Nothing waiting — new entries land here after you save as pending."
+        items={pending}
+        onChanged={onChanged}
+      />
+      <QueueSection
+        title="Live"
+        empty="Nothing published yet — approve an entry to merge it into /sweet-spots."
+        items={approved}
+        onChanged={onChanged}
+        headerExtra={
+          approved.length > 0 ? (
+            <Link href="/sweet-spots" className="text-[12px] font-semibold text-text2 transition-colors hover:text-text">
+              Public pages →
+            </Link>
+          ) : null
+        }
+      />
+      <QueueSection
+        title="Rejected"
+        empty="No rejected entries."
+        items={rejected}
+        onChanged={onChanged}
+        collapsedWhenEmpty
+      />
+    </AdminPageShell>
   )
 }
 
-function Empty({ children }: { children: ReactNode }) {
+function WorkflowSteps({ className }: { className?: string }) {
+  const steps = [
+    'Enter route, program, and miles — numbers you type, not the AI.',
+    'Draft the why line with AI (optional) or write it yourself.',
+    'Save as pending, then approve to publish on /sweet-spots.',
+  ]
   return (
-    <div className="rounded-[var(--radius)] border border-dashed border-border px-4 py-6 text-center text-[13px] text-text3">
+    <ol className={`flex flex-col gap-2 sm:flex-row sm:gap-6 ${className ?? ''}`}>
+      {steps.map((step, i) => (
+        <li key={step} className="flex flex-1 gap-2 text-[12.5px] text-text2">
+          <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-sunk font-display text-[11px] font-semibold text-text">
+            {i + 1}
+          </span>
+          <span>{step}</span>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+function Empty({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div
+      className={`rounded-[var(--radius)] border border-dashed border-border px-4 py-6 text-center text-[13px] text-text3 ${className ?? ''}`}
+    >
       {children}
     </div>
   )
@@ -290,23 +361,40 @@ function NewDraftForm({
 function QueueSection({
   title,
   items,
+  empty,
   onChanged,
+  headerExtra,
+  collapsedWhenEmpty,
 }: {
   title: string
   items: SweetSpotDraft[]
+  empty: string
   onChanged: (d: SweetSpotDraft) => void
+  headerExtra?: ReactNode
+  collapsedWhenEmpty?: boolean
 }) {
-  if (items.length === 0) return null
+  if (items.length === 0 && collapsedWhenEmpty) return null
+
   return (
     <section className="mt-8">
-      <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">
-        {title}
-      </h2>
-      <div className="mt-3 flex flex-col gap-3">
-        {items.map((d) => (
-          <DraftCard key={d.id} draft={d} onChanged={onChanged} />
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">
+          {title}
+          {items.length > 0 ? (
+            <span className="ml-2 font-semibold normal-case tracking-normal text-text3">({items.length})</span>
+          ) : null}
+        </h2>
+        {headerExtra}
       </div>
+      {items.length === 0 ? (
+        <Empty className="mt-3">{empty}</Empty>
+      ) : (
+        <div className="mt-3 flex flex-col gap-3">
+          {items.map((d) => (
+            <DraftCard key={d.id} draft={d} onChanged={onChanged} />
+          ))}
+        </div>
+      )}
     </section>
   )
 }

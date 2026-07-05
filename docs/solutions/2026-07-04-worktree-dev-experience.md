@@ -42,6 +42,10 @@ other worktree (and main) reads from — a migration race across parallel branch
   (never overwrites), then runs `npm ci`/`npm install`. Fixtures-only by default — wire a real
   `DATABASE_URL`/API keys into that worktree's `.env.local` yourself only when a task actually
   needs persistence or live upstreams.
+- Added `scripts/setup-worktree-auth.sh`: fills empty auth keys in `.env.local` (local origin URLs,
+  secrets from the **Hop Local Dev** item in 1Password (`op://Private/Hop Local Dev/env/*`), then
+  Google creds from a prior `vercel env pull`, then `DATABASE_URL` from `neonctl` when still empty).
+  Run this when previewing `/account` or `/admin` in a worktree.
 
 ## Still open (not fixed here, scoped separately)
 
@@ -50,5 +54,8 @@ other worktree (and main) reads from — a migration race across parallel branch
 - `APP_BASE_URL`/`BETTER_AUTH_URL` assume a fixed origin/port; Next auto-increments past `:3000`
   when running multiple `dev` servers across worktrees, silently drifting the OAuth callback
   origin from what's registered.
+- **`scripts/setup-worktree-auth.sh` wires auth but the DB must have Better Auth tables** — run
+  `npm run db:migrate` (now auto-loaded from `.env.local`) after first wiring; without the
+  `verification` table, Google sign-in 500s with "Sign-in didn't go through."
 - `.vercel/` is gitignored, so `vercel dev`/`vercel env pull` need re-linking per worktree.
 - No `.nvmrc`/`engines.node` pin across worktrees.
