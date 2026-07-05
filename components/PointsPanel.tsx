@@ -17,7 +17,7 @@ export interface PointsPanelProps {
 function compact(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
   if (n >= 1_000) return `${Math.round(n / 1_000)}K`
-  return n.toLocaleString()
+  return n.toLocaleString('en-US')
 }
 
 // Does this balance fund the pick? Tolerant program/code match.
@@ -114,7 +114,7 @@ export default function PointsPanel({ balances, pick, isExample = false }: Point
                   {b.program}
                 </div>
                 <div className="mt-[2px] truncate text-[12px] text-hero-label">
-                  {active && spend != null ? `Using ${spend.toLocaleString()} here` : b.status}
+                  {active && spend != null ? `Using ${spend.toLocaleString('en-US')} here` : b.status}
                 </div>
               </div>
 
@@ -133,7 +133,7 @@ export default function PointsPanel({ balances, pick, isExample = false }: Point
               </div>
 
               <div className="hop-num text-right text-[15px] font-semibold text-white sm:text-[16px]">
-                {b.balance.toLocaleString()}
+                {b.balance.toLocaleString('en-US')}
               </div>
             </div>
           )
@@ -143,7 +143,7 @@ export default function PointsPanel({ balances, pick, isExample = false }: Point
       {/* footer total — with a low-key sync line that earns its place */}
       <div className="flex items-center justify-between border-t border-white/10 bg-white/[0.03] px-4 py-[16px] sm:px-[30px] sm:py-[18px]">
         <span className="text-[13px] text-hero-label">
-          {total.toLocaleString()} across {balances.length}{' '}
+          {total.toLocaleString('en-US')} across {balances.length}{' '}
           {balances.length === 1 ? 'program' : 'programs'}
         </span>
         <span className="flex items-baseline gap-2">

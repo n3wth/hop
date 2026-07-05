@@ -26,7 +26,7 @@ export default function CardAffiliateCTA({ program, unit = 'miles' }: CardAffili
   if (!card) return null
   if (dismissed) return null
 
-  const bonus = card.bonusMiles > 0 ? card.bonusMiles.toLocaleString() : null
+  const bonus = card.bonusMiles > 0 ? card.bonusMiles.toLocaleString('en-US') : null
 
   return (
     // A hairline top divider (distinct from the bordered box below it) keeps
@@ -72,7 +72,7 @@ export default function CardAffiliateCTA({ program, unit = 'miles' }: CardAffili
               {card.bonusSpend ? (
                 <span className="text-hero-label">
                   {' '}
-                  after ${card.bonusSpend.toLocaleString()} spend
+                  after ${card.bonusSpend.toLocaleString('en-US')} spend
                 </span>
               ) : null}
             </span>

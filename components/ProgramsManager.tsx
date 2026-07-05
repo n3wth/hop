@@ -221,7 +221,7 @@ function ProgramRow({ program, first }: { program: ManualBalance; first: boolean
       </div>
       <div className="flex items-center gap-3 sm:gap-4">
         <span className="font-display text-[15px] font-semibold tabular-nums text-text">
-          {program.balance.toLocaleString()}
+          {program.balance.toLocaleString('en-US')}
         </span>
         <span className="flex items-center gap-0.5 border-l border-hair pl-2 sm:pl-3">
           <button
@@ -427,7 +427,7 @@ function AwardWalletSection({
             {syncedAt ? (
               <span className="ml-2 font-normal text-text3">
                 · refreshed{' '}
-                {syncedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                {syncedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
               </span>
             ) : null}
           </span>

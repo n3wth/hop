@@ -68,10 +68,12 @@ export default function AgentComposer({
       onValueChange={setValue}
       onSubmit={onSubmit}
       onChip={go}
-      density="teaser"
-      signedIn={signedIn}
       photos={gallery && gallery.length > 0 ? gallery : backdrop ? [backdrop] : []}
       headingTag={headingTag}
+      // 'out' (signed-out home) renders below the verdict hero + reel — the
+      // backdrop is never this page's LCP image, so it's safe to lazy-load.
+      // 'in' (signed-in home) IS the front door — keep it eager.
+      lazyBackdrop={variant === 'out'}
     />
   )
 }

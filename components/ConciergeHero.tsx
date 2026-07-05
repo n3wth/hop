@@ -1,29 +1,20 @@
 'use client'
 
-// THE shared conversational front door — one visual language, one voice.
-//
-// hop's single way in (talk to it) appears in two places: a teaser on the home
-// hero and the full landing on /ask. Both render THIS component, so they can
-// never drift into "two features that don't know about each other" again.
+// The conversational front door TEASER — the home hero's compact way in to
+// hop's agent. The /ask landing's empty state now renders its own component
+// (components/concierge/AskStart) instead of this one, but the two still
+// share one voice via lib/concierge-hero's copy (conciergeHeroCopy), so a chip
+// tapped here and the greeting on /ask never drift into two different products.
 //
 // Presentation only — it owns the look (photographic panel + scrim, eyebrow,
-// heading, sub, composer, chips, optional mood gallery) and the copy (from
-// lib/concierge-hero). Behavior is the caller's: the home wires submit to route
-// into /ask?q=…; the /ask landing wires it to useChat. So the same hero drives a
-// route push in one place and a streamed message in the other, identically drawn.
-//
-// Density:
-//   • 'teaser' — home. Compact, no gallery/Gmail seam; the marketing promise
-//     that, on submit, carries the visitor into /ask where the answer streams.
-//   • 'full'   — /ask. Taller, with the mood gallery and the gets-to-know-you
-//     affordances (Gmail seam, what-hop-remembers).
+// heading, sub, composer, chips) and renders the copy from lib/concierge-hero.
+// Behavior is the caller's: AgentComposer wires submit to route into /ask?q=….
 //
 // Flat + on-brand: a brand-ink panel (an allowed surface) under a full-bleed
 // photo as imagery, a single dark→ink scrim for legibility, solid white input,
 // hover = color only (no lift), motion is reduced-motion-safe via .hop-rise.
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import Link from 'next/link'
 import Icon from './Icon'
 import { type ConciergeHeroCopy } from '@/lib/concierge-hero'
 
@@ -50,29 +41,22 @@ export interface ConciergeHeroProps {
   onSubmit: (e: FormEvent<HTMLFormElement>) => void
   /** Tap a starter chip — sends that prompt straight through. */
   onChip: (prompt: string) => void
-  /** 'teaser' (home) | 'full' (/ask). */
-  density: 'teaser' | 'full'
-  /** Disable submit (e.g. /ask while the agent is busy). Home leaves it false. */
+  /** Disable submit. Home leaves it false. */
   submitDisabled?: boolean
-  /** Autofocus the input (the /ask landing does; the home does not steal focus). */
+  /** Autofocus the input (the home does not steal focus by default). */
   autoFocus?: boolean
-  /** Optional backdrop + mood-gallery photos. The first is the scrimmed
-   *  backdrop; up to six tile the gallery base (full density only). */
+  /** Optional backdrop photos — the first is the scrimmed backdrop; several
+   *  cross-fade the backdrop slowly through them (see `rotating` below). */
   photos?: ConciergeHeroPhoto[]
-  /** Signed-in unlocks the "what hop remembers" affordance (full density). */
-  signedIn?: boolean
-  /** Gmail travel-history seam is live (env flag + Google creds). When true the
-   *  "Connect Gmail" pill becomes a real button; otherwise it keeps "Soon". */
-  gmailEnabled?: boolean
-  /** Invoked by the live Gmail pill (routes to login / OAuth start). */
-  onConnectGmail?: () => void
-  /** Signed in but no programs linked yet → show the "Add your programs" nudge
-   *  so the visitor knows answers will sharpen once balances are connected. */
-  needsPrograms?: boolean
-  /** Heading level for the hero title. Defaults to h1 (/ask, signed-in home);
-   *  pass 'h2' where another element owns the page's h1 (the signed-out home,
-   *  where the verdict hero leads and this is the second door). */
+  /** Heading level for the hero title. Defaults to h1; pass 'h2' where another
+   *  element owns the page's h1 (the signed-out home, where the verdict hero
+   *  leads and this is the second door). */
   headingTag?: 'h1' | 'h2'
+  /** Lazy-load the backdrop photo. Only pass true when this hero is confirmed
+   *  BELOW the fold (e.g. the signed-out home's "second door", which renders
+   *  after the verdict hero + reel) — never for a hero that's a page's likely
+   *  LCP image (signed-in home's front-door composer). Defaults to eager. */
+  lazyBackdrop?: boolean
 }
 
 export default function ConciergeHero({
@@ -81,17 +65,12 @@ export default function ConciergeHero({
   onValueChange,
   onSubmit,
   onChip,
-  density,
   submitDisabled = false,
   autoFocus = false,
   photos = [],
-  signedIn = false,
-  gmailEnabled = false,
-  onConnectGmail,
-  needsPrograms = false,
   headingTag: HeadingTag = 'h1',
+  lazyBackdrop = false,
 }: ConciergeHeroProps) {
-  const full = density === 'full'
   const tiles = photos.slice(0, 6)
   const backdrop = tiles[0]
 
@@ -106,12 +85,11 @@ export default function ConciergeHero({
     if (ok) inputRef.current?.focus()
   }, [autoFocus])
 
-  // Teaser backdrop rotation — when the home passes several photos, the scrim
-  // photo slowly cross-fades through them so the panel feels alive. Full
-  // density (/ask) keeps its static backdrop: the mood gallery below already
-  // carries the imagery there. Reduced motion → static first photo.
+  // Backdrop rotation — when the caller passes several photos, the scrim
+  // photo slowly cross-fades through them so the panel feels alive. Reduced
+  // motion → static first photo (the effect never starts).
   const [backdropIdx, setBackdropIdx] = useState(0)
-  const rotating = !full && tiles.length > 1
+  const rotating = tiles.length > 1
   useEffect(() => {
     if (!rotating) return
     if (typeof window === 'undefined' || !window.matchMedia) return
@@ -120,12 +98,6 @@ export default function ConciergeHero({
     return () => window.clearInterval(t)
   }, [rotating])
 
-  // Full density fills the parent (100dvh hop-ask-stage) with no rounding.
-  // Teaser sizes to content with the standard hero radius.
-  const panelClass = full
-    ? 'flex-1'
-    : 'rounded-[var(--radius-hero)]'
-
   // Attribution (Unsplash API terms) for whichever backdrop photo is actually
   // on screen right now — the rotating tile when cross-fading, else the
   // single static backdrop.
@@ -133,21 +105,22 @@ export default function ConciergeHero({
 
   return (
     <div
-      className={`relative flex flex-col overflow-hidden ${panelClass}`}
+      className="relative flex flex-col overflow-hidden rounded-[var(--radius-hero)]"
       style={{ background: 'var(--color-brand-ink)' }}
     >
       {/* full-bleed photo as imagery (allowed), under a single legibility scrim.
-          Teaser + several photos → a slow cross-fade through them (opacity
-          only; the scrim above holds legibility constant throughout). */}
+          Several photos → a slow cross-fade through them (opacity only; the
+          scrim above holds legibility constant throughout). The active tile
+          eager-loads unless lazyBackdrop says this hero is below the fold. */}
       {rotating ? (
-        <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div aria-hidden className="pointer-events-none absolute inset-0 hop-rotator">
           {tiles.map((t, i) => (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               key={t.thumb + i}
               src={t.thumb}
               alt=""
-              loading={i === 0 ? undefined : 'lazy'}
+              loading={i === 0 && !lazyBackdrop ? undefined : 'lazy'}
               className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1600ms] ${
                 i === backdropIdx % tiles.length ? 'opacity-35' : 'opacity-0'
               }`}
@@ -160,6 +133,7 @@ export default function ConciergeHero({
           src={backdrop.thumb}
           alt=""
           aria-hidden
+          loading={lazyBackdrop ? 'lazy' : undefined}
           className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35"
         />
       ) : null}
@@ -202,15 +176,8 @@ export default function ConciergeHero({
         </div>
       ) : null}
 
-      {/* Content: centered in the available space above the gallery.
-          Full density: top padding clears the transparent sticky nav. */}
-      <div
-        className={`relative flex flex-1 flex-col items-center px-5 text-center sm:px-10 ${
-          full
-            ? 'justify-center py-8'
-            : 'py-16 sm:py-24'
-        }`}
-      >
+      {/* Content: centered in the available space. */}
+      <div className="relative flex flex-1 flex-col items-center px-5 py-16 text-center sm:px-10 sm:py-24">
         <span
           className="hop-rise inline-flex items-center gap-2 rounded-full bg-brand-deep px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[var(--track-tag)] text-hero-eyebrow"
           style={{ ['--hop-delay' as string]: '40ms' }}
@@ -220,9 +187,7 @@ export default function ConciergeHero({
         </span>
 
         <HeadingTag
-          className={`hop-rise mt-7 max-w-[18ch] text-balance font-display font-semibold leading-[0.98] tracking-[-0.03em] text-white ${
-            full ? 'text-[40px] sm:text-[64px]' : 'text-[38px] sm:text-[60px] lg:text-[72px]'
-          }`}
+          className="hop-rise mt-7 max-w-[18ch] text-balance font-display text-[38px] font-semibold leading-[0.98] tracking-[-0.03em] text-white sm:text-[60px] lg:text-[72px]"
           style={{ ['--hop-delay' as string]: '90ms' }}
         >
           {copy.heading}
@@ -235,7 +200,7 @@ export default function ConciergeHero({
           {copy.sub}
         </p>
 
-        {/* composer — the primary action, identical on both surfaces */}
+        {/* composer — the primary action */}
         <form
           onSubmit={onSubmit}
           className="hop-rise mt-8 w-full max-w-[600px]"
@@ -264,10 +229,9 @@ export default function ConciergeHero({
           </div>
         </form>
 
-        {/* one-tap starters — one canonical set, same on both surfaces.
-            Full density: 2-column grid up to max-w-[560px] for neat alignment. */}
+        {/* one-tap starters — one canonical set */}
         <div
-          className={`hop-rise mt-6 w-full max-w-[560px] ${full ? 'grid grid-cols-2 gap-2' : 'flex flex-wrap justify-center gap-2'}`}
+          className="hop-rise mt-6 flex w-full max-w-[560px] flex-wrap justify-center gap-2"
           style={{ ['--hop-delay' as string]: '240ms' }}
         >
           {copy.chips.map((p) => (
@@ -275,104 +239,13 @@ export default function ConciergeHero({
               key={p}
               type="button"
               onClick={() => onChip(p)}
-              className={`rounded-full border border-white/25 bg-white/10 px-4 py-2.5 text-[13.5px] font-medium text-hero-cream transition-colors hover:border-mint-bright hover:bg-white/20 hover:text-white ${full ? 'text-center' : ''}`}
+              className="rounded-full border border-white/25 bg-white/10 px-4 py-2.5 text-[13.5px] font-medium text-hero-cream transition-colors hover:border-mint-bright hover:bg-white/20 hover:text-white"
             >
               {p}
             </button>
           ))}
         </div>
-
-        {/* full density only: gets-to-know-you affordances. Signed-out visitors
-            don't see the disabled "Connect Gmail — Soon" pill (a dead control is
-            noise before there's a relationship); they see nothing extra here. */}
-        {full && signedIn ? (
-          <div
-            className="hop-rise mt-4 flex flex-wrap items-center justify-center gap-2"
-            style={{ ['--hop-delay' as string]: '300ms' }}
-          >
-            {/* No programs yet → invite linking so answers price against real
-                balances. The primary onward action for a fresh signed-in user. */}
-            {needsPrograms ? (
-              <Link
-                href="/account"
-                className="flex items-center gap-1.5 rounded-full border border-wallet-active bg-wallet-active/15 px-3.5 py-1.5 text-[12px] font-semibold text-hero-white-hover transition-colors hover:bg-wallet-active/25"
-              >
-                <Icon name="loyalty" size={16} className="flex-shrink-0" />
-                Add your programs
-              </Link>
-            ) : null}
-            {/* Gmail seam: live button when configured (env flag + creds), else
-                the honest disabled "Soon" affordance. This block is signed-in
-                only, so a live click routes straight to the OAuth start. */}
-            {gmailEnabled && onConnectGmail ? (
-              <button
-                type="button"
-                onClick={onConnectGmail}
-                className="flex items-center gap-1.5 rounded-full border border-brand-muted bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-hero-label transition-colors hover:border-wallet-active hover:text-hero-white-hover"
-              >
-                <Icon name="envelope" size={16} className="flex-shrink-0" />
-                Connect Gmail to learn from past trips
-              </button>
-            ) : (
-              <button
-                type="button"
-                disabled
-                title="Coming soon — let hop learn from your past trips"
-                className="flex cursor-not-allowed items-center gap-1.5 rounded-full border border-brand-muted bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-hero-label"
-              >
-                <Icon name="envelope" size={16} className="flex-shrink-0" />
-                Connect Gmail to learn from past trips
-                <span className="rounded-full bg-brand-deep px-1.5 py-px text-[10px] uppercase tracking-wide text-hero-body">
-                  Soon
-                </span>
-              </button>
-            )}
-            <Link
-              href="/account"
-              className="flex items-center gap-1.5 rounded-full border border-brand-muted bg-transparent px-3.5 py-1.5 text-[12px] font-medium text-hero-label transition-colors hover:border-wallet-active hover:text-hero-white-hover"
-            >
-              <Icon name="info" size={16} className="flex-shrink-0" />
-              What hop remembers
-            </Link>
-          </div>
-        ) : null}
       </div>
-
-      {/* full density only: mood gallery — fixed-height strip at the base so the
-          whole hero fits in one viewport with nothing to scroll. */}
-      {full && tiles.length > 0 ? (
-        <div
-          className="hop-rise relative grid grid-cols-3 gap-px bg-brand-deep sm:grid-cols-6"
-          style={{
-            ['--hop-delay' as string]: '300ms',
-            height: 'clamp(170px, 30vh, 280px)',
-          }}
-        >
-          {tiles.map((t, i) => (
-            <div
-              key={t.city + i}
-              className={`relative overflow-hidden ${i >= 3 ? 'hidden sm:block' : ''}`}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={t.thumb} alt={t.alt} loading="lazy" className="h-full w-full object-cover" />
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0"
-                style={{
-                  background: 'linear-gradient(to top, rgba(7,62,62,0.82) 0%, rgba(7,62,62,0) 60%)',
-                }}
-              />
-              <div className="absolute inset-x-0 bottom-0 flex items-center gap-1.5 p-2">
-                <span
-                  className={`fi fi-${t.countryCode} h-[10px] w-[14px] flex-shrink-0 rounded-[1px]`}
-                  aria-hidden
-                />
-                <span className="truncate text-[11px] font-semibold text-white">{t.city}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : null}
     </div>
   )
 }

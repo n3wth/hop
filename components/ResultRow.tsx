@@ -159,8 +159,8 @@ const ResultRow = memo(function ResultRow({ option, rank, maxCpp, index = 0, ope
         <div className="pt-[14px] sm:pt-[18px]">
           <div className="hop-price text-[26px] leading-none text-text sm:text-[30px]">
             {isCash
-              ? `$${option.cashPrice?.toLocaleString() ?? '—'}`
-              : option.miles?.toLocaleString() ?? '—'}
+              ? `$${option.cashPrice?.toLocaleString('en-US') ?? '—'}`
+              : option.miles?.toLocaleString('en-US') ?? '—'}
             <small className="font-sans text-[14px] font-medium text-text3">
               {isCash ? (oneWay ? ' ow' : ' rt') : ` ${unit}`}
             </small>
@@ -293,7 +293,7 @@ const ResultRow = memo(function ResultRow({ option, rank, maxCpp, index = 0, ope
                     <li key={t.source} className="flex gap-[8px]">
                       <span className="flex-shrink-0 font-semibold text-brand">{i + 1}.</span>
                       <span>
-                        Transfer{option.miles != null ? ` ${option.miles.toLocaleString()}` : ''}{' '}
+                        Transfer{option.miles != null ? ` ${option.miles.toLocaleString('en-US')}` : ''}{' '}
                         <b className="font-semibold text-text">{t.source}</b>
                         {t.ratio ? ` (${t.ratio})` : ''} →{' '}
                         <b className="font-semibold text-text">{option.program}</b>, then book.
