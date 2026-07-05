@@ -275,17 +275,21 @@ export async function assembleSearch(
   // aggregates today (ADR 0005) — is per-point and scale-invariant, so the
   // observations stay comparable; any future consumer of the raw miles field
   // must account for party size first.
-  recordCppObservations(
-    awards
-      .filter((o) => o.program && typeof o.cpp === 'number' && o.cpp > 0)
-      .map((o) => ({
-        programId: canonicalizeProgram(o.program!)?.id ?? '',
-        cpp: o.cpp!,
-        cashCents: cheapestCash != null ? Math.round(cheapestCash * 100) : undefined,
-        miles: o.miles,
-      }))
-      .filter((s) => s.programId !== ''),
-  )
+  // Mock runs never record (mirrors the recordDegradation guard below) —
+  // fixture cpp values must never reach the live valuation worker's trust gate.
+  if (!useMock) {
+    recordCppObservations(
+      awards
+        .filter((o) => o.program && typeof o.cpp === 'number' && o.cpp > 0)
+        .map((o) => ({
+          programId: canonicalizeProgram(o.program!)?.id ?? '',
+          cpp: o.cpp!,
+          cashCents: cheapestCash != null ? Math.round(cheapestCash * 100) : undefined,
+          miles: o.miles,
+        }))
+        .filter((s) => s.programId !== ''),
+    )
+  }
 
   // Collapse the raw API dump to ONE best option per program/airline, then cap.
   // Live sources return hundreds of near-duplicate offers (every fare/time);
