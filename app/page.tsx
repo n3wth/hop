@@ -63,13 +63,14 @@ export default async function Home() {
   // These data sources are independent — fetch them concurrently so the home
   // renders in one round-trip instead of sequentially.
   //   - balances: unified per-user (manual + AwardWallet, merged)
-  //   - heroBackdrop: canonical Unsplash photo for the agent hero teaser
+  //   - heroBackdrop: canonical Unsplash photo for the signed-OUT composer teaser
   //   - prefs: home airport that seeds the default From
   //   - memory: unified personalization (M5) — drops avoided places from the feed
   // Each degrades gracefully on its own; none can crash the page.
   const [real, heroBackdropRaw, prefs, memory, heroGallery] = await Promise.all([
     su?.sub ? getUserBalances(su.sub) : Promise.resolve([]),
-    conciergeBackdrop(),
+    // Signed-in no longer renders the composer teaser — skip the image fetch.
+    su?.sub ? Promise.resolve(null) : conciergeBackdrop(),
     su?.sub ? getPrefs(su.sub) : Promise.resolve({} as UserPrefs),
     // M5 — unified memory (orders the destinations module to stated affinities).
     // Degrades to the empty context when signed out; never throws.
@@ -128,7 +129,6 @@ export default async function Home() {
             pointsWorth={pointsWorth}
             seed={homeSeed}
             hasHomeAirport={!!prefs.homeAirport}
-            heroBackdrop={heroBackdrop}
             memory={memory}
             balances={balances}
           />
