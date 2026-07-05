@@ -33,9 +33,14 @@ should route where?
 ## Solution — the playbook
 
 **Session setup**
-1. Scope the MCP surface for this project: disable the unrelated claude.ai connectors for the hop
-   project (`claude mcp` / connector settings). Keep: Linear, Context7, Figma, chrome. This is the
-   single biggest recurring saving (60–80% of the session-start tax, every session).
+1. Scope the MCP surface: `.claude/settings.json` sets `"disableClaudeAiConnectors": true`, so
+   claude.ai cloud connectors (finance, food delivery, tax…) never load in hop sessions. Local
+   plugin servers (Linear, Context7, Figma, chrome) are unaffected. This is the single biggest
+   recurring saving (60–80% of the session-start tax, every session). Need a connector once?
+   Flip it in `.claude/settings.local.json` for that session, then flip back.
+   Relatedly: `scripts/hooks/guard-main-commit.sh` (PreToolUse hook, same file) mechanically
+   blocks `git commit` while HEAD is `main` — the never-commit-to-main rule no longer relies
+   on any model remembering it.
 2. Start cheap by default (Sonnet pin). Escalate the *session*, not the task list: bring in
    Fable/Opus only for plan-writing, architecture/design judgment, or after Sonnet has failed the
    same fix twice (the global "max 2 iterative fixes then re-diagnose" rule).
