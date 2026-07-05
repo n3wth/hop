@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { toNavUser } from '@/lib/nav-user'
@@ -10,6 +11,7 @@ import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import Icon, { type IconName } from '@/components/Icon'
 import CheckoutForm from '@/components/checkout/CheckoutForm'
+import FareCheckSkeleton from '@/components/checkout/FareCheckSkeleton'
 
 // Private, transactional page — keep it out of the index. (template adds "· hop".)
 export const metadata: Metadata = {
@@ -86,12 +88,22 @@ export default async function BookPage({
             cta={{ href: '/search', label: 'Find a flight' }}
           />
         ) : (
-          <OfferGate
-            offerId={offerId}
-            route={hasRoute ? (route as { from: string; to: string; depart: string; return?: string; adults?: number }) : undefined}
-            email={su.email ?? undefined}
-            name={su.name ?? undefined}
-          />
+          // OfferGate re-prices the offer server-side (a genuine Duffel round
+          // trip) before it knows whether it'll render the small Notice card
+          // or the full CheckoutForm. Isolating it in its own Suspense means
+          // that uncertainty is scoped to just this region — the shell above
+          // (back link, AppShell nav) streams immediately instead of the
+          // whole page blocking on Duffel, and the loading state shown here
+          // (FareCheckSkeleton) matches app/book/loading.tsx exactly, so
+          // there's one continuous skeleton rather than two different guesses.
+          <Suspense fallback={<FareCheckSkeleton />}>
+            <OfferGate
+              offerId={offerId}
+              route={hasRoute ? (route as { from: string; to: string; depart: string; return?: string; adults?: number }) : undefined}
+              email={su.email ?? undefined}
+              name={su.name ?? undefined}
+            />
+          </Suspense>
         )}
         <SiteFooter />
       </div>

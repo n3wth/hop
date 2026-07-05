@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { toNavUser } from '@/lib/nav-user'
@@ -10,6 +11,7 @@ import SiteFooter from '@/components/SiteFooter'
 import Icon from '@/components/Icon'
 import CountUp from '@/components/CountUp'
 import FarePolicyCard from '@/components/checkout/FarePolicyCard'
+import ConfirmationSkeleton from '@/components/checkout/ConfirmationSkeleton'
 
 // Private, per-user confirmation — keep it out of the index. (template adds "· hop".)
 export const metadata: Metadata = {
@@ -32,46 +34,59 @@ export default async function ConfirmationPage({
 
   const q = await searchParams
   const orderId = Array.isArray(q.order) ? q.order[0] : q.order
-  // Ownership gate: only load the order if it belongs to THIS user (verified
-  // against hop_bookings, scoped by sub). Prevents IDOR — substituting another
-  // user's Duffel order id must not reveal their passenger PII.
-  const owned = orderId ? await getBookingByOrderId(su.sub, orderId) : null
-  const res =
-    orderId && owned
-      ? await getOrder(orderId)
-      : { ok: false as const, reason: 'No order' }
 
   return (
     <AppShell user={user} hideSearch>
       <div className="mx-auto max-w-[var(--container-xs)] pb-4 pt-8 sm:pt-12">
-        {!res.ok ? (
-          <div className="mt-2 flex items-start gap-4 rounded-[16px] border border-border bg-surface px-6 py-7">
-            <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
-              <Icon name="info" size={24} weight="fill" />
-            </span>
-            <div>
-              <div className="font-display text-[17px] font-semibold text-text">
-                We couldn’t load that booking
-              </div>
-              <p className="mt-1 text-[14px] text-text2">
-                If you just booked, your confirmation is on the way by email. You can also find this
-                trip on your account page.
-              </p>
-              <Link
-                href="/account"
-                className="mt-4 inline-flex items-center gap-2 rounded-[11px] border-[1.5px] border-text px-4 py-[9px] text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
-              >
-                Go to account
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <Confirmed order={res.data} />
-        )}
+        {/* OrderGate awaits the ownership check + a Duffel order fetch before
+            it knows whether it'll render the small "couldn't load" notice or
+            the full Confirmed hero. Isolating it in its own Suspense means the
+            AppShell nav above streams immediately, and the fallback shown here
+            (ConfirmationSkeleton) is the SAME one app/book/confirmation/
+            loading.tsx uses — no double guess. */}
+        <Suspense fallback={<ConfirmationSkeleton />}>
+          <OrderGate sub={su.sub} orderId={orderId} />
+        </Suspense>
         <SiteFooter />
       </div>
     </AppShell>
   )
+}
+
+async function OrderGate({ sub, orderId }: { sub: string; orderId?: string }) {
+  // Ownership gate: only load the order if it belongs to THIS user (verified
+  // against hop_bookings, scoped by sub). Prevents IDOR — substituting another
+  // user's Duffel order id must not reveal their passenger PII.
+  const owned = orderId ? await getBookingByOrderId(sub, orderId) : null
+  const res =
+    orderId && owned ? await getOrder(orderId) : { ok: false as const, reason: 'No order' }
+
+  if (!res.ok) {
+    return (
+      <div className="mt-2 flex items-start gap-4 rounded-[16px] border border-border bg-surface px-6 py-7">
+        <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
+          <Icon name="info" size={24} weight="fill" />
+        </span>
+        <div>
+          <div className="font-display text-[17px] font-semibold text-text">
+            We couldn’t load that booking
+          </div>
+          <p className="mt-1 text-[14px] text-text2">
+            If you just booked, your confirmation is on the way by email. You can also find this
+            trip on your account page.
+          </p>
+          <Link
+            href="/account"
+            className="mt-4 inline-flex items-center gap-2 rounded-[11px] border-[1.5px] border-text px-4 py-[9px] text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
+          >
+            Go to account
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  return <Confirmed order={res.data} />
 }
 
 function money(amount?: string, currency?: string): string {

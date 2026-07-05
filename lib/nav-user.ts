@@ -5,6 +5,7 @@
 // path falls back to the initial — never a stock mystery-person image.
 
 import { createHash } from 'node:crypto'
+import { auth0 } from './auth0'
 
 export interface NavUser {
   /** Opaque Better Auth user.id — used only to identify analytics (R0.5). */
@@ -40,4 +41,15 @@ export function toNavUser(su: SessionUserLike | null | undefined): NavUser | nul
     email,
     picture: su.picture ?? (email ? gravatarUrl(email) : undefined),
   }
+}
+
+// The session lookup alone — no balances, no prefs — for route-level
+// loading.tsx files. Every page already resolves this identically before
+// awaiting its own slower data (balances, live award search, images); reusing
+// it here means loading.tsx can render the correct signed-in/signed-out
+// TopNav from the very first paint instead of defaulting to "Sign in" and
+// popping to the avatar the instant the real page's slower data lands.
+export async function getSessionNavUser(): Promise<NavUser | null> {
+  const session = await auth0.getSession()
+  return toNavUser(session?.user)
 }

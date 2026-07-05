@@ -1,4 +1,5 @@
 import AppShell from '@/components/AppShell'
+import { getSessionNavUser } from '@/lib/nav-user'
 
 // Route-level loading UI for /deals. Next wraps page.js in a Suspense boundary
 // with this as the fallback, so it shows on navigation while the Server
@@ -34,9 +35,10 @@ function CardSkeleton() {
   )
 }
 
-export default function Loading() {
+export default async function Loading() {
+  const user = await getSessionNavUser()
   return (
-    <AppShell hideSearch>
+    <AppShell user={user} hideSearch>
       <div className="mx-auto max-w-[var(--container-shell)]">
         {/* editorial header skeleton — eyebrow, balanced display title, subline */}
         <header className="mx-auto max-w-[60ch] pt-10 text-center sm:pt-14">
