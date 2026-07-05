@@ -3,16 +3,13 @@ import { notFound } from 'next/navigation'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import { pageMeta, absoluteUrl } from '@/lib/seo'
-import {
-  allPrograms,
-  programBySlug,
-  VERIFY_CAVEAT,
-  type Cabin,
-  type Program,
-  type SweetSpot,
-} from '@/lib/sweet-spots'
+import { allPrograms, VERIFY_CAVEAT, type Cabin, type Program, type SweetSpot } from '@/lib/sweet-spots'
+import { getProgramBySlug } from '@/lib/sweet-spots-live'
 
-// Prerender one page per program; nothing else is valid.
+// Prerender one page per program; nothing else is valid. Static params come
+// from the STATIC table only (never the DB) — a draft can only add spots to
+// an existing program, never introduce a new one, so build-time route
+// generation doesn't need the drafts queue. See lib/sweet-spot-drafts.ts.
 export const dynamic = 'force-static'
 export const dynamicParams = false
 
@@ -26,7 +23,7 @@ export async function generateMetadata({
   params: Promise<{ program: string }>
 }) {
   const { program: slug } = await params
-  const program = programBySlug(slug)
+  const program = await getProgramBySlug(slug)
   if (!program) return {}
   const count = program.spots.length
   return pageMeta({
@@ -81,7 +78,7 @@ export default async function ProgramSweetSpotsPage({
   params: Promise<{ program: string }>
 }) {
   const { program: slug } = await params
-  const program = programBySlug(slug)
+  const program = await getProgramBySlug(slug)
   if (!program) notFound()
 
   const jsonLd = buildProgramJsonLd(program)

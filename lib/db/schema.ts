@@ -14,6 +14,7 @@ import {
   uuid,
   numeric,
   integer,
+  serial,
   boolean,
   jsonb,
   timestamp,
@@ -225,6 +226,30 @@ export const escalations = pgTable('hop_escalations', {
   trip: jsonb('trip').notNull().default({}),
   status: text('status').notNull().default('new'),
   createdAt: tz('created_at').defaultNow(),
+})
+
+// Owner-drafted sweet-spot entries awaiting review before they join the
+// static seed table (lib/sweet-spots.ts). `seq` is a plain auto-increment used
+// only to derive a stable numeric SweetSpot#id above the static table's small
+// integers (see lib/sweet-spot-drafts.ts#toSweetSpot) — the uuid stays the
+// real key. Facts (route/program/miles) are always human-entered; only `why`
+// may be agent-drafted (lib/sweet-spot-drafts.ts#draftSweetSpotWhy).
+export const sweetSpotDrafts = pgTable('hop_sweet_spot_drafts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  seq: serial('seq').notNull(),
+  route: text('route').notNull(),
+  program: text('program').notNull(),
+  programSlug: text('program_slug').notNull(),
+  metal: text('metal'),
+  cabin: text('cabin').notNull(),
+  milesOw: integer('miles_ow'),
+  milesLabel: text('miles_label').notNull(),
+  why: text('why').notNull().default(''),
+  confidence: text('confidence').notNull().default('med'),
+  status: text('status').notNull().default('pending_review'),
+  createdBy: text('created_by').notNull(),
+  createdAt: tz('created_at').defaultNow(),
+  reviewedAt: tz('reviewed_at'),
 })
 
 // Live cents-per-point aggregates sourced from hop's own first-party cash vs
