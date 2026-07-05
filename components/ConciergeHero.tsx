@@ -34,6 +34,10 @@ export interface ConciergeHeroPhoto {
   alt: string
   city: string
   countryCode: string
+  /** Unsplash attribution (API terms) — optional only so a hand-built caller
+   *  without a real photo doesn't need to fake one; every photo actually
+   *  resolved via lib/images.ts#DestImage carries one. */
+  credit?: { name: string; link: string }
 }
 
 export interface ConciergeHeroProps {
@@ -122,6 +126,11 @@ export default function ConciergeHero({
     ? 'flex-1'
     : 'rounded-[var(--radius-hero)]'
 
+  // Attribution (Unsplash API terms) for whichever backdrop photo is actually
+  // on screen right now — the rotating tile when cross-fading, else the
+  // single static backdrop.
+  const activeCredit = rotating ? tiles[backdropIdx % tiles.length]?.credit : backdrop?.credit
+
   return (
     <div
       className={`relative flex flex-col overflow-hidden ${panelClass}`}
@@ -164,6 +173,34 @@ export default function ConciergeHero({
             'linear-gradient(to bottom, rgba(7,62,62,0.80) 0%, rgba(7,62,62,0.90) 55%, rgba(7,62,62,0.97) 100%)',
         }}
       />
+
+      {/* Unsplash attribution (API terms) for the backdrop currently on
+          screen — a small solid chip, not a shadow/gradient surface. */}
+      {activeCredit ? (
+        <div
+          className="pointer-events-auto absolute right-3 top-3 z-10 max-w-[70%] truncate rounded-full px-2.5 py-1 text-[10px] font-medium text-white/70"
+          style={{ background: 'rgba(7,26,26,0.5)' }}
+        >
+          Photo by{' '}
+          <a
+            href={`${activeCredit.link}?utm_source=hop&utm_medium=referral`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-white/40 underline-offset-2 hover:text-white"
+          >
+            {activeCredit.name}
+          </a>{' '}
+          on{' '}
+          <a
+            href="https://unsplash.com/?utm_source=hop&utm_medium=referral"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-white/40 underline-offset-2 hover:text-white"
+          >
+            Unsplash
+          </a>
+        </div>
+      ) : null}
 
       {/* Content: centered in the available space above the gallery.
           Full density: top padding clears the transparent sticky nav. */}

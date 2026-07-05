@@ -70,6 +70,10 @@ export interface ConciergePhoto {
   city: string
   country: string
   countryCode: string
+  /** Unsplash attribution (API terms) — optional only so a hand-built caller
+   *  without a real photo doesn't need to fake one; every photo actually
+   *  resolved via lib/images.ts#DestImage carries one. */
+  credit?: { name: string; link: string }
 }
 
 export interface ConciergeProgram {
@@ -296,7 +300,13 @@ export default function Concierge({
     .map((c) => photos[c])
     .filter((p): p is ConciergePhoto => Boolean(p))
     .slice(0, 4)
-    .map((p) => ({ city: p.city, thumb: p.thumb, alt: p.alt, countryCode: p.countryCode }))
+    .map((p) => ({
+      city: p.city,
+      thumb: p.thumb,
+      alt: p.alt,
+      countryCode: p.countryCode,
+      credit: p.credit,
+    }))
 
   return (
     <div className="flex min-h-0 flex-1 flex-col px-5 sm:px-8 lg:px-12 xl:px-16">

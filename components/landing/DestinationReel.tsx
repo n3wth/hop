@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Destination } from '@/lib/destinations'
 import { destinations, topValue, imageQuery } from '@/lib/destinations'
 import { destinationImages, type DestImage } from '@/lib/images'
+import { isoOffset } from '@/lib/dates'
 
 // The arrival moment — a full-bleed row of real destination photography. Before
 // a visitor reads a word of copy they feel the dream: "where could I go?". A
@@ -12,11 +13,22 @@ import { destinationImages, type DestImage } from '@/lib/images'
 function Tile({
   d,
   photo,
+  origin,
 }: {
   d: Destination
   photo?: DestImage | null
+  /** Resolved home-airport origin (falls back to SFO, same as the page seed). */
+  origin: string
 }) {
-  const href = `/search?from=SFO&to=${encodeURIComponent(d.code)}&adults=1`
+  // A round trip, seeded like the header search + DestinationGrid (depart ≈
+  // +10d, return ≈ +3d after) — this used to omit dates entirely (silently ran
+  // a ONE-WAY search) and hardcode SFO regardless of the visitor's real origin.
+  // Cabin is passed through when the tile is a premium redemption (labeled
+  // below) so tapping it doesn't quietly downgrade to an economy search.
+  const href =
+    `/search?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(d.code)}` +
+    `&depart=${isoOffset(10)}&return=${isoOffset(13)}&adults=1` +
+    (d.cabin ? `&cabin=${d.cabin}` : '')
   return (
     <Link
       href={href}
@@ -76,7 +88,7 @@ function Tile({
   )
 }
 
-export default async function DestinationReel() {
+export default async function DestinationReel({ origin = 'SFO' }: { origin?: string }) {
   // Best-value places, capped at 10 image fetches.
   const picks = topValue(10)
   const photos = await destinationImages(picks.map((d) => imageQuery(d)))
@@ -91,7 +103,7 @@ export default async function DestinationReel() {
           tiles scroll horizontally within it. Snap + hidden scrollbar. */}
       <div className="flex snap-x gap-3 overflow-x-auto pb-2 [scrollbar-width:none] sm:gap-4 [&::-webkit-scrollbar]:hidden">
         {picks.map((d) => (
-          <Tile key={d.code} d={d} photo={photos[imageQuery(d)]} />
+          <Tile key={d.code} d={d} photo={photos[imageQuery(d)]} origin={origin} />
         ))}
       </div>
     </section>

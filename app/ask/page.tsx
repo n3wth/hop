@@ -106,6 +106,7 @@ export default async function AskPage({
         city: d.city,
         country: d.country,
         countryCode: d.countryCode,
+        credit: img.credit,
       }
     }
   }

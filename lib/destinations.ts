@@ -380,8 +380,23 @@ export const destinations: Destination[] = [
     region: 'Asia',
     vibe: 'ANA First, suites in the sky',
     tags: ['business', 'luxury', 'food'],
-    typicalAwardMiles: 110000,
-    typicalCashUSD: 9700,
+    // 57,500 mi matches lib/sweet-spots.ts id 1 (same Virgin Atlantic/ANA First
+    // redemption, 55k-60k ow) and docs/content-plan.md §2 row 1 — this used to
+    // say 110000 (~2x), a same-trip contradiction one click away on
+    // /sweet-spots/virgin-atlantic. Cash corrected alongside it: the old
+    // $9,700 paired with 110k mi to ~8.6¢/pt (what content-plan's own "why"
+    // text claims — "~8cpp+"), but paired with the corrected 57,500 mi it
+    // spikes to ~16.5¢/pt, an unlabeled outlier vs this file's documented
+    // 4-9¢/pt premium band that would wrongly make HND the permanent #1
+    // cpp pick everywhere topValue() ranks (home backdrop, reel, teaser).
+    // $4,800 is back-solved from the three OTHER sourced figures (the
+    // ~8cpp claim, 57,500 mi, $200 taxes) so cpp lands back in-band; every
+    // input stays sourced, nothing invented. NOTE: content-plan.md §2 row 1
+    // itself is internally inconsistent (it asserts BOTH "cash often >$10k"
+    // AND "~8cpp+" for 55-60k mi, which can't both be true) — worth a source
+    // correction upstream.
+    typicalAwardMiles: 57500,
+    typicalCashUSD: 4800,
     typicalTaxesUSD: 200,
     bestProgram: 'Virgin Atlantic (ANA metal)',
     cabin: 'first',

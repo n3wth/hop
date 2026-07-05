@@ -14,8 +14,11 @@ import WatchThisRoute from './WatchThisRoute'
 export interface VerdictRailProps {
   result: SearchResult
   /** Destination photo (server-fetched from the pick's destCode). When present
-      it fills the hero behind the boarding pass instead of the bunny mark. */
-  destPhoto?: { url: string; alt: string } | null
+      it fills the hero behind the boarding pass instead of the bunny mark.
+      `credit` (Unsplash attribution, per API terms) is optional only so callers
+      that never pass a photo don't need to fake one — when a photo IS present
+      it always carries a credit (lib/images.ts#DestImage). */
+  destPhoto?: { url: string; alt: string; credit?: { name: string; link: string } } | null
   /** True only when these balances are the SIGNED-IN user's own (real). Drives
       the ownership voice: "You have the miles" + "Book with X miles" are only
       honest when hop is reading this visitor's connected programs. Signed-out
@@ -376,6 +379,34 @@ export default function VerdictRail({
                   'linear-gradient(to bottom, rgba(7,62,62,0) 0%, rgba(7,62,62,0.58) 52%, rgba(7,62,62,0.9) 100%)',
               }}
             />
+            {/* Unsplash attribution (API terms) — a small solid chip (not a
+                gradient/shadow surface) sitting in the already-scrimmed top
+                corner, above the top scrim so it stays legible. */}
+            {destPhoto.credit ? (
+              <div
+                className="pointer-events-auto absolute right-3 top-3 z-10 max-w-[70%] truncate rounded-full px-2.5 py-1 text-[10px] font-medium text-white/80"
+                style={{ background: 'rgba(7,26,26,0.55)' }}
+              >
+                Photo by{' '}
+                <a
+                  href={`${destPhoto.credit.link}?utm_source=hop&utm_medium=referral`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-white/40 underline-offset-2 hover:text-white"
+                >
+                  {destPhoto.credit.name}
+                </a>{' '}
+                on{' '}
+                <a
+                  href="https://unsplash.com/?utm_source=hop&utm_medium=referral"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-white/40 underline-offset-2 hover:text-white"
+                >
+                  Unsplash
+                </a>
+              </div>
+            ) : null}
           </>
         ) : (
           <div className="hidden flex-1 place-items-center pt-9 lg:grid">

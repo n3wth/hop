@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { toNavUser } from '@/lib/nav-user'
@@ -22,6 +23,7 @@ import HeroShowcase from '@/components/landing/HeroShowcase'
 import SignedInHome from '@/components/landing/SignedInHome'
 import { conciergeBackdrop, conciergeGallery } from '@/lib/concierge-backdrop'
 import { isoOffset } from '@/lib/dates'
+import type { Balance } from '@/lib/types'
 
 // A sensible default search to seed the hero form. Picking it pre-fills the
 // fields so the very first action — a real search — is one tap away. Dates are
@@ -83,9 +85,10 @@ export default async function Home() {
   let programs = 0
   let totalPoints = 0
   let pointsWorth = 0
+  let balances: Balance[] = []
   if (user) {
     const useMock = real.length === 0 && /^(1|true|yes)$/i.test(process.env.MOCK ?? '')
-    const balances = real.length > 0 ? real : useMock ? mockBalances() : []
+    balances = real.length > 0 ? real : useMock ? mockBalances() : []
     programs = balances.length
     totalPoints = balances.reduce((sum, b) => sum + b.balance, 0)
     pointsWorth = walletValue(balances)
@@ -127,6 +130,7 @@ export default async function Home() {
             hasHomeAirport={!!prefs.homeAirport}
             heroBackdrop={heroBackdrop}
             memory={memory}
+            balances={balances}
           />
         </div>
         <div className="mx-auto max-w-[var(--container-shell)]">
@@ -193,18 +197,59 @@ export default async function Home() {
 
           {/* the proof — the canonical worked example, right under the form */}
           <div className="mt-12 sm:mt-16 lg:mt-20">
-            <SampleVerdict />
+            {/* Suspense: a slow (not down) Unsplash call must degrade the photo
+                ornament, never stall the whole page — this section fetches its
+                own photo independently of everything above it. */}
+            <Suspense
+              fallback={
+                <div
+                  aria-hidden
+                  className="h-[420px] rounded-[20px] sm:h-[360px] lg:rounded-[28px]"
+                  style={{ background: 'var(--color-brand)' }}
+                />
+              }
+            >
+              <SampleVerdict />
+            </Suspense>
           </div>
         </section>
 
         {/* ── THE DREAM, IMMEDIATELY — a reel of real destinations ───────── */}
-        <DestinationReel />
+        <Suspense
+          fallback={
+            <div aria-hidden className="flex gap-3 overflow-hidden pb-2 sm:gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-[180px] w-[260px] flex-shrink-0 rounded-[16px] border border-border sm:h-[210px] sm:w-[300px]"
+                  style={{ background: 'var(--color-brand-deep)' }}
+                />
+              ))}
+            </div>
+          }
+        >
+          <DestinationReel origin={homeSeed.from} />
+        </Suspense>
 
         {/* ── THE SECOND DOOR — the conversational agent ─────────────────── */}
         <AgentComposer variant="out" backdrop={heroBackdrop} gallery={heroGallery} headingTag="h2" />
 
         {/* ── SELL THE DREAM ─────────────────────────────────────────────── */}
-        <InspirationTeaser />
+        <Suspense
+          fallback={
+            <div aria-hidden className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="aspect-[16/11] rounded-[var(--radius-lg)] border border-border"
+                  style={{ background: 'var(--color-brand-deep)' }}
+                />
+              ))}
+            </div>
+          }
+        >
+          <InspirationTeaser />
+        </Suspense>
 
         {/* ── HOW IT WORKS ───────────────────────────────────────────────── */}
         <HowItWorks />

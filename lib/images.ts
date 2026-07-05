@@ -32,6 +32,11 @@ export async function destinationImage(query: string): Promise<DestImage | null>
           headers: { Authorization: `Client-ID ${ACCESS_KEY}` },
           // cache a day — destination photos don't need to be fresh
           next: { revalidate: 86400 },
+          // Hard timeout — a slow (not down) Unsplash response must never stall
+          // the page it's ornamenting. AbortError lands in the catch below,
+          // same as any other failure → null → cached as a miss → callers'
+          // solid fallback (degrade the ornament, never the page).
+          signal: AbortSignal.timeout(1500),
         },
       )
       if (!res.ok) return null
@@ -52,6 +57,17 @@ export async function destinationImage(query: string): Promise<DestImage | null>
         },
         color: hash ? averageColorHex(hash) ?? undefined : undefined,
         blur: hash ? blurhashToDataUri(hash) ?? undefined : undefined,
+      }
+      // Unsplash API terms require pinging download_location once per "use" of
+      // a photo, separate from attribution. Fire-and-forget — a slow/failing
+      // tracking call must never delay or break the page render. This sits
+      // inside the cacheWrap callback, so it only fires on a genuine cache
+      // miss (once per query per 24h TTL), not on every cached read.
+      const downloadLocation: string | undefined = p.links?.download_location
+      if (downloadLocation) {
+        fetch(downloadLocation, { headers: { Authorization: `Client-ID ${ACCESS_KEY}` } }).catch(
+          () => {},
+        )
       }
       return img
     } catch {
