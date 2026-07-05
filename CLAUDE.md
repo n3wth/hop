@@ -64,6 +64,11 @@ where the next agent (you, or another LLM via `AGENTS.md`) will find it automati
 - **Claude Code sessions**: keep context small so turns stay fast — `/compact` before ~60%
   context, delegate exploration/research to subagents (`Explore`, `general-purpose`) instead of
   doing wide searches inline, and use `/review-parallel` instead of manually rereading a diff.
+- **Cheap-model routing** (evidence: `docs/solutions/2026-07-05-cheap-model-iteration-playbook.md`):
+  default sessions run Sonnet; Fable/Opus only for plans, architecture/design judgment, or after
+  two failed fix attempts. Screenshot/UI loops run in a subagent that returns conclusions, not
+  images. Native Grep/Glob/Read over Bash grep/rg/cat; `| tail` build output; no `echo` status
+  narration; never re-Read a file already in context.
 
 ## Commands (run from the repo root)
 
