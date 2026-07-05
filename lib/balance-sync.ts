@@ -74,11 +74,33 @@ function sanitizeProgram(raw: unknown): string | null {
   return cleaned
 }
 
+// Does the text actually mention this program? Canonical programs match on
+// their name or any alias (short aliases word-bounded); free-text programs
+// match on the whole string or any significant word of it. The counterpart to
+// balanceAppearsInText — the model can't attribute a real number to a program
+// the text never names.
+export function programAppearsInText(
+  program: string,
+  def: ReturnType<typeof canonicalizeProgram>,
+  lowerText: string,
+): boolean {
+  if (def) {
+    return [def.name.toLowerCase(), ...def.aliases].some((a) =>
+      a.length >= 4 ? lowerText.includes(a) : new RegExp(`\\b${escapeRe(a)}\\b`).test(lowerText),
+    )
+  }
+  const lower = program.toLowerCase()
+  if (lowerText.includes(lower)) return true
+  const words = lower.split(/[^a-z0-9]+/).filter((w) => w.length >= 4)
+  return words.length > 0 && words.some((w) => lowerText.includes(w))
+}
+
 // Clamp one candidate entry against the source text. Null on ANY doubt — a
 // missed balance is fine, a wrong one is not.
 function clampEntry(
   entry: { program?: unknown; balance?: unknown },
   numbers: Set<string>,
+  lowerText: string,
 ): ExtractedBalance | null {
   const program = sanitizeProgram(entry.program)
   if (!program) return null
@@ -86,13 +108,16 @@ function clampEntry(
     typeof entry.balance === 'number'
       ? entry.balance
       : typeof entry.balance === 'string'
-        ? parseFloat(entry.balance.replace(/[^0-9.]/g, ''))
+        ? // Keep the sign so "-500" parses negative and is rejected below,
+          // exactly like a numeric -500.
+          parseFloat(entry.balance.trim().replace(/[^0-9.-]/g, ''))
         : NaN
   if (!Number.isFinite(n)) return null
   const balance = Math.round(n)
   if (balance < 0 || balance > MAX_BALANCE) return null
   if (!balanceAppearsInText(balance, numbers)) return null
   const def = canonicalizeProgram(program)
+  if (!programAppearsInText(program, def, lowerText)) return null
   return {
     program: def ? def.name : program,
     code: def ? def.code : deriveCode(program),
@@ -120,9 +145,12 @@ export function validateExtracted(parsed: unknown, text: string): ExtractedBalan
   const list = (parsed as { balances?: unknown }).balances
   if (!Array.isArray(list)) return null
   const numbers = textNumberSet(text)
+  const lowerText = text.toLowerCase()
   const clamped = list
     .slice(0, MAX_ENTRIES * 2)
-    .map((e) => (e && typeof e === 'object' ? clampEntry(e as Record<string, unknown>, numbers) : null))
+    .map((e) =>
+      e && typeof e === 'object' ? clampEntry(e as Record<string, unknown>, numbers, lowerText) : null,
+    )
     .filter((e): e is ExtractedBalance => e !== null)
   const out = dedupe(clamped)
   return out.length > 0 ? out : null

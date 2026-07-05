@@ -84,6 +84,31 @@ describe('validateExtracted — the clamp', () => {
     expect(validateExtracted({ balances: [] }, STATEMENT)).toBeNull()
   })
 
+  it('rejects a string balance whose sign would be stripped ("-500" is not 500)', () => {
+    const text = 'United MileagePlus miles adjusted: -500'
+    expect(
+      validateExtracted({ balances: [{ program: 'United MileagePlus', balance: '-500' }] }, text),
+    ).toBeNull()
+  })
+
+  it('rejects a program the text never mentions, even with a real number', () => {
+    const out = validateExtracted(
+      { balances: [{ program: 'Delta SkyMiles', balance: 45230 }] },
+      STATEMENT,
+    )
+    expect(out).toBeNull()
+  })
+
+  it('accepts a canonicalized program the text names only by alias', () => {
+    const text = 'Your MileagePlus balance: 45,230 miles'
+    const out = validateExtracted(
+      { balances: [{ program: 'United MileagePlus', balance: 45230 }] },
+      text,
+    )
+    expect(out).not.toBeNull()
+    expect(out![0].code).toBe('UA')
+  })
+
   it('rejects negative and absurd balances', () => {
     const text = 'United MileagePlus: -500 miles, or 999,000,000,000'
     expect(
