@@ -112,7 +112,15 @@ async function syncOne(row: {
     return 'failed'
   }
 
-  await applyExtractedBalances(row.userId, [match])
+  // applyExtractedBalances never throws — it reports write failures in its
+  // counters. Only claim 'ok' when the balance actually persisted (added,
+  // updated, or already-current); a transient DB failure stays 'failed' so the
+  // row doesn't falsely read "Synced" and the cron doesn't over-count.
+  const applied = await applyExtractedBalances(row.userId, [match])
+  if (applied.failed > 0 || applied.added + applied.updated + applied.unchanged === 0) {
+    await recordSyncOutcome(row.id, 'failed', "couldn't save the balance — will retry")
+    return 'failed'
+  }
   await recordSyncOutcome(row.id, 'ok')
   return 'ok'
 }
