@@ -200,6 +200,14 @@ in one round-trip.
 - **Ops**: turning any production capability on/off (alerts, valuation sync, self-improve,
   billing, checkout, auth flags) is documented in `docs/ops-runbook.md`; `.env.example`
   enumerates every env var the app reads.
+- **PRs for unrelated changes never land on a dirty working branch.** This repo runs many
+  concurrent worktrees, and any given checkout routinely has unrelated in-progress work (modified
+  and untracked files) sitting uncommitted. Before opening a PR, check `git status` — if there's
+  unrelated WIP, don't commit it alongside your change. Instead branch off `origin/main` in a
+  fresh, isolated worktree (`git worktree add /tmp/<name> origin/main -b <branch>`), copy in only
+  the files your change touches, commit/push/PR from there, then remove the temp worktree
+  (`git worktree remove`) once merged. Use `gh pr create --head <branch> --base main` explicitly —
+  `gh` can't reliably infer the current branch from inside a worktree.
 
 ## Design & copy — hold this bar on any UI change
 
