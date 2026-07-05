@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import { toNavUser } from '@/lib/nav-user'
 import type { SearchParams } from '@/lib/types'
-import { assembleSearch } from '@/lib/search'
+import { assembleSearch, seatsFor } from '@/lib/search'
 import type { TravelPrefs } from '@/lib/prefs-model'
 import { getUserBalances } from '@/lib/accounts'
 import { getPrefs } from '@/lib/prefs'
@@ -17,6 +17,7 @@ import AppShell from '@/components/AppShell'
 import RouteBar from '@/components/RouteBar'
 import VerdictRail from '@/components/VerdictRail'
 import ResultsList from '@/components/ResultsList'
+import SearchTelemetry from '@/components/SearchTelemetry'
 import PointsPanel from '@/components/PointsPanel'
 import SiteFooter from '@/components/SiteFooter'
 
@@ -279,6 +280,15 @@ export default async function Search({
         {/* plain trip context — route + facts, not fake masthead metadata */}
         <RouteBar result={result} hasRealBalances={hasRealBalances} nonstop={nonstop} />
 
+        {/* R0.5 funnel — search_ran (+ verdict_viewed when a hero rendered). */}
+        <SearchTelemetry
+          from={params.from}
+          to={params.to}
+          cabin={params.cabin}
+          travelers={seatsFor(params)}
+          verdict={result.pick ? result.verdict : undefined}
+        />
+
         {/* the verdict hero — only when there's an actual pick to render a
             verdict about. verdict === 'none' means cash AND awards both came
             back empty (or both degraded, see DegradedNote): there's nothing to
@@ -295,8 +305,10 @@ export default async function Search({
           />
         ) : null}
 
-        {/* other ways to fly */}
-        <ResultsList result={result} />
+        {/* other ways to fly — travelers is the engine's own seatsFor (the
+            multiplier already applied to every figure), so the party-basis
+            note can never disagree with the numbers it describes. */}
+        <ResultsList result={result} travelers={seatsFor(params)} />
 
         {/* your points — the wallet stands alone; no restating heading */}
         <div className="mt-14">

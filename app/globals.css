@@ -60,10 +60,13 @@
 
   /* on-teal / dark-wallet text tiers — one contract for copy painted on the
      teal verdict hero and the dark wallet, so component lanes stop hardcoding
-     these hexes. Tuned to read on the teal hero / wallet ink. */
-  --color-hero-body: #c7ece5; /* body copy on teal hero */
-  --color-hero-label: #8fcabf; /* muted labels on teal */
-  --color-hero-eyebrow: #9fd4c8; /* eyebrows / kickers on teal */
+     these hexes. Tuned to read on the teal hero / wallet ink. All three text
+     tiers clear WCAG AA 4.5:1 against --color-brand (guarded by
+     lib/__tests__/contrast.test.ts) — the muted/label tier is as dark as AA
+     allows, so hierarchy comes from weight + tracking, not more dimming. */
+  --color-hero-body: #c7ece5; /* body copy on teal hero (4.8:1 on brand) */
+  --color-hero-label: #c5e7de; /* muted labels on teal (4.6:1 on brand) */
+  --color-hero-eyebrow: #cdebe2; /* eyebrows / kickers on teal (4.8:1 on brand) */
   --color-hero-white-hover: #fffdf6; /* hover-to-white on teal */
   --color-wallet-active: #7be0c6; /* active mint in the dark wallet */
 

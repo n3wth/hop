@@ -413,6 +413,32 @@ For the review to stay honest, re-run it after Phase 1 lands:
 > drift) against the current code. Diff the findings against Part 1 of that doc, mark what's
 > resolved, and append a dated addendum with anything new.
 
+## Addendum — status as of 2026-07-04 (post launch-readiness audit + PR #167)
+
+A 15-agent audit re-verified every item against code at `6ec5212`; PR #167
+(`feat/launch-readiness`) then closed the open code-side items. Verified state:
+
+- **Complete (code):** R0.1 (engine + tests landed earlier; the missing
+  ResultsList party-basis label shipped in #167), R0.2, R0.3, R0.5 (all five
+  events + identify, #167), R0.7, R1.1 (#167), R1.2, R1.3, R1.7 (#167),
+  kill/freeze list + doc hygiene (#167).
+- **Code-complete, ops verification open:** R0.6 — the /api/go/kiwi ledger is
+  live; still unverified whether Travelpayouts attribution survives the
+  same-origin 302 (check prod devtools; tp.media hosts are pre-allowlisted).
+- **Ops-only, still open (docs/ops-runbook.md):** R0.4 — deploy
+  cloudflare/valuations-worker + flip HOP_ENABLE_VALUATION_SYNC, flip
+  STANDING_ORDERS_CRON_ENABLED, set explicit BETTER_AUTH_SECRET, verify
+  Resend DKIM, set NEXT_PUBLIC_POSTHOG_KEY, one real Stripe test purchase.
+  `/admin/ops` (new in #167) now shows every seam's state, so the flips are
+  confirmable at a glance.
+- **Open (next up):** R1.4 (balance-optional add + 5-majors quick-start),
+  R1.5 (verdict receipts), R1.6 (newsletter), then Phase 2.
+- **Beyond the roadmap, shipped in #167:** production 404 for the /api/cash +
+  /api/awards debug handlers, baseline security headers, verified-email admin
+  gate, account deletion (the /privacy promise), and the /admin ops console
+  (preflight, revenue-click ledger, degradation drilldown, watch list,
+  ticket/escalation lifecycle).
+
 ## Part 4 — Linear reconciliation
 
 The `hop` Linear project (team n3wth) predates the Neon/Better-Auth cutover; several backlog

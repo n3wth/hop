@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getUserId } from '@/lib/session'
+import { safeReturnTo } from '@/lib/safe-return'
 import { isGoogleAuthEnabled, isEmailPasswordAuthEnabled, isPasskeyEnabled } from '@/lib/env'
 import Logo from '@/components/Logo'
 import Icon from '@/components/Icon'
@@ -15,14 +16,8 @@ export const metadata: Metadata = {
   robots: { index: false },
 }
 
-// Only allow same-origin, app-relative returnTo paths. Reject absolute URLs,
-// protocol-relative ('//evil.com'), and backslash tricks to prevent open redirects.
-function safeReturnTo(raw: string | string[] | undefined): string | null {
-  const v = Array.isArray(raw) ? raw[0] : raw
-  if (!v) return null
-  if (!v.startsWith('/') || v.startsWith('//') || v.startsWith('/\\') || v.includes('\\')) return null
-  return v
-}
+// safeReturnTo (lib/safe-return.ts) rejects absolute/protocol-relative/
+// backslash destinations so returnTo can never become an open redirect.
 
 // Branded welcome / sign-in landing. Auth is Better Auth's Google social login
 // (client-initiated POST → Google). Already signed in → /account.

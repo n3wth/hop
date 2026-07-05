@@ -3,9 +3,12 @@
 // signed-in user whose Auth0 email matches HOP_OWNER_EMAIL (defaults to the
 // founder inbox — the same address that receives ticket/lead notifications).
 //
-// Email comes from the Auth0 IdP after authentication, so a visitor can't present
-// the owner's email without controlling that account. Good enough to gate an
-// internal tool; a real role model can replace this later. NEVER throws.
+// Email comes from the IdP after authentication AND must be verified — today
+// every session email is transitively verified (Google-only social login;
+// the flag-gated email/password path requires verification), but the explicit
+// emailVerified check means one added provider or config flip can never turn
+// an unverified address into /admin access. Good enough to gate an internal
+// tool; a real role model can replace this later. NEVER throws.
 
 import { auth0 } from '@/lib/auth0'
 
@@ -21,7 +24,12 @@ export async function getOwnerSession(): Promise<{ email: string; sub: string } 
     const session = await auth0.getSession()
     const email = session?.user?.email
     const sub = session?.user?.sub
-    if (typeof email === 'string' && typeof sub === 'string' && email.trim().toLowerCase() === ownerEmail()) {
+    if (
+      typeof email === 'string' &&
+      typeof sub === 'string' &&
+      session?.user?.emailVerified === true &&
+      email.trim().toLowerCase() === ownerEmail()
+    ) {
       return { email: email.trim(), sub }
     }
   } catch {

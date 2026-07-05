@@ -103,6 +103,39 @@ export function recordDegradation(
   }
 }
 
+export interface DegradationEventRow {
+  source: string
+  route: string | null
+  reason: string | null
+  createdAt: string | null
+}
+
+// The /admin/ops drilldown — the stored reason + route columns that
+// getDegradationWindowCounts never surfaces, so an elevated source is
+// diagnosable from admin instead of SQL. Same gate + null convention as the
+// counts read: null = unknown (flag off / dead table), never a fake empty.
+export async function listRecentDegradationEvents(
+  limit = 30,
+): Promise<DegradationEventRow[] | null> {
+  if (!isSelfImproveEnabled()) return null
+  return withDb<DegradationEventRow[] | null>(null, async (db) => {
+    const { data, error } = await db
+      .from(TABLE)
+      .select('source, route, reason, created_at')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error || !data) return null
+    return (data as Array<Record<string, unknown>>)
+      .filter((r) => typeof r.source === 'string')
+      .map((r) => ({
+        source: String(r.source),
+        route: typeof r.route === 'string' ? r.route : null,
+        reason: typeof r.reason === 'string' ? r.reason : null,
+        createdAt: typeof r.created_at === 'string' ? r.created_at : null,
+      }))
+  })
+}
+
 export interface DegradationWindowCounts {
   /** Events per source in the 24h ending at `now`. */
   last24h: Record<string, number>

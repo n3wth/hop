@@ -7,6 +7,8 @@
 import { createHash } from 'node:crypto'
 
 export interface NavUser {
+  /** Opaque Better Auth user.id — used only to identify analytics (R0.5). */
+  id?: string
   initial: string
   name?: string
   email?: string
@@ -19,6 +21,8 @@ export function gravatarUrl(email: string, size = 160): string {
 }
 
 interface SessionUserLike {
+  /** Better Auth user.id — the lib/auth0.ts shim exposes it as `sub`. */
+  sub?: string | null
   name?: string | null
   email?: string | null
   picture?: string | null
@@ -30,6 +34,7 @@ export function toNavUser(su: SessionUserLike | null | undefined): NavUser | nul
   if (!su) return null
   const email = su.email ?? undefined
   return {
+    id: su.sub ?? undefined,
     initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
     name: su.name ?? email ?? undefined,
     email,

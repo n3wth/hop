@@ -20,6 +20,7 @@ const SURFACES: Item[] = [
   { href: '/admin', label: 'Overview', icon: 'chart', exact: true },
   { href: '/admin/support', label: 'Inbox', icon: 'envelope' },
   { href: '/admin/agents', label: 'Agents', icon: 'compass' },
+  { href: '/admin/ops', label: 'Ops', icon: 'settings' },
 ]
 
 // Read-only jumps out of the admin app — the public surfaces the numbers

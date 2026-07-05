@@ -22,6 +22,9 @@ export const auth0 = {
         user: {
           sub: session.user.id,
           email: session.user.email,
+          // Better Auth's verified-email bit — lib/owner.ts requires it so the
+          // admin gate never rests on an unverified address.
+          emailVerified: session.user.emailVerified === true,
           name: session.user.name,
           // Both spellings: Auth0-era call sites read `picture`, Better Auth
           // supplies `image`.

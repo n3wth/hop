@@ -6,6 +6,7 @@ import {
 } from '@/lib/seo-routes'
 import { destinations } from '@/lib/destinations'
 import { allPrograms } from '@/lib/sweet-spots'
+import { POINTS_BANDS, pointsBandSlug } from '@/lib/points-bands'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: MetadataRoute.Sitemap = STATIC_SEO_ROUTES.map((route) => ({
@@ -29,5 +30,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.6,
   }))
 
-  return [...staticPages, ...sweetSpotPages, ...destinationPages]
+  const pointsBandPages: MetadataRoute.Sitemap = POINTS_BANDS.map((amount) => ({
+    url: absoluteUrl(`/points/${pointsBandSlug(amount)}`),
+    lastModified: CONTENT_LAST_MODIFIED,
+    changeFrequency: 'monthly',
+    priority: 0.5,
+  }))
+
+  return [...staticPages, ...sweetSpotPages, ...destinationPages, ...pointsBandPages]
 }

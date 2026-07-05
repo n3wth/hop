@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Icon from './Icon'
 import FlyingBunny from './FlyingBunny'
+import Wordmark from './Wordmark'
 import AccountMenu from './AccountMenu'
 import OriginSelector from './OriginSelector'
 import { SearchForm, type SearchState, type Cabin } from './SearchBar'
@@ -28,7 +29,7 @@ export interface TopNavProps {
   /** Nonstop-only filter carried over from the search that landed on this page. */
   nonstop?: boolean
   /** Auth0 session, passed from the server. Null when signed out. */
-  user?: { initial: string; name?: string; email?: string; picture?: string } | null
+  user?: { id?: string; initial: string; name?: string; email?: string; picture?: string } | null
   /** Total points across the user's programs — shown beside the avatar. */
   pointsTotal?: number
   /** Hide the header search (e.g. on the landing page where the hero owns it). */
@@ -45,16 +46,20 @@ const DUR = '280ms'
 // Static logo lockup — memoized so scroll-state toggles never re-render the
 // (path-heavy) bunny SVG. Only the wrapper's transform animates.
 const LogoLockup = memo(function LogoLockup() {
-  // Icon only — the bunny stands alone as the mark. Links to the home page.
-  // Hover is a color flip only (house rule: no hover movement) — the bunny's
-  // silhouette is currentColor, so it warms to brand teal.
+  // Mark + wordmark lockup per CHOSEN-editorial.html's masthead: the bunny in
+  // brand teal, the hand-drawn wordmark in ink beside it. Links to the home
+  // page. Hover is a color flip only (house rule: no hover movement).
   return (
-    <Link
-      href="/"
-      aria-label="hop — home"
-      className="flex items-center text-text transition-colors hover:text-brand"
-    >
-      <FlyingBunny size={41} carve="var(--color-bg)" />
+    <Link href="/" aria-label="hop — home" className="group flex items-center gap-[9px]">
+      <FlyingBunny
+        size={41}
+        carve="var(--color-bg)"
+        markClassName="text-brand transition-colors group-hover:text-brand-deep"
+      />
+      <Wordmark
+        size={19}
+        className="mt-[3px] text-text transition-colors group-hover:text-brand"
+      />
     </Link>
   )
 })

@@ -134,6 +134,67 @@ touch `DUFFEL_API_KEY_LIVE` (that key is for search pricing).
 only — **never set in production**: a real signed-in user with no programs must
 see the genuine empty state, not fabricated balances. Only `1|true|yes` count.
 
+## Auth secret
+
+Production must set an explicit `BETTER_AUTH_SECRET`. Resolution order
+(`lib/env.ts#resolveAuthSecret`): `BETTER_AUTH_SECRET` → `AUTH_SECRET` → a key
+derived from `DATABASE_URL` (logged with a `console.warn`). The derived
+fallback keeps a database-only deploy signing sessions, but do **not** rely on
+it in prod: rotating `DATABASE_URL` would silently invalidate every session.
+
+**Verify:** `BETTER_AUTH_SECRET` present in Vercel (Production scope) —
+`vercel env ls production | grep BETTER_AUTH_SECRET` — and no
+`[auth] BETTER_AUTH_SECRET is not set` warning in runtime logs.
+
+## Database backup & bad-migration recovery
+
+Migrations auto-apply during build (`scripts/db-migrate.mjs`, also
+`npm run db:migrate`) and there are **no down migrations** — rollback is
+restore, not revert. Recovery is Neon point-in-time restore / branch-restore.
+
+Order of operations after a bad migration:
+
+1. Stop deploys (revert or pause) so no new build re-applies the migration.
+2. In Neon, restore a branch to a pre-deploy timestamp (point-in-time restore
+   creates the restored branch; keep the damaged one for forensics).
+3. Repoint `DATABASE_URL` (and `DATABASE_URL_UNPOOLED`) in Vercel at the
+   restored branch.
+4. Redeploy the previous known-good build (Vercel instant rollback) — it
+   matches the restored schema.
+5. Fix the migration forward in a new deploy.
+
+Writes between the bad deploy and the restore timestamp are lost — restore
+promptly.
+
+## Rate limiting
+
+`lib/rate-limit.ts` defaults to a per-process in-memory token bucket. On
+serverless that is per-instance: the effective limit multiplies with
+concurrent lambdas (N warm instances ≈ N× the nominal cap) and resets on cold
+start. Accepted launch tradeoff — the limiter is abuse-damping, not a hard
+quota. A durable cross-instance path already exists: set
+`UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (or the `KV_REST_API_*`
+aliases) and `checkRateLimit` enforces in Upstash, degrading back to the
+in-memory bucket on any Redis failure. Revisit (configure the Redis) when
+traffic justifies it.
+
+## CI (GitHub Actions — currently disabled)
+
+GitHub Actions is refusing to start jobs on this account ("recent account
+payments have failed or your spending limit needs to be increased"), so both
+workflows (`.github/workflows/ci.yml`, `deploy-valuations-worker.yml`) are
+switched to `workflow_dispatch`-only — every PR was showing a red X unrelated
+to the code. Until billing is fixed:
+
+- Pre-ship gate: `npm run check` + `npm run build` locally, plus the Vercel
+  build check that still runs on every PR.
+- Valuations-worker deploys: `cd cloudflare/valuations-worker && npx wrangler
+  deploy` (see its README for secrets).
+
+Re-enable: fix billing under GitHub Settings → Billing & plans, then restore
+the original `pull_request`/`push` triggers in both workflow files (they're
+preserved in the comments).
+
 ## Cron reference (`vercel.json`)
 
 | Route | Schedule | Gate |

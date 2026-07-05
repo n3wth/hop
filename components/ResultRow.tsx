@@ -2,6 +2,7 @@
 
 import { memo, useId } from 'react'
 import type { CppTier, FlightOption } from '@/lib/types'
+import { track } from '@/lib/posthog-client'
 import Icon from './Icon'
 import BrandIcon from './BrandIcon'
 
@@ -303,10 +304,17 @@ const ResultRow = memo(function ResultRow({ option, rank, maxCpp, index = 0, ope
               </div>
             )}
 
-            {/* booking CTA */}
+            {/* booking CTA — cash bookings emit the client-side outclick
+                funnel event (the /api/go/kiwi redirect records the server
+                shadow either way). */}
             <a
               href={option.bookingUrl}
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation()
+                if (option.kind === 'cash') {
+                  track('outclick', { kind: 'cash', target: option.route })
+                }
+              }}
               className="mt-[16px] flex w-full items-center justify-center gap-[6px] rounded-[11px] border-[1.5px] border-text bg-transparent px-3 py-[11px] text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
             >
               {actionLabel(option)}

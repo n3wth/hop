@@ -2,24 +2,35 @@
 
 import { useState, type ReactNode } from 'react'
 import type { SupportTicket } from '@/lib/support-tickets'
-import type { Escalation } from '@/lib/escalation'
+import type { Escalation, EscalationStatus } from '@/lib/escalation'
+import {
+  closeSupportTicket,
+  reopenSupportTicket,
+  updateEscalationStatus,
+} from '@/app/actions/admin'
 
 // The owner-gated support console: inbound support tickets (each with its AI draft,
-// editable before sending) + expert-booking leads. Flat-editorial, internal tool.
+// editable before sending) + expert-booking leads. Lists are null when the db read
+// failed — rendered as "unavailable", never as empty. Flat-editorial, internal tool.
 export default function SupportConsole({
   tickets,
   escalations,
 }: {
-  tickets: SupportTicket[]
-  escalations: Escalation[]
+  tickets: SupportTicket[] | null
+  escalations: Escalation[] | null
 }) {
   return (
     <div className="max-w-[var(--container-shell)] px-4 py-8 sm:px-6 lg:px-8">
       <h1 className="font-display text-2xl font-semibold tracking-[-0.01em] text-text">Inbox</h1>
       <p className="mt-1 text-[13px] text-text3">
-        {tickets.length} ticket{tickets.length === 1 ? '' : 's'} · {escalations.length} booking
-        request{escalations.length === 1 ? '' : 's'} · inbound via Resend, replies drafted by the
-        support agent for your review
+        {tickets === null
+          ? 'tickets unavailable'
+          : `${tickets.length} ticket${tickets.length === 1 ? '' : 's'}`}{' '}
+        ·{' '}
+        {escalations === null
+          ? 'booking requests unavailable'
+          : `${escalations.length} booking request${escalations.length === 1 ? '' : 's'}`}{' '}
+        · inbound via Resend, replies drafted by the support agent for your review
       </p>
 
       {/* Wide screens: tickets beside booking requests; below lg they stack. */}
@@ -27,7 +38,9 @@ export default function SupportConsole({
         <section className="mt-8">
           <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">Tickets</h2>
           <div className="mt-3 flex flex-col gap-3">
-            {tickets.length === 0 ? (
+            {tickets === null ? (
+              <Empty>Tickets unavailable.</Empty>
+            ) : tickets.length === 0 ? (
               <Empty>No support emails yet.</Empty>
             ) : (
               tickets.map((t) => <TicketCard key={t.id} ticket={t} />)
@@ -40,7 +53,9 @@ export default function SupportConsole({
             Booking requests
           </h2>
           <div className="mt-3 flex flex-col gap-3">
-            {escalations.length === 0 ? (
+            {escalations === null ? (
+              <Empty>Booking requests unavailable.</Empty>
+            ) : escalations.length === 0 ? (
               <Empty>No expert-booking requests yet.</Empty>
             ) : (
               escalations.map((e) => <EscalationCard key={e.id} esc={e} />)
@@ -54,10 +69,17 @@ export default function SupportConsole({
 
 type SendState = 'idle' | 'sending' | 'sent' | 'error'
 
+const GHOST_BTN =
+  'rounded-full border border-border px-3 py-1 text-[12px] font-medium text-text2 transition-colors hover:border-brand hover:text-text disabled:cursor-not-allowed disabled:opacity-50'
+
 function TicketCard({ ticket }: { ticket: SupportTicket }) {
   const [reply, setReply] = useState(ticket.draftReply ?? '')
   const [state, setState] = useState<SendState>(ticket.status === 'replied' ? 'sent' : 'idle')
   const [err, setErr] = useState('')
+  const [status, setStatus] = useState(ticket.status)
+  const [statusPending, setStatusPending] = useState(false)
+  const [statusErr, setStatusErr] = useState('')
+  const closed = status === 'closed'
 
   const send = async () => {
     const text = reply.trim()
@@ -82,6 +104,31 @@ function TicketCard({ ticket }: { ticket: SupportTicket }) {
     }
   }
 
+  const setLifecycle = async (next: 'open' | 'closed') => {
+    if (statusPending) return
+    setStatusPending(true)
+    setStatusErr('')
+    try {
+      const res = next === 'closed' ? await closeSupportTicket(ticket.id) : await reopenSupportTicket(ticket.id)
+      if (res.ok) setStatus(next)
+      else setStatusErr(res.error || 'update failed')
+    } catch {
+      setStatusErr('network error')
+    }
+    setStatusPending(false)
+  }
+
+  const closeButton = (
+    <button
+      type="button"
+      onClick={() => setLifecycle('closed')}
+      disabled={statusPending}
+      className={GHOST_BTN}
+    >
+      {statusPending ? 'Closing…' : 'Close'}
+    </button>
+  )
+
   return (
     <div className="rounded-[14px] border border-border bg-paper p-4">
       <div className="flex items-baseline justify-between gap-3">
@@ -95,10 +142,29 @@ function TicketCard({ ticket }: { ticket: SupportTicket }) {
         </p>
       ) : null}
 
-      {state === 'sent' ? (
-        <div className="mt-3 rounded-[10px] border border-good-bg bg-good-bg/50 px-3 py-2 text-[12.5px] text-good">
-          Replied{ticket.replyText ? ` · "${truncate(ticket.replyText, 140)}"` : ''}.
+      {closed ? (
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="text-[12.5px] text-text3">Closed.</span>
+          <button
+            type="button"
+            onClick={() => setLifecycle('open')}
+            disabled={statusPending}
+            className={GHOST_BTN}
+          >
+            {statusPending ? 'Reopening…' : 'Reopen'}
+          </button>
+          {statusErr ? <span className="text-[11.5px] text-weak">{statusErr}</span> : null}
         </div>
+      ) : state === 'sent' ? (
+        <>
+          <div className="mt-3 rounded-[10px] border border-good-bg bg-good-bg/50 px-3 py-2 text-[12.5px] text-good">
+            Replied{ticket.replyText ? ` · "${truncate(ticket.replyText, 140)}"` : ''}.
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+            {closeButton}
+            {statusErr ? <span className="text-[11.5px] text-weak">{statusErr}</span> : null}
+          </div>
+        </>
       ) : (
         <div className="mt-3">
           <textarea
@@ -117,10 +183,12 @@ function TicketCard({ ticket }: { ticket: SupportTicket }) {
             >
               {state === 'sending' ? 'Sending…' : 'Send reply'}
             </button>
+            {closeButton}
             {ticket.draftReply ? (
               <span className="text-[11.5px] text-text3">AI draft loaded — edit before sending</span>
             ) : null}
             {state === 'error' ? <span className="text-[11.5px] text-warn">{err}</span> : null}
+            {statusErr ? <span className="text-[11.5px] text-weak">{statusErr}</span> : null}
           </div>
         </div>
       )}
@@ -130,6 +198,25 @@ function TicketCard({ ticket }: { ticket: SupportTicket }) {
 
 function EscalationCard({ esc }: { esc: Escalation }) {
   const entries = Object.entries(esc.trip ?? {}).filter(([, v]) => v != null)
+  const [status, setStatus] = useState(esc.status)
+  const [pending, setPending] = useState(false)
+  const [err, setErr] = useState('')
+  const done = status === 'done'
+
+  const update = async (next: EscalationStatus) => {
+    if (pending) return
+    setPending(true)
+    setErr('')
+    try {
+      const res = await updateEscalationStatus(esc.id, next)
+      if (res.ok) setStatus(next)
+      else setErr(res.error || 'update failed')
+    } catch {
+      setErr('network error')
+    }
+    setPending(false)
+  }
+
   return (
     <div className="rounded-[14px] border border-border bg-paper p-4">
       <div className="flex items-baseline justify-between gap-3">
@@ -148,6 +235,18 @@ function EscalationCard({ esc }: { esc: Escalation }) {
       ) : (
         <p className="mt-1 text-[13px] text-text3">No extra context.</p>
       )}
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="text-[11.5px] text-text3">{done ? 'Done.' : status}</span>
+        <button
+          type="button"
+          onClick={() => update(done ? 'new' : 'done')}
+          disabled={pending}
+          className={GHOST_BTN}
+        >
+          {pending ? 'Saving…' : done ? 'Reopen' : 'Mark done'}
+        </button>
+        {err ? <span className="text-[11.5px] text-weak">{err}</span> : null}
+      </div>
     </div>
   )
 }

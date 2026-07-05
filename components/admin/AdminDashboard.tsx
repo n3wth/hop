@@ -15,10 +15,16 @@ interface Props {
   heartbeats: CronHeartbeat[] | null
   degradation: DegradationWindowCounts | null
   findings: ImprovementFinding[] | null
-  recentTickets: SupportTicket[]
-  recentEscalations: Escalation[]
+  /** null = the read failed (unknown), [] = genuinely empty. */
+  recentTickets: SupportTicket[] | null
+  recentEscalations: Escalation[] | null
   /** Whether HOP_ENABLE_SELF_IMPROVE is on — explains a null health section. */
   selfImproveEnabled: boolean
+  /** Registered-user counts (lib/admin-stats). null = unknown, not zero. */
+  usersTotal: number | null
+  usersNew7d: number | null
+  /** Preflight seams needing attention (drift/warn) — the /admin/ops badge. */
+  preflightIssues: number
 }
 
 // The owner-gated ops overview: this week's funnel numbers, cron/degradation
@@ -35,6 +41,9 @@ export default function AdminDashboard({
   recentTickets,
   recentEscalations,
   selfImproveEnabled,
+  usersTotal,
+  usersNew7d,
+  preflightIssues,
 }: Props) {
   return (
     <div className="max-w-[var(--container-shell)] px-4 py-8 sm:px-6 lg:px-8">
@@ -43,16 +52,30 @@ export default function AdminDashboard({
           <h1 className="font-display text-2xl font-semibold tracking-[-0.01em] text-text">Admin</h1>
           <p className="mt-1 text-[13px] text-text3">Signed in as {ownerEmail}</p>
         </div>
-        <Link
-          href="/admin/support"
-          className="rounded-full border border-border bg-surface px-3.5 py-2 text-[13px] font-semibold text-text2 transition-colors hover:bg-sunk"
-        >
-          Inbox →
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/ops"
+            className={`rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-colors ${
+              preflightIssues > 0
+                ? 'border-ok bg-ok-bg text-ok hover:bg-sunk'
+                : 'border-border bg-surface text-text2 hover:bg-sunk'
+            }`}
+          >
+            {preflightIssues > 0 ? `Ops · ${preflightIssues} to review →` : 'Ops →'}
+          </Link>
+          <Link
+            href="/admin/support"
+            className="rounded-full border border-border bg-surface px-3.5 py-2 text-[13px] font-semibold text-text2 transition-colors hover:bg-sunk"
+          >
+            Inbox →
+          </Link>
+        </div>
       </div>
 
       <Section title="This week">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+          <Stat label="Registered users" value={usersTotal} />
+          <Stat label="New sign-ups" value={usersNew7d} sub="7 days" />
           <Stat label="Active users" metric={digest.activeUsers} sub="7-day sessions" />
           <Stat label="Booking requests" metric={digest.escalations} />
           <Stat label="New watches" metric={digest.ordersCreated} />
@@ -113,14 +136,16 @@ export default function AdminDashboard({
           <div>
             <h3 className="text-[12px] font-semibold text-text2">Support tickets</h3>
             <div className="mt-2 flex flex-col gap-2">
-              {recentTickets.length === 0 ? (
+              {recentTickets === null ? (
+                <Empty>Tickets unavailable.</Empty>
+              ) : recentTickets.length === 0 ? (
                 <Empty>No tickets yet.</Empty>
               ) : (
                 recentTickets.map((t) => (
                   <Link
                     key={t.id}
                     href="/admin/support"
-                    className="block rounded-[12px] border border-border bg-paper px-3 py-2.5 transition-colors hover:bg-sunk"
+                    className="block rounded-[var(--radius-sm)] border border-border bg-paper px-3 py-2.5 transition-colors hover:bg-sunk"
                   >
                     <div className="truncate text-[13px] font-semibold text-text">{t.fromEmail}</div>
                     <div className="truncate text-[12px] text-text3">{t.subject || '(no subject)'}</div>
@@ -132,14 +157,16 @@ export default function AdminDashboard({
           <div>
             <h3 className="text-[12px] font-semibold text-text2">Booking requests</h3>
             <div className="mt-2 flex flex-col gap-2">
-              {recentEscalations.length === 0 ? (
+              {recentEscalations === null ? (
+                <Empty>Booking requests unavailable.</Empty>
+              ) : recentEscalations.length === 0 ? (
                 <Empty>No booking requests yet.</Empty>
               ) : (
                 recentEscalations.map((e) => (
                   <Link
                     key={e.id}
                     href="/admin/support"
-                    className="block rounded-[12px] border border-border bg-paper px-3 py-2.5 transition-colors hover:bg-sunk"
+                    className="block rounded-[var(--radius-sm)] border border-border bg-paper px-3 py-2.5 transition-colors hover:bg-sunk"
                   >
                     <div className="truncate text-[13px] font-semibold text-text">{e.email}</div>
                     <div className="truncate text-[12px] text-text3">{fmtDate(e.createdAt) || 'no date'}</div>
@@ -228,7 +255,7 @@ function heartbeatStatus(
 function HeartbeatRow({ spec, heartbeat }: { spec: (typeof CRON_JOBS)[number]; heartbeat: CronHeartbeat | null }) {
   const status = heartbeatStatus(spec, heartbeat)
   return (
-    <div className="flex items-center justify-between gap-3 rounded-[12px] border border-border bg-paper px-3.5 py-2.5">
+    <div className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3.5 py-2.5">
       <div className="flex items-center gap-2.5">
         <span className={`h-2 w-2 flex-shrink-0 rounded-full ${TONE_CLASS[status.tone]}`} aria-hidden />
         <span className="text-[13px] font-semibold text-text">{spec.job}</span>
@@ -255,7 +282,7 @@ function DegradationList({ degradation }: { degradation: DegradationWindowCounts
         return (
           <div
             key={source}
-            className="flex items-center justify-between gap-3 rounded-[12px] border border-border bg-paper px-3.5 py-2.5"
+            className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3.5 py-2.5"
           >
             <span className="text-[13px] font-semibold text-text">{source}</span>
             <span className={`text-[12px] ${elevated ? 'text-warn' : 'text-text3'}`}>

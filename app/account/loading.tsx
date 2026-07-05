@@ -27,10 +27,12 @@ function SectionSkeleton({
 export default function Loading() {
   return (
     <AppShell hideSearch>
-      <div className="mx-auto max-w-[var(--container-sm)] pb-4 pt-8 sm:pt-12">
+      {/* Width MUST match the real page (container-shell) — a narrower
+          skeleton reads as a different design and shifts on swap. */}
+      <div className="mx-auto max-w-[var(--container-shell)] pb-4 pt-8 sm:pt-12">
         {/* profile hero */}
         <section
-          className="overflow-hidden rounded-[20px] lg:rounded-[var(--radius-hero)]"
+          className="overflow-hidden rounded-[var(--radius-lg)] lg:rounded-[var(--radius-hero)]"
           style={{ background: 'var(--color-brand)' }}
         >
           <div className="flex flex-col gap-5 px-6 py-8 sm:flex-row sm:items-center sm:gap-6 sm:px-10">

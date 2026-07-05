@@ -6,6 +6,9 @@ import { auth0 } from '@/lib/auth0'
 import { auth } from '@/lib/auth'
 import { getUserId } from '@/lib/session'
 import { getUserAwId, getManualBalances } from '@/lib/accounts'
+import { safeReturnTo, returnToRouteLabel } from '@/lib/safe-return'
+import { toNavUser } from '@/lib/nav-user'
+import UserAvatarImage from '@/components/UserAvatarImage'
 import { getBalances } from '@/lib/awardwallet'
 import {
   hasEnv,
@@ -24,6 +27,7 @@ import ProgramsManager from '@/components/ProgramsManager'
 import AirlineStatusManager from '@/components/AirlineStatusManager'
 import GmailHistory from '@/components/GmailHistory'
 import McpAccess from '@/components/McpAccess'
+import DeleteAccount from '@/components/DeleteAccount'
 import { listTokens } from '@/lib/api-tokens'
 import { getProfile } from '@/lib/travel-profile'
 import { projectProfile } from '@/lib/memory-view'
@@ -74,7 +78,7 @@ export default async function AccountPage({
   // Next.js 16: searchParams is async.
   searchParams,
 }: {
-  searchParams: Promise<{ aw?: string; gmail?: string; upgraded?: string }>
+  searchParams: Promise<{ aw?: string; gmail?: string; upgraded?: string; returnTo?: string }>
 }) {
   const session = await auth0.getSession()
   if (!session) redirect('/login')
@@ -82,12 +86,10 @@ export default async function AccountPage({
   const u = session.user
   const name = u.name ?? u.email ?? 'Traveler'
   const initial = name.trim().charAt(0).toUpperCase()
-  const user = {
-    initial,
-    name: u.name ?? undefined,
-    email: u.email ?? undefined,
-    picture: u.picture ?? undefined,
-  }
+  // One construction for the header user everywhere (id for analytics
+  // identify, Gravatar fallback for accounts without an IdP picture).
+  // Non-null: the session redirect above guarantees u exists.
+  const user = toNavUser(u)!
 
   // Manual programs (primary) + the optional AwardWallet link (only the id;
   // the live-balances CALL needs this id, so it stays a genuine dependency).
@@ -208,10 +210,30 @@ export default async function AccountPage({
   const awNote = awFlag ? AW_NOTES[awFlag] : undefined
   const gmailFlag = sp.gmail
   const gmailNote = gmailFlag ? GMAIL_NOTES[gmailFlag] : undefined
+  // R1.1 activation bridge — the verdict CTA sends signed-in users here with
+  // returnTo=<their exact search>. The banner link survives program-add (the
+  // server action revalidates this same URL), so the way back is always one
+  // tap and the search is never lost to the bounce.
+  const returnTo = safeReturnTo(sp.returnTo)
+  const returnRoute = returnTo ? returnToRouteLabel(returnTo) : null
 
   return (
     <AppShell user={user} hideSearch>
       <div className="mx-auto max-w-[var(--container-shell)] pb-4 pt-8 sm:pt-12">
+        {returnTo ? (
+          <Link
+            href={returnTo}
+            className="mb-5 flex items-center justify-between gap-3 rounded-[14px] border-[1.5px] border-brand bg-brand-tint px-5 py-4 transition-colors hover:border-brand-deep"
+          >
+            <span className="text-[14px] font-medium text-text">
+              Add your programs, then pick up where you left off.
+            </span>
+            <span className="flex flex-shrink-0 items-center gap-[6px] text-[14px] font-semibold text-brand">
+              Back to your {returnRoute ? `${returnRoute} ` : ''}search
+              <span aria-hidden>→</span>
+            </span>
+          </Link>
+        ) : null}
         {/* profile hero — teal plane, matches the editorial system */}
         <section
           className="overflow-hidden rounded-[var(--radius-lg)] text-hero-cream lg:rounded-[var(--radius-hero)]"
@@ -219,17 +241,13 @@ export default async function AccountPage({
         >
           <div className="flex flex-col gap-5 px-6 py-8 sm:flex-row sm:items-center sm:gap-6 sm:px-10">
             <span className="grid h-20 w-20 flex-shrink-0 place-items-center overflow-hidden rounded-full bg-white/15 font-display text-[30px] font-semibold text-white ring-1 ring-white/20">
-              {user.picture ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={user.picture}
-                  alt=""
-                  className="h-full w-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                initial
-              )}
+              {/* Same source chain as the nav avatar (picture → Gravatar →
+                  initial), so the hero can never show a broken image. */}
+              <UserAvatarImage
+                picture={u.picture ?? undefined}
+                email={u.email ?? undefined}
+                initial={initial}
+              />
             </span>
             <div className="min-w-0 flex-1">
               <div className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-hero-eyebrow">
@@ -488,6 +506,9 @@ export default async function AccountPage({
             </div>
           </details>
         </section>
+
+        {/* Danger zone — the /privacy deletion promise, honored in-product. */}
+        <DeleteAccount />
         </div>
         </div>
 

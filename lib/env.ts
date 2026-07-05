@@ -56,13 +56,6 @@ export type EnvKey =
   // hop_improvement_findings; P1s fall back to the owner email).
   | 'LINEAR_API_KEY'
   | 'LINEAR_TEAM_ID'
-  // Parallel search / extraction and routing API key (for flight results & routing optimization)
-  | 'PARALLEL_API_KEY'
-  // Autonoma secure sandbox API credentials
-  | 'AUTONOMA_CLIENT_ID'
-  | 'AUTONOMA_SECRET_ID'
-  // Firecrawl crawler and extraction API key (for scraping destinations and travel deals)
-  | 'FIRECRAWL_API_KEY'
   // PostHog server-side capture (lib/posthog-server.ts). The write-only project
   // token — POSTHOG_KEY (server) wins over the public client token, matching
   // instrumentation.ts precedence. Absent → captureServerEvent is a no-op.
@@ -135,10 +128,6 @@ export const env = {
   stripePriceIdProYearly: () => read('STRIPE_PRICE_ID_PRO_YEARLY'),
   linearApiKey: () => read('LINEAR_API_KEY'),
   linearTeamId: () => read('LINEAR_TEAM_ID'),
-  parallelApiKey: () => read('PARALLEL_API_KEY'),
-  autonomaClientId: () => read('AUTONOMA_CLIENT_ID'),
-  autonomaSecretId: () => read('AUTONOMA_SECRET_ID'),
-  firecrawlApiKey: () => read('FIRECRAWL_API_KEY'),
   posthogKey: () => firstEnv('POSTHOG_KEY', 'NEXT_PUBLIC_POSTHOG_KEY'),
   posthogHost: () => firstEnv('POSTHOG_HOST', 'NEXT_PUBLIC_POSTHOG_HOST'),
   databaseUrl: () => read('DATABASE_URL'),
@@ -154,21 +143,6 @@ function firstEnv(...keys: EnvKey[]): string {
     if (value && value.trim() !== '') return value
   }
   throw new Error(`Missing required environment variable: ${keys[0]}`)
-}
-
-// Check helper for Parallel API status
-export function isParallelEnabled(): boolean {
-  return hasEnv('PARALLEL_API_KEY')
-}
-
-// Check helper for Autonoma status
-export function isAutonomaEnabled(): boolean {
-  return hasEnv('AUTONOMA_CLIENT_ID') && hasEnv('AUTONOMA_SECRET_ID')
-}
-
-// Check helper for Firecrawl status
-export function isFirecrawlEnabled(): boolean {
-  return hasEnv('FIRECRAWL_API_KEY')
 }
 
 // Server-side PostHog capture is available when EITHER token is present
