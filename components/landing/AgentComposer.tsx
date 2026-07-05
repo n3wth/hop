@@ -23,6 +23,7 @@ export default function AgentComposer({
   first,
   totalPoints,
   backdrop,
+  gallery,
   headingTag,
 }: {
   variant: 'in' | 'out'
@@ -32,6 +33,9 @@ export default function AgentComposer({
   totalPoints?: number
   /** Optional photographic backdrop, matching the /ask hero imagery. */
   backdrop?: ConciergeHeroPhoto
+  /** Several photos → the teaser backdrop slowly cross-fades through them
+   *  (ConciergeHero). Falls back to the single static backdrop when absent. */
+  gallery?: ConciergeHeroPhoto[]
   /** Heading level — 'h2' where another element owns the page's h1 (the
    *  signed-out home, where the verdict hero leads). Defaults to h1. */
   headingTag?: 'h1' | 'h2'
@@ -66,7 +70,7 @@ export default function AgentComposer({
       onChip={go}
       density="teaser"
       signedIn={signedIn}
-      photos={backdrop ? [backdrop] : []}
+      photos={gallery && gallery.length > 0 ? gallery : backdrop ? [backdrop] : []}
       headingTag={headingTag}
     />
   )

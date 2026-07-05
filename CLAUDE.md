@@ -64,6 +64,11 @@ where the next agent (you, or another LLM via `AGENTS.md`) will find it automati
 - **Claude Code sessions**: keep context small so turns stay fast — `/compact` before ~60%
   context, delegate exploration/research to subagents (`Explore`, `general-purpose`) instead of
   doing wide searches inline, and use `/review-parallel` instead of manually rereading a diff.
+- **Cheap-model routing** (evidence: `docs/solutions/2026-07-05-cheap-model-iteration-playbook.md`):
+  default sessions run Sonnet; Fable/Opus only for plans, architecture/design judgment, or after
+  two failed fix attempts. Screenshot/UI loops run in a subagent that returns conclusions, not
+  images. Native Grep/Glob/Read over Bash grep/rg/cat; `| tail` build output; no `echo` status
+  narration; never re-Read a file already in context.
 
 ## Commands (run from the repo root)
 
@@ -214,6 +219,10 @@ in one round-trip.
 - **Flat editorial** design: **no shadows, gradients, or glows.** Depth comes from a subtle
   paper-grain background, type, color, and composition. Canonical reference:
   `docs/design/CHOSEN-editorial.html`.
+- **Experience heuristics** (`docs/design/experience-heuristics.md`) govern composition:
+  imagery is structural (in-flow grid), never absolutely-positioned ornament; no element ever
+  covers text; motion is content changing (slow cross-fades), never idle decoration; verify
+  every UI change by screenshot at 390/768/1360/1512/1920 before calling it done.
 - **Tailwind v4 CSS-first**: design tokens are defined in `app/globals.css` `@theme`
   (warm cream canvas, primary teal, value tiers good/ok/weak). **WCAG AA is required** — token
   colors were already darkened to pass; don't regress contrast. Prefer tokens over hardcoded hex.

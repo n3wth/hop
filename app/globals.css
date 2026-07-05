@@ -192,6 +192,10 @@ body {
      bounce the whole document (the tell of a wrapped web page). Scrollable
      regions inside still scroll normally. */
   overscroll-behavior-y: contain;
+  /* Full-bleed layers (hero ambience) stretch to 50vw past center; on
+     classic-scrollbar platforms 100vw overshoots the viewport by the
+     scrollbar width — clip it rather than grow a horizontal scroll. */
+  overflow-x: clip;
 }
 
 /* Paper grain — a whisper-subtle tiled fractal-noise texture baked onto the
@@ -346,7 +350,6 @@ body {
 .hop-float {
   animation: hop-float 4.5s var(--ease-premium) infinite;
 }
-
 /* Value bars grow from 0 to their target width once, on load. The target width
    is supplied inline as --hop-bar-w; the animation eases out to it. */
 @keyframes hop-bar-grow {

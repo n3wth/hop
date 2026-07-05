@@ -46,17 +46,18 @@ const DUR = '280ms'
 // Static logo lockup — memoized so scroll-state toggles never re-render the
 // (path-heavy) bunny SVG. Only the wrapper's transform animates.
 const LogoLockup = memo(function LogoLockup() {
-  // Mark + wordmark lockup per CHOSEN-editorial.html's masthead: the bunny in
-  // brand teal, the hand-drawn wordmark in ink beside it. Links to the home
-  // page. Hover is a color flip only (house rule: no hover movement).
+  // Lockup color matches the nav's bordered controls (the Sign in pill's
+  // border-text2/text-text2) so the masthead reads as one quiet system;
+  // hover restores the brand flip. Hover is a color flip only (house rule:
+  // no hover movement).
   return (
     <Link href="/" aria-label="hop — home" className="group flex items-center gap-[9px]">
       <FlyingBunny
         size={41}
         carve="var(--color-bg)"
-        markClassName="text-brand transition-colors group-hover:text-brand-deep"
+        markClassName="text-text2 transition-colors group-hover:text-brand"
       />
-      <span className="wordmark text-[19px] leading-none text-text transition-colors group-hover:text-brand">
+      <span className="wordmark text-[19px] leading-none text-text2 transition-colors group-hover:text-brand">
         {SITE_NAME}
       </span>
     </Link>

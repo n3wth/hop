@@ -22,7 +22,7 @@
 // photo as imagery, a single dark→ink scrim for legibility, solid white input,
 // hover = color only (no lift), motion is reduced-motion-safe via .hop-rise.
 
-import { useEffect, useRef, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import Link from 'next/link'
 import Icon from './Icon'
 import { type ConciergeHeroCopy } from '@/lib/concierge-hero'
@@ -102,6 +102,20 @@ export default function ConciergeHero({
     if (ok) inputRef.current?.focus()
   }, [autoFocus])
 
+  // Teaser backdrop rotation — when the home passes several photos, the scrim
+  // photo slowly cross-fades through them so the panel feels alive. Full
+  // density (/ask) keeps its static backdrop: the mood gallery below already
+  // carries the imagery there. Reduced motion → static first photo.
+  const [backdropIdx, setBackdropIdx] = useState(0)
+  const rotating = !full && tiles.length > 1
+  useEffect(() => {
+    if (!rotating) return
+    if (typeof window === 'undefined' || !window.matchMedia) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const t = window.setInterval(() => setBackdropIdx((v) => v + 1), 7600)
+    return () => window.clearInterval(t)
+  }, [rotating])
+
   // Full density fills the parent (100dvh hop-ask-stage) with no rounding.
   // Teaser sizes to content with the standard hero radius.
   const panelClass = full
@@ -113,8 +127,25 @@ export default function ConciergeHero({
       className={`relative flex flex-col overflow-hidden ${panelClass}`}
       style={{ background: 'var(--color-brand-ink)' }}
     >
-      {/* full-bleed photo as imagery (allowed), under a single legibility scrim */}
-      {backdrop ? (
+      {/* full-bleed photo as imagery (allowed), under a single legibility scrim.
+          Teaser + several photos → a slow cross-fade through them (opacity
+          only; the scrim above holds legibility constant throughout). */}
+      {rotating ? (
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          {tiles.map((t, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={t.thumb + i}
+              src={t.thumb}
+              alt=""
+              loading={i === 0 ? undefined : 'lazy'}
+              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1600ms] ${
+                i === backdropIdx % tiles.length ? 'opacity-35' : 'opacity-0'
+              }`}
+            />
+          ))}
+        </div>
+      ) : backdrop ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={backdrop.thumb}
