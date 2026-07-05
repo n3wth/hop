@@ -125,15 +125,29 @@ export async function destinationImage(query: string): Promise<DestImage | null>
   })
 }
 
-// Batch helper — fetch images for many destinations in parallel (capped).
+// A cold cache means every long-tail query misses at once — cap how many
+// destinationImage() calls run concurrently so a big page (e.g. /deals' 24
+// destinations) can't fan out a burst of simultaneous Unsplash requests and
+// trip its rate limit. Self-hosted manifest hits (the common case now) resolve
+// instantly and never occupy a worker slot; only genuine network misses do.
+const IMAGE_FETCH_CONCURRENCY = 5
+
+// Batch helper — fetch images for many destinations in parallel, capped.
 export async function destinationImages(
   queries: string[],
 ): Promise<Record<string, DestImage | null>> {
   const out: Record<string, DestImage | null> = {}
-  await Promise.all(
-    queries.map(async (q) => {
+  let next = 0
+  async function worker() {
+    while (next < queries.length) {
+      const q = queries[next++]
       out[q] = await destinationImage(q)
-    }),
+    }
+  }
+  const workers = Array.from(
+    { length: Math.min(IMAGE_FETCH_CONCURRENCY, queries.length) },
+    worker,
   )
+  await Promise.all(workers)
   return out
 }

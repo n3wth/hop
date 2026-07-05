@@ -86,7 +86,7 @@ export async function addProgram(
     revalidateBalances()
     return {
       ok: true,
-      note: `Added to your existing ${name} — now ${merged.toLocaleString()}.`,
+      note: `Added to your existing ${name} — now ${merged.toLocaleString('en-US')}.`,
     }
   }
 

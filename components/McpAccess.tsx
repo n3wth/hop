@@ -455,7 +455,7 @@ export default function McpAccess({ initialTokens }: Props) {
                     </div>
                     <div className="text-[12px] text-text2">
                       {t.lastUsedAt
-                        ? `Last used ${new Date(t.lastUsedAt).toLocaleDateString()}`
+                        ? `Last used ${new Date(t.lastUsedAt).toLocaleDateString('en-US')}`
                         : 'Never used'}
                     </div>
                   </>

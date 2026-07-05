@@ -41,7 +41,7 @@ export interface VerdictRailProps {
 }
 
 function fmt(n: number | undefined): string {
-  return n != null ? n.toLocaleString() : '—'
+  return n != null ? n.toLocaleString('en-US') : '—'
 }
 
 function milesUnit(pick: FlightOption | undefined): string {

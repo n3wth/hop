@@ -182,7 +182,9 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
         {/* the economics: miles needed, cash you'd skip, best program */}
         <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3.5 border-t border-hair pt-4">
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[var(--track-label)] text-text3">Miles</div>
+            <div className="text-[10px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
+              Miles{dest.cabin ? ` · ${dest.cabin}` : ''}
+            </div>
             <div className="hop-price mt-1 text-[19px] leading-none text-text">
               {compactMiles(dest.typicalAwardMiles)}
             </div>

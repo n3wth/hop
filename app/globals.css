@@ -529,6 +529,12 @@ body {
     opacity: 1;
     transform: none;
   }
+  /* ConciergeHero's cross-fading backdrop rotator (JS already stops advancing
+     the index under reduced motion) — freeze the opacity transition itself too,
+     same belt-and-suspenders reset as every other motion class here. */
+  .hop-rotator img {
+    transition: none;
+  }
 }
 
 /* Long-form prose for legal/support/educational pages (see LegalShell).

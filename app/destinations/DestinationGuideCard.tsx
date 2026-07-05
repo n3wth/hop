@@ -111,6 +111,7 @@ export default function DestinationGuideCard({
         <div className="mt-4 flex items-center gap-x-4 border-t border-hair pt-4 text-[13px] text-text3">
           <span>
             <b className="font-semibold text-text2 tabular-nums">{compactMiles(dest.typicalAwardMiles)}</b> mi
+            {dest.cabin ? ` · ${dest.cabin}` : ''}
           </span>
           <span aria-hidden>·</span>
           <span>

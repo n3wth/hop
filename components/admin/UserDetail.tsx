@@ -72,7 +72,7 @@ export default function UserDetail({ detail }: Props) {
                 className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3.5 py-2.5"
               >
                 <span className="text-[13px] font-semibold text-text">{b.program}</span>
-                <span className="hop-num text-[13px] text-text2">{b.balance.toLocaleString()} pts</span>
+                <span className="hop-num text-[13px] text-text2">{b.balance.toLocaleString('en-US')} pts</span>
               </div>
             ))}
           </div>

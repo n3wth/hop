@@ -117,7 +117,7 @@ export default function SecurityPasskeys({
                   {p.name || 'Passkey'}
                 </div>
                 <div className="text-[12px] text-text2">
-                  {p.createdAt ? `Added ${new Date(p.createdAt).toLocaleDateString()}` : 'Added recently'}
+                  {p.createdAt ? `Added ${new Date(p.createdAt).toLocaleDateString('en-US')}` : 'Added recently'}
                 </div>
               </div>
               {armedId === p.id ? (

@@ -18,7 +18,7 @@ export interface SeeTheMathProps {
 }
 
 function money(n: number | undefined): string {
-  return n != null ? `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'
+  return n != null ? `$${n.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '—'
 }
 
 // "See the math" — the transparency panel behind the verdict. Shows the CPP
@@ -75,7 +75,7 @@ export default function SeeTheMath({ pick, cheapestCash, threshold, unit, travel
               />
               <MathRow
                 label="÷ Miles spent"
-                value={`÷ ${miles.toLocaleString()} ${unit}`}
+                value={`÷ ${miles.toLocaleString('en-US')} ${unit}`}
                 hint={travelers > 1 ? `across ${travelers} seats` : undefined}
               />
               <MathRow label="× 100" value="× 100" hint="cents per point" />
