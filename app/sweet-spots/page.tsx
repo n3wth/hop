@@ -3,10 +3,12 @@ import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import EditorialHeader from '@/components/EditorialHeader'
 import { pageMeta } from '@/lib/seo'
-import { sweetSpotsByProgram, sweetSpots, VERIFY_CAVEAT } from '@/lib/sweet-spots'
+import { VERIFY_CAVEAT } from '@/lib/sweet-spots'
+import { getSweetSpotsByProgram, getAllSweetSpots } from '@/lib/sweet-spots-live'
 
 // Static SEO guide — no per-request data, so it prerenders. Weekly cron
-// (app/api/cron/revalidate-seo) calls revalidatePath when content changes.
+// (app/api/cron/revalidate-seo) calls revalidatePath when content changes; an
+// owner approving a draft (app/actions/admin.ts) revalidates it immediately.
 export const dynamic = 'force-static'
 
 export const metadata = pageMeta({
@@ -16,8 +18,8 @@ export const metadata = pageMeta({
   path: '/sweet-spots',
 })
 
-export default function SweetSpotsIndexPage() {
-  const programs = sweetSpotsByProgram()
+export default async function SweetSpotsIndexPage() {
+  const [programs, allSpots] = await Promise.all([getSweetSpotsByProgram(), getAllSweetSpots()])
 
   return (
     <AppShell user={null} hideSearch>
@@ -38,7 +40,7 @@ export default function SweetSpotsIndexPage() {
             </span>
             <span className="hidden sm:inline">·</span>
             <span>
-              <b className="font-semibold text-text2">{sweetSpots.length}</b> redemptions
+              <b className="font-semibold text-text2">{allSpots.length}</b> redemptions
             </span>
             <span className="hidden sm:inline">·</span>
             <span>premium cabins first</span>
