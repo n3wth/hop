@@ -10,6 +10,7 @@ import {
   DESTINATION_PHOTOS,
   PHOTO_QUERY_ALIASES,
   PHOTO_CITY_INDEX,
+  type DestinationPhoto,
 } from './destination-photos'
 
 const ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY
@@ -31,6 +32,22 @@ const SOURCE_LINKS: Record<string, string> = {
   'Wikimedia Commons': 'https://commons.wikimedia.org',
 }
 
+// Shared shape conversion — one manifest entry → the DestImage callers render.
+function toDestImage(p: DestinationPhoto): DestImage {
+  return {
+    url: p.src,
+    thumb: p.thumbSrc,
+    alt: p.alt,
+    credit: {
+      name: p.credit.name,
+      link: p.credit.link,
+      source: p.credit.source,
+      sourceLink: SOURCE_LINKS[p.credit.source],
+    },
+    color: p.color,
+  }
+}
+
 // Resolve a query against the self-hosted manifest: exact imageHint alias
 // first (every curated surface queries via imageQuery(d) = d.imageHint), then
 // city-name containment for free-text queries ("Los Angeles skyline palm
@@ -47,19 +64,21 @@ function localPhoto(query: string): DestImage | null {
     }
   }
   if (!code) return null
+  return toDestImage(DESTINATION_PHOTOS[code])
+}
+
+// Exact-key lookup by the manifest's own destination code (e.g. 'CDG') — the
+// identity every curated surface shares (lib/destinations#Destination.code,
+// ShowcaseRotator's ShowcaseEntry.code, /search's params.to when the route's
+// destination is one of the curated cities). Unlike localPhoto()'s free-text
+// fuzzy match, this is the ONLY path that guarantees two surfaces render the
+// literal same file for the literal same destination — the precondition for
+// a shared-element <ViewTransition name={`photo-${code}`}> morph between the
+// home showcase and /search. Returns null for codes outside the curated set
+// (callers fall back to the free-text/Unsplash path, same as always).
+export function photoForCode(code: string): DestImage | null {
   const p = DESTINATION_PHOTOS[code]
-  return {
-    url: p.src,
-    thumb: p.thumbSrc,
-    alt: p.alt,
-    credit: {
-      name: p.credit.name,
-      link: p.credit.link,
-      source: p.credit.source,
-      sourceLink: SOURCE_LINKS[p.credit.source],
-    },
-    color: p.color,
-  }
+  return p ? toDestImage(p) : null
 }
 
 // Fetch one landscape photo for a query (e.g. "Tokyo Japan skyline").

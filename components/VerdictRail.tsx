@@ -1,3 +1,4 @@
+import { ViewTransition } from 'react'
 import type { FlightOption, SearchResult } from '@/lib/types'
 import { POINTS_THRESHOLD_CPP, seatsFor } from '@/lib/search'
 import { formatValue } from '@/lib/cpp'
@@ -19,6 +20,13 @@ export interface VerdictRailProps {
       that never pass a photo don't need to fake one — when a photo IS present
       it always carries a credit (lib/images.ts#DestImage). */
   destPhoto?: { url: string; alt: string; credit?: { name: string; link: string; source?: string; sourceLink?: string } } | null
+  /** The manifest's destination code (lib/destination-photos.ts) when destPhoto
+      resolved from the curated set (app/search/page.tsx#photoForCode) — shared
+      identity with the home showcase's ShowcaseEntry.code, so wrapping both in
+      <ViewTransition name={`photo-${code}`}> morphs the same photo across the
+      home→/search navigation. Absent for Unsplash long-tail photos (no
+      showcase counterpart to morph from). */
+  destPhotoCode?: string
   /** True only when these balances are the SIGNED-IN user's own (real). Drives
       the ownership voice: "You have the miles" + "Book with X miles" are only
       honest when hop is reading this visitor's connected programs. Signed-out
@@ -74,6 +82,7 @@ function searchUrlFrom(params: SearchResult['params'], nonstop?: boolean): strin
 export default function VerdictRail({
   result,
   destPhoto,
+  destPhotoCode,
   hasRealBalances = false,
   isSignedIn = false,
   nonstop,
@@ -352,12 +361,20 @@ export default function VerdictRail({
             Falls back to the bunny mark when no photo is available. */}
         {destPhoto ? (
           <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={destPhoto.url}
-              alt={destPhoto.alt}
-              className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-            />
+            {/* Named only for curated photos (destPhotoCode) — shares identity
+                with the home showcase's ViewTransition of the same code, so the
+                browser morphs the SAME photo from the showcase card into this
+                hero instead of cross-fading two unrelated images. Unnamed
+                (undefined) for Unsplash long-tail photos — no showcase
+                counterpart, React auto-assigns an unshared name. */}
+            <ViewTransition name={destPhotoCode ? `photo-${destPhotoCode}` : undefined}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={destPhoto.url}
+                alt={destPhoto.alt}
+                className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+              />
+            </ViewTransition>
             {/* top scrim — a whisper of brand-ink at the very top edge so the
                 photo settles into the teal field instead of reading as a pasted
                 rectangle. Integration, not decoration; the upper photo stays vivid. */}

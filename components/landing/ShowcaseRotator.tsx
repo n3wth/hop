@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, ViewTransition } from 'react'
 
 // One showcase entry. Every number here was computed on the server
 // (lib/destinations + lib/search's threshold) — this component only cycles.
@@ -49,17 +49,23 @@ export default function ShowcaseRotator({ entries }: { entries: ShowcaseEntry[] 
         style={{ backgroundColor: d.color ?? 'var(--color-brand-deep)' }}
       >
         {entries.map((e, j) => (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            key={e.code}
-            src={e.image}
-            alt=""
-            aria-hidden={j !== active}
-            loading={j === 0 ? undefined : 'lazy'}
-            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1400ms] ${
-              j === active ? 'opacity-100' : 'opacity-0'
-            }`}
-          />
+          // Named by the manifest's own destination code (lib/destination-
+          // photos.ts identity) — /search names the destination hero photo the
+          // same way (VerdictRail's destPhotoCode) when it's the same curated
+          // destination, so clicking through morphs this exact photo into the
+          // verdict hero instead of cross-fading two unrelated images.
+          <ViewTransition key={e.code} name={`photo-${e.code}`}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={e.image}
+              alt=""
+              aria-hidden={j !== active}
+              loading={j === 0 ? undefined : 'lazy'}
+              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1400ms] ${
+                j === active ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
+          </ViewTransition>
         ))}
       </div>
 

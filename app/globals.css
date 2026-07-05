@@ -902,7 +902,12 @@ body {
 
 
 /* ── Reduced motion: disable all tactile + view-transition animations ────────
-   Collapsed .hop-press to no scale, no transition. View transitions frozen. */
+   Collapsed .hop-press to no scale, no transition. View transitions frozen —
+   the wildcard selectors cover every NAMED transition (e.g. the home→/search
+   photo morph, `photo-${code}`), not just the root cross-fade: ::group is the
+   pseudo that animates a named element's position/size (the actual "morph"),
+   so without it reduced-motion would still slide/scale the photo even with
+   old/new's opacity animation removed. */
 @media (prefers-reduced-motion: reduce) {
   .hop-press:active,
   .hop-press-card:active {
@@ -910,8 +915,9 @@ body {
     transition: none;
   }
 
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
     animation: none !important;
   }
 

@@ -7,7 +7,7 @@ import type { TravelPrefs } from '@/lib/prefs-model'
 import { getUserBalances } from '@/lib/accounts'
 import { getPrefs } from '@/lib/prefs'
 import { cityForCode } from '@/lib/airports'
-import { destinationImage } from '@/lib/images'
+import { destinationImage, photoForCode } from '@/lib/images'
 import { auth0 } from '@/lib/auth0'
 import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import { isStandingOrdersCronLive } from '@/lib/env'
@@ -308,21 +308,32 @@ export default async function Search({
     ? { ...prefs?.travelPrefs, maxStops: 0, preferNonstop: true }
     : prefs?.travelPrefs
   // Destination photo for the verdict hero — the place you're heading, behind
-  // the boarding pass (replaces the redundant bunny). Query the CITY skyline/
-  // landscape, never the airport code (which surfaces terminals, not beauty).
-  // Cached; null → bunny.
-  // Only query when we have a real city name — if cityForCode falls back to the
-  // raw IATA code (unmapped airport), skip the photo so we never search "JFK"
-  // and get a terminal. Bunny fallback covers it.
+  // the boarding pass (replaces the redundant bunny). Cached; null → bunny.
+  // Curated destinations resolve by the manifest's OWN code (params.to) first —
+  // the same identity the home showcase renders from (lib/destinations#code,
+  // ShowcaseEntry.code) — so the two surfaces provably render the same file,
+  // the precondition for the shared-element photo morph (destPhotoCode below).
+  // Only the long-tail (uncurated) destinations fall back to the free-text
+  // Unsplash query, keyed off the city name, never the airport code (which
+  // surfaces terminals, not beauty) — skipped entirely when cityForCode falls
+  // back to the raw IATA code (unmapped airport).
   // Independent of the verdict engine — fetched alongside it, not after, so the
   // photo round-trip never adds to the page's critical path.
+  const manifestPhoto = photoForCode(params.to)
   const destCity = cityForCode(params.to)
   const [result, destPhoto] = await Promise.all([
     assembleSearch(params, userBalances, effectivePrefs),
-    destCity && destCity !== params.to
-      ? destinationImage(`${destCity} skyline travel landmark`)
-      : Promise.resolve(null),
+    manifestPhoto
+      ? Promise.resolve(manifestPhoto)
+      : destCity && destCity !== params.to
+        ? destinationImage(`${destCity} skyline travel landmark`)
+        : Promise.resolve(null),
   ])
+  // Only assign the shared view-transition identity when the photo actually
+  // came from the curated manifest by exact code — an Unsplash long-tail photo
+  // has no showcase counterpart to morph from/to, so naming it would just be
+  // an unmatched transition (harmless, but pointless).
+  const destPhotoCode = manifestPhoto ? params.to : undefined
 
   // The verdict's ownership voice ("You have the miles") is only honest when
   // these balances are this signed-in user's own connected programs. Signed out
@@ -375,6 +386,7 @@ export default async function Search({
           <VerdictRail
             result={result}
             destPhoto={destPhoto}
+            destPhotoCode={destPhotoCode}
             hasRealBalances={hasRealBalances}
             isSignedIn={!!user}
             nonstop={nonstop}
