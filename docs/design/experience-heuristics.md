@@ -87,3 +87,27 @@ type — not scattered fragments).
     transpacific route; premium-cabin ¢/pt is always labeled `· business` /
     `· first`). One unexplained dollar reads as fabricated — the audience is
     people who check.
+15. **`CountUp` needs a record-identity `key`, not an index one.** `CountUp`
+    (`components/CountUp.tsx`) counts once per mount and keeps its `display`
+    state across re-renders of the same component instance. Inside any
+    list/grid whose order or membership can change (ranked spots, generative
+    shelves), key the wrapping element by the record's stable id/slug — an
+    index key lets React reuse the same DOM node for a different record, and
+    the number silently morphs from the old value instead of animating
+    fresh; a `startInView` observer that already fired also never refires
+    for the new record.
+16. **Generated cover art is shelf furniture, not filler.** Every `CoverArt`
+    (`components/CoverArt.tsx`) instance sits inside a uniform-size grid —
+    one tile per record, same size class as its siblings, never stretched
+    or cropped to plug an uneven card height. A tile's size is only allowed
+    to change at a shelf→header transition (list tile → detail page); the
+    seed stays the same across that jump so the artwork reads as one shared
+    object, not a re-roll.
+17. **A named `view-transition-name` needs its own reduced-motion pair.**
+    `app/globals.css`'s reduced-motion query only freezes the root
+    transition (`::view-transition-old(root)` / `::view-transition-new(root)`
+    — see the View Transitions block). Tagging an individual element (e.g. a
+    shelf tile morphing into a detail header) with its own
+    `view-transition-name` opts it out of that root-only guard, so it will
+    keep animating under `prefers-reduced-motion: reduce` unless the same
+    override is added for that specific name.

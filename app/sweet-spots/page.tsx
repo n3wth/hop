@@ -2,6 +2,7 @@ import Link from 'next/link'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import EditorialHeader from '@/components/EditorialHeader'
+import CoverArt from '@/components/CoverArt'
 import { pageMeta } from '@/lib/seo'
 import { VERIFY_CAVEAT } from '@/lib/sweet-spots'
 import { getSweetSpotsByProgram, getAllSweetSpots } from '@/lib/sweet-spots-live'
@@ -57,13 +58,24 @@ export default async function SweetSpotsIndexPage() {
                 href={`/sweet-spots/${p.slug}`}
                 className="group flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-6 transition-colors duration-200 ease-[var(--ease-premium)] hover:border-brand"
               >
-                <div className="flex items-baseline justify-between gap-3">
-                  <h2 className="font-display text-[22px] font-semibold leading-tight tracking-[-0.01em] text-text">
-                    {p.name}
-                  </h2>
-                  <span className="flex-shrink-0 text-[13px] font-semibold text-text3">
-                    {p.spots.length} {p.spots.length === 1 ? 'route' : 'routes'}
-                  </span>
+                <div className="flex items-center gap-3">
+                  {/* generative cover art — same seed as the program's own
+                      header, so the tile reads as one shared object across
+                      the shelf and the detail page (docs/design/experience-heuristics.md #16) */}
+                  <CoverArt
+                    seed={p.slug}
+                    decorative
+                    size={48}
+                    className="flex-shrink-0 rounded-[var(--radius-sm)]"
+                  />
+                  <div className="flex min-w-0 flex-1 items-baseline justify-between gap-3">
+                    <h2 className="font-display text-[22px] font-semibold leading-tight tracking-[-0.01em] text-text">
+                      {p.name}
+                    </h2>
+                    <span className="flex-shrink-0 text-[13px] font-semibold text-text3">
+                      {p.spots.length} {p.spots.length === 1 ? 'route' : 'routes'}
+                    </span>
+                  </div>
                 </div>
                 {/* the program's strongest lead redemption, as a teaser */}
                 <p className="mt-3 text-[14px] leading-snug text-text2">
