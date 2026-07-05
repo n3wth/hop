@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
+import CoverArt from '@/components/CoverArt'
 import { pageMeta, absoluteUrl } from '@/lib/seo'
 import { allPrograms, VERIFY_CAVEAT, type Cabin, type Program, type SweetSpot } from '@/lib/sweet-spots'
 import { getProgramBySlug } from '@/lib/sweet-spots-live'
@@ -103,18 +104,28 @@ export default async function ProgramSweetSpotsPage({
           <span className="text-text2">{program.name}</span>
         </nav>
 
-        {/* header */}
-        <header className="mt-6 max-w-[60ch]">
-          <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
-            {program.spots.length} {program.spots.length === 1 ? 'redemption' : 'redemptions'}
-          </span>
-          <h1 className="mt-3 text-balance font-display text-[32px] font-semibold leading-[1.06] tracking-[-0.02em] text-text sm:text-[46px]">
-            Best uses of {program.name} miles
-          </h1>
-          <p className="mt-4 max-w-[52ch] text-pretty text-[16px] leading-relaxed text-text2 sm:text-[17px]">
-            The redemptions where {program.name} beats cash by the widest margin —
-            premium cabins first.
-          </p>
+        {/* header — the cover art shares the index tile's seed (program.slug),
+            so it's the same artwork the reader saw on the /sweet-spots shelf,
+            just at the header size class (experience-heuristics.md #16) */}
+        <header className="mt-6 flex max-w-[60ch] items-start gap-4">
+          <CoverArt
+            seed={program.slug}
+            decorative
+            size={72}
+            className="flex-shrink-0 rounded-[var(--radius)]"
+          />
+          <div className="min-w-0">
+            <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
+              {program.spots.length} {program.spots.length === 1 ? 'redemption' : 'redemptions'}
+            </span>
+            <h1 className="mt-3 text-balance font-display text-[32px] font-semibold leading-[1.06] tracking-[-0.02em] text-text sm:text-[46px]">
+              Best uses of {program.name} miles
+            </h1>
+            <p className="mt-4 max-w-[52ch] text-pretty text-[16px] leading-relaxed text-text2 sm:text-[17px]">
+              The redemptions where {program.name} beats cash by the widest margin —
+              premium cabins first.
+            </p>
+          </div>
         </header>
 
         {/* the redemption rows — flat editorial, one per spot */}
