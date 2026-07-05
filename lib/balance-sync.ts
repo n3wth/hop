@@ -95,6 +95,59 @@ export function programAppearsInText(
   return words.length > 0 && words.some((w) => lowerText.includes(w))
 }
 
+// How far (in chars) a balance may sit from a mention of its program. Wide
+// enough for a statement header + a few lines of table; narrow enough that an
+// order/confirmation number in another part of a forwarded email can't be
+// attributed to a program it was never near.
+const PROXIMITY_CHARS = 300
+
+// Every index where the program is mentioned (canonical name/aliases, or the
+// free-text string / its significant words). Capped per needle — statements
+// repeat a program name, and a handful of anchors is plenty.
+function programMentionIndices(
+  program: string,
+  def: ReturnType<typeof canonicalizeProgram>,
+  lowerText: string,
+): number[] {
+  const needles = def
+    ? [def.name.toLowerCase(), ...def.aliases.filter((a) => a.length >= 4)]
+    : [program.toLowerCase(), ...program.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 4)]
+  const out: number[] = []
+  for (const needle of needles) {
+    let i = lowerText.indexOf(needle)
+    let hits = 0
+    while (i !== -1 && hits < 8) {
+      out.push(i)
+      hits++
+      i = lowerText.indexOf(needle, i + needle.length)
+    }
+  }
+  return out
+}
+
+// Is some occurrence of the balance (plain or comma-grouped) within
+// PROXIMITY_CHARS of some mention of the program? The attribution half of the
+// clamp: balanceAppearsInText proves the number was transcribed, this proves
+// it was transcribed from near the program it's claimed for.
+export function balanceNearProgram(
+  balance: number,
+  program: string,
+  def: ReturnType<typeof canonicalizeProgram>,
+  lowerText: string,
+): boolean {
+  const mentions = programMentionIndices(program, def, lowerText)
+  if (mentions.length === 0) return false
+  for (const rep of new Set([String(balance), balance.toLocaleString('en-US')])) {
+    let i = lowerText.indexOf(rep)
+    while (i !== -1) {
+      const at = i
+      if (mentions.some((m) => Math.abs(m - at) <= PROXIMITY_CHARS)) return true
+      i = lowerText.indexOf(rep, i + 1)
+    }
+  }
+  return false
+}
+
 // Clamp one candidate entry against the source text. Null on ANY doubt — a
 // missed balance is fine, a wrong one is not.
 function clampEntry(
@@ -118,6 +171,7 @@ function clampEntry(
   if (!balanceAppearsInText(balance, numbers)) return null
   const def = canonicalizeProgram(program)
   if (!programAppearsInText(program, def, lowerText)) return null
+  if (!balanceNearProgram(balance, program, def, lowerText)) return null
   return {
     program: def ? def.name : program,
     code: def ? def.code : deriveCode(program),
@@ -163,18 +217,44 @@ export function validateExtracted(parsed: unknown, text: string): ExtractedBalan
 // (19xx/20xx) are skipped — "Statement date: 2026" is not a balance.
 const NUMBER_TOKEN_RE = /\d{1,3}(?:,\d{3})+|\d{3,9}/g
 
-function lineNumbers(line: string): number[] {
-  const out: number[] = []
-  for (const token of line.match(NUMBER_TOKEN_RE) ?? []) {
+const BALANCE_WORDS_RE = /\b(miles|points|pts|avios|balance|available)\b/i
+
+// Context immediately before a number that marks it as an IDENTIFIER, not a
+// balance — "account 8123456", "confirmation #4812234", "member 1,001". An
+// account number is often a valid-looking magnitude, so magnitude checks can't
+// catch it; the label can.
+const ID_CONTEXT_RE =
+  /(?:\b(?:account|acct|card|member(?:ship)?|confirmation|conf|order|ref(?:erence)?|reservation|booking|ticket|record|locator|phone|flight|number|no)\b[.:#]?|#)\s*$/i
+
+// Pick THE balance on a line, or null when the line can't vouch for one.
+// A number is a candidate only if it parses in-bounds and isn't labeled as an
+// identifier. Preference order: a number directly adjacent to a points/balance
+// keyword ("12,400 miles", "balance: 12,400") wins; otherwise a lone candidate
+// on the line is accepted; anything ambiguous is skipped — a missed balance is
+// fine, a wrong one is not.
+function lineBalance(line: string): number | null {
+  const candidates = new Set<number>()
+  const adjacent = new Set<number>()
+  for (const m of line.matchAll(NUMBER_TOKEN_RE)) {
+    const token = m[0]
     const n = parseInt(token.replace(/,/g, ''), 10)
     if (!Number.isFinite(n) || n > MAX_BALANCE) continue
     if (!token.includes(',') && /^(19|20)\d{2}$/.test(token)) continue
-    out.push(n)
+    const before = line.slice(Math.max(0, m.index - 24), m.index)
+    if (ID_CONTEXT_RE.test(before)) continue
+    candidates.add(n)
+    const after = line.slice(m.index + token.length)
+    if (
+      /^\s*(?:miles|points|pts|avios)\b/i.test(after) ||
+      /\b(?:balance|available)\b[^0-9]{0,12}$/i.test(before)
+    ) {
+      adjacent.add(n)
+    }
   }
-  return out
+  if (adjacent.size === 1) return [...adjacent][0]
+  if (adjacent.size === 0 && candidates.size === 1) return [...candidates][0]
+  return null
 }
-
-const BALANCE_WORDS_RE = /\b(miles|points|pts|avios|balance|available)\b/i
 
 // Match known programs (canonical names + aliases ≥4 chars — short aliases
 // like "mr"/"ua" false-positive on prose) against each line and pair them with
@@ -196,11 +276,7 @@ export function parseBalancesDeterministic(text: string): ExtractedBalance[] {
         lower.includes(p.name.toLowerCase()) ||
         p.aliases.some((a) => a.length >= 4 && new RegExp(`\\b${escapeRe(a)}\\b`).test(lower)),
     )
-    const nums = lineNumbers(line)
-    // A line's number is used only when it's unambiguous: exactly one candidate,
-    // or a balance keyword confirms the line is about points.
-    const balance =
-      nums.length === 1 ? nums[0] : nums.length > 1 && BALANCE_WORDS_RE.test(line) ? Math.max(...nums) : null
+    const balance = lineBalance(line)
     const usable = balance !== null && balanceAppearsInText(balance, numbers) ? balance : null
 
     if (def) {

@@ -109,6 +109,15 @@ describe('validateExtracted — the clamp', () => {
     expect(out![0].code).toBe('UA')
   })
 
+  it('rejects a real number that appears nowhere near the claimed program', () => {
+    // An order number 500+ chars away from the only program mention must not
+    // be attributable to it on the auto-apply email rail.
+    const text = `United MileagePlus statement\n${'x'.repeat(600)}\nOrder total ref 87,654`
+    expect(
+      validateExtracted({ balances: [{ program: 'United MileagePlus', balance: 87654 }] }, text),
+    ).toBeNull()
+  })
+
   it('rejects negative and absurd balances', () => {
     const text = 'United MileagePlus: -500 miles, or 999,000,000,000'
     expect(
@@ -157,6 +166,19 @@ describe('parseBalancesDeterministic — the fallback', () => {
     const out = parseBalancesDeterministic('United MileagePlus: 45,230 miles (member 1,001)')
     expect(out).toHaveLength(1)
     expect(out[0].balance).toBe(45230)
+  })
+
+  it('never picks an account number over the labeled balance (P1 regression)', () => {
+    const out = parseBalancesDeterministic(
+      'Delta SkyMiles account 8123456 — points balance 12,400',
+    )
+    expect(out).toHaveLength(1)
+    expect(out[0]).toMatchObject({ code: 'DL', balance: 12400 })
+  })
+
+  it('skips identifier-labeled lone numbers ("Confirmation #4812234")', () => {
+    expect(parseBalancesDeterministic('Delta SkyMiles Confirmation #4812234')).toHaveLength(0)
+    expect(parseBalancesDeterministic('United MileagePlus member 8123456')).toHaveLength(0)
   })
 })
 

@@ -34,13 +34,18 @@ app screenshots. The seam accepts that text through two rails and turns it into
   `HOP_BALANCE_SYNC_MODEL`) translates freeform text → strict JSON `{ balances: [...] }`.
 - **The clamp** (`validateExtracted`): every entry must pass deterministic checks before it can
   touch the DB — program string sanitized + length-bounded, balance an integer in
-  `[0, 50,000,000]`, **and the balance's digits must literally appear in the source text**
-  (`balanceAppearsInText`). The model can transcribe a number the user gave us; it can never
-  invent one. This is the engine invariant applied to ingestion: numbers are *verified*, not
-  generated.
+  `[0, 50,000,000]`, the balance's digits **literally appear in the source text**
+  (`balanceAppearsInText`), the program is **actually mentioned** in the text
+  (`programAppearsInText`), and the balance sits **within ~300 chars of a program mention**
+  (`balanceNearProgram`). The model can transcribe a number the user gave us; it can neither
+  invent one nor attribute a real number (an order/confirmation number elsewhere in the email)
+  to a program it was never near. Numbers are *verified*, not generated.
 - **Deterministic fallback**: no gateway key / call fails → a pure regex parser
   (`parseBalancesDeterministic`) matches known program names/aliases (`lib/programs.ts`) against
-  nearby number tokens. Conservative: a missed balance is fine, a wrong one is not.
+  same-line (or short look-ahead) number tokens: identifier-labeled numbers
+  ("account 8123456", "confirmation #…", "member …") are excluded, a keyword-adjacent number
+  ("12,400 miles", "balance: 12,400") wins, and ambiguous lines are skipped. Conservative: a
+  missed balance is fine, a wrong one is not.
 - Programs canonicalize through `canonicalizeProgram` (same identity the whole engine joins on);
   unknown programs keep their free text + a derived monogram, exactly like manual adds.
 

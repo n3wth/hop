@@ -23,6 +23,9 @@ export default function BalanceSyncPaste({ syncAddress }: { syncAddress: string 
   const router = useRouter()
   const [text, setText] = useState('')
   const [preview, setPreview] = useState<PreviewBalance[] | null>(null)
+  // 'parsed' = the regex fallback read this (no AI key / call failed) — the
+  // preview says so, honestly, instead of looking identical to an AI read.
+  const [source, setSource] = useState<'ai' | 'parsed'>('ai')
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
@@ -52,6 +55,7 @@ export default function BalanceSyncPaste({ syncAddress }: { syncAddress: string 
           return
         }
         setPreview(json.balances)
+        setSource(json.source === 'parsed' ? 'parsed' : 'ai')
       } catch {
         setError('Could not read that')
       }
@@ -73,7 +77,14 @@ export default function BalanceSyncPaste({ syncAddress }: { syncAddress: string 
           setError(json.error ?? 'Could not save')
           return
         }
-        const { added, updated, unchanged } = json.applied
+        const { added, updated, unchanged, failed } = json.applied
+        if (failed) {
+          // Partial failure: keep the paste + preview so the user can retry —
+          // a balance that silently didn't sync would poison every verdict.
+          setError(`${failed} didn't save — try again`)
+          if (added || updated) router.refresh()
+          return
+        }
         const parts: string[] = []
         if (added) parts.push(`${added} added`)
         if (updated) parts.push(`${updated} updated`)
@@ -104,13 +115,13 @@ export default function BalanceSyncPaste({ syncAddress }: { syncAddress: string 
       <div className="text-[14px] font-semibold text-text">Sync from a paste</div>
       <p className="mt-0.5 text-[14px] leading-[1.5] text-text2">
         Paste a statement email or your account page — hop reads the balances and
-        updates your programs.
+        updates your programs. No passwords: hop only reads text you give it.
       </p>
 
       {preview ? (
         <div className="mt-3">
           <div className="text-[12.5px] font-semibold text-text3">hop read</div>
-          <ul className="mt-2 overflow-hidden rounded-[12px] border border-border">
+          <ul className="mt-2 overflow-hidden rounded-[var(--radius-sm)] border border-border">
             {preview.map((b, i) => (
               <li
                 key={b.code + i}
@@ -126,6 +137,11 @@ export default function BalanceSyncPaste({ syncAddress }: { syncAddress: string 
               </li>
             ))}
           </ul>
+          {source === 'parsed' ? (
+            <p className="mt-1.5 text-[12.5px] text-text3">
+              Read with the basic parser — check the numbers before saving.
+            </p>
+          ) : null}
           <div className="mt-2.5 flex items-center gap-1.5">
             <button
               type="button"
@@ -191,13 +207,13 @@ export default function BalanceSyncPaste({ syncAddress }: { syncAddress: string 
             Or forward balance emails to your sync address — hop reads those the same way.
           </p>
           <div className="mt-1.5 flex items-center gap-2">
-            <code className="min-w-0 flex-1 truncate rounded-[8px] bg-sunk px-2.5 py-1.5 text-[12px] text-text2">
+            <code className="min-w-0 flex-1 truncate rounded-[var(--radius-sm)] bg-sunk px-2.5 py-1.5 text-[12px] text-text2">
               {syncAddress}
             </code>
             <button
               type="button"
               onClick={copyAddress}
-              className="flex-shrink-0 rounded-[8px] px-2.5 py-1.5 text-[12px] font-semibold text-brand transition-colors hover:bg-brand-light"
+              className="flex-shrink-0 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-[12px] font-semibold text-brand transition-colors hover:bg-brand-light"
             >
               {copied ? 'Copied' : 'Copy'}
             </button>

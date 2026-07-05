@@ -30,7 +30,7 @@ export default async function TermsPage() {
         eyebrow="Legal"
         title="Terms of Service"
         intro="These terms govern your use of hop. By using the service you agree to them. Please read them carefully."
-        lastUpdated="June 29, 2026"
+        lastUpdated="July 5, 2026"
       >
         <h2>1. Acceptance of terms</h2>
         <p>
@@ -59,13 +59,22 @@ export default async function TermsPage() {
           <strong>informational only and are not financial, travel, or tax advice</strong>. You are
           responsible for confirming all details with the airline or provider before you transact.
         </p>
+        <p>
+          <strong>Balance sync.</strong> If you paste a statement or forward a balance email, hop
+          uses automated (including AI-assisted) extraction to read program names and balances
+          from the text you provide. Extraction can misread; every number is checked against your
+          text before it is saved, and you can review, edit, or remove any synced balance from
+          your account. hop never asks for or stores your loyalty-program passwords, and balances
+          you track in hop do not change anything in the underlying loyalty program.
+        </p>
 
         <h2>4. Third-party services</h2>
         <p>
           The Service relies on third parties, including (among others) Duffel (flight search and
           cash booking), airlines and their loyalty programs, seats.aero (award availability),
           AwardWallet (optional loyalty-balance sync), Google (sign-in), Neon (data storage),
-          and Unsplash (destination imagery). Your use of those services is also subject to their
+          Vercel and Anthropic (AI-assisted balance extraction), Cloudflare (sync-address email
+          relay), and Unsplash (destination imagery). Your use of those services is also subject to their
           own terms and privacy policies. We are not responsible for third-party services and do
           not guarantee their availability or accuracy.
         </p>
