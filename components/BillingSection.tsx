@@ -1,6 +1,21 @@
 import { isBillingEnabled } from "@/lib/env";
+import { type Tier } from "@/lib/subscription";
 
-export function BillingSection() {
+interface BillingSectionProps {
+  tier?: Tier;
+  activeCount?: number;
+  freeLimit?: number;
+  upgraded?: boolean;
+  yearlyAvailable?: boolean;
+}
+
+export function BillingSection({ 
+  tier = 'free', 
+  activeCount = 0, 
+  freeLimit = 3, 
+  upgraded = false, 
+  yearlyAvailable = true 
+}: BillingSectionProps) {
   if (!isBillingEnabled()) return null;
 
   return (
@@ -10,7 +25,7 @@ export function BillingSection() {
         <p className="text-4xl font-bold mb-4">$0<span className="text-lg font-normal text-muted-foreground">/forever</span></p>
         <ul className="space-y-2 text-muted-foreground">
           <li>Full search & verdict</li>
-          <li>3 active alerts</li>
+          <li>{freeLimit} active alerts ({activeCount} used)</li>
           <li>25 MCP calls/day</li>
         </ul>
       </div>
