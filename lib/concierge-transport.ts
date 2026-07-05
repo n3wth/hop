@@ -20,15 +20,18 @@
 // streaming, persisted thread) while the server contract stays exactly as built.
 
 import type { ChatTransport, UIMessage, UIMessageChunk } from 'ai'
-import { A2UI_SENTINEL, TOOL_FRAME_SEP, type ToolActivityFrame } from '@/app/api/concierge/route'
+import { A2UI_SENTINEL, TOOL_FRAME_SEP, TRACE_ID_HEADER, type ToolActivityFrame } from '@/app/api/concierge/route'
 import type { A2UIBlock } from '@/lib/a2ui'
 
 // Data parts hop attaches to an assistant UIMessage. `tool` carries one tool
 // activity card (id-keyed so running -> done updates the same part); `a2ui`
-// carries the validated block envelope rendered inside the turn.
+// carries the validated block envelope rendered inside the turn; `meta` carries
+// the turn's PostHog $ai_trace_id (absent when the fallback path served this
+// turn, e.g. no gateway key) so a thumbs up/down can join the exact LLM call.
 export type HopDataParts = {
   tool: ToolActivityFrame
   a2ui: { blocks: A2UIBlock[] }
+  meta: { traceId: string }
 }
 
 export type HopUIMessage = UIMessage<never, HopDataParts>
@@ -161,6 +164,13 @@ export class ConciergeTransport implements ChatTransport<HopUIMessage> {
     return new ReadableStream<UIMessageChunk>({
       async start(controller) {
         controller.enqueue({ type: 'start' })
+
+        // The fallback path (no gateway key, or setup failed) never sets this
+        // header — the feedback control simply doesn't render for that turn.
+        const traceId = res.headers.get(TRACE_ID_HEADER)
+        if (traceId) {
+          controller.enqueue({ type: 'data-meta', id: 'meta', data: { traceId } })
+        }
 
         let buffer = '' // unflushed bytes (may hold a partial tool frame)
         let prose = '' // all VISIBLE prose so far (frames removed), across segments

@@ -47,6 +47,12 @@ import {
 } from './ai-elements/prompt-input'
 import { ToolActivity, type ToolState } from './ai-elements/tool'
 import { Suggestions, Suggestion } from './ai-elements/suggestion'
+import {
+  trackConciergeFeedback,
+  trackConciergeFeedbackReason,
+  CONCIERGE_FEEDBACK_REASON_MAX,
+  type ConciergeFeedbackRating,
+} from '@/lib/concierge-feedback'
 
 // Fallback chips shown when a resumed thread has no model-authored follow-ups.
 // Terse, on-voice, generic but useful — the dock is never dead for a returning user.
@@ -534,6 +540,7 @@ function Turn({
 
   const inline: InlinePart[] = []
   const a2ui: { key: string; blocks: A2UIBlock[] }[] = []
+  let traceId: string | undefined
 
   message.parts.forEach((part, i) => {
     if (part.type === 'text') {
@@ -550,6 +557,8 @@ function Turn({
       // so follow-ups live in one place and don't clutter the answer.
       const blocks = (part.data?.blocks ?? []).filter((b) => b.type !== 'prompt_chips')
       if (blocks.length) a2ui.push({ key: part.id ?? `a${i}`, blocks })
+    } else if (part.type === 'data-meta') {
+      traceId = part.data?.traceId
     }
   })
 
@@ -594,6 +603,7 @@ function Turn({
       {showActions ? (
         <AssistantActions
           text={textOf(message)}
+          traceId={traceId}
           onRegenerate={isLast && !busy ? onRegenerate : undefined}
         />
       ) : null}
@@ -637,9 +647,13 @@ function textOf(m: HopUIMessage): string {
 // falls back to the plain label/icon swap.
 function AssistantActions({
   text,
+  traceId,
   onRegenerate,
 }: {
   text: string
+  /** This turn's PostHog $ai_trace_id — absent on the curated-fallback path
+   *  (no gateway key), which never mints one. Gates the thumbs control. */
+  traceId?: string
   onRegenerate?: () => void
 }) {
   const [copied, setCopied] = useState(false)
@@ -658,19 +672,92 @@ function AssistantActions({
     'inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11.5px] font-medium text-text3 transition-colors hover:bg-sunk hover:text-brand'
 
   return (
-    <div className="-mt-0.5 flex items-center gap-0.5">
-      <button type="button" onClick={copy} aria-label={copied ? 'Copied' : 'Copy answer'} className={btn}>
-        <span key={copied ? 'check' : 'copy'} className={copied ? 'hop-check-in inline-flex' : 'inline-flex'}>
-          <Icon name={copied ? 'check' : 'content_copy'} size={16} />
-        </span>
-        {copied ? 'Copied' : 'Copy'}
-      </button>
-      {onRegenerate ? (
-        <button type="button" onClick={onRegenerate} aria-label="Regenerate answer" className={btn}>
-          <Icon name="refresh" size={16} />
-          Retry
+    <div className="-mt-0.5 flex flex-col items-start gap-1">
+      <div className="flex items-center gap-0.5">
+        <button type="button" onClick={copy} aria-label={copied ? 'Copied' : 'Copy answer'} className={btn}>
+          <span key={copied ? 'check' : 'copy'} className={copied ? 'hop-check-in inline-flex' : 'inline-flex'}>
+            <Icon name={copied ? 'check' : 'content_copy'} size={16} />
+          </span>
+          {copied ? 'Copied' : 'Copy'}
         </button>
+        {onRegenerate ? (
+          <button type="button" onClick={onRegenerate} aria-label="Regenerate answer" className={btn}>
+            <Icon name="refresh" size={16} />
+            Retry
+          </button>
+        ) : null}
+      </div>
+      {traceId ? <MessageFeedback traceId={traceId} btn={btn} /> : null}
+    </div>
+  )
+}
+
+// Thumbs up/down on a settled answer, joined to the exact LLM call via
+// $ai_trace_id (lib/concierge-feedback.ts). One rating per turn — buttons
+// disable once clicked rather than allowing a flip-flop. Thumbs-down reveals a
+// one-line, optional reason; skipping it is fine, the rating alone is useful.
+function MessageFeedback({ traceId, btn }: { traceId: string; btn: string }) {
+  const [rating, setRating] = useState<ConciergeFeedbackRating | null>(null)
+  const [reason, setReason] = useState('')
+  const [reasonSent, setReasonSent] = useState(false)
+
+  const rate = (value: ConciergeFeedbackRating) => {
+    if (rating) return
+    setRating(value)
+    trackConciergeFeedback(traceId, value)
+  }
+
+  const sendReason = () => {
+    trackConciergeFeedbackReason(traceId, reason)
+    setReasonSent(true)
+  }
+
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <div className="flex items-center gap-0.5">
+        <button
+          type="button"
+          onClick={() => rate('up')}
+          aria-label="Helpful"
+          aria-pressed={rating === 'up'}
+          disabled={!!rating}
+          className={`${btn} ${rating === 'up' ? 'text-brand' : ''} disabled:hover:bg-transparent`}
+        >
+          <Icon name="thumbs_up" size={16} weight={rating === 'up' ? 'fill' : 'regular'} />
+        </button>
+        <button
+          type="button"
+          onClick={() => rate('down')}
+          aria-label="Not helpful"
+          aria-pressed={rating === 'down'}
+          disabled={!!rating}
+          className={`${btn} ${rating === 'down' ? 'text-brand' : ''} disabled:hover:bg-transparent`}
+        >
+          <Icon name="thumbs_down" size={16} weight={rating === 'down' ? 'fill' : 'regular'} />
+        </button>
+      </div>
+      {rating === 'down' && !reasonSent ? (
+        <div className="flex items-center gap-1.5">
+          <input
+            type="text"
+            value={reason}
+            onChange={(e) => setReason(e.target.value.slice(0, CONCIERGE_FEEDBACK_REASON_MAX))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') sendReason()
+            }}
+            placeholder="What went wrong? (optional)"
+            className="w-[220px] rounded-full border border-border bg-transparent px-2.5 py-1 text-[11.5px] text-text2 outline-none placeholder:text-text3 focus:border-brand"
+          />
+          <button
+            type="button"
+            onClick={sendReason}
+            className="text-[11.5px] font-medium text-text3 transition-colors hover:text-brand"
+          >
+            Send
+          </button>
+        </div>
       ) : null}
+      {reasonSent ? <p className="text-[11.5px] text-text3">Thanks — noted.</p> : null}
     </div>
   )
 }

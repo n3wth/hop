@@ -18,6 +18,7 @@
 // are preserved (pure, unit-tested) and still used by the fallback path.
 
 import { streamText, stepCountIs, gateway } from 'ai'
+import { trace, context as otelContext } from '@opentelemetry/api'
 import {
   destinations,
   affordableWith,
@@ -64,6 +65,12 @@ import {
 // framing chars are NUL (char 0), not spaces — they can never appear in model
 // prose, so splitting on the sentinel never corrupts the visible answer.
 export const TOOL_FRAME_SEP = String.fromCharCode(30)
+
+// Response header carrying the OTel trace id that PostHogSpanProcessor
+// (instrumentation.ts) forwards as $ai_trace_id on this turn's $ai_generation
+// spans. The client threads it back on a thumbs up/down so feedback joins the
+// exact LLM call in PostHog — see lib/concierge-feedback.ts.
+export const TRACE_ID_HEADER = 'x-hop-trace-id'
 
 // One tool-activity event surfaced to the client. `state` mirrors the AI SDK
 // tool lifecycle that AI Elements' <Tool> understands. `id` ties a start to its
@@ -706,52 +713,68 @@ export async function POST(request: Request): Promise<Response> {
     const liveValuations = await liveValuationsByName()
 
     const tools = buildConciergeTools(context?.programs ?? [], userId)
-    const result = streamText({
-      model: gateway(GATEWAY_MODEL),
-      // PostHog LLM analytics → $ai_generation (see instrumentation.ts).
-      experimental_telemetry: { isEnabled: true, functionId: 'concierge' },
-      system: buildAgenticSystem(context, profile, history, liveValuations, memory, observed),
-      // MULTI-TURN: thread the conversation (prior turns + this question) so the
-      // agent answers in context. Single-question back-compat is preserved —
-      // buildMessages yields a one-element [user] array when there's no history.
-      messages,
-      tools,
-      // Agentic loop: let the model call tools, then continue with the results.
-      stopWhen: stepCountIs(5),
-      // Never throw to the page — on a streaming error, surface a friendly line.
-      onError({ error }) {
-        console.error('[concierge] stream error', error)
-      },
-      // Persist the thread AFTER the answer finishes (signed-in only). Append the
-      // assistant's final text to the threaded messages and upsert. Best-effort:
-      // saveConversation never throws.
-      onFinish({ text }) {
-        if (!userId) return
-        // Persist the CLEAN prose (without the trailing a2ui fence) so reloaded
-        // threads read naturally and don't re-feed the spec back into context.
-        const answer = stripA2UIFence(text ?? '').trim()
-        const next = answer
-          ? [...messages, { role: 'assistant' as const, content: answer }]
-          : messages
-        void saveConversation(userId, next)
-        // Fold older turns into durable memory (gated, fire-and-forget). Uses the
-        // FULL prior thread the client resends — not the 40-capped `messages` — so
-        // turns past the live window aren't lost. No-ops entirely when disabled.
-        const fullPrior = Array.isArray(body?.messages)
-          ? (body.messages as ConversationMessage[])
-          : []
-        const fullThread: ConversationMessage[] = [
-          ...fullPrior,
-          { role: 'user', content: question },
-          ...(answer ? [{ role: 'assistant' as const, content: answer }] : []),
-        ]
-        void updateConversationMemory(userId, fullThread)
-        // Infer durable preferences from the conversation (gated, fire-and-forget).
-        // Lands as PENDING "hop noticed" suggestions the user confirms/dismisses in
-        // the /account glass box — nothing is ever auto-applied.
-        void proposeInferredFacts(userId, fullThread)
-      },
-    })
+
+    // Mint a real OTel trace id for this turn BEFORE calling streamText, so the
+    // model call's gen_ai.* spans (children, via context propagation) share it.
+    // PostHogSpanProcessor preserves OTel trace/span ids as $ai_generation's
+    // $ai_trace_id — returning this same id to the client (TRACE_ID_HEADER) lets
+    // a thumbs up/down join the exact LLM call in PostHog. This span is never
+    // itself forwarded (its name/attributes don't match the ai./gen_ai. prefix
+    // filter) — it exists only to anchor the trace id.
+    const turnSpan = trace.getTracer('hop.concierge').startSpan('concierge.turn')
+    const traceId = turnSpan.spanContext().traceId
+    const result = otelContext.with(trace.setSpan(otelContext.active(), turnSpan), () =>
+      streamText({
+        model: gateway(GATEWAY_MODEL),
+        // PostHog LLM analytics → $ai_generation (see instrumentation.ts).
+        experimental_telemetry: { isEnabled: true, functionId: 'concierge' },
+        system: buildAgenticSystem(context, profile, history, liveValuations, memory, observed),
+        // MULTI-TURN: thread the conversation (prior turns + this question) so the
+        // agent answers in context. Single-question back-compat is preserved —
+        // buildMessages yields a one-element [user] array when there's no history.
+        messages,
+        tools,
+        // Agentic loop: let the model call tools, then continue with the results.
+        stopWhen: stepCountIs(5),
+        // Never throw to the page — on a streaming error, surface a friendly line.
+        onError({ error }) {
+          console.error('[concierge] stream error', error)
+        },
+        // Persist the thread AFTER the answer finishes (signed-in only). Append the
+        // assistant's final text to the threaded messages and upsert. Best-effort:
+        // saveConversation never throws.
+        onFinish({ text }) {
+          if (!userId) return
+          // Persist the CLEAN prose (without the trailing a2ui fence) so reloaded
+          // threads read naturally and don't re-feed the spec back into context.
+          const answer = stripA2UIFence(text ?? '').trim()
+          const next = answer
+            ? [...messages, { role: 'assistant' as const, content: answer }]
+            : messages
+          void saveConversation(userId, next)
+          // Fold older turns into durable memory (gated, fire-and-forget). Uses the
+          // FULL prior thread the client resends — not the 40-capped `messages` — so
+          // turns past the live window aren't lost. No-ops entirely when disabled.
+          const fullPrior = Array.isArray(body?.messages)
+            ? (body.messages as ConversationMessage[])
+            : []
+          const fullThread: ConversationMessage[] = [
+            ...fullPrior,
+            { role: 'user', content: question },
+            ...(answer ? [{ role: 'assistant' as const, content: answer }] : []),
+          ]
+          void updateConversationMemory(userId, fullThread)
+          // Infer durable preferences from the conversation (gated, fire-and-forget).
+          // Lands as PENDING "hop noticed" suggestions the user confirms/dismisses in
+          // the /account glass box — nothing is ever auto-applied.
+          void proposeInferredFacts(userId, fullThread)
+        },
+      }),
+    )
+    // The span only needs to be active long enough for streamText's synchronous
+    // setup (and the async continuations it schedules there) to inherit its trace
+    // id — ending it now doesn't retroactively change the shared traceId above.
+    turnSpan.end()
 
     // Stream the answer as live text, but with THREE responsibilities:
     //   1. SURFACE TOOL ACTIVITY: pump the FULL stream so tool-call/result/error
@@ -862,7 +885,7 @@ export async function POST(request: Request): Promise<Response> {
 
     return new Response(stream, {
       status: 200,
-      headers: { 'content-type': 'text/plain; charset=utf-8' },
+      headers: { 'content-type': 'text/plain; charset=utf-8', [TRACE_ID_HEADER]: traceId },
     })
   } catch (err) {
     console.error('[concierge] setup failed, serving fallback', err)
