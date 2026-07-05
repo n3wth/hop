@@ -16,15 +16,21 @@ Two house rules make every switch here safe:
 
 Flags parse `1|true|yes` (case-insensitive) as on; anything else is off.
 
-## Current production state (2026-07-04)
+## Current production state (2026-07-04, post R0.4 flips)
+
+Live state is visible at a glance on `/admin/ops` (owner-only preflight table).
 
 | Capability | State |
 | --- | --- |
-| Self-improve loop (`HOP_ENABLE_SELF_IMPROVE`) | **ON — just enabled.** Degradation telemetry is recording (cash degraded 4x in the last 24h) but with **no recorded reasons** — `recordDegradation()` doesn't capture a reason yet; being fixed in a parallel branch. |
-| Linear filing (`LINEAR_API_KEY` + `LINEAR_TEAM_ID`) | **NOT set.** This is the missing link for auto-filed issues: the sentinel detects and records findings, but P1s fall back to the owner email and nothing lands in Linear. |
-| Valuation sync (`HOP_ENABLE_VALUATION_SYNC`) | **OFF — worker NOT deployed.** `cloudflare/valuations-worker/` has never been deployed; the whole seam is inert. |
-| Standing-order alerts | Cron wired in `vercel.json`; delivery depends on `RESEND_API_KEY` + verified DKIM (see below). |
-| Billing / checkout | Off (flags unset). |
+| Self-improve loop (`HOP_ENABLE_SELF_IMPROVE`) | **ON.** Degradation telemetry records with reasons; drilldown on `/admin/ops`. |
+| Linear filing (`LINEAR_API_KEY` + `LINEAR_TEAM_ID`) | **Set (2026-07-04).** Sentinel P1s should file to Linear; email fallback remains. |
+| Valuation sync (`HOP_ENABLE_VALUATION_SYNC`) | **ON.** Worker deployed at `https://hop-valuations.newth.workers.dev` (D1 schema applied, 6h cron); all three Vercel vars set. Programs go live per-program at ≥20 samples. |
+| Standing-order alerts (`STANDING_ORDERS_CRON_ENABLED`) | **ON.** `RESEND_API_KEY` set; hop.flights DKIM + SPF **verified** in Resend (the "Receiving MX" record stays failed by design — inbound mail is Cloudflare Email Routing). |
+| Product analytics | `NEXT_PUBLIC_POSTHOG_KEY`/host set; the five funnel events ship as of PR #167. |
+| Billing (`HOP_ENABLE_BILLING`) | **ON** (Stripe keys + webhook secret set). Still owed: one real test purchase end-to-end. |
+| Checkout (`HOP_ENABLE_CHECKOUT`) | Set with `DUFFEL_API_KEY_TEST` (test-only by design). |
+| `MOCK` | Removed from production env (live upstreams). |
+| GitHub Actions CI | **Disabled** (billing broken — see the CI section below). Required PR check is the Vercel build. |
 
 ## Alerts / standing orders
 
