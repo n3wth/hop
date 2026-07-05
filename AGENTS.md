@@ -17,6 +17,7 @@ Every unit of work should make the next one easier. The full guidance lives in *
 - **Read before you change a decided area:** `docs/decisions/`. **Search before you solve:** `docs/solutions/`.
 - The **`eve/`** directory is the Eve agent (a separate Vercel Eve runtime), deliberately excluded from the Next app's typecheck/lint/build — do not add it to the build graph (`eve/README.md`).
 - **Teach the system, don't just do the task.** When you learn something durable, write it where the next agent will find it automatically.
+- **Never bundle a PR with unrelated WIP.** This repo runs many concurrent worktrees, so a checkout often has unrelated uncommitted changes sitting in it. Check `git status` first; if there's unrelated WIP, branch off `origin/main` in a fresh worktree, copy in only your files, and PR from there (`CLAUDE.md` § Conventions & gotchas has the exact recipe).
 
 # What to build next
 
