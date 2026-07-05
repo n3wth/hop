@@ -21,6 +21,7 @@ import { programById } from '@/lib/programs'
 import { clampCpp } from '@/lib/valuations'
 import { upsertValuationOverrides, type ValuationOverride } from '@/lib/valuation-overrides'
 import { recordHeartbeat } from '@/lib/cron-heartbeat'
+import { isAuthorizedCron } from '@/lib/cron-auth'
 
 // This route reads live remote data and must never be cached or statically rendered.
 export const dynamic = 'force-dynamic'
@@ -29,17 +30,6 @@ const FETCH_TIMEOUT_MS = 10_000
 
 function isEnabled(): boolean {
   return isValuationSyncEnabled()
-}
-
-// Verify the request is from Vercel Cron (or an authorized caller). Vercel
-// sends `Authorization: Bearer ${CRON_SECRET}` when CRON_SECRET is set. When no
-// secret is configured we allow it (so local/manual runs work) — but the
-// ENABLE flag still gates real execution.
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET
-  if (!secret) return true
-  const auth = request.headers.get('authorization')
-  return auth === `Bearer ${secret}`
 }
 
 interface WorkerValuationEntry {
@@ -68,10 +58,10 @@ export async function GET(request: Request) {
   if (!isEnabled()) {
     // Liveness record (ADR 0007): being off is an owner choice, not an outage.
     // Only for authorized callers, so a public probe can't keep it fresh.
-    if (isAuthorized(request)) recordHeartbeat('valuation-sync', false, 'disabled')
+    if (isAuthorizedCron(request)) recordHeartbeat('valuation-sync', false, 'disabled')
     return Response.json({ ok: false, error: 'disabled' }, { status: 503 })
   }
-  if (!isAuthorized(request)) {
+  if (!isAuthorizedCron(request)) {
     return Response.json({ ok: false, error: 'unauthorized' }, { status: 401 })
   }
 

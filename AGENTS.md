@@ -17,6 +17,24 @@ Every unit of work should make the next one easier. The full guidance lives in *
 - **Read before you change a decided area:** `docs/decisions/`. **Search before you solve:** `docs/solutions/`.
 - The **`eve/`** directory is the Eve agent (a separate Vercel Eve runtime), deliberately excluded from the Next app's typecheck/lint/build — do not add it to the build graph (`eve/README.md`).
 - **Teach the system, don't just do the task.** When you learn something durable, write it where the next agent will find it automatically.
+- **Never bundle a PR with unrelated WIP.** This repo runs many concurrent worktrees, so a checkout often has unrelated uncommitted changes sitting in it. Check `git status` first; if there's unrelated WIP, branch off `origin/main` in a fresh worktree, copy in only your files, and PR from there (`CLAUDE.md` § Conventions & gotchas has the exact recipe).
+
+# What to build next
+
+**`docs/plans/2026-07-04-business-plan.md` is the adopted business plan and the sequencing
+source of truth.** It sets pricing, revenue gates, and the phase order; its §11 is the pickup
+protocol for agents. The work queue is mirrored in Linear (team `n3wth`, project
+[hop](https://linear.app/newth/project/hop-9365da373b9a)): take the highest-priority open issue
+in the lowest open phase, respect its `blockedBy` relations and the plan's hard gates (e.g.
+billing does not flip until the four §3.1 gates pass), and follow the issue's embedded
+continuation prompt. Items marked **owner** are human-only — flag them, don't attempt them.
+
+**Autonomous sessions** (Claude Code routines, delegated agents): `docs/autonomy-runbook.md`
+governs your run — queue rules, the merge policy (ADR 0009: merge only when CI is green,
+reviews are clear, and every changed path is auto-tier; the runbook's `Auto-merge:` line is the
+kill switch), hard guardrails (one item per run; flags/env/money stay human), the git-fallback
+mode when Linear is unreachable, and the mandatory compound step (`docs/autonomy-log.md` +
+runbook amendments).
 
 # Content data — committed snapshots, regenerable offline
 

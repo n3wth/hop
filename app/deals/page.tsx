@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers'
 import Link from 'next/link'
+import { toNavUser } from '@/lib/nav-user'
 import { topValue, imageQuery } from '@/lib/destinations'
 import { destinationImages } from '@/lib/images'
 import { getUserBalances } from '@/lib/accounts'
@@ -74,34 +75,34 @@ export default async function DealsPage({
   const deals = withoutAvoided(topValue(24), memory.avoided)
   const photos = await destinationImages(deals.map((d) => imageQuery(d)))
   const su = session?.user
-  const user = su
-    ? {
-        initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
-        name: su.name ?? su.email ?? undefined,
-        email: su.email ?? undefined,
-        picture: su.picture ?? undefined,
-      }
-    : null
+  const user = toNavUser(su)
 
-  // Header points chip + origin seed. Balances and prefs each degrade on their
-  // own — a balances failure is surfaced (the figure goes stale), a prefs
-  // failure just falls back to the default origin. Neither throws the page.
+  // Header points chip + origin seed. Balances and prefs are independent reads
+  // keyed only on su.sub — fetched together (one round trip instead of two) and
+  // still degrade on their own: a balances failure is surfaced (the figure goes
+  // stale), a prefs failure just falls back to the default origin. Neither
+  // throws the page.
   let pointsTotal: number | undefined
   let homeAirport: string | undefined
   const degraded: string[] = []
   if (user && su?.sub) {
-    try {
+    const [balancesRes, prefsRes] = await Promise.allSettled([
+      getUserBalances(su.sub),
+      getPrefs(su.sub),
+    ])
+    if (balancesRes.status === 'fulfilled') {
       // Unified per-user balances (manual + AwardWallet) for the header chip.
-      const real = await getUserBalances(su.sub)
-      if (real.length > 0) pointsTotal = real.reduce((s, b) => s + b.balance, 0)
-    } catch {
+      if (balancesRes.value.length > 0) {
+        pointsTotal = balancesRes.value.reduce((s, b) => s + b.balance, 0)
+      }
+    } else {
       degraded.push('balances')
     }
-    try {
-      homeAirport = (await getPrefs(su.sub)).homeAirport
-    } catch {
-      // No saved origin → default. Not worth a degraded note.
+    if (prefsRes.status === 'fulfilled') {
+      homeAirport = prefsRes.value.homeAirport
     }
+    // A prefs failure just falls back to the default origin — not worth a
+    // degraded note.
   }
 
   // Origin precedence: explicit ?from= → saved home airport → "where from"

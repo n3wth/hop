@@ -15,10 +15,12 @@ actions, caching, `params`/`searchParams` shapes), read the relevant guide in
 The **repo root is the Next.js app** (App Router, RSC, TypeScript, Tailwind v4) — run every command
 from the root.
 
-- `app/`, `components/`, `lib/`, `utils/`, `public/` — the application
+- `app/`, `components/`, `lib/`, `public/` — the application
 - `docs/design/` — the design source of truth: `CHOSEN-editorial.html` (canonical visual
   reference), `copy-spec.md` (strict copy voice), logo assets
-- `docs/plans/` — implementation plans (e.g. the flight-optimizer plan, the Eve agent design)
+- `docs/plans/` — implementation plans (e.g. the flight-optimizer plan, the Eve agent design).
+  **`2026-07-04-business-plan.md` is the adopted business plan + sequencing source of truth —
+  start there (and the Linear `hop` project it mirrors) when deciding what to build next.**
 - `docs/decisions/` — **ADRs**: the load-bearing architectural decisions. Read the relevant one
   before changing a decided area (engine-as-source-of-truth, Eve co-location, delivery layer).
 - `docs/solutions/` — **searchable solved-problems library** (YAML frontmatter). Grep here before
@@ -53,6 +55,16 @@ This repo is **agent-native**: each unit of work should make the next one easier
 When you fix a non-obvious bug or make a durable decision, the work isn't done until it's captured
 where the next agent (you, or another LLM via `AGENTS.md`) will find it automatically.
 
+## Faster LLM iteration
+
+- **Concierge/prompt work (`lib/concierge-*.ts`, `/ask`)**: iterate against `MOCK=1` fixtures, not
+  live upstream calls — cheaper and faster per turn. Lock in deterministic logic (cpp, tiers,
+  ranking) with `npm run test:watch` on `lib/__tests__/`; reserve live Anthropic calls for
+  checking tone/voice against `docs/design/copy-spec.md`, not correctness.
+- **Claude Code sessions**: keep context small so turns stay fast — `/compact` before ~60%
+  context, delegate exploration/research to subagents (`Explore`, `general-purpose`) instead of
+  doing wide searches inline, and use `/review-parallel` instead of manually rereading a diff.
+
 ## Commands (run from the repo root)
 
 ```bash
@@ -69,6 +81,9 @@ npx vitest run lib/__tests__/cpp.test.ts
 npx vitest run -t "ranks options by cpp"
 
 npm run dev:mock       # serve from mock fixtures (no upstream API keys needed)
+
+npm run db:generate    # drizzle-kit generate (offline SQL from lib/db/schema.ts)
+npm run db:migrate     # apply drizzle/ migrations to Neon (no-op without DATABASE_URL)
 ```
 
 Vitest uses the **node** environment and only collects `lib/**/*.test.ts` and `app/**/*.test.ts`
@@ -106,7 +121,7 @@ plus `lib/transfers.ts` (transfer reachability) and `lib/booking.ts` (booking UR
 ### Balances: one resolver, two sources — `lib/accounts.ts#getUserBalances`
 
 Every surface (home, deals, ask, search) consumes balances through this single resolver. It
-merges **manual** programs (Supabase `hop_manual_balances`, the primary path) with an optional
+merges **manual** programs (Neon `hop_manual_balances`, the primary path) with an optional
 **AwardWallet** live link (`hop_user_accounts`), de-duped by program code; AwardWallet wins for
 programs it covers, manual fills the rest. Returns `[]` (never throws) when the user has nothing;
 callers decide whether to fall back to mock fixtures.
@@ -119,19 +134,27 @@ this pipeline — it stays pure, with no top-level I/O. `lib/valuations-live.ts`
 first-party-observed cpp on top: `lib/search.ts#assembleSearch` emits each computed award option's
 cpp as an observation (`lib/valuation-telemetry.ts`, fire-and-forget) to a Cloudflare Worker
 (`cloudflare/valuations-worker/`), which aggregates a trimmed-mean per program; a Vercel cron
-mirrors that aggregate into Supabase (`lib/valuation-overrides.ts`), and a program's live cpp only
+mirrors that aggregate into Neon (`lib/valuation-overrides.ts`), and a program's live cpp only
 overrides the static baseline once it has **≥20 fresh samples**. The whole seam is gated behind
 `HOP_ENABLE_VALUATION_SYNC` and is fully inert until `cloudflare/valuations-worker/` is deployed
 and its secrets are configured (see ADR 0005).
 
-### Dual auth — `middleware.ts`
+### Auth — Better Auth on Neon (`lib/auth.ts`)
 
-Two layers run on navigation: **Auth0** owns identity and mounts `/auth/*` (its response is
-returned untouched for those paths); **Supabase** refreshes its session cookie for everything
-else. Identity is the **Auth0 `sub`**; Supabase rows are scoped by `user_id` in code via the
-service-role client (`utils/supabase/`, `lib/supabase-helpers.ts#withDb`, which wraps every query
-to return a fallback instead of throwing). The MCP transport endpoints are deliberately excluded
-from the middleware matcher (they use Bearer hop tokens, not session cookies).
+Identity is **Better Auth** with Google social login, persisted via the Drizzle adapter on
+**Neon** (`lib/db/`). There is no middleware — `app/api/auth/[...all]/route.ts` serves the whole
+auth surface, and sessions resolve server-side per request (`lib/session.ts#getUserId`; the
+`lib/auth0.ts` compat shim keeps legacy `auth0.getSession()` call sites working — new code uses
+`getUserId`). Sign-in must go through `authClient.signIn.social` (POST — Better Auth has **no**
+GET sign-in URL); sign-out through `authClient.signOut()` or the `/auth/logout` route shim.
+Identity is the **Better Auth `user.id`**; every `hop_*` row is scoped by `user_id` in code via
+`lib/supabase-helpers.ts#withDb` (a Postgrest-compat shim over Drizzle that returns fallbacks
+instead of throwing and fails CLOSED on unknown columns). Secrets resolve
+`BETTER_AUTH_SECRET → AUTH_SECRET → derived from DATABASE_URL` (`lib/env.ts#resolveAuthSecret`);
+the Google provider registers only when configured (`isGoogleAuthEnabled`; `GOOGLE_ID`/
+`GOOGLE_SECRET` accepted as aliases). Schema: `lib/db/schema.ts`. Migrations: `drizzle/` applies
+automatically during `npm run build` (`scripts/db-migrate.mjs`, no-op without `DATABASE_URL`) or
+via `npm run db:migrate`. The MCP transport endpoints use Bearer hop tokens, not session cookies.
 
 ### MCP server — `app/api/[transport]/route.ts`
 
@@ -139,7 +162,7 @@ hop's engine is exposed as an MCP server ("Add to Claude") via `mcp-handler`. Th
 `[transport]` segment serves both streamable-HTTP (`/api/mcp`) and legacy SSE (`/api/sse`). Tools
 (`price_trip`, `verdict`, `sweet_spots`, `transfer_paths`) call the same `lib/*` engine. Auth is
 an **optional** Bearer `hop_` token (`lib/api-tokens.ts`): present → resolves to the owner's
-Auth0 sub and loads their real balances; absent → stateless mode with caller-supplied balances.
+user id and loads their real balances; absent → stateless mode with caller-supplied balances.
 A user's data is only ever reachable via that user's own token.
 
 ### AI concierge — `/ask`
@@ -174,6 +197,17 @@ in one round-trip.
   `{ok:false}`/fallbacks instead of throwing, and the UI degrades per-section.
 - **Cron**: `vercel.json` runs `/api/cron/standing-orders` (every 6h), `/api/cron/revalidate-seo`
   (weekly), and `/api/cron/valuation-sync` (daily); all guarded by `CRON_SECRET`.
+- **Ops**: turning any production capability on/off (alerts, valuation sync, self-improve,
+  billing, checkout, auth flags) is documented in `docs/ops-runbook.md`; `.env.example`
+  enumerates every env var the app reads.
+- **PRs for unrelated changes never land on a dirty working branch.** This repo runs many
+  concurrent worktrees, and any given checkout routinely has unrelated in-progress work (modified
+  and untracked files) sitting uncommitted. Before opening a PR, check `git status` — if there's
+  unrelated WIP, don't commit it alongside your change. Instead branch off `origin/main` in a
+  fresh, isolated worktree (`git worktree add /tmp/<name> origin/main -b <branch>`), copy in only
+  the files your change touches, commit/push/PR from there, then remove the temp worktree
+  (`git worktree remove`) once merged. Use `gh pr create --head <branch> --base main` explicitly —
+  `gh` can't reliably infer the current branch from inside a worktree.
 
 ## Design & copy — hold this bar on any UI change
 
@@ -187,7 +221,10 @@ in one round-trip.
   (`.wordmark`).
 - **Motion**: restrained, transform-only entrance micro-interactions (`.hop-rise`, value bars,
   bunny leap) — all gated behind `prefers-reduced-motion`. Single easing token
-  `var(--ease-premium)`.
+  `var(--ease-premium)`. **No hover movement, anywhere** — `:hover`/`group-hover:` never
+  triggers `translate`/`scale` (no card lift, no arrow nudge). Hover is `transition-colors`
+  only (`hover:border-brand`, `hover:text-*`). `.hop-press`/`.hop-press-card`'s `:active`
+  scale-down is tap feedback on click, a separate interaction, and is unaffected.
 - **Copy voice (strict, see `docs/design/copy-spec.md`)**: terse, confident, plain. State the
   answer and the number. No marketing slop/clichés, no emoji spam, no over-cute bunny chatter.
   The bunny is the **logo + one warm moment per region**, never a narrator on every row.

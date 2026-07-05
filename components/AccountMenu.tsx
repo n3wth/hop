@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import UserAvatarImage from './UserAvatarImage'
 
 export interface AccountUser {
   initial: string
@@ -11,10 +12,11 @@ export interface AccountUser {
 }
 
 // Avatar that opens a small account menu: name/email, Profile, Log out.
-// Loads the Auth0 picture when present, falls back to the initial.
+// The picture chain (picture → Gravatar → initial) lives in UserAvatarImage,
+// shared with the /account hero and the admin rail so every surface resolves
+// the same face the same way.
 export default function AccountMenu({ user }: { user: AccountUser }) {
   const [open, setOpen] = useState(false)
-  const [imgOk, setImgOk] = useState(true)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -42,18 +44,7 @@ export default function AccountMenu({ user }: { user: AccountUser }) {
         title="Account"
         className="grid h-10 w-10 cursor-pointer place-items-center overflow-hidden rounded-full bg-brand font-display text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep"
       >
-        {user.picture && imgOk ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={user.picture}
-            alt=""
-            className="h-full w-full object-cover"
-            referrerPolicy="no-referrer"
-            onError={() => setImgOk(false)}
-          />
-        ) : (
-          user.initial
-        )}
+        <UserAvatarImage picture={user.picture} email={user.email} initial={user.initial} />
       </button>
 
       {open ? (

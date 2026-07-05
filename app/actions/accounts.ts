@@ -9,8 +9,10 @@ import {
   updateManualBalance,
   removeManualBalance,
   findManualByProgram,
+  getManualBalances,
 } from '@/lib/accounts'
 import { canonicalizeProgram } from '@/lib/programs'
+import { captureServerEvent } from '@/lib/posthog-server'
 
 // Server Actions for the signed-in user's balance sources. Every action is gated
 // by the Auth0 session and scoped to session.user.sub so one user can never touch
@@ -90,6 +92,14 @@ export async function addProgram(
 
   const id = await addManualBalance(auth.userId, name, balance, kind)
   if (!id) return { ok: false, error: "Couldn't add — try again" }
+
+  // R0.5 funnel event #2 — first_program_added fires when this insert made the
+  // user's first program row (the activation moment). Best-effort: a degraded
+  // count read just skips the event, never the add.
+  const programs = await getManualBalances(auth.userId)
+  if (programs.length === 1) {
+    captureServerEvent('first_program_added', {}, { distinctId: auth.userId })
+  }
 
   revalidateBalances()
   return { ok: true }
@@ -196,6 +206,22 @@ export async function resyncGmailHistory(): Promise<Result> {
   const count = await syncTravelHistory(auth.userId)
   revalidateBalances()
   return { ok: true, note: `Synced ${count} trip${count === 1 ? '' : 's'} from Gmail.` }
+}
+
+// --- Account deletion (the /privacy promise) ---------------------------------
+
+// Deletes every row we hold for the signed-in user (lib/account-deletion.ts),
+// including their Better Auth identity — the session cookie dies with the
+// session rows. The client redirects home on ok. Gated on the live session
+// like every other action here; never throws.
+export async function deleteAccount(): Promise<Result> {
+  const auth = await requireUser()
+  if ('error' in auth) return { ok: false, error: auth.error }
+
+  const { deleteUserAccount } = await import('@/lib/account-deletion')
+  const result = await deleteUserAccount(auth.userId)
+  if (!result.ok) return { ok: false, error: result.error ?? "Couldn't delete — try again" }
+  return { ok: true }
 }
 
 // Pages whose output depends on the user's balances.

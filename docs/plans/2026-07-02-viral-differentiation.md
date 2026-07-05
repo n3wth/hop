@@ -51,7 +51,7 @@ r/awardtravel threads already improvise in text.*
 - [ ] **No personal data can enter a receipt.** The `VerdictSnapshot` type structurally cannot
       hold balances, identity, prefs, `youHave`, `action`, or `bookingUrl` (omission in the type
       = compile error); the engine run passes `undefined` balances and `undefined` prefs.
-      `created_by` (Auth0 sub, nullable) is stored for abuse-forensics only and never selected
+      `created_by` (Better Auth user id, nullable) is stored for abuse-forensics only and never selected
       into any render path.
 - [ ] **Strict degraded gate (graft, replaces the winner's pay-cash carve-out):** a receipt is
       minted only when `degraded.length === 0` **and** the verdict is not `'none'` **and** the
@@ -88,7 +88,7 @@ r/awardtravel threads already improvise in text.*
 | `drizzle/0006_shared_verdicts.sql` | `hop_shared_verdicts` DDL (below), `IF NOT EXISTS` style of `0005_subscriptions.sql`; RLS enabled, **no anon policies**; `created_by` index for abuse forensics | **yes** |
 | `lib/db/schema.ts` | `sharedVerdicts` pgTable mirroring the DDL | no |
 | `utils/supabase/admin.ts` | Typed `Row`/`Insert`/`Update` for `hop_shared_verdicts` (the `hop_valuation_overrides` precedent at admin.ts:428 — without this, `.from('hop_shared_verdicts')` fails strict typecheck). Migration + schema + admin typed row + `withDb` module = the four-artifact table pattern; all four are in this table | no |
-| `app/actions/share-verdict.ts` | `'use server'` action (pattern: `app/actions/checkout.ts`): gate → `checkRateLimit` (key: Auth0 sub when signed in, else `clientIpFromHeaders(await headers())`; `{capacity: 5, refillPerSec: 0.05}`) → `validateShareParams` → `assembleSearch(params, undefined, undefined)` → `buildVerdictSnapshot` → `createSharedVerdict` → `{ok:true, url}` \| `{ok:false, reason}` | **yes** |
+| `app/actions/share-verdict.ts` | `'use server'` action (pattern: `app/actions/checkout.ts`): gate → `checkRateLimit` (key: Better Auth user id when signed in, else `clientIpFromHeaders(await headers())`; `{capacity: 5, refillPerSec: 0.05}`) → `validateShareParams` → `assembleSearch(params, undefined, undefined)` → `buildVerdictSnapshot` → `createSharedVerdict` → `{ok:true, url}` \| `{ok:false, reason}` | **yes** |
 | `components/ShareVerdict.tsx` | Client button: idle → pending → `Link copied` / error states; `navigator.share` when available, clipboard fallback; not rendered at all when flag off (server passes the gate down) | **yes** |
 | `components/VerdictRail.tsx` | Mount `<ShareVerdict params={…}>` beside the existing secondary CTA when `isShareReceiptsEnabled()` and the result is shareable (clean verdict, no degradation) | no |
 | `app/v/[id]/page.tsx` | RSC receipt page: `getSharedVerdict` → render or `notFound()`; `robots: { index: false }`; `pageMeta`-shaped metadata (`lib/seo.ts:45`) with the route in the title so unfurls read well | **yes** |
@@ -111,7 +111,7 @@ DDL sketch (documented in the migration + module header; code never runs DDL):
 CREATE TABLE IF NOT EXISTS "hop_shared_verdicts" (
   "id" text PRIMARY KEY,                  -- 12-char base32 slug, generated in code
   "content_hash" text NOT NULL UNIQUE,    -- hash(canonical params + UTC day): idempotency key
-  "created_by" text,                      -- Auth0 sub or NULL (signed-out share); never rendered
+  "created_by" text,                      -- Better Auth user id or NULL (signed-out share); never rendered
   "params" jsonb NOT NULL,
   "snapshot" jsonb NOT NULL,              -- the engine-computed numbers, validated on read
   "revoked" boolean NOT NULL DEFAULT false,
@@ -192,7 +192,7 @@ ALTER TABLE "hop_shared_verdicts" ENABLE ROW LEVEL SECURITY;  -- no anon policie
 | F3 | **OG crawl recomputes the search** (cost: every unfurl = Duffel + seats.aero calls; trust: card ≠ page) | Snapshot-at-share-time. Page and OG image read the same stored row; **zero upstream calls after the share click**. The card can never disagree with the page |
 | F4 | **Upstream degraded at share time** (any non-empty `degraded[]`, or verdict `none`) | Strict gate: `buildVerdictSnapshot` → `null` → action `{ok:false,'degraded'}` → button copy: `Not enough live data for a receipt. Try again in a minute.` No receipt is ever minted from partial math — including the superficially-tempting pay-cash-while-awards-dark case, where the *verdict itself* might be wrong. Consequence: receipts never need a `DegradedNote` |
 | F5 | **DB unconfigured / table missing / query error** | `createSharedVerdict` → `withDb(fallback {ok:false,'unavailable'})`; `getSharedVerdict` → `withDb(null)` → `notFound()`; OG image → cream fallback card. Nothing throws |
-| F6 | **Spam / unbounded row growth** (signed-out creation is allowed) | Three layers: `checkRateLimit(key, {capacity:5, refillPerSec:0.05})` (`lib/rate-limit.ts:136` — Upstash-durable when configured, in-memory fallback otherwise), keyed by Auth0 sub when signed in, else `clientIpFromHeaders(await headers())` (server actions get no `Request`; `next/headers` is the mechanically correct source) → `{ok:false,'rate-limited'}`; content-hash idempotent upsert (same trip + same UTC day → same row, unique index; on conflict, re-select and return the existing id — also the concurrent-double-click race resolution, and the reason repeat shares never re-bill upstream *rows*; the engine re-run still happens but the row set stays bounded); the flag as kill switch |
+| F6 | **Spam / unbounded row growth** (signed-out creation is allowed) | Three layers: `checkRateLimit(key, {capacity:5, refillPerSec:0.05})` (`lib/rate-limit.ts:136` — Upstash-durable when configured, in-memory fallback otherwise), keyed by the Better Auth user id when signed in, else `clientIpFromHeaders(await headers())` (server actions get no `Request`; `next/headers` is the mechanically correct source) → `{ok:false,'rate-limited'}`; content-hash idempotent upsert (same trip + same UTC day → same row, unique index; on conflict, re-select and return the existing id — also the concurrent-double-click race resolution, and the reason repeat shares never re-bill upstream *rows*; the engine re-run still happens but the row set stays bounded); the flag as kill switch |
 | F7 | **Receipt-id enumeration** | 12-char base32 id from `crypto.randomBytes` (~60 bits), shape `/^[a-z2-7]{12}$/` — and the payload contains nothing sensitive even if enumerated |
 | F8 | **Stale numbers mislead a stranger a month later** | Mandatory `Priced Jul 2, 2026` on page *and* card, plus the fares-move caveat (§7 copy). `asOf` lives in the snapshot, not derived at render |
 | F9 | **Malformed/legacy snapshot JSON on read** | `rowToSnapshot` validation (the `lib/valuation-overrides.ts:46#rowToOverride` pattern): every required field type-checked, numbers `Number.isFinite`-checked; invalid → `null` → `notFound()`. A bad row can never render `NaN¢/pt` on a shared card |

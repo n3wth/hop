@@ -194,7 +194,7 @@ function ResultPanel({ result }: { result: CounterfactualResult }) {
     <div className="mt-5 border-t border-border pt-5">
       {/* headline — the one-glance financial mirror */}
       <div className="rounded-[14px] bg-brand-light px-5 py-4">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand">
+        <div className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
           {mutation.label}
         </div>
         {unlockedCount > 0 ? (
@@ -218,7 +218,7 @@ function ResultPanel({ result }: { result: CounterfactualResult }) {
       {/* unlocked destinations */}
       {unlocked.length > 0 ? (
         <div className="mt-4">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
             Newly within reach
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -232,7 +232,7 @@ function ResultPanel({ result }: { result: CounterfactualResult }) {
       {/* closer-but-not-there */}
       {closer.length > 0 ? (
         <div className="mt-4">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
             Getting closer
           </div>
           <div className="flex flex-col gap-1.5">

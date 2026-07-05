@@ -72,6 +72,18 @@ export const verdictSchema = {
   depart: z.string().describe('Departure date, ISO "YYYY-MM-DD".'),
   return: z.string().optional().describe('Return date, ISO "YYYY-MM-DD" (round trip).'),
   adults: z.number().int().min(1).optional().describe('Number of adults (default 1).'),
+  children: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe('Seated children — they count toward the party-total pricing (default 0).'),
+  infants: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe('Lap infants — no seat, excluded from pricing (default 0).'),
   balances: balanceInputSchema.optional(),
 }
 
@@ -88,6 +100,8 @@ export async function runVerdict(args: {
   depart: string
   return?: string
   adults?: number
+  children?: number
+  infants?: number
   balances?: BalanceInput
 }) {
   return verdictSummary(
@@ -97,6 +111,10 @@ export async function runVerdict(args: {
       depart: args.depart,
       return: args.return,
       adults: Math.max(1, args.adults ?? 1),
+      // Party size drives the engine's total-cost scaling (lib/search.seatsFor)
+      // — omitting these silently priced a family as a solo traveler.
+      ...(args.children ? { children: Math.max(0, args.children) } : {}),
+      ...(args.infants ? { infants: Math.max(0, args.infants) } : {}),
     },
     toBalances(args.balances),
   )

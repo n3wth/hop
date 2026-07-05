@@ -10,11 +10,14 @@ export type PromptInputProps = Omit<ComponentProps<'form'>, 'onSubmit'> & {
   onSubmit: (e: FormEvent<HTMLFormElement>) => void
 }
 
+// Same shape as the home teaser's composer (components/ConciergeHero) — one
+// search-box treatment everywhere it's shown: rounded-[16px], solid white,
+// border only on focus.
 export function PromptInput({ className = '', onSubmit, children, ...props }: PromptInputProps) {
   return (
     <form
       onSubmit={onSubmit}
-      className={`flex items-end gap-2.5 rounded-[var(--radius-lg)] border-2 border-border bg-paper px-3.5 py-2.5 transition-colors focus-within:border-brand ${className}`}
+      className={`flex items-end gap-2.5 rounded-[16px] border-2 border-transparent bg-surface px-4 py-2.5 transition-colors focus-within:border-brand ${className}`}
       {...props}
     >
       {children}
@@ -81,16 +84,18 @@ export function PromptInputSubmit({
 }: PromptInputSubmitProps) {
   const busy = status === 'streaming' || status === 'submitted'
 
+  // Same pill treatment as the home teaser's "Ask hop →" button — labeled,
+  // rounded-[12px], brand-filled. Busy state swaps the label for "Stop".
   if (busy) {
     return (
       <button
         type="button"
         onClick={onStop}
         aria-label="Stop"
-        className={`flex h-9 w-9 flex-shrink-0 items-center justify-center self-end rounded-full bg-brand-deep text-white transition-colors hover:bg-brand-ink ${className}`}
+        className={`flex flex-shrink-0 items-center gap-1.5 self-end rounded-[12px] bg-brand-deep px-5 py-2.5 text-[14.5px] font-semibold text-white transition-colors hover:bg-brand-ink ${className}`}
       >
-        {/* Stop: filled square */}
         <Icon name="stop" size={12} weight="fill" />
+        Stop
       </button>
     )
   }
@@ -101,10 +106,11 @@ export function PromptInputSubmit({
       type="submit"
       disabled={disabled}
       aria-label={isError ? 'Try again' : 'Ask hop'}
-      className={`flex h-9 w-9 flex-shrink-0 items-center justify-center self-end rounded-full bg-brand text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:bg-border disabled:text-text3 ${className}`}
+      className={`flex flex-shrink-0 items-center gap-1.5 self-end rounded-[12px] bg-brand px-5 py-2.5 text-[14.5px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:cursor-not-allowed disabled:bg-border disabled:text-text3 ${className}`}
       {...props}
     >
-      <Icon name={isError ? 'refresh' : 'paper_plane'} size={20} />
+      {isError ? 'Retry' : 'Ask hop'}
+      <Icon name={isError ? 'refresh' : 'arrow_right'} size={16} />
     </button>
   )
 }

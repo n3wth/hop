@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { toNavUser } from '@/lib/nav-user'
 import { auth0 } from '@/lib/auth0'
 import { getUserBalances } from '@/lib/accounts'
 import AppShell from '@/components/AppShell'
@@ -15,14 +16,7 @@ export const metadata = pageMeta({
 export default async function TermsPage() {
   const session = await auth0.getSession()
   const su = session?.user
-  const user = su
-    ? {
-        initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
-        name: su.name ?? su.email ?? undefined,
-        email: su.email ?? undefined,
-        picture: su.picture ?? undefined,
-      }
-    : null
+  const user = toNavUser(su)
 
   let pointsTotal: number | undefined
   if (user && su?.sub) {
@@ -70,7 +64,7 @@ export default async function TermsPage() {
         <p>
           The Service relies on third parties, including (among others) Duffel (flight search and
           cash booking), airlines and their loyalty programs, seats.aero (award availability),
-          AwardWallet (optional loyalty-balance sync), Auth0 (sign-in), Supabase (data storage),
+          AwardWallet (optional loyalty-balance sync), Google (sign-in), Neon (data storage),
           and Unsplash (destination imagery). Your use of those services is also subject to their
           own terms and privacy policies. We are not responsible for third-party services and do
           not guarantee their availability or accuracy.
@@ -109,7 +103,7 @@ export default async function TermsPage() {
 
         <h2>8. Accounts</h2>
         <p>
-          Sign-in is provided through Auth0. You are responsible for activity under your account
+          Sign-in is provided through Google. You are responsible for activity under your account
           and for keeping your credentials secure. You may delete your account; see our{' '}
           <Link href="/privacy">Privacy Policy</Link> for what that removes.
         </p>
@@ -153,7 +147,7 @@ export default async function TermsPage() {
           <a href="mailto:support@hop.flights">support@hop.flights</a>.
         </p>
       </LegalShell>
-      <div className="mx-auto max-w-[var(--container-sm)]">
+      <div className="mx-auto max-w-[var(--container-shell)]">
         <SiteFooter />
       </div>
     </AppShell>

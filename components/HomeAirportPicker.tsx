@@ -115,7 +115,7 @@ export default function HomeAirportPicker({
               setOpen(false)
             }
           }}
-          className="w-full rounded-[12px] border border-border bg-surface px-4 py-3 text-[15px] font-semibold text-text outline-none transition-colors focus:border-brand"
+          className="w-full rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[15px] font-semibold text-text outline-none transition-colors focus:border-brand"
         />
         {hasResults && (
           <ul
@@ -123,7 +123,7 @@ export default function HomeAirportPicker({
             id={listId}
             role="listbox"
             aria-label="Airport suggestions"
-            className={`absolute left-0 z-[60] max-h-[260px] w-full overflow-auto rounded-[12px] border border-border bg-surface py-1 ${
+            className={`absolute left-0 z-[60] max-h-[260px] w-full overflow-auto rounded-[var(--radius)] border border-border bg-surface py-1 ${
               flipUp ? 'bottom-[calc(100%+8px)]' : 'top-[calc(100%+8px)]'
             }`}
           >

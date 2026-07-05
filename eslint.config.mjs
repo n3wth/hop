@@ -42,7 +42,7 @@ const eslintConfig = defineConfig([
         "warn",
         {
           // PR 1 (tokens): hand-rolled numeric letter-spacing, e.g. tracking-[0.12em].
-          // Use the role tokens instead: tracking-[var(--track-eyebrow|label|tag)]
+          // Use the role tokens instead: tracking-[var(--track-eyebrow)], -label, or -tag
           // (app/globals.css @theme; index in docs/design/DESIGN-SYSTEM.md).
           // The "[" is regex-escaped so the pattern stays a valid RegExp (an
           // unescaped [ opens a character class). Negative display tracking

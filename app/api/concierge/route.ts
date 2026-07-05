@@ -18,6 +18,7 @@
 // are preserved (pure, unit-tested) and still used by the fallback path.
 
 import { streamText, stepCountIs, gateway } from 'ai'
+import { trace, context as otelContext } from '@opentelemetry/api'
 import {
   destinations,
   affordableWith,
@@ -32,6 +33,7 @@ import { POINTS_THRESHOLD_CPP } from '@/lib/search'
 import { buildConciergeTools } from '@/lib/concierge-tools'
 import { GATEWAY_MODEL } from '@/lib/ai-gateway'
 import type { Balance } from '@/lib/types'
+import { checkBotId } from 'botid/server'
 import { auth0 } from '@/lib/auth0'
 import {
   getConversation,
@@ -63,6 +65,12 @@ import {
 // framing chars are NUL (char 0), not spaces — they can never appear in model
 // prose, so splitting on the sentinel never corrupts the visible answer.
 export const TOOL_FRAME_SEP = String.fromCharCode(30)
+
+// Response header carrying the OTel trace id that PostHogSpanProcessor
+// (instrumentation.ts) forwards as $ai_trace_id on this turn's $ai_generation
+// spans. The client threads it back on a thumbs up/down so feedback joins the
+// exact LLM call in PostHog — see lib/concierge-feedback.ts.
+export const TRACE_ID_HEADER = 'x-hop-trace-id'
 
 // One tool-activity event surfaced to the client. `state` mirrors the AI SDK
 // tool lifecycle that AI Elements' <Tool> understands. `id` ties a start to its
@@ -545,21 +553,55 @@ export function enrichSuggestions(
   })
 }
 
+// Deterministic (no LLM call — this runs when the model is UNREACHABLE) scan
+// for a destination the question actually names, by city or IATA code as a
+// whole word. The generic fallback previously ignored the question entirely,
+// which every persona who hit it during the 2026-07-02 value-prop audit
+// flagged as the fallback's biggest gap. Returns [] when nothing matches —
+// callers keep their existing generic behavior in that case.
+function destinationsMentionedIn(question: string): Destination[] {
+  const q = question.toLowerCase()
+  return destinations.filter((d) => {
+    // Word-boundary-aware for both: a plain substring match on the city name
+    // would false-positive ("comparison" contains "paris"), same as the code
+    // check already guarded against.
+    const cityHit = new RegExp(`\\b${d.city.toLowerCase()}\\b`).test(q)
+    const codeHit = new RegExp(`\\b${d.code.toLowerCase()}\\b`).test(q)
+    return cityHit || codeHit
+  })
+}
+
 // A graceful, on-brand fallback when we can't reach the model at all.
 export function fallbackAnswer(question: string, context?: ConciergeContext): ConciergeResponse {
   const total = context?.totalPoints
-  let picks: Destination[] = []
-  if (total !== undefined && total > 0) {
+  const named = destinationsMentionedIn(question)
+
+  let picks: Destination[]
+  let answer: string
+  if (named.length > 0) {
+    // The user named a real place — lead with THAT instead of generic
+    // inspiration, even though the model can't reason about it right now.
+    picks = named.slice(0, 3)
+    const first = named[0]
+    answer =
+      total !== undefined && total > 0
+        ? `I can't reach my travel brain right now, but here's what I know about ${first.city} — with ~${total.toLocaleString('en-US')} points, check whether it clears the miles below.`
+        : `I can't reach my travel brain right now, but here's what I know about ${first.city}.`
+  } else if (total !== undefined && total > 0 && affordableWith(total).length > 0) {
+    // affordableWith is pure and this list is tiny; recomputing here (vs.
+    // hoisting) keeps the condition and the value obviously in sync.
     picks = affordableWith(total).slice(0, 3)
-  }
-  if (!picks.length) {
+    answer = `I can't reach my travel brain right now, but with ~${total.toLocaleString('en-US')} points a few standout trips come to mind — here are some great-value ideas to get you dreaming.`
+  } else {
+    // Below the cheapest destination's required miles (or no points known at
+    // all) — still worth showing the best-value destinations rather than
+    // nothing, just without implying the user's balance reaches them.
     picks = [...destinations]
       .sort((a, b) => (computeCpp(b) ?? 0) - (computeCpp(a) ?? 0))
       .slice(0, 3)
+    answer = `I can't reach my travel brain right now, but here are a few of the best points-value trips on hop to get you started.`
   }
-  const answer = total
-    ? `I can't reach my travel brain right now, but with ~${total.toLocaleString('en-US')} points a few standout trips come to mind — here are some great-value ideas to get you dreaming.`
-    : `I can't reach my travel brain right now, but here are a few of the best points-value trips on hop to get you started.`
+
   return {
     answer,
     suggestions: picks.map((d) => ({
@@ -592,6 +634,11 @@ function textStreamFromAnswer(r: ConciergeResponse): Response {
 // --- Handler ----------------------------------------------------------------
 
 export async function POST(request: Request): Promise<Response> {
+  const verification = await checkBotId()
+  if (verification.isBot) {
+    return new Response('Access denied', { status: 403 })
+  }
+
   let body: ConciergeRequest
   try {
     body = (await request.json()) as ConciergeRequest
@@ -666,52 +713,68 @@ export async function POST(request: Request): Promise<Response> {
     const liveValuations = await liveValuationsByName()
 
     const tools = buildConciergeTools(context?.programs ?? [], userId)
-    const result = streamText({
-      model: gateway(GATEWAY_MODEL),
-      // PostHog LLM analytics → $ai_generation (see instrumentation.ts).
-      experimental_telemetry: { isEnabled: true, functionId: 'concierge' },
-      system: buildAgenticSystem(context, profile, history, liveValuations, memory, observed),
-      // MULTI-TURN: thread the conversation (prior turns + this question) so the
-      // agent answers in context. Single-question back-compat is preserved —
-      // buildMessages yields a one-element [user] array when there's no history.
-      messages,
-      tools,
-      // Agentic loop: let the model call tools, then continue with the results.
-      stopWhen: stepCountIs(5),
-      // Never throw to the page — on a streaming error, surface a friendly line.
-      onError({ error }) {
-        console.error('[concierge] stream error', error)
-      },
-      // Persist the thread AFTER the answer finishes (signed-in only). Append the
-      // assistant's final text to the threaded messages and upsert. Best-effort:
-      // saveConversation never throws.
-      onFinish({ text }) {
-        if (!userId) return
-        // Persist the CLEAN prose (without the trailing a2ui fence) so reloaded
-        // threads read naturally and don't re-feed the spec back into context.
-        const answer = stripA2UIFence(text ?? '').trim()
-        const next = answer
-          ? [...messages, { role: 'assistant' as const, content: answer }]
-          : messages
-        void saveConversation(userId, next)
-        // Fold older turns into durable memory (gated, fire-and-forget). Uses the
-        // FULL prior thread the client resends — not the 40-capped `messages` — so
-        // turns past the live window aren't lost. No-ops entirely when disabled.
-        const fullPrior = Array.isArray(body?.messages)
-          ? (body.messages as ConversationMessage[])
-          : []
-        const fullThread: ConversationMessage[] = [
-          ...fullPrior,
-          { role: 'user', content: question },
-          ...(answer ? [{ role: 'assistant' as const, content: answer }] : []),
-        ]
-        void updateConversationMemory(userId, fullThread)
-        // Infer durable preferences from the conversation (gated, fire-and-forget).
-        // Lands as PENDING "hop noticed" suggestions the user confirms/dismisses in
-        // the /account glass box — nothing is ever auto-applied.
-        void proposeInferredFacts(userId, fullThread)
-      },
-    })
+
+    // Mint a real OTel trace id for this turn BEFORE calling streamText, so the
+    // model call's gen_ai.* spans (children, via context propagation) share it.
+    // PostHogSpanProcessor preserves OTel trace/span ids as $ai_generation's
+    // $ai_trace_id — returning this same id to the client (TRACE_ID_HEADER) lets
+    // a thumbs up/down join the exact LLM call in PostHog. This span is never
+    // itself forwarded (its name/attributes don't match the ai./gen_ai. prefix
+    // filter) — it exists only to anchor the trace id.
+    const turnSpan = trace.getTracer('hop.concierge').startSpan('concierge.turn')
+    const traceId = turnSpan.spanContext().traceId
+    const result = otelContext.with(trace.setSpan(otelContext.active(), turnSpan), () =>
+      streamText({
+        model: gateway(GATEWAY_MODEL),
+        // PostHog LLM analytics → $ai_generation (see instrumentation.ts).
+        experimental_telemetry: { isEnabled: true, functionId: 'concierge' },
+        system: buildAgenticSystem(context, profile, history, liveValuations, memory, observed),
+        // MULTI-TURN: thread the conversation (prior turns + this question) so the
+        // agent answers in context. Single-question back-compat is preserved —
+        // buildMessages yields a one-element [user] array when there's no history.
+        messages,
+        tools,
+        // Agentic loop: let the model call tools, then continue with the results.
+        stopWhen: stepCountIs(5),
+        // Never throw to the page — on a streaming error, surface a friendly line.
+        onError({ error }) {
+          console.error('[concierge] stream error', error)
+        },
+        // Persist the thread AFTER the answer finishes (signed-in only). Append the
+        // assistant's final text to the threaded messages and upsert. Best-effort:
+        // saveConversation never throws.
+        onFinish({ text }) {
+          if (!userId) return
+          // Persist the CLEAN prose (without the trailing a2ui fence) so reloaded
+          // threads read naturally and don't re-feed the spec back into context.
+          const answer = stripA2UIFence(text ?? '').trim()
+          const next = answer
+            ? [...messages, { role: 'assistant' as const, content: answer }]
+            : messages
+          void saveConversation(userId, next)
+          // Fold older turns into durable memory (gated, fire-and-forget). Uses the
+          // FULL prior thread the client resends — not the 40-capped `messages` — so
+          // turns past the live window aren't lost. No-ops entirely when disabled.
+          const fullPrior = Array.isArray(body?.messages)
+            ? (body.messages as ConversationMessage[])
+            : []
+          const fullThread: ConversationMessage[] = [
+            ...fullPrior,
+            { role: 'user', content: question },
+            ...(answer ? [{ role: 'assistant' as const, content: answer }] : []),
+          ]
+          void updateConversationMemory(userId, fullThread)
+          // Infer durable preferences from the conversation (gated, fire-and-forget).
+          // Lands as PENDING "hop noticed" suggestions the user confirms/dismisses in
+          // the /account glass box — nothing is ever auto-applied.
+          void proposeInferredFacts(userId, fullThread)
+        },
+      }),
+    )
+    // The span only needs to be active long enough for streamText's synchronous
+    // setup (and the async continuations it schedules there) to inherit its trace
+    // id — ending it now doesn't retroactively change the shared traceId above.
+    turnSpan.end()
 
     // Stream the answer as live text, but with THREE responsibilities:
     //   1. SURFACE TOOL ACTIVITY: pump the FULL stream so tool-call/result/error
@@ -822,7 +885,7 @@ export async function POST(request: Request): Promise<Response> {
 
     return new Response(stream, {
       status: 200,
-      headers: { 'content-type': 'text/plain; charset=utf-8' },
+      headers: { 'content-type': 'text/plain; charset=utf-8', [TRACE_ID_HEADER]: traceId },
     })
   } catch (err) {
     console.error('[concierge] setup failed, serving fallback', err)

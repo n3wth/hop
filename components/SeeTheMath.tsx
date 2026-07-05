@@ -12,6 +12,9 @@ export interface SeeTheMathProps {
   /** The cpp threshold above which points win (from lib/search). */
   threshold: number
   unit: string
+  /** Seat-occupying travelers (adults + children). Every figure in the math —
+      cash, taxes, miles — is a party total covering this many seats. */
+  travelers?: number
 }
 
 function money(n: number | undefined): string {
@@ -22,7 +25,7 @@ function money(n: number | undefined): string {
 // calculation step by step: (cash − taxes) ÷ miles × 100 = X¢/pt, and why that
 // clears (or misses) the threshold. Wired to real values from result.pick.
 // 'use client' for the toggle; expands smoothly in place (.hop-collapse).
-export default function SeeTheMath({ pick, cheapestCash, threshold, unit }: SeeTheMathProps) {
+export default function SeeTheMath({ pick, cheapestCash, threshold, unit, travelers = 1 }: SeeTheMathProps) {
   const [open, setOpen] = useState(false)
   const panelId = useId()
 
@@ -42,7 +45,7 @@ export default function SeeTheMath({ pick, cheapestCash, threshold, unit }: SeeT
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls={panelId}
-        className="inline-flex items-center gap-[8px] rounded-[14px] border-[1.5px] border-white/20 px-7 py-4 text-[15px] font-medium text-hero-body transition-colors hover:border-white/45 hover:text-white"
+        className="inline-flex items-center justify-center gap-[8px] rounded-[14px] border-[1.5px] border-white/20 px-7 py-4 text-[15px] font-medium text-hero-body transition-colors hover:border-white/45 hover:text-white"
       >
         See the math
         <span
@@ -65,8 +68,16 @@ export default function SeeTheMath({ pick, cheapestCash, threshold, unit }: SeeT
               />
               <MathRow label="− Taxes & fees" value={`− ${money(taxes)}`} hint="paid on the award" />
               <div className="my-[8px] border-t border-white/12" />
-              <MathRow label="= Cash value of the seat" value={money(net)} strong />
-              <MathRow label="÷ Miles spent" value={`÷ ${miles.toLocaleString()} ${unit}`} />
+              <MathRow
+                label={travelers > 1 ? `= Cash value of ${travelers} seats` : '= Cash value of the seat'}
+                value={money(net)}
+                strong
+              />
+              <MathRow
+                label="÷ Miles spent"
+                value={`÷ ${miles.toLocaleString()} ${unit}`}
+                hint={travelers > 1 ? `across ${travelers} seats` : undefined}
+              />
               <MathRow label="× 100" value="× 100" hint="cents per point" />
               <div className="my-[8px] border-t border-white/12" />
               <MathRow

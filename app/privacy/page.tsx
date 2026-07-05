@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { toNavUser } from '@/lib/nav-user'
 import { auth0 } from '@/lib/auth0'
 import { getUserBalances } from '@/lib/accounts'
 import AppShell from '@/components/AppShell'
@@ -15,14 +16,7 @@ export const metadata = pageMeta({
 export default async function PrivacyPage() {
   const session = await auth0.getSession()
   const su = session?.user
-  const user = su
-    ? {
-        initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
-        name: su.name ?? su.email ?? undefined,
-        email: su.email ?? undefined,
-        picture: su.picture ?? undefined,
-      }
-    : null
+  const user = toNavUser(su)
 
   let pointsTotal: number | undefined
   if (user && su?.sub) {
@@ -47,8 +41,8 @@ export default async function PrivacyPage() {
         <h2>What we collect</h2>
         <ul>
           <li>
-            <strong>Account &amp; profile.</strong> When you sign in via Auth0 we store your Auth0
-            user identifier and basic profile fields it provides (such as name, email, and avatar).
+            <strong>Account &amp; profile.</strong> When you sign in with Google we store your
+            name, email, and profile photo.
           </li>
           <li>
             <strong>Home airport.</strong> The home airport you set, used to personalize search.
@@ -83,10 +77,10 @@ export default async function PrivacyPage() {
         <p>We rely on the following service providers to operate hop:</p>
         <ul>
           <li>
-            <strong>Auth0</strong> — sign-in and identity.
+            <strong>Google</strong> — sign-in (OAuth).
           </li>
           <li>
-            <strong>Supabase</strong> — database storage for your home airport, balances, saved
+            <strong>Neon</strong> — database storage for your home airport, balances, saved
             searches, and bookings.
           </li>
           <li>
@@ -156,8 +150,8 @@ export default async function PrivacyPage() {
         <h2>Cookies</h2>
         <p>
           hop uses essential cookies needed to sign you in and keep your session active (set by
-          Auth0 and Supabase). We do not run a third-party advertising or cross-site tracking
-          stack.
+          our self-hosted sign-in system). We do not run a third-party advertising or cross-site
+          tracking stack.
         </p>
 
         <h2>Children</h2>
@@ -169,7 +163,7 @@ export default async function PrivacyPage() {
         <h2>Security</h2>
         <p>
           We use reasonable technical and organizational measures to protect your data, and rely on
-          established providers (Auth0, Supabase, Duffel) for sensitive operations. No method of
+          established providers (Google, Neon, Duffel) for sensitive operations. No method of
           storage or transmission is perfectly secure.
         </p>
 
@@ -192,7 +186,7 @@ export default async function PrivacyPage() {
           question or request.
         </p>
       </LegalShell>
-      <div className="mx-auto max-w-[var(--container-sm)]">
+      <div className="mx-auto max-w-[var(--container-shell)]">
         <SiteFooter />
       </div>
     </AppShell>

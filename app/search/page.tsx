@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
+import { toNavUser } from '@/lib/nav-user'
 import type { SearchParams } from '@/lib/types'
-import { assembleSearch } from '@/lib/search'
+import { assembleSearch, seatsFor } from '@/lib/search'
 import type { TravelPrefs } from '@/lib/prefs-model'
 import { getUserBalances } from '@/lib/accounts'
 import { getPrefs } from '@/lib/prefs'
@@ -9,34 +10,24 @@ import { cityForCode } from '@/lib/airports'
 import { destinationImage } from '@/lib/images'
 import { auth0 } from '@/lib/auth0'
 import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
+import { isStandingOrdersCronLive } from '@/lib/env'
+import { clampTravelDates, DEFAULT_DEPART } from '@/lib/travel-dates'
+import { isoOffset } from '@/lib/dates'
 import { SITE_URL } from '@/lib/seo'
 import AppShell from '@/components/AppShell'
 import RouteBar from '@/components/RouteBar'
 import VerdictRail from '@/components/VerdictRail'
 import ResultsList from '@/components/ResultsList'
+import SearchTelemetry from '@/components/SearchTelemetry'
 import PointsPanel from '@/components/PointsPanel'
 import SiteFooter from '@/components/SiteFooter'
+import HeroSearch from '@/components/landing/HeroSearch'
 
 const DEFAULT_PARAMS: SearchParams = {
   from: 'SFO',
   to: 'LAX',
-  depart: '2026-07-09',
-  return: '2026-07-12',
+  depart: DEFAULT_DEPART,
   adults: 1,
-}
-
-// Local-midnight ISO for today — the floor for any valid depart/return date.
-function todayISO(): string {
-  const d = new Date()
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
-// True for a well-formed "YYYY-MM-DD" string.
-function isValidISO(s: string | undefined): s is string {
-  return !!s && /^\d{4}-\d{2}-\d{2}$/.test(s)
 }
 
 const CABINS = ['economy', 'premium', 'business', 'first'] as const
@@ -73,20 +64,9 @@ function parseParams(
   // Origin and destination must differ — fall back to a sane default destination.
   if (to === from) to = from === DEFAULT_PARAMS.to ? DEFAULT_PARAMS.from : DEFAULT_PARAMS.to
 
-  const floor = todayISO()
-  const departRaw = str(q.depart)
-  // Clamp a missing/malformed/past depart up to today (or the default).
-  let depart = isValidISO(departRaw) ? departRaw : DEFAULT_PARAMS.depart
-  if (depart < floor) depart = floor > DEFAULT_PARAMS.depart ? floor : DEFAULT_PARAMS.depart
-
-  // One-way when `return` is absent. Drop a malformed or pre-departure return.
-  const retRaw = str(q.return)
-  const ret =
-    retRaw === undefined
-      ? undefined
-      : isValidISO(retRaw) && retRaw >= depart
-        ? retRaw
-        : undefined
+  // Clamp missing/malformed/past dates up to today; one-way when `return` is
+  // absent, and a malformed or pre-departure return is dropped.
+  const { depart, return: ret } = clampTravelDates(str(q.depart), str(q.return))
 
   const adultsRaw = parseInt(str(q.adults) ?? '', 10)
   const adults = Number.isFinite(adultsRaw)
@@ -159,6 +139,17 @@ function fmtRange(depart: string, ret?: string): string {
   return `${fmtDay(depart)} – ${fmtDay(ret)}`
 }
 
+// True when the URL names an actual destination. A bare /search (no `to` at
+// all — e.g. the header's "Search" nav link, or someone typing the path by
+// hand) used to silently run the DEFAULT_PARAMS SFO→LAX verdict as if it were
+// a real result. Gated on `to` specifically (not `from`, which reasonably
+// defaults from the saved home airport/cookie) — naming a destination is the
+// clear signal that this is a real, intentional search.
+function hasDestination(q: Record<string, string | string[] | undefined>): boolean {
+  const raw = Array.isArray(q.to) ? q.to[0] : q.to
+  return !!raw?.trim()
+}
+
 // Per-route metadata. Title is "${from} → ${to}" — the root layout's template
 // ('%s · hop') appends the suffix, so we do NOT add '· hop' here. The canonical
 // points at the CLEAN /search path rebuilt from the parsed params (not the raw,
@@ -170,6 +161,14 @@ export async function generateMetadata({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }): Promise<Metadata> {
   const sp = await searchParams
+  if (!hasDestination(sp)) {
+    return {
+      title: 'Search flights',
+      description:
+        'Pick a route and hop reads live award space and cash fares side by side, priced in cents per point.',
+      alternates: { canonical: '/search' },
+    }
+  }
   const p = parseParams(sp)
   const nonstop = parseNonstop(sp)
   const fromCity = cityForCode(p.from)
@@ -225,14 +224,65 @@ export default async function Search({
   // Auth0 session → header avatar (null when signed out).
   const session = await auth0.getSession()
   const su = session?.user
-  const user = su
-    ? {
-        initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
-        name: su.name ?? su.email ?? undefined,
-        email: su.email ?? undefined,
-        picture: su.picture ?? undefined,
-      }
-    : null
+  const user = toNavUser(su)
+
+  // Fast, non-suspending inputs — searchParams/cookies never touch the
+  // network — read BEFORE the slow balances/award-space work below, so the
+  // no-destination branch can decide and render immediately instead of
+  // sitting behind it. (It used to await the same Promise.all as the results
+  // branch, so app/search/loading.tsx's results-shaped skeleton — built for
+  // the destination branch — stayed on screen for however long that upstream
+  // call took, then snapped to this structurally different prompt page.)
+  const sp = await searchParams
+  const cookieStore = await cookies()
+  const cookieOrigin = cookieStore.get(ORIGIN_STORAGE_KEY)?.value?.trim().toUpperCase()
+
+  // No destination named — e.g. the header's "Search" nav link — used to
+  // silently run the DEFAULT_PARAMS SFO→LAX verdict and present it as if it
+  // were a real result. Land on a plain search-initiation state instead: the
+  // engine only ever runs on a route the visitor actually asked for. This
+  // state doesn't run the engine, so it only needs prefs (home airport
+  // prefill) — NOT the AwardWallet-backed balances call the results branch
+  // needs; pointsTotal is simply omitted (TopNav already renders fine
+  // without it) rather than making this fast path wait on a slow call it
+  // has no use for.
+  if (!hasDestination(sp)) {
+    const prefs = su?.sub ? await getPrefs(su.sub) : undefined
+    const originSeed = prefs?.homeAirport ?? cookieOrigin
+    return (
+      <AppShell user={user} homeAirport={originSeed} hideSearch>
+        <div className="mx-auto flex min-h-[70vh] max-w-[var(--container-shell)] flex-col items-center justify-center px-2 py-16 text-center">
+          <span className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand sm:text-[12px]">
+            Points or cash
+          </span>
+          <h1 className="mt-4 text-balance font-display text-[32px] font-semibold leading-[1.05] tracking-[-0.02em] text-text sm:text-[42px]">
+            Where are you flying?
+          </h1>
+          <p className="mt-3 max-w-[46ch] text-[15px] leading-[1.6] text-text2 sm:text-[16px]">
+            Pick a route and hop reads your balances, checks award space, prices the cash fare,
+            and tells you the smarter way to book it.
+          </p>
+          <div className="mt-9 w-full">
+            <HeroSearch
+              initial={{
+                from: originSeed ?? '',
+                to: '',
+                depart: isoOffset(10),
+                ret: isoOffset(13),
+                adults: 1,
+                children: 0,
+                infants: 0,
+                cabin: 'economy',
+                oneWay: false,
+                nonstop: false,
+              }}
+            />
+          </div>
+        </div>
+        <SiteFooter />
+      </AppShell>
+    )
+  }
 
   // Signed in → ground the search in this user's real balances (manual +
   // AwardWallet, merged); pass them in so no other user's data can leak. Signed
@@ -248,10 +298,8 @@ export default async function Search({
   // airport → "where from" cookie. ONE shared value feeds both the executed
   // query (parseParams) and the origin pill (AppShell's homeAirport prop) so
   // the pill never shows a different airport than the search actually ran.
-  const cookieStore = await cookies()
-  const cookieOrigin = cookieStore.get(ORIGIN_STORAGE_KEY)?.value?.trim().toUpperCase()
   const originSeed = prefs?.homeAirport ?? cookieOrigin
-  const sp = await searchParams
+
   const params = parseParams(sp, originSeed)
   const nonstop = parseNonstop(sp)
   // An explicit ?nonstop=1 on THIS search always wins over any saved account
@@ -259,13 +307,6 @@ export default async function Search({
   const effectivePrefs: TravelPrefs | undefined = nonstop
     ? { ...prefs?.travelPrefs, maxStops: 0, preferNonstop: true }
     : prefs?.travelPrefs
-  const result = await assembleSearch(params, userBalances, effectivePrefs)
-
-  // The verdict's ownership voice ("You have the miles") is only honest when
-  // these balances are this signed-in user's own connected programs. Signed out
-  // (or signed in with nothing connected) → value-demonstration framing instead.
-  const hasRealBalances = !!userBalances && userBalances.length > 0
-
   // Destination photo for the verdict hero — the place you're heading, behind
   // the boarding pass (replaces the redundant bunny). Query the CITY skyline/
   // landscape, never the airport code (which surfaces terminals, not beauty).
@@ -273,11 +314,20 @@ export default async function Search({
   // Only query when we have a real city name — if cityForCode falls back to the
   // raw IATA code (unmapped airport), skip the photo so we never search "JFK"
   // and get a terminal. Bunny fallback covers it.
+  // Independent of the verdict engine — fetched alongside it, not after, so the
+  // photo round-trip never adds to the page's critical path.
   const destCity = cityForCode(params.to)
-  const destPhoto =
+  const [result, destPhoto] = await Promise.all([
+    assembleSearch(params, userBalances, effectivePrefs),
     destCity && destCity !== params.to
-      ? await destinationImage(`${destCity} skyline travel landmark`)
-      : null
+      ? destinationImage(`${destCity} skyline travel landmark`)
+      : Promise.resolve(null),
+  ])
+
+  // The verdict's ownership voice ("You have the miles") is only honest when
+  // these balances are this signed-in user's own connected programs. Signed out
+  // (or signed in with nothing connected) → value-demonstration framing instead.
+  const hasRealBalances = !!userBalances && userBalances.length > 0
 
   const who = whoSummary(params)
 
@@ -307,20 +357,39 @@ export default async function Search({
         {/* plain trip context — route + facts, not fake masthead metadata */}
         <RouteBar result={result} hasRealBalances={hasRealBalances} nonstop={nonstop} />
 
-        {/* the verdict hero */}
-        <VerdictRail
-          result={result}
-          destPhoto={destPhoto}
-          hasRealBalances={hasRealBalances}
-          isSignedIn={!!user}
+        {/* R0.5 funnel — search_ran (+ verdict_viewed when a hero rendered). */}
+        <SearchTelemetry
+          from={params.from}
+          to={params.to}
+          cabin={params.cabin}
+          travelers={seatsFor(params)}
+          verdict={result.pick ? result.verdict : undefined}
         />
 
-        {/* other ways to fly */}
-        <ResultsList result={result} />
+        {/* the verdict hero — only when there's an actual pick to render a
+            verdict about. verdict === 'none' means cash AND awards both came
+            back empty (or both degraded, see DegradedNote): there's nothing to
+            recommend, so EmptyState (below, via ResultsList) owns the page
+            instead of a confident-sounding "Pay cash" card built on dashes. */}
+        {result.pick ? (
+          <VerdictRail
+            result={result}
+            destPhoto={destPhoto}
+            hasRealBalances={hasRealBalances}
+            isSignedIn={!!user}
+            nonstop={nonstop}
+            watchLive={isStandingOrdersCronLive()}
+          />
+        ) : null}
+
+        {/* other ways to fly — travelers is the engine's own seatsFor (the
+            multiplier already applied to every figure), so the party-basis
+            note can never disagree with the numbers it describes. */}
+        <ResultsList result={result} travelers={seatsFor(params)} />
 
         {/* your points — the wallet stands alone; no restating heading */}
         <div className="mt-14">
-          <PointsPanel balances={result.balances} pick={result.pick} />
+          <PointsPanel balances={result.balances} pick={result.pick} isExample={!hasRealBalances} />
         </div>
 
         <SiteFooter />

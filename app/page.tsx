@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers'
 import Link from 'next/link'
+import { toNavUser } from '@/lib/nav-user'
 import { auth0 } from '@/lib/auth0'
 import { mockBalances } from '@/lib/mock'
 import { getPrefs, type UserPrefs } from '@/lib/prefs'
@@ -10,6 +11,7 @@ import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import type { SearchState } from '@/components/SearchBar'
+import HeroSearch from '@/components/landing/HeroSearch'
 import AgentComposer from '@/components/landing/AgentComposer'
 import SampleVerdict from '@/components/landing/SampleVerdict'
 import HowItWorks from '@/components/landing/HowItWorks'
@@ -41,11 +43,11 @@ function makeSeed(): SearchState {
 
 // hop's home — auth-aware, two genuinely different experiences:
 //
-// SIGNED OUT → the marketing front door. The AGENT leads the hero (a
-//   conversational composer that, on submit, opens the agent / sign-in), with
-//   the points-vs-cash verdict kept just below as the proof. Destination reel,
-//   inspiration teaser, how-it-works, and a connect-your-points CTA follow.
-//   Search stays reachable as a secondary fast-path.
+// SIGNED OUT → the marketing front door. The VERDICT DEMO leads the hero
+//   (roadmap R1.2): a seeded search form one tap from a real no-auth verdict,
+//   with the canonical sample verdict as the proof directly beneath. The agent
+//   composer is the second door below the destination reel; inspiration
+//   teaser, how-it-works, and a connect-your-points CTA follow.
 //
 // SIGNED IN → a personalized dashboard (NOT the marketing page). Greets by name,
 //   surfaces where their actual points can take them, then search, concierge,
@@ -53,14 +55,7 @@ function makeSeed(): SearchState {
 export default async function Home() {
   const session = await auth0.getSession()
   const su = session?.user
-  const user = su
-    ? {
-        initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
-        name: su.name ?? su.email ?? undefined,
-        email: su.email ?? undefined,
-        picture: su.picture ?? undefined,
-      }
-    : null
+  const user = toNavUser(su)
 
   // These data sources are independent — fetch them concurrently so the home
   // renders in one round-trip instead of sequentially.
@@ -141,17 +136,41 @@ export default async function Home() {
   return (
     <AppShell user={null} hideSearch>
       <div className="mx-auto flex max-w-[var(--container-shell)] flex-col gap-16 pt-4 sm:gap-20 sm:pt-6 lg:gap-24 lg:pt-8">
-        {/* ── HERO — the agent is the front door ──────────────────────────── */}
-        {/* Lead with the conversational promise: a composer that opens the agent
-            (routing through sign-in when they act). The verdict below is the proof. */}
+        {/* ── HERO — the verdict demo is the front door (R1.2) ────────────── */}
+        {/* Lead with the working product: a seeded search one tap from a real
+            no-auth verdict, with the canonical worked example as the proof
+            directly beneath. The agent moves to the second door below. */}
         <section className="pt-2 sm:pt-4">
-          <AgentComposer variant="out" backdrop={heroBackdrop} />
+          <div className="mx-auto flex max-w-[64ch] flex-col items-center gap-2 text-center">
+            <h1
+              className="hop-rise max-w-[16ch] text-balance font-display text-[38px] font-semibold leading-[1.02] tracking-[-0.03em] text-text sm:text-[56px] lg:text-[64px]"
+              style={{ ['--hop-delay' as string]: '90ms' }}
+            >
+              Points or cash? Get the verdict.
+            </h1>
+            <p
+              className="hop-rise mt-1 max-w-[52ch] text-pretty text-[15px] leading-[1.6] text-text2 sm:text-[16.5px]"
+              style={{ ['--hop-delay' as string]: '140ms' }}
+            >
+              Live cash fares vs award space, priced in cents per point.
+              Search any route — no account needed.
+            </p>
+          </div>
 
-          {/* search stays reachable — demoted to a secondary fast-path */}
+          <div className="hop-rise mt-7" style={{ ['--hop-delay' as string]: '190ms' }}>
+            <HeroSearch initial={homeSeed} />
+          </div>
+
+          {/* the proof — the canonical worked example, right under the form */}
+          <div className="mt-8 sm:mt-10">
+            <SampleVerdict />
+          </div>
+
+          {/* the agent stays reachable — demoted to a secondary fast-path */}
           <p className="hop-rise mt-5 text-center text-[13.5px] text-text2" style={{ ['--hop-delay' as string]: '300ms' }}>
-            Know exactly where you&apos;re going?{' '}
-            <Link href="/search" className="font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline">
-              Search a specific route
+            Not sure where to go?{' '}
+            <Link href="/ask" className="font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline">
+              Ask hop
             </Link>
           </p>
         </section>
@@ -159,21 +178,20 @@ export default async function Home() {
         {/* ── THE DREAM, IMMEDIATELY — a reel of real destinations ───────── */}
         <DestinationReel />
 
-        {/* ── A TASTE OF THE OUTPUT ──────────────────────────────────────── */}
-        <SampleVerdict />
+        {/* ── THE SECOND DOOR — the conversational agent ─────────────────── */}
+        <AgentComposer variant="out" backdrop={heroBackdrop} headingTag="h2" />
 
         {/* ── SELL THE DREAM ─────────────────────────────────────────────── */}
         <InspirationTeaser />
 
         {/* ── HOW IT WORKS ───────────────────────────────────────────────── */}
         <HowItWorks />
-
-        {/* ── CONNECT CTA ────────────────────────────────────────────────── */}
-        <ConnectBand user={null} programs={0} />
       </div>
 
-      <div className="mx-auto max-w-[var(--container-shell)]">
-        <SiteFooter />
+      {/* CTA + footer read as one card: teal top half, paper-white bottom half. */}
+      <div className="mx-auto mt-16 max-w-[var(--container-shell)] overflow-hidden rounded-[20px] border border-border sm:mt-20 lg:mt-24 lg:rounded-[28px]">
+        <ConnectBand user={null} programs={0} />
+        <SiteFooter flush />
       </div>
     </AppShell>
   )

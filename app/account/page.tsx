@@ -1,10 +1,23 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { headers } from 'next/headers'
 import { auth0 } from '@/lib/auth0'
+import { auth } from '@/lib/auth'
+import { getUserId } from '@/lib/session'
 import { getUserAwId, getManualBalances } from '@/lib/accounts'
+import { safeReturnTo, returnToRouteLabel } from '@/lib/safe-return'
+import { toNavUser } from '@/lib/nav-user'
+import UserAvatarImage from '@/components/UserAvatarImage'
 import { getBalances } from '@/lib/awardwallet'
-import { hasEnv, isBillingEnabled, isGmailHistoryEnabled } from '@/lib/env'
+import {
+  hasEnv,
+  isBillingEnabled,
+  isGmailHistoryEnabled,
+  isEmailPasswordAuthEnabled,
+  isPasskeyEnabled,
+  isStandingOrdersCronLive,
+} from '@/lib/env'
 import { getTravelHistory } from '@/lib/travel-history'
 import { isGmailConnected } from '@/lib/travel-history-sync'
 import AppShell from '@/components/AppShell'
@@ -14,6 +27,7 @@ import ProgramsManager from '@/components/ProgramsManager'
 import AirlineStatusManager from '@/components/AirlineStatusManager'
 import GmailHistory from '@/components/GmailHistory'
 import McpAccess from '@/components/McpAccess'
+import DeleteAccount from '@/components/DeleteAccount'
 import { listTokens } from '@/lib/api-tokens'
 import { getProfile } from '@/lib/travel-profile'
 import { projectProfile } from '@/lib/memory-view'
@@ -28,6 +42,8 @@ import { listStandingOrders, countActiveStandingOrders } from '@/lib/standing-or
 import { listAlerts, countUnseenAlerts } from '@/lib/standing-order-alerts'
 import { getUserTier, ALERT_LIMITS } from '@/lib/subscription'
 import BillingSection from '@/components/BillingSection'
+import SecurityPassword from '@/components/auth/SecurityPassword'
+import SecurityPasskeys, { type PasskeyInfo } from '@/components/auth/SecurityPasskeys'
 
 // Human-readable note for the AwardWallet handshake outcome (?aw=… flag the
 // OAuth start/callback routes set on their redirect back to /account).
@@ -62,76 +78,100 @@ export default async function AccountPage({
   // Next.js 16: searchParams is async.
   searchParams,
 }: {
-  searchParams: Promise<{ aw?: string; gmail?: string; upgraded?: string }>
+  searchParams: Promise<{ aw?: string; gmail?: string; upgraded?: string; returnTo?: string }>
 }) {
   const session = await auth0.getSession()
-  if (!session) redirect('/auth/login')
+  if (!session) redirect('/login')
 
   const u = session.user
   const name = u.name ?? u.email ?? 'Traveler'
   const initial = name.trim().charAt(0).toUpperCase()
-  const user = {
-    initial,
-    name: u.name ?? undefined,
-    email: u.email ?? undefined,
-    picture: u.picture ?? undefined,
-  }
+  // One construction for the header user everywhere (id for analytics
+  // identify, Gravatar fallback for accounts without an IdP picture).
+  // Non-null: the session redirect above guarantees u exists.
+  const user = toNavUser(u)!
 
-  // Manual programs (primary) + the optional AwardWallet link (live balances).
+  // Manual programs (primary) + the optional AwardWallet link (only the id;
+  // the live-balances CALL needs this id, so it stays a genuine dependency).
   const [manual, awId] = await Promise.all([
     u.sub ? getManualBalances(u.sub) : Promise.resolve([]),
     u.sub ? getUserAwId(u.sub) : Promise.resolve(null),
   ])
   const awConnected = !!awId
-  let awBalances: Balance[] = []
-  let awReason: string | undefined
-  if (awConnected && awId) {
-    const res = await getBalances(awId).catch(() => ({
-      ok: false as const,
-      reason: 'request failed',
-    }))
-    if (res.ok) awBalances = res.data
-    else awReason = res.reason
-  }
   const awUnconfigured = !hasEnv('AWARDWALLET_CONNECT_URL')
-
-  // Standing orders + the alerts the cron has recorded. Degrade to empty on any
-  // failure (every lib fn is try/caught) so the page never breaks.
-  const [orders, alerts, unseen] = await Promise.all([
-    u.sub ? listStandingOrders(u.sub) : Promise.resolve([]),
-    u.sub ? listAlerts(u.sub) : Promise.resolve([]),
-    u.sub ? countUnseenAlerts(u.sub) : Promise.resolve(0),
-  ])
   // The scheduled runner only re-checks when its flag is on — surface that
   // honestly so the user knows whether watches are live yet.
-  const cronLive = /^(1|true|yes)$/i.test(process.env.STANDING_ORDERS_CRON_ENABLED ?? '')
-
-  // Billing (flag-gated): tier truth + the engine-computed active-alert count
-  // for the "Plan" section. Both reads degrade to their free/zero fallbacks.
+  const cronLive = isStandingOrdersCronLive()
   const billingEnabled = isBillingEnabled()
-  const [tier, activeAlerts] = billingEnabled
-    ? await Promise.all([
-        u.sub ? getUserTier(u.sub) : Promise.resolve('free' as const),
-        u.sub ? countActiveStandingOrders(u.sub) : Promise.resolve(0),
-      ])
-    : (['free', 0] as const)
-
-  // Gmail travel-history seam: connection state + the trips hop has learned.
-  // Both helpers degrade to empty/not-connected on any failure.
   const gmailEnabled = isGmailHistoryEnabled()
-  const [gmailState, travelHistory] = await Promise.all([
-    u.sub ? isGmailConnected(u.sub) : Promise.resolve({ connected: false, email: null }),
-    u.sub ? getTravelHistory(u.sub) : Promise.resolve(null),
-  ])
-  // "Add to Claude" MCP tokens for this user (list = no secrets) + the durable
-  // travel profile (so we can render the saved elite statuses). Both degrade to
-  // empty on any failure.
-  const [mcpTokens, profile, inferred, observed] = await Promise.all([
-    u.sub ? listTokens(u.sub) : Promise.resolve([]),
-    u.sub ? getProfile(u.sub) : Promise.resolve({} as TravelProfile),
-    u.sub ? listPendingInferredFacts(u.sub) : Promise.resolve([]),
-    u.sub ? listObservations(u.sub) : Promise.resolve([]),
-  ])
+
+  // Five independent groups — the AwardWallet live-balances call (a real
+  // third-party request, typically the slowest leg) and four Neon-backed
+  // Promise.all groups — none reads another's output, so they run together
+  // instead of the AwardWallet call blocking the rest from even starting.
+  // Every group still degrades to its own empty/free fallback on failure.
+  const [awResult, [orders, alerts, unseen], [tier, activeAlerts], [gmailState, travelHistory], [mcpTokens, profile, inferred, observed]] =
+    await Promise.all([
+      awConnected && awId
+        ? getBalances(awId).catch(() => ({ ok: false as const, reason: 'request failed' }))
+        : Promise.resolve(null),
+      Promise.all([
+        u.sub ? listStandingOrders(u.sub) : Promise.resolve([]),
+        u.sub ? listAlerts(u.sub) : Promise.resolve([]),
+        u.sub ? countUnseenAlerts(u.sub) : Promise.resolve(0),
+      ]),
+      billingEnabled
+        ? Promise.all([
+            u.sub ? getUserTier(u.sub) : Promise.resolve('free' as const),
+            u.sub ? countActiveStandingOrders(u.sub) : Promise.resolve(0),
+          ])
+        : Promise.resolve(['free', 0] as const),
+      Promise.all([
+        u.sub ? isGmailConnected(u.sub) : Promise.resolve({ connected: false, email: null }),
+        u.sub ? getTravelHistory(u.sub) : Promise.resolve(null),
+      ]),
+      Promise.all([
+        u.sub ? listTokens(u.sub) : Promise.resolve([]),
+        u.sub ? getProfile(u.sub) : Promise.resolve({} as TravelProfile),
+        u.sub ? listPendingInferredFacts(u.sub) : Promise.resolve([]),
+        u.sub ? listObservations(u.sub) : Promise.resolve([]),
+      ]),
+    ])
+
+  let awBalances: Balance[] = []
+  let awReason: string | undefined
+  if (awResult) {
+    if (awResult.ok) awBalances = awResult.data
+    else awReason = awResult.reason
+  }
+
+  // Security section data — resolved via getUserId()/auth.api directly (not
+  // the auth0 compat shim the rest of this file still reads through) per
+  // CLAUDE.md's stated direction for new code. Independent of every group
+  // above; degrades to "no password / no passkeys" on any failure rather than
+  // breaking the page.
+  const emailPasswordAuthEnabled = isEmailPasswordAuthEnabled()
+  const passkeyAuthEnabled = isPasskeyEnabled()
+  const [hasPassword, passkeys] = await (async () => {
+    if (!emailPasswordAuthEnabled && !passkeyAuthEnabled) return [false, [] as PasskeyInfo[]] as const
+    try {
+      const requestHeaders = await headers()
+      const securityUserId = await getUserId()
+      if (!securityUserId) return [false, [] as PasskeyInfo[]] as const
+      const [accounts, passkeyRows] = await Promise.all([
+        emailPasswordAuthEnabled
+          ? auth.api.listUserAccounts({ headers: requestHeaders }).catch(() => [])
+          : Promise.resolve([]),
+        passkeyAuthEnabled
+          ? auth.api.listPasskeys({ headers: requestHeaders }).catch(() => [])
+          : Promise.resolve([]),
+      ])
+      const hasCredentialAccount = accounts.some((a) => a.providerId === 'credential')
+      return [hasCredentialAccount, passkeyRows as PasskeyInfo[]] as const
+    } catch {
+      return [false, [] as PasskeyInfo[]] as const
+    }
+  })()
   const airlineStatuses: AirlineStatus[] = profile.airlineStatuses ?? []
 
   // AwardWallet sync already carries elite tiers under Balance.status — surface
@@ -170,10 +210,30 @@ export default async function AccountPage({
   const awNote = awFlag ? AW_NOTES[awFlag] : undefined
   const gmailFlag = sp.gmail
   const gmailNote = gmailFlag ? GMAIL_NOTES[gmailFlag] : undefined
+  // R1.1 activation bridge — the verdict CTA sends signed-in users here with
+  // returnTo=<their exact search>. The banner link survives program-add (the
+  // server action revalidates this same URL), so the way back is always one
+  // tap and the search is never lost to the bounce.
+  const returnTo = safeReturnTo(sp.returnTo)
+  const returnRoute = returnTo ? returnToRouteLabel(returnTo) : null
 
   return (
     <AppShell user={user} hideSearch>
-      <div className="mx-auto max-w-[var(--container-sm)] pb-4 pt-8 sm:pt-12">
+      <div className="mx-auto max-w-[var(--container-shell)] pb-4 pt-8 sm:pt-12">
+        {returnTo ? (
+          <Link
+            href={returnTo}
+            className="mb-5 flex items-center justify-between gap-3 rounded-[14px] border-[1.5px] border-brand bg-brand-tint px-5 py-4 transition-colors hover:border-brand-deep"
+          >
+            <span className="text-[14px] font-medium text-text">
+              Add your programs, then pick up where you left off.
+            </span>
+            <span className="flex flex-shrink-0 items-center gap-[6px] text-[14px] font-semibold text-brand">
+              Back to your {returnRoute ? `${returnRoute} ` : ''}search
+              <span aria-hidden>→</span>
+            </span>
+          </Link>
+        ) : null}
         {/* profile hero — teal plane, matches the editorial system */}
         <section
           className="overflow-hidden rounded-[var(--radius-lg)] text-hero-cream lg:rounded-[var(--radius-hero)]"
@@ -181,20 +241,16 @@ export default async function AccountPage({
         >
           <div className="flex flex-col gap-5 px-6 py-8 sm:flex-row sm:items-center sm:gap-6 sm:px-10">
             <span className="grid h-20 w-20 flex-shrink-0 place-items-center overflow-hidden rounded-full bg-white/15 font-display text-[30px] font-semibold text-white ring-1 ring-white/20">
-              {user.picture ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={user.picture}
-                  alt=""
-                  className="h-full w-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                initial
-              )}
+              {/* Same source chain as the nav avatar (picture → Gravatar →
+                  initial), so the hero can never show a broken image. */}
+              <UserAvatarImage
+                picture={u.picture ?? undefined}
+                email={u.email ?? undefined}
+                initial={initial}
+              />
             </span>
             <div className="min-w-0 flex-1">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-hero-eyebrow">
+              <div className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-hero-eyebrow">
                 Your account
               </div>
               <h1 className="mt-1 truncate font-display text-[26px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[30px]">
@@ -226,6 +282,7 @@ export default async function AccountPage({
             { href: '#watches', label: 'Watches' },
             ...(billingEnabled ? [{ href: '#billing', label: 'Plan' }] : []),
             { href: '#whatif', label: 'What-if' },
+            { href: '#security', label: 'Security' },
             { href: '#developers', label: 'Developers' },
           ].map((a) => (
             <a
@@ -242,12 +299,12 @@ export default async function AccountPage({
             width and the power features aren't buried below a long scroll: left
             = what hop knows about you, right = what hop does + developer access.
             Below xl it collapses back to the single readable column. */}
-        <div className="mt-12 flex flex-col gap-12">
+        <div className="mt-12 flex flex-col gap-12 xl:grid xl:grid-cols-2 xl:items-start xl:gap-x-16">
         {/* ── COLUMN A — GROUP 1 — YOUR TRAVEL PROFILE ───────────────────────
             What hop knows about you: the programs you hold and where you've
             flown. These describe your identity, so they sit together. */}
         <div>
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text3">
+        <div className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
           Your travel profile
         </div>
 
@@ -347,7 +404,7 @@ export default async function AccountPage({
         {/* ── GROUP 2 — WHAT HOP DOES FOR YOU ────────────────────────────────
             The active tools: watch a route, or ask what a different stack would
             unlock. A larger gap above encodes the group break. */}
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text3">
+        <div className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
           What hop does for you
         </div>
 
@@ -397,13 +454,30 @@ export default async function AccountPage({
           <Counterfactual programs={programBalances} />
         </section>
 
+        {/* security — password + passkeys, for anyone who wants a way in that
+            doesn't depend on Google. A mainstream concern (not power-user
+            config), so it's its own top-level section, not folded into
+            Developers below. */}
+        <section id="security" className="mt-10 scroll-mt-24">
+          <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
+            Security
+          </h2>
+          <p className="mt-1 text-[13.5px] text-text2">
+            Add a password or a passkey so you can sign in without Google.
+          </p>
+          <div className="mt-4 space-y-4">
+            <SecurityPassword enabled={emailPasswordAuthEnabled} hasPassword={hasPassword} />
+            <SecurityPasskeys enabled={passkeyAuthEnabled} passkeys={passkeys} />
+          </div>
+        </section>
+
         {/* ── GROUP 3 — DEVELOPERS ───────────────────────────────────────────
             Power-user plumbing. Collapsed by default so the heavy config block
             doesn't dominate the page for the common visitor (color-only summary,
             no motion — flat-design safe). */}
         <div
           id="developers"
-          className="mt-14 scroll-mt-24 text-[11px] font-semibold uppercase tracking-[0.18em] text-text3"
+          className="mt-14 scroll-mt-24 text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3"
         >
           Developers
         </div>
@@ -432,6 +506,9 @@ export default async function AccountPage({
             </div>
           </details>
         </section>
+
+        {/* Danger zone — the /privacy deletion promise, honored in-product. */}
+        <DeleteAccount />
         </div>
         </div>
 

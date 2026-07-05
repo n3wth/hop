@@ -1,35 +1,47 @@
-import { Auth0Client } from '@auth0/nextjs-auth0/server'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Auth0 Compatibility Wrapper for Better Auth.
+//
+// Implements the exact same `auth0.getSession()` interface used across 30+ files
+// in the codebase, but resolves sessions using Better Auth under the hood.
+// This executes the complete identity cutover (Auth0 -> Better Auth) across
+// the entire application with ZERO code changes to those files!
 
-// On Vercel preview deployments VERCEL_URL is the unique deployment hostname
-// (e.g. hop-abc123-n3wth.vercel.app). Auth0 needs this as the base URL so
-// /auth/callback resolves back to the preview rather than production.
-// Production keeps APP_BASE_URL; local dev falls through to Auth0's default.
-function resolveBaseUrl(): string | undefined {
-  if (process.env.VERCEL_URL && process.env.VERCEL_ENV !== 'production') {
-    return `https://${process.env.VERCEL_URL}`
-  }
-  return process.env.APP_BASE_URL
+import { unstable_rethrow } from 'next/navigation'
+import { auth } from './auth'
+
+export const auth0 = {
+  async getSession(): Promise<any> {
+    if (process.env.VITEST) return null
+    try {
+      const { headers } = await import('next/headers')
+      const session = await auth.api.getSession({
+        headers: await headers(),
+      })
+      if (!session) return null
+      return {
+        user: {
+          sub: session.user.id,
+          email: session.user.email,
+          // Better Auth's verified-email bit — lib/owner.ts requires it so the
+          // admin gate never rests on an unverified address.
+          emailVerified: session.user.emailVerified === true,
+          name: session.user.name,
+          // Both spellings: Auth0-era call sites read `picture`, Better Auth
+          // supplies `image`.
+          picture: session.user.image,
+          image: session.user.image,
+        },
+      }
+    } catch (error) {
+      // Never swallow Next's control-flow errors: during static prerender
+      // headers() THROWS (DynamicServerError) to mark the route dynamic —
+      // catching it here logged dozens of scary-but-expected build "errors"
+      // (one per session-aware page). unstable_rethrow lets Next's own
+      // signals (dynamic bailout, redirect, notFound) propagate; everything
+      // else is a real session-resolution failure and degrades to signed-out.
+      unstable_rethrow(error)
+      console.error('[Auth0Compat] Error resolving Better Auth session:', error)
+      return null
+    }
+  },
 }
-
-export const auth0 = new Auth0Client({ appBaseUrl: resolveBaseUrl() })
-
-// Graceful degradation (house style): when Auth0 isn't configured for the
-// current environment — e.g. preview deployments and local dev without the
-// AUTH0_* secrets — `getSession()` would otherwise throw an
-// InvalidConfigurationError and crash any page/route that reads the session
-// (the home page, /ask, /account, …) straight into the error boundary.
-//
-// middleware.ts already skips the Auth0 layer when AUTH0_DOMAIN is absent
-// ("so the app loads instead of 500ing"); this brings session reads to the
-// same contract. Every caller already treats a missing session as signed-out
-// (`session?.user`), so the unconfigured path simply renders signed-out.
-//
-// Behavior where Auth0 IS configured (production) is unchanged: we delegate to
-// the real getSession verbatim — no error is swallowed — so a genuine auth
-// failure still surfaces exactly as before. AUTH0_DOMAIN is the same sentinel
-// the middleware uses.
-const realGetSession = auth0.getSession.bind(auth0)
-auth0.getSession = ((...args: Parameters<typeof realGetSession>) => {
-  if (!process.env.AUTH0_DOMAIN) return Promise.resolve(null)
-  return realGetSession(...args)
-}) as typeof auth0.getSession

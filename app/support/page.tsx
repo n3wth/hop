@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { toNavUser } from '@/lib/nav-user'
 import { auth0 } from '@/lib/auth0'
 import { getUserBalances } from '@/lib/accounts'
 import AppShell from '@/components/AppShell'
@@ -28,14 +29,7 @@ const SECTIONS: { id: string; label: string }[] = [
 export default async function SupportPage() {
   const session = await auth0.getSession()
   const su = session?.user
-  const user = su
-    ? {
-        initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
-        name: su.name ?? su.email ?? undefined,
-        email: su.email ?? undefined,
-        picture: su.picture ?? undefined,
-      }
-    : null
+  const user = toNavUser(su)
 
   let pointsTotal: number | undefined
   if (user && su?.sub) {
@@ -54,7 +48,10 @@ export default async function SupportPage() {
             can skip straight to a section. The list styling overrides the
             inherited .legal-prose ul (disc bullets / indent). */}
         <nav aria-label="Help topics" className="mb-2">
-          <ul className="grid list-none grid-cols-1 gap-x-6 gap-y-1.5 !pl-0 sm:grid-cols-2">
+          {/* !list-none: .legal-prose ul (0,1,1) out-specifies the bare utility
+              (0,1,0), so without the important the discs come back and hang
+              outside the zeroed padding — bullets floating left of the column. */}
+          <ul className="grid !list-none grid-cols-1 gap-x-6 gap-y-1.5 !pl-0 sm:grid-cols-2">
             {SECTIONS.map((s) => (
               <li key={s.id} className="!mb-0">
                 <a
@@ -266,8 +263,8 @@ export default async function SupportPage() {
 
         <h3>What does hop store, and who can see it?</h3>
         <p>
-          Your identity comes from Auth0; your balances, home airport, and any tokens are scoped to
-          your account and never exposed to other users. For the full picture — what&rsquo;s
+          Your identity comes from Google sign-in; your balances, home airport, and any tokens are
+          scoped to your account and never exposed to other users. For the full picture — what&rsquo;s
           collected, why, and who it&rsquo;s shared with — see the{' '}
           <Link href="/privacy">Privacy Policy</Link>.
         </p>
@@ -288,7 +285,7 @@ export default async function SupportPage() {
           your miles go furthest, the <Link href="/ask">concierge</Link> answers on the spot.
         </p>
       </LegalShell>
-      <div className="mx-auto max-w-[1180px]">
+      <div className="mx-auto max-w-[var(--container-shell)]">
         <SiteFooter />
       </div>
     </AppShell>

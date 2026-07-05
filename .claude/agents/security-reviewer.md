@@ -38,7 +38,9 @@ judging.
    The MCP transport endpoints are intentionally outside the session-middleware matcher and rely on
    the Bearer token — confirm they still verify the token and scope to its owner. Flag unauthed
    routes that read/write user rows, and any new Eve/cron endpoint (e.g.
-   `app/api/cron/standing-orders/route.ts`) that lacks a cron secret / auth check.
+   `app/api/cron/standing-orders/route.ts`) that lacks a cron secret / auth check. Cron routes must
+   use `lib/cron-auth.ts#isAuthorizedCron` (timing-safe, fails closed in production when
+   `CRON_SECRET` is unset) — flag any inline `CRON_SECRET` comparison or a route that fails open.
 6. **No secrets in client components.** Grep `'use client'` files for env/secret references, token
    values, or service-role keys passed as props.
 

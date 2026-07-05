@@ -207,7 +207,7 @@ function ProgramRow({ program, first }: { program: ManualBalance; first: boolean
       <div className="min-w-0">
         <div className="truncate text-[14.5px] font-semibold text-text">{program.program}</div>
         {saved ? (
-          <div role="status" className="mt-[2px] text-[12.5px] font-medium text-brand">
+          <div role="status" className="hop-text-appear mt-[2px] text-[12.5px] font-medium text-brand">
             Saved
           </div>
         ) : program.status ? (
@@ -366,7 +366,9 @@ function AddProgramForm({ hasRows }: { hasRows: boolean }) {
         </p>
       ) : null}
       {saved && !note ? (
-        <p role="status" className="mt-1.5 text-[12.5px] font-medium text-brand">
+        // Settles in rather than popping — action feedback, reduced-motion-safe
+        // (.hop-text-appear renders instantly under prefers-reduced-motion).
+        <p role="status" className="hop-text-appear mt-1.5 text-[12.5px] font-medium text-brand">
           Added
         </p>
       ) : null}

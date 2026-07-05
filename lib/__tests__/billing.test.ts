@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { tierFromStripeEvent } from '@/lib/billing'
+import { tierFromStripeEvent, subscriptionRecordFromEvent } from '@/lib/billing'
 import type { StripeEventLike } from '@/lib/stripe'
 
 // The event mapper is PURE — plain fixture objects, zero mocks, no SDK.
@@ -132,5 +132,77 @@ describe('tierFromStripeEvent — everything else is noise', () => {
     })
     expect(update).not.toBeNull()
     expect(Number.isFinite(Date.parse(update!.eventAt))).toBe(true)
+  })
+})
+
+describe('subscriptionRecordFromEvent — the stored-state extractor', () => {
+  const subObj = {
+    id: 'sub_123',
+    status: 'active',
+    customer: 'cus_123',
+    cancel_at_period_end: false,
+    current_period_start: 1_760_000_000,
+    current_period_end: 1_762_600_000,
+    items: { data: [{ price: { id: 'price_pro_monthly' } }] },
+  }
+
+  it('extracts the full record from a subscription.updated payload', () => {
+    const rec = subscriptionRecordFromEvent({
+      type: 'customer.subscription.updated',
+      data: { object: subObj },
+    })
+    expect(rec).not.toBeNull()
+    expect(rec!.subscriptionId).toBe('sub_123')
+    expect(rec!.priceId).toBe('price_pro_monthly')
+    expect(rec!.status).toBe('active')
+    expect(rec!.currentPeriodStart).toBe(new Date(1_760_000_000 * 1000).toISOString())
+    expect(rec!.currentPeriodEnd).toBe(new Date(1_762_600_000 * 1000).toISOString())
+    expect(rec!.cancelAtPeriodEnd).toBe(false)
+  })
+
+  it('falls back to ITEM-level period fields (2025-03-31.basil API shape)', () => {
+    const { current_period_start: _s, current_period_end: _e, ...rest } = subObj
+    const rec = subscriptionRecordFromEvent({
+      type: 'customer.subscription.deleted',
+      data: {
+        object: {
+          ...rest,
+          status: 'canceled',
+          items: {
+            data: [
+              {
+                price: { id: 'price_pro_monthly' },
+                current_period_start: 1_760_000_000,
+                current_period_end: 1_762_600_000,
+              },
+            ],
+          },
+        },
+      },
+    })
+    expect(rec).not.toBeNull()
+    expect(rec!.status).toBe('canceled')
+    expect(rec!.currentPeriodEnd).toBe(new Date(1_762_600_000 * 1000).toISOString())
+  })
+
+  it('returns null for checkout.session.completed — the session is not a subscription', () => {
+    expect(
+      subscriptionRecordFromEvent({
+        type: 'checkout.session.completed',
+        data: { object: { id: 'cs_1', subscription: 'sub_123' } },
+      }),
+    ).toBeNull()
+  })
+
+  it('returns null (never throws) on malformed payloads', () => {
+    expect(
+      subscriptionRecordFromEvent({
+        type: 'customer.subscription.updated',
+        data: { object: { id: 'sub_x' } }, // no period fields anywhere
+      }),
+    ).toBeNull()
+    expect(
+      subscriptionRecordFromEvent({ type: 'customer.subscription.updated' } as never),
+    ).toBeNull()
   })
 })

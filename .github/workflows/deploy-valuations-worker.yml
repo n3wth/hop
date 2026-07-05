@@ -1,13 +1,11 @@
 name: Deploy valuations worker
 
+# DISABLED (2026-07-04): GitHub Actions billing is broken on this account (see
+# ci.yml). Deploy manually instead: `cd cloudflare/valuations-worker && npx
+# wrangler deploy` (see its README). To re-enable auto-deploy: restore the
+# push/pull_request path triggers below.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "cloudflare/valuations-worker/**"
-  pull_request:
-    paths:
-      - "cloudflare/valuations-worker/**"
+  workflow_dispatch:
 
 concurrency:
   group: deploy-valuations-worker

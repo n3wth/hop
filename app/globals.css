@@ -3,6 +3,16 @@
 /* Streamdown renders the concierge's streamed markdown — scan its classes so v4
    doesn't purge them. */
 @source "../node_modules/streamdown/dist/index.js";
+/* v4 auto-detection scans EVERY non-gitignored text file — including agent docs
+   and config comments. A class-SHAPED placeholder there (e.g. a pipe-syntax
+   "one of these" like `tracking-[var(--a|b)]`) compiles into invalid CSS and
+   500s every page in dev. Runtime templates live only in app/ components/ lib/;
+   exclude the doc/tooling trees so prose can never break the build. */
+@source not "../.claude";
+@source not "../.cursor";
+@source not "../.agents";
+@source not "../docs";
+@source not "../eslint.config.mjs";
 
 /* hop design tokens — editorial direction (docs/design/CHOSEN-editorial.html).
    Verdict hero, boarding-pass pick, value-ranked alternatives, dark wallet.
@@ -50,10 +60,13 @@
 
   /* on-teal / dark-wallet text tiers — one contract for copy painted on the
      teal verdict hero and the dark wallet, so component lanes stop hardcoding
-     these hexes. Tuned to read on the teal hero / wallet ink. */
-  --color-hero-body: #c7ece5; /* body copy on teal hero */
-  --color-hero-label: #8fcabf; /* muted labels on teal */
-  --color-hero-eyebrow: #9fd4c8; /* eyebrows / kickers on teal */
+     these hexes. Tuned to read on the teal hero / wallet ink. All three text
+     tiers clear WCAG AA 4.5:1 against --color-brand (guarded by
+     lib/__tests__/contrast.test.ts) — the muted/label tier is as dark as AA
+     allows, so hierarchy comes from weight + tracking, not more dimming. */
+  --color-hero-body: #c7ece5; /* body copy on teal hero (4.8:1 on brand) */
+  --color-hero-label: #c5e7de; /* muted labels on teal (4.6:1 on brand) */
+  --color-hero-eyebrow: #cdebe2; /* eyebrows / kickers on teal (4.8:1 on brand) */
   --color-hero-white-hover: #fffdf6; /* hover-to-white on teal */
   --color-wallet-active: #7be0c6; /* active mint in the dark wallet */
 
@@ -137,9 +150,9 @@
    shape, not by route: */
 :root {
   --container-xs: 680px; /* a single receipt/confirmation card — book/confirmation */
-  --container-sm: 820px; /* one-topic profile/detail reading column — account, sweet-spots/[program] */
-  --container-article: 880px; /* long-form single article — destinations/[city] */
-  --container-md: 980px; /* narrow index/listing — sweet-spots */
+  --container-sm: 820px; /* one-topic profile/detail reading column — sweet-spots/[program] (account moved to --container-shell + two-column xl grid) */
+  --container-article: 880px; /* long-form single article (pure prose pages) */
+  --container-md: 980px; /* card-led detail/listing — destinations/[city] (prose inside capped at 70ch); sweet-spots index moved to --container-shell */
   --container-checkout: 1040px; /* form + sticky sidebar — book */
   --container-app: 1180px; /* legacy boxed width — kept for reference; app surfaces migrated to --container-shell */
   --container-wide: 1340px; /* legacy wide card-grid bump — superseded by --container-shell */
@@ -218,10 +231,9 @@ body {
   letter-spacing: -0.02em;
 }
 
-/* Wordmark: Fraunces italic, leaning forward to echo the bunny's leap. */
+/* Wordmark: Bricolage Grotesque, matching the display headings sitewide. */
 .wordmark {
-  font-family: var(--font-wordmark-stack);
-  font-style: italic;
+  font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: -0.02em;
 }
@@ -251,6 +263,45 @@ body {
    inert class so its many call sites and their inline --hop-delay values don't
    need touching — it simply has no animation now. The rest of the motion below
    still honors prefers-reduced-motion. */
+
+/* THE exception to still entrances: the verdict hero. Page furniture appears
+   in place; the ANSWER arrives. One element per page, one shot, opacity + a
+   4px settle — small enough that the page doesn't read as nudging upward.
+   Do not spread this to sections; that's the drift .hop-rise died of. */
+@keyframes hop-appear {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hop-appear {
+  animation: hop-appear 560ms var(--ease-premium) both;
+}
+
+/* Confirmation check settle — a one-shot scale-in for the moment an action
+   lands: the booking-confirmed ring, a watch saved, "Copied". Transform-only,
+   overshoots a hair and settles. Apply to the ICON'S wrapper (re-key it to
+   replay), never to text. Reduced-motion falls back to the instant swap. */
+@keyframes hop-check-in {
+  0% {
+    transform: scale(0.5);
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.hop-check-in {
+  animation: hop-check-in 420ms var(--ease-premium) both;
+}
 
 /* Bunny motion is scroll-driven (see FlyingBunny) — it lifts with scroll
    momentum like gravity, then springs back to rest when scrolling stops.
@@ -355,6 +406,23 @@ body {
   animation: hop-shimmer 1.6s ease-in-out infinite;
 }
 
+/* On-dark skeleton variant — placeholders painted on the teal verdict hero and
+   the dark wallet. Same sweep as .hop-skeleton with a white sheen tuned for
+   dark surfaces, so EVERY loading block shimmers, not just the cream ones. */
+.hop-skeleton-dark {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+}
+.hop-skeleton-dark::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16) 55%, transparent);
+  animation: hop-shimmer 1.6s ease-in-out infinite;
+}
+
 /* Thinking-state skeleton lines — a soft, rounded sheen bar standing in for the
    answer that's about to stream. Reuses the .hop-skeleton shimmer; a brand-tint
    wash keeps it on-brand and quieter than the neutral sunk. Flat, no chrome. */
@@ -434,10 +502,17 @@ body {
     opacity: 1;
     width: var(--hop-bar-w, 0%);
   }
+  .hop-appear,
+  .hop-check-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
   .hop-collapse {
     transition: none;
   }
-  .hop-skeleton::after {
+  .hop-skeleton::after,
+  .hop-skeleton-dark::after {
     animation: none;
   }
   .hop-spin,
@@ -667,9 +742,16 @@ body {
 
 /* Single-viewport stage — the concierge fills exactly the space below the nav so
    the page never scrolls vertically: nav (--hop-nav, in flow) + stage = 100dvh.
-   The landing hero sits flush under the nav; the thread scrolls only internally. */
+   The landing hero sits flush under the nav; the thread scrolls only internally.
+   Below md the top nav is hidden and the bottom tab bar (56px + safe area) owns
+   the floor instead, so the stage subtracts THAT — the composer docks above it. */
 .hop-ask-stage {
-  height: calc(100dvh - var(--hop-nav));
+  height: calc(100dvh - 56px - env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) {
+  .hop-ask-stage {
+    height: calc(100dvh - var(--hop-nav));
+  }
 }
 
 /* The ask surface's CHROME frame — the control rail and the docked composer's

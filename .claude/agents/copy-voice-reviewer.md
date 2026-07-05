@@ -56,7 +56,7 @@ type, color, composition.
      `--tracking-*` `@theme` variable (stock-namespace collision — see
      `docs/solutions/2026-07-02-tailwind-v4-theme-namespace-overrides.md`) and any new
      off-scale radius (`rounded-[Npx]` where N is not 10/14/20/28 —
-     `rounded-[var(--radius-sm|--radius|--radius-lg|--radius-hero)]` or stock
+     `rounded-[var(--radius-sm)]` / `rounded-[var(--radius)]` / `rounded-[var(--radius-lg)]` / `rounded-[var(--radius-hero)]` or stock
      `rounded-sm`/`rounded-lg`, which the theme re-points to 10px/20px, are the sanctioned
      spellings).
 

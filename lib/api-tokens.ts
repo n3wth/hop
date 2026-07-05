@@ -9,6 +9,7 @@
 // degrades gracefully and never throws to a route handler.
 
 import { createHash, randomBytes } from 'node:crypto'
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { withDb } from '@/lib/supabase-helpers'
 
 // Plaintext tokens are prefixed so they're recognizable in logs / config and so
@@ -95,7 +96,7 @@ export async function listTokens(userId: string): Promise<ApiTokenInfo[]> {
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
     if (error || !data) return []
-    return data.map((r) => ({
+    return data.map((r: any) => ({
       id: r.id,
       name: r.name,
       lastFour: r.last_four,
@@ -149,12 +150,21 @@ export async function renameToken(
   })
 }
 
-// Resolve a PLAINTEXT bearer token to its owner's Auth0 sub, or null if unknown.
-// This is the MCP server's auth primitive: hash the presented token, look up the
-// row, return the user_id. Best-effort updates last_used_at for the UI.
-export async function userIdForToken(plaintext: string): Promise<string | null> {
+// A resolved token: its owner's user id plus the token row's own id (the
+// latter is what usage/metering rows key on, since a user can hold several
+// tokens and revoking one shouldn't blind the others).
+export interface ResolvedToken {
+  userId: string
+  tokenId: string
+}
+
+// Resolve a PLAINTEXT bearer token to its owner + the token row's own id, or
+// null if unknown. This is the MCP server's auth primitive: hash the presented
+// token, look up the row, return {userId, tokenId}. Best-effort updates
+// last_used_at for the UI.
+export async function resolveToken(plaintext: string): Promise<ResolvedToken | null> {
   if (!looksLikeToken(plaintext)) return null
-  return withDb<string | null>(null, async (db) => {
+  return withDb<ResolvedToken | null>(null, async (db) => {
     const hash = hashToken(plaintext)
     const { data, error } = await db
       .from(TABLE)
@@ -168,6 +178,12 @@ export async function userIdForToken(plaintext: string): Promise<string | null> 
       .update({ last_used_at: new Date().toISOString() })
       .eq('id', data.id)
       .then(() => undefined)
-    return data.user_id
+    return { userId: data.user_id, tokenId: data.id }
   })
+}
+
+// Back-compat convenience for callers that only need the owner's user id.
+export async function userIdForToken(plaintext: string): Promise<string | null> {
+  const resolved = await resolveToken(plaintext)
+  return resolved?.userId ?? null
 }

@@ -13,6 +13,8 @@ This folder stores product, design, and implementation documentation for hop.
 | `design/hop-v9.html` | Prior locked visual reference and layout artifact. | Historical reference |
 | `design/hop-logo.svg` | Canonical bunny logo vector. | Rare |
 | `plans/2026-06-28-001-feat-hop-flight-optimizer-plan.md` | Detailed implementation plan for initial optimizer build. | Historical, append-only |
+| `plans/2026-07-04-business-plan.md` | **The adopted business plan** — positioning, pricing, cost model, GTM, execution roadmap + agent pickup protocol. Mirrored to Linear. | When a phase completes or a gate/price changes |
+| `plans/2026-07-03-critical-review-roadmap.md` | Execution detail for the R0–R3 roadmap items the business plan sequences. | When items land |
 | `growth-hypothesis.md` | Forward-looking growth/business hypothesis for a funded agent-team month. | When strategy is revisited |
 
 ## Conventions

@@ -47,9 +47,9 @@ export function pointsBookingUrl(opt: { airlineCode?: string; program?: string }
 
 // Kiwi is deep-link ONLY in production (no public search API for affiliate flow).
 // Build a results deep-link for the route + dates. Affiliate ATTRIBUTION is not
-// in this URL: the Travelpayouts tag in app/layout.tsx (project 545389) decorates
-// outbound partner clicks at click time, so this stays a clean, shareable link.
-export function cashBookingUrl(params: SearchParams): string {
+// in this URL — it stays a clean, shareable link. cashBookingUrl wraps it in the
+// tp.media attribution redirect (tpKiwiAttributionUrl) before it goes behind a CTA.
+export function kiwiSearchUrl(params: SearchParams): string {
   const from = encodeURIComponent(params.from.trim().toUpperCase())
   const to = encodeURIComponent(params.to.trim().toUpperCase())
   const depart = encodeURIComponent(params.depart)
@@ -60,6 +60,123 @@ export function cashBookingUrl(params: SearchParams): string {
   const path = segments.join('/')
   const adults = Math.max(1, params.adults || 1)
   return `https://www.kiwi.com/en/search/results/${path}?adults=${adults}`
+}
+
+// --- Cash outclick wrapper (/api/go/kiwi) -----------------------------------
+
+// The only final landing hosts a cash outclick may reach. Exact hostname match
+// only — no subdomain wildcards, no substring checks — so `kiwi.com.evil.example`,
+// `deep.kiwi.com` and userinfo tricks (`https://www.kiwi.com@evil.example`) all
+// fail closed.
+const KIWI_OUTCLICK_HOSTS = new Set(['www.kiwi.com', 'kiwi.com'])
+// Travelpayouts' affiliate redirect domain. tp.media/r is an OPEN redirector:
+// it 302s to whatever its ?u= param says (verified 2026-07-04 — it forwards to
+// arbitrary domains, appending only affilid). So an allowlisted tp.media host
+// is NOT sufficient; the guard must also pin the inner ?u= target to kiwi.com,
+// or /api/go/kiwi would launder an open redirect (hop.flights → tp.media →
+// attacker). This is what cashBookingUrl mints.
+const TP_OUTCLICK_HOSTS = new Set(['tp.media', 'www.tp.media'])
+
+// Shared https/host hygiene: https-only (kills javascript:/data:/http:), no
+// embedded credentials, no explicit port. Applied to BOTH the tp.media wrapper
+// and its inner kiwi.com target.
+function isCleanHttpsUrl(url: URL): boolean {
+  return url.protocol === 'https:' && !url.username && !url.password && url.port === ''
+}
+
+// Strict allowlist for the /api/go/kiwi redirect target. This is the ONLY line
+// between the ?to= query param and a 302 Location header, so it must never pass
+// anything but our own affiliate destinations. Two accepted shapes:
+//   1. a bare kiwi.com deep-link (stale/shared links minted before the tp.media
+//      swap keep working), or
+//   2. a tp.media/r attribution redirect whose ?u= is itself a valid kiwi.com
+//      deep-link — the outer host alone is never trusted, because tp.media will
+//      forward ?u= anywhere.
+// Unparseable input (outer or inner) → false, never a throw.
+export function isAllowedCashOutclickUrl(raw: string): boolean {
+  if (!raw || typeof raw !== 'string') return false
+  let url: URL
+  try {
+    url = new URL(raw)
+  } catch {
+    return false
+  }
+  if (!isCleanHttpsUrl(url)) return false
+  if (KIWI_OUTCLICK_HOSTS.has(url.hostname)) return true
+  if (TP_OUTCLICK_HOSTS.has(url.hostname)) {
+    const inner = url.searchParams.get('u')
+    if (!inner) return false
+    let innerUrl: URL
+    try {
+      innerUrl = new URL(inner)
+    } catch {
+      return false
+    }
+    return isCleanHttpsUrl(innerUrl) && KIWI_OUTCLICK_HOSTS.has(innerUrl.hostname)
+  }
+  return false
+}
+
+// Route context for the outclick ledger, e.g. "SFO-LAX". Anything that isn't
+// exactly IATA-IATA is dropped (the ledger stores 'unknown') — the param is
+// context, never a destination.
+const ROUTE_SHAPE = /^[A-Z]{3}-[A-Z]{3}$/
+
+export function normalizeOutclickRoute(raw: string | null | undefined): string | null {
+  const route = (raw ?? '').trim().toUpperCase()
+  return ROUTE_SHAPE.test(route) ? route : null
+}
+
+// The cash CTA's href: the first-party outclick redirect (app/api/go/kiwi/
+// route.ts) that logs one hop_outclicks row (kind 'cash') and 302s to the
+// affiliate destination — the first-party record Travelpayouts commissions are
+// reconciled against. Pure and client-safe; the single source of truth for the
+// path shape.
+export function cashOutclickPath(destination: string, route?: string): string {
+  const query = new URLSearchParams({ to: destination })
+  const normalized = normalizeOutclickRoute(route)
+  if (normalized) query.set('route', normalized)
+  return `/api/go/kiwi?${query.toString()}`
+}
+
+// Travelpayouts attribution redirect (tp.media/r). The client tag in
+// app/layout.tsx only decorates clicks on links that point DIRECTLY at partner
+// domains — it can't see through our same-origin /api/go/kiwi 302 — so the
+// redirect destination itself must carry attribution. These are the exact
+// values Travelpayouts' own link-conversion API mints for this property
+// (marker = affiliate account, trs = the hop.flights traffic source aka
+// "project 545389", p/campaign_id = the Kiwi.com program). They're public —
+// they appear in every outbound affiliate link — so they live in code, like
+// the tag's project id in app/layout.tsx.
+const TP_REDIRECT_BASE = 'https://tp.media/r'
+const TP_MARKER = '745576'
+const TP_TRS = '545389'
+const TP_KIWI_PROGRAM = '4136' // p= — Kiwi.com
+const TP_KIWI_CAMPAIGN = '111' // campaign_id= — Kiwi.com
+
+// Wrap a Kiwi deep-link in the tp.media attribution redirect: tp.media 302s to
+// the exact ?u= URL with the affiliate id (affilid=…-<marker>) appended, so the
+// commission survives the first-party ledger hop. Pure and client-safe.
+export function tpKiwiAttributionUrl(kiwiUrl: string): string {
+  const query = new URLSearchParams({
+    marker: TP_MARKER,
+    trs: TP_TRS,
+    p: TP_KIWI_PROGRAM,
+    campaign_id: TP_KIWI_CAMPAIGN,
+    u: kiwiUrl,
+  })
+  return `${TP_REDIRECT_BASE}?${query.toString()}`
+}
+
+// What the UI (and mocks, and Duffel-normalized options) put behind the cash
+// CTA. Since R0.6 this is the /api/go/kiwi wrapper, not the raw Kiwi link —
+// same destination, but the click leaves a first-party ledger row so affiliate
+// revenue is reconcilable (Linear N-302). The wrapped destination is the
+// tp.media attribution form of the Kiwi deep-link, so the commission doesn't
+// depend on the client tag seeing through the same-origin redirect.
+export function cashBookingUrl(params: SearchParams): string {
+  const route = `${params.from.trim().toUpperCase()}-${params.to.trim().toUpperCase()}`
+  return cashOutclickPath(tpKiwiAttributionUrl(kiwiSearchUrl(params)), route)
 }
 
 // --- Fare change/cancel policy ---------------------------------------------

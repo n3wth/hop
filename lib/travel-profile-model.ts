@@ -34,6 +34,12 @@ export interface TravelProfile {
   travelParty?: TravelParty
   // Preferred cabin for long trips (reuses the shared Cabin enum).
   cabin?: Cabin
+  // The cabin they settle for when the preferred one isn't available/worth it —
+  // "first when it's there, premium economy otherwise" is a real, stated
+  // hierarchy that a single cabin field silently dropped.
+  fallbackCabin?: Cabin
+  // Airlines the user prefers to fly (free-text names, e.g. "Alaska Airlines").
+  preferredAirlines?: string[]
   // Free-text dietary needs (e.g. "vegetarian", "gluten-free"). Short list.
   dietary?: string[]
   // Free-text accessibility needs (e.g. "step-free", "service animal").
@@ -62,6 +68,8 @@ export function isEmptyProfile(p: TravelProfile | undefined | null): boolean {
     p.vacationDays === undefined &&
     p.travelParty === undefined &&
     p.cabin === undefined &&
+    p.fallbackCabin === undefined &&
+    !p.preferredAirlines?.length &&
     !p.dietary?.length &&
     !p.accessibility?.length &&
     !p.lovedDestinations?.length &&
@@ -132,6 +140,14 @@ export function validateProfile(raw: unknown): TravelProfile {
     if ((CABINS as readonly string[]).includes(c)) out.cabin = c as Cabin
   }
 
+  if (typeof r.fallbackCabin === 'string') {
+    const c = r.fallbackCabin.toLowerCase().trim()
+    if ((CABINS as readonly string[]).includes(c)) out.fallbackCabin = c as Cabin
+  }
+
+  const preferredAirlines = cleanStrList(r.preferredAirlines)
+  if (preferredAirlines) out.preferredAirlines = preferredAirlines
+
   const dietary = cleanStrList(r.dietary)
   if (dietary) out.dietary = dietary
   const accessibility = cleanStrList(r.accessibility)
@@ -154,8 +170,10 @@ export function mergeProfile(base: TravelProfile, patch: TravelProfile): TravelP
   if (patch.vacationDays !== undefined) merged.vacationDays = patch.vacationDays
   if (patch.travelParty !== undefined) merged.travelParty = patch.travelParty
   if (patch.cabin !== undefined) merged.cabin = patch.cabin
+  if (patch.fallbackCabin !== undefined) merged.fallbackCabin = patch.fallbackCabin
   const unionList = (a?: string[], b?: string[]) =>
     a || b ? [...(a ?? []), ...(b ?? [])] : undefined
+  merged.preferredAirlines = unionList(base.preferredAirlines, patch.preferredAirlines)
   merged.dietary = unionList(base.dietary, patch.dietary)
   merged.accessibility = unionList(base.accessibility, patch.accessibility)
   merged.lovedDestinations = unionList(base.lovedDestinations, patch.lovedDestinations)
@@ -178,7 +196,13 @@ export function profileSummary(p: TravelProfile | undefined): string {
   const lines: string[] = []
   if (prof.vacationDays !== undefined) lines.push(`- Vacation days/year: ${prof.vacationDays}`)
   if (prof.travelParty) lines.push(`- Usually travels: ${prof.travelParty}`)
-  if (prof.cabin) lines.push(`- Preferred cabin: ${prof.cabin}`)
+  if (prof.cabin)
+    lines.push(
+      `- Preferred cabin: ${prof.cabin}${prof.fallbackCabin ? ` (falls back to ${prof.fallbackCabin})` : ''}`,
+    )
+  if (!prof.cabin && prof.fallbackCabin) lines.push(`- Fallback cabin: ${prof.fallbackCabin}`)
+  if (prof.preferredAirlines?.length)
+    lines.push(`- Prefers to fly: ${prof.preferredAirlines.join(', ')}`)
   if (prof.dietary?.length) lines.push(`- Dietary: ${prof.dietary.join(', ')}`)
   if (prof.accessibility?.length) lines.push(`- Accessibility: ${prof.accessibility.join(', ')}`)
   if (prof.lovedDestinations?.length) lines.push(`- Loves: ${prof.lovedDestinations.join(', ')}`)

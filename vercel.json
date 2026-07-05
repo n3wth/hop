@@ -13,6 +13,10 @@
       "schedule": "30 13 * * *"
     },
     {
+      "path": "/api/cron/sync-stripe",
+      "schedule": "0 2 * * *"
+    },
+    {
       "path": "/api/cron/business-digest",
       "schedule": "7 14 * * 1"
     },

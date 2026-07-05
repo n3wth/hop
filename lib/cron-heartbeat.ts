@@ -19,6 +19,7 @@
 // never fail a cron's real work.
 
 import { isSelfImproveEnabled } from '@/lib/env'
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { withDb } from '@/lib/supabase-helpers'
 import type { CronJob } from '@/lib/health-checks'
 
@@ -67,8 +68,8 @@ export async function listHeartbeats(): Promise<CronHeartbeat[] | null> {
     const { data, error } = await db.from(TABLE).select('job, last_run_at, ok, note')
     if (error || !data) return null
     return data
-      .filter((r) => typeof r.job === 'string' && typeof r.last_run_at === 'string')
-      .map((r) => ({
+      .filter((r: any) => typeof r.job === 'string' && typeof r.last_run_at === 'string')
+      .map((r: any) => ({
         job: r.job,
         lastRunAt: r.last_run_at,
         ok: Boolean(r.ok),

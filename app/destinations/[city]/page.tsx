@@ -167,7 +167,7 @@ export default async function DestinationGuidePage({
     <AppShell user={null} hideSearch>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <article className="mx-auto max-w-[var(--container-article)]">
+      <article className="mx-auto max-w-[var(--container-md)]">
         {/* breadcrumb */}
         <nav aria-label="Breadcrumb" className="pt-8 text-[13px] text-text3">
           <Link href="/destinations" className="font-semibold text-brand hover:text-brand-deep">
@@ -212,7 +212,7 @@ export default async function DestinationGuidePage({
                 <h1 className="font-display text-[34px] font-semibold leading-[1.04] tracking-[-0.02em] text-white sm:text-[44px]">
                   {dest.city}
                 </h1>
-                <p className="mt-0.5 text-[13px] font-semibold uppercase tracking-[0.08em] text-white/85">
+                <p className="mt-0.5 text-[13px] font-semibold uppercase tracking-[var(--track-label)] text-white/85">
                   {dest.country} · {dest.region}
                 </p>
               </div>
@@ -225,10 +225,10 @@ export default async function DestinationGuidePage({
 
         {/* GETTING THERE — the computed economics. Every figure from lib/*. */}
         <section className="mt-9 rounded-[var(--radius-lg)] border border-border bg-paper p-6">
-          <h2 className="text-[12px] font-semibold uppercase tracking-[0.16em] text-brand">Getting there</h2>
+          <h2 className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">Getting there</h2>
           <div className="mt-4 grid grid-cols-3 gap-4">
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">Typical award</div>
+              <div className="text-[10px] font-semibold uppercase tracking-[var(--track-label)] text-text3">Typical award</div>
               <div className="mt-1 font-display text-[22px] font-semibold leading-none tabular-nums text-text">
                 {(dest.typicalAwardMiles / 1000) % 1 === 0
                   ? `${dest.typicalAwardMiles / 1000}K`
@@ -237,14 +237,14 @@ export default async function DestinationGuidePage({
               <div className="mt-1 text-[12px] text-text3">miles one-way</div>
             </div>
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">vs. cash</div>
+              <div className="text-[10px] font-semibold uppercase tracking-[var(--track-label)] text-text3">vs. cash</div>
               <div className="mt-1 font-display text-[22px] font-semibold leading-none tabular-nums text-text">
                 ${Math.round(dest.typicalCashUSD).toLocaleString('en-US')}
               </div>
               <div className="mt-1 text-[12px] text-text3">one-way</div>
             </div>
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">Value</div>
+              <div className="text-[10px] font-semibold uppercase tracking-[var(--track-label)] text-text3">Value</div>
               <div
                 className="mt-1 font-display text-[22px] font-semibold leading-none tabular-nums"
                 style={{
@@ -270,14 +270,14 @@ export default async function DestinationGuidePage({
         {/* WHEN TO GO — computed from real climate normals; falls back to a
             generic region note if a destination has no normals on file. */}
         <section className="mt-8">
-          <h2 className="text-[12px] font-semibold uppercase tracking-[0.16em] text-brand">When to go</h2>
+          <h2 className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">When to go</h2>
           {seasonality && normals ? (
             <>
-              <p className="mt-3 text-[15.5px] leading-relaxed text-text2">{seasonality.summary}</p>
+              <p className="mt-3 max-w-[70ch] text-[15.5px] leading-relaxed text-text2">{seasonality.summary}</p>
               <ClimateStrip normals={normals} seasonality={seasonality} />
             </>
           ) : (
-            <p className="mt-3 text-[15.5px] leading-relaxed text-text2">{season}</p>
+            <p className="mt-3 max-w-[70ch] text-[15.5px] leading-relaxed text-text2">{season}</p>
           )}
         </section>
 
@@ -287,8 +287,8 @@ export default async function DestinationGuidePage({
         {/* POINTS PLAY — the structured sweet-spot link (mesh) */}
         {related && (
           <section className="mt-8">
-            <h2 className="text-[12px] font-semibold uppercase tracking-[0.16em] text-brand">Points play</h2>
-            <p className="mt-3 text-[15.5px] leading-relaxed text-text2">
+            <h2 className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">Points play</h2>
+            <p className="mt-3 max-w-[70ch] text-[15.5px] leading-relaxed text-text2">
               {dest.bestProgram} is the way in. If you hold {related.program.name} miles, see its{' '}
               <Link
                 href={`/sweet-spots/${related.program.slug}`}
@@ -303,8 +303,8 @@ export default async function DestinationGuidePage({
 
         {/* GOOD TO KNOW */}
         <section className="mt-8">
-          <h2 className="text-[12px] font-semibold uppercase tracking-[0.16em] text-brand">Good to know</h2>
-          <p className="mt-3 text-[15.5px] leading-relaxed text-text2">{goodToKnow(dest)}</p>
+          <h2 className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">Good to know</h2>
+          <p className="mt-3 max-w-[70ch] text-[15.5px] leading-relaxed text-text2">{goodToKnow(dest)}</p>
         </section>
 
         {/* CTA — into the live tool */}
@@ -334,9 +334,11 @@ export default async function DestinationGuidePage({
             Today’s deals
           </Link>
         </div>
-
-        <SiteFooter />
       </article>
+
+      <div className="mx-auto max-w-[var(--container-shell)]">
+        <SiteFooter />
+      </div>
     </AppShell>
   )
 }

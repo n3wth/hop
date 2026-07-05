@@ -21,10 +21,23 @@ import { searchAwards } from '@/lib/seatsaero'
 import { getBalances } from '@/lib/awardwallet'
 import { mockCash, mockAwards, mockBalances } from '@/lib/mock'
 import { recordCppObservations } from '@/lib/valuation-telemetry'
-import { recordDegradation } from '@/lib/degradation-telemetry'
+import { iataRouteCode, recordDegradation, sanitizeReason } from '@/lib/degradation-telemetry'
+import { captureServerEvent } from '@/lib/posthog-server'
 import { canonicalizeProgram } from '@/lib/programs'
 
 export const POINTS_THRESHOLD_CPP = 2.5
+
+// Seat-occupying travelers: one seat per adult + child; infants ride as lap
+// infants (no seat, no award miles). THE party-size rule — the engine scales
+// award economics by it and the UI discloses it ("Totals for N travelers"), so
+// both MUST read this one function or the label can drift from the math.
+// Hardened against garbage because assembleSearch is the shared funnel every
+// tool author calls directly: non-finite/negative/fractional counts clamp.
+export function seatsFor(params: Pick<SearchParams, 'adults' | 'children'>): number {
+  const count = (n: number | undefined): number =>
+    typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0
+  return Math.max(1, (count(params.adults) || 1) + count(params.children))
+}
 
 function isAward(option: FlightOption): boolean {
   return option.kind === 'award' || option.kind === 'transfer'
@@ -53,9 +66,19 @@ export async function assembleSearch(
   let awardOptions: FlightOption[] = []
   let balances: Balance[] = []
   const degraded: string[] = []
+  // Per-source failure reasons from the upstream {ok:false} results — telemetry
+  // only (never part of SearchResult), so the incident trail says WHY a source
+  // degraded (e.g. "Duffel responded 429"), not just which one.
+  const degradedReasons: Record<string, string> = {}
 
   // MOCK is truthy only for "1"/"true"/"yes" — "0"/"false"/"" all mean live.
   const useMock = /^(1|true|yes)$/i.test(process.env.MOCK ?? '')
+
+  // Duffel's cash total_amount already covers the WHOLE party (buildPassengers
+  // in lib/duffel.ts), while Seats.aero miles/taxes are always per-seat — so
+  // award economics are scaled to the same party total below, making both legs
+  // of every cpp comparison mean "cost to move everyone".
+  const seats = seatsFor(params)
   if (useMock) {
     // Echo the searched route/date into the fixtures so the cards reflect the
     // query (the fixtures are authored for SFO→LAX; rewrite their route fields).
@@ -75,6 +98,21 @@ export async function assembleSearch(
       originCode: params.from,
       destCode: params.to,
       date: day ?? o.date,
+      // mockCash() bakes in a fixed sample bookingUrl (lib/mock.ts's own
+      // hardcoded SFO→LAX PARAMS) — without this, a cash CTA on a search for
+      // any OTHER route silently deep-links to the wrong airports/date/pax.
+      // Award options' bookingUrl (pointsBookingUrl) is program-scoped, not
+      // route-scoped, so it's correct as-is and left untouched.
+      // Cash fixtures are authored per-seat; live Duffel returns party totals
+      // (buildPassengers). Scale so mock and live share the same semantics —
+      // otherwise the award scaling below would skew mock cpp for parties > 1.
+      ...(o.kind === 'cash'
+        ? {
+            bookingUrl: cashBookingUrl(params),
+            cashPrice: o.cashPrice != null ? o.cashPrice * seats : o.cashPrice,
+            taxes: o.taxes != null ? o.taxes * seats : o.taxes,
+          }
+        : {}),
     })
     cashOptions = mockCash().map(reroute)
     awardOptions = mockAwards().map(reroute)
@@ -91,10 +129,16 @@ export async function assembleSearch(
     ])
 
     if (cashRes.ok) cashOptions = cashRes.data
-    else degraded.push('cash')
+    else {
+      degraded.push('cash')
+      degradedReasons.cash = cashRes.reason
+    }
 
     if (awardsRes.ok) awardOptions = awardsRes.data
-    else degraded.push('awards')
+    else {
+      degraded.push('awards')
+      degradedReasons.awards = awardsRes.reason
+    }
 
     if (balancesRes === null) {
       // Caller supplied balances (possibly empty) — trust them, no degrade.
@@ -152,8 +196,14 @@ export async function assembleSearch(
   // Annotate award/transfer options: compute cpp vs cheapest cash, tier,
   // youHave from balances, transfer sources, booking URL, and action intent.
   const awards: FlightOption[] = awardOptions.map((o) => {
-    const miles = o.miles ?? 0
-    const taxes = o.taxes ?? 0
+    // Upstream award miles/taxes are per-seat (Seats.aero never scales by party
+    // size); cheapestCash is a party total. Scale the award side to the party
+    // so cpp compares like-for-like — for a single seat this is a no-op. The
+    // per-seat cpp ratio is preserved: both numerator and denominator scale.
+    const partyMiles = o.miles != null ? o.miles * seats : undefined
+    const partyTaxes = o.taxes != null ? o.taxes * seats : undefined
+    const miles = partyMiles ?? 0
+    const taxes = partyTaxes ?? 0
     const value =
       cheapestCash != null && miles > 0
         ? cpp(cheapestCash, taxes, miles)
@@ -206,6 +256,8 @@ export async function assembleSearch(
 
     return {
       ...o,
+      miles: partyMiles,
+      taxes: partyTaxes,
       cpp: value,
       tier: optionTier,
       youHave: ownBalance,
@@ -218,17 +270,26 @@ export async function assembleSearch(
     }
   })
 
-  recordCppObservations(
-    awards
-      .filter((o) => o.program && typeof o.cpp === 'number' && o.cpp > 0)
-      .map((o) => ({
-        programId: canonicalizeProgram(o.program!)?.id ?? '',
-        cpp: o.cpp!,
-        cashCents: cheapestCash != null ? Math.round(cheapestCash * 100) : undefined,
-        miles: o.miles,
-      }))
-      .filter((s) => s.programId !== ''),
-  )
+  // NOTE: `miles`/`cashCents` here are party totals for multi-passenger
+  // searches (post-scaling). cpp — the only field the valuation worker
+  // aggregates today (ADR 0005) — is per-point and scale-invariant, so the
+  // observations stay comparable; any future consumer of the raw miles field
+  // must account for party size first.
+  // Mock runs never record (mirrors the recordDegradation guard below) —
+  // fixture cpp values must never reach the live valuation worker's trust gate.
+  if (!useMock) {
+    recordCppObservations(
+      awards
+        .filter((o) => o.program && typeof o.cpp === 'number' && o.cpp > 0)
+        .map((o) => ({
+          programId: canonicalizeProgram(o.program!)?.id ?? '',
+          cpp: o.cpp!,
+          cashCents: cheapestCash != null ? Math.round(cheapestCash * 100) : undefined,
+          miles: o.miles,
+        }))
+        .filter((s) => s.programId !== ''),
+    )
+  }
 
   // Collapse the raw API dump to ONE best option per program/airline, then cap.
   // Live sources return hundreds of near-duplicate offers (every fare/time);
@@ -323,11 +384,25 @@ export async function assembleSearch(
       : undefined
 
   // Self-improvement telemetry (ADR 0007): record which sources degraded this
-  // LIVE search — fire-and-forget (void, gated, never throws), so it cannot
-  // alter degraded[], the verdict, or anything else in the result. Mirrors
-  // the recordCppObservations hook above; mock runs never record.
+  // LIVE search AND WHY — fire-and-forget (void, gated, never throws), so it
+  // cannot alter degraded[], the verdict, or anything else in the result.
+  // Mirrors the recordCppObservations hook above; mock runs never record.
+  // Two independent sinks, independently gated: the Neon event row
+  // (HOP_ENABLE_SELF_IMPROVE) feeds the sentinel's D2 detector; the PostHog
+  // "search_degraded" event (key presence) gives ops a live, queryable trail.
+  // Both stay PII-free: no user id, validated route only, sanitized reasons.
   if (!useMock && degraded.length > 0) {
-    recordDegradation(degraded, { from: params.from, to: params.to })
+    recordDegradation(
+      degraded.map((source) => ({ source, reason: degradedReasons[source] })),
+      { from: params.from, to: params.to },
+    )
+    captureServerEvent('search_degraded', {
+      sources: degraded,
+      reasons: Object.fromEntries(
+        degraded.map((source) => [source, sanitizeReason(degradedReasons[source])]),
+      ),
+      route: iataRouteCode({ from: params.from, to: params.to }),
+    })
   }
 
   return {

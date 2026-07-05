@@ -3,6 +3,8 @@
 // importing a client never throws, and tests can run without real keys.
 // Never logs secret values.
 
+import { createHash } from 'node:crypto'
+
 export type EnvKey =
   | 'DUFFEL_API_KEY_LIVE'
   // TEST-mode token (duffel_test_…) — native cash checkout books against this
@@ -37,14 +39,14 @@ export type EnvKey =
   | 'HOP_VALUATION_WORKER_URL'
   // Shared bearer secret between Vercel and the valuation Worker.
   | 'HOP_VALUATION_SYNC_SECRET'
-  // Stripe — the premium-subscription billing seam (lib/stripe.ts). Server-side
-  // secret ONLY: Checkout is Stripe-HOSTED, so there is no client-side Stripe.js
-  // and deliberately NO NEXT_PUBLIC_ Stripe key (zero client bundle weight).
-  // The webhook secret verifies event signatures; the price ids are first-class
-  // config so the checkout route never hardcodes a Stripe object id. Yearly is
-  // OPTIONAL — monthly alone validates the rail.
+  // Commission Junction / Bankrate affiliate tag for card-affiliates.ts
+  | 'NEXT_PUBLIC_CJ_AFFILIATE_TAG'
+  // Stripe API credentials and prices
   | 'STRIPE_SECRET_KEY'
+  | 'STRIPE_PUBLISHABLE_KEY'
   | 'STRIPE_WEBHOOK_SECRET'
+  | 'NEXT_PUBLIC_STRIPE_PRICE_MONTHLY'
+  | 'NEXT_PUBLIC_STRIPE_PRICE_YEARLY'
   | 'STRIPE_PRICE_ID_PRO_MONTHLY'
   | 'STRIPE_PRICE_ID_PRO_YEARLY'
   // Linear — the health sentinel's issue-filing channel (lib/linear.ts, ADR
@@ -54,6 +56,36 @@ export type EnvKey =
   // hop_improvement_findings; P1s fall back to the owner email).
   | 'LINEAR_API_KEY'
   | 'LINEAR_TEAM_ID'
+  // PostHog server-side capture (lib/posthog-server.ts). The write-only project
+  // token — POSTHOG_KEY (server) wins over the public client token, matching
+  // instrumentation.ts precedence. Absent → captureServerEvent is a no-op.
+  | 'POSTHOG_KEY'
+  | 'NEXT_PUBLIC_POSTHOG_KEY'
+  // Optional ingestion-host override (no trailing slash); defaults to the US
+  // cloud host in lib/posthog-server.ts when absent.
+  | 'POSTHOG_HOST'
+  | 'NEXT_PUBLIC_POSTHOG_HOST'
+  // ── Identity + data (Better Auth on Neon) ─────────────────────────────────
+  // Neon Postgres connection string (pooled). The Drizzle client (lib/db) and
+  // Better Auth both read it lazily; absent → getDb() returns null and every
+  // withDb caller degrades to its fallback.
+  | 'DATABASE_URL'
+  // Unpooled Neon URL — preferred by drizzle-kit for DDL/migrations.
+  | 'DATABASE_URL_UNPOOLED'
+  // Session-signing secret for Better Auth. AUTH_SECRET is accepted as an
+  // alias (Better Auth reads both natively; we resolve explicitly in lib/auth).
+  | 'BETTER_AUTH_SECRET'
+  | 'AUTH_SECRET'
+  // Canonical app origin for OAuth callbacks/redirects (falls back to
+  // NEXT_PUBLIC_SITE_URL, then the hop.flights production domain on Vercel).
+  | 'BETTER_AUTH_URL'
+  // Google social login for Better Auth. This is a DIFFERENT Google OAuth
+  // client from the Gmail travel-history seam (GOOGLE_OAUTH_CLIENT_ID/SECRET).
+  // GOOGLE_ID/GOOGLE_SECRET are accepted aliases (the names used in Vercel).
+  | 'GOOGLE_CLIENT_ID'
+  | 'GOOGLE_CLIENT_SECRET'
+  | 'GOOGLE_ID'
+  | 'GOOGLE_SECRET'
 
 function read(key: EnvKey): string {
   const value = process.env[key]
@@ -78,11 +110,46 @@ export const env = {
   hopValuationWorkerUrl: () => read('HOP_VALUATION_WORKER_URL'),
   hopValuationSyncSecret: () => read('HOP_VALUATION_SYNC_SECRET'),
   stripeSecretKey: () => read('STRIPE_SECRET_KEY'),
+  stripePublishableKey: () => read('STRIPE_PUBLISHABLE_KEY'),
   stripeWebhookSecret: () => read('STRIPE_WEBHOOK_SECRET'),
+  stripePriceMonthly: () => {
+    const val = process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY
+    if (val && val.trim() !== '') return val
+    return read('STRIPE_PRICE_ID_PRO_MONTHLY')
+  },
+  stripePriceYearly: () => {
+    const val = process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY
+    if (val && val.trim() !== '') return val
+    const pro = process.env.STRIPE_PRICE_ID_PRO_YEARLY
+    if (pro && pro.trim() !== '') return pro
+    return ''
+  },
   stripePriceIdProMonthly: () => read('STRIPE_PRICE_ID_PRO_MONTHLY'),
   stripePriceIdProYearly: () => read('STRIPE_PRICE_ID_PRO_YEARLY'),
   linearApiKey: () => read('LINEAR_API_KEY'),
   linearTeamId: () => read('LINEAR_TEAM_ID'),
+  posthogKey: () => firstEnv('POSTHOG_KEY', 'NEXT_PUBLIC_POSTHOG_KEY'),
+  posthogHost: () => firstEnv('POSTHOG_HOST', 'NEXT_PUBLIC_POSTHOG_HOST'),
+  databaseUrl: () => read('DATABASE_URL'),
+  googleClientId: () => firstEnv('GOOGLE_CLIENT_ID', 'GOOGLE_ID'),
+  googleClientSecret: () => firstEnv('GOOGLE_CLIENT_SECRET', 'GOOGLE_SECRET'),
+}
+
+// First non-empty value across alias keys (throws naming the primary key when
+// every alias is absent — same contract as read()).
+function firstEnv(...keys: EnvKey[]): string {
+  for (const key of keys) {
+    const value = process.env[key]
+    if (value && value.trim() !== '') return value
+  }
+  throw new Error(`Missing required environment variable: ${keys[0]}`)
+}
+
+// Server-side PostHog capture is available when EITHER token is present
+// (lib/posthog-server.ts no-ops otherwise). Key presence is the whole gate —
+// capture is fire-and-forget observability, not a product seam.
+export function isPostHogEnabled(): boolean {
+  return hasEnv('POSTHOG_KEY') || hasEnv('NEXT_PUBLIC_POSTHOG_KEY')
 }
 
 // True when a key is present without throwing — lets a client degrade
@@ -91,6 +158,42 @@ export function hasEnv(key: EnvKey): boolean {
   const value = process.env[key]
   return Boolean(value && value.trim() !== '')
 }
+
+// Google social login is available only when a Better Auth Google client is
+// fully configured (either canonical or alias names). Off → /login renders the
+// sign-in-unavailable state instead of a button that dead-ends at Google.
+export function isGoogleAuthEnabled(): boolean {
+  return (
+    (hasEnv('GOOGLE_CLIENT_ID') || hasEnv('GOOGLE_ID')) &&
+    (hasEnv('GOOGLE_CLIENT_SECRET') || hasEnv('GOOGLE_SECRET'))
+  )
+}
+
+// The session-signing secret for Better Auth AND the HMAC key for OAuth state
+// binding (AwardWallet connect). Resolution: explicit secret → alias → a
+// derived key from DATABASE_URL (deterministic across deploys; rotates only
+// with the database URL). Returns null when nothing is available — callers
+// fail closed.
+export function resolveAuthSecret(): string | null {
+  const explicit = process.env.BETTER_AUTH_SECRET || process.env.AUTH_SECRET
+  if (explicit && explicit.trim() !== '') return explicit.trim()
+  const dbUrl = process.env.DATABASE_URL
+  if (dbUrl && dbUrl.trim() !== '') {
+    // Deriving from DATABASE_URL keeps production sessions working when only
+    // the database is configured. Anyone holding DATABASE_URL already owns the
+    // data, so this adds no new exposure — but set BETTER_AUTH_SECRET properly.
+    if (!warnedDerivedSecret) {
+      warnedDerivedSecret = true
+      console.warn(
+        '[auth] BETTER_AUTH_SECRET is not set — deriving a session secret from DATABASE_URL. ' +
+          'Set BETTER_AUTH_SECRET (or AUTH_SECRET) in the environment.',
+      )
+    }
+    return createHash('sha256').update(`hop-better-auth:${dbUrl.trim()}`).digest('hex')
+  }
+  return null
+}
+let warnedDerivedSecret = false
 
 // Native cash checkout is GATED. It activates only when BOTH the explicit flag
 // is on AND a TEST token is present — otherwise the cash CTA keeps its current
@@ -112,6 +215,16 @@ export function isGmailHistoryEnabled(): boolean {
   const flag = process.env.HOP_ENABLE_GMAIL_HISTORY ?? ''
   const on = /^(1|true|yes)$/i.test(flag.trim())
   return on && hasEnv('GOOGLE_OAUTH_CLIENT_ID') && hasEnv('GOOGLE_OAUTH_CLIENT_SECRET')
+}
+
+// The standing-orders watcher (app/api/cron/standing-orders) only re-checks
+// watches while STANDING_ORDERS_CRON_ENABLED is truthy — byte-identical
+// matching to the cron route's own isEnabled() (no trim: if the two ever
+// disagree, it must be this one saying "not live" while the runner works,
+// never a promised ping the runner won't send). Surfaces read this so watch
+// copy stays truthful (roadmap R1.3): off → "alerts go live soon".
+export function isStandingOrdersCronLive(): boolean {
+  return /^(1|true|yes)$/i.test(process.env.STANDING_ORDERS_CRON_ENABLED ?? '')
 }
 
 // The live-valuation sync seam is GATED behind an explicit flag AND a configured
@@ -178,6 +291,29 @@ export function isInferredFactsEnabled(): boolean {
 // HOP_ENABLE_OBSERVED_OUTCOMES once the table is created.
 export function isObservedOutcomesEnabled(): boolean {
   const flag = process.env.HOP_ENABLE_OBSERVED_OUTCOMES ?? ''
+  return /^(1|true|yes)$/i.test(flag.trim())
+}
+
+// Email/password sign-in (required verification + reset-by-email) is GATED
+// behind an explicit flag AND a working Resend key — delivery is load-bearing
+// here (a user who can't receive the verification email can never finish
+// signing up), unlike e.g. isCheckoutEnabled's payments gate. Off → GoogleSignIn
+// stays the only /login option; existing Google accounts are unaffected either
+// way. Flip HOP_ENABLE_EMAIL_PASSWORD_AUTH and set RESEND_API_KEY to enable.
+export function isEmailPasswordAuthEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_EMAIL_PASSWORD_AUTH ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && hasEnv('RESEND_API_KEY')
+}
+
+// Passkey/WebAuthn sign-in (@better-auth/passkey) is GATED behind its own
+// explicit flag — no upstream credential is needed (WebAuthn needs only the
+// `passkey` table plus the browser's platform authenticator), but flipping
+// this changes what's stored in Neon and adds a new client SDK surface, so
+// it's a deliberate opt-in rather than automatic once the table exists.
+// Flip HOP_ENABLE_PASSKEY_AUTH to enable.
+export function isPasskeyEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_PASSKEY_AUTH ?? ''
   return /^(1|true|yes)$/i.test(flag.trim())
 }
 

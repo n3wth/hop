@@ -2,6 +2,7 @@
 
 import { memo, useId } from 'react'
 import type { CppTier, FlightOption } from '@/lib/types'
+import { track } from '@/lib/posthog-client'
 import Icon from './Icon'
 import BrandIcon from './BrandIcon'
 
@@ -132,29 +133,31 @@ const ResultRow = memo(function ResultRow({ option, rank, maxCpp, index = 0, ope
         aria-expanded={open}
         aria-controls={panelId}
         aria-label={`${open ? 'Hide' : 'Show'} details for ${option.airline} ${option.route}`}
-        className="flex flex-1 cursor-pointer flex-col px-[22px] pb-[22px] pt-6 text-left"
+        className="flex flex-1 cursor-pointer flex-col px-[18px] pb-[18px] pt-5 text-left sm:px-[22px] sm:pb-[22px] sm:pt-6"
       >
         <div className="flex items-start justify-between">
           <BrandIcon code={option.airlineCode} name={option.airline} size={46} />
-          <span className="mt-[3px] font-display text-[12px] font-semibold uppercase tracking-[0.06em] text-text3">
+          <span className="mt-[3px] font-display text-[12px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
             {rankLabel(option, rank)}
           </span>
         </div>
 
-        {/* fixed-height name+route block so price/value/bar align across cards */}
-        <div className="mt-[18px] min-h-[58px]">
-          <div className="font-display text-[19px] font-semibold leading-[1.1] text-text">
+        {/* fixed-height name+route block so price/value/bar align across cards —
+            sm+ only; the single-column phone layout has nothing to align with,
+            so the min-height would just be dead space. */}
+        <div className="mt-[14px] sm:mt-[18px] sm:min-h-[58px]">
+          <div className="font-display text-[17px] font-semibold leading-[1.1] text-text sm:text-[19px]">
             {option.airline}
           </div>
-          <div className="mt-[5px] text-[12.5px] tracking-[0.02em] text-text3">
+          <div className="mt-[5px] text-[12.5px] tracking-[var(--track-label)] text-text3">
             {option.direct ? 'Direct · ' : ''}
             {option.route}
             {option.durationMin != null ? ` · ${dur}` : ''}
           </div>
         </div>
 
-        <div className="pt-[18px]">
-          <div className="hop-price text-[30px] leading-none text-text">
+        <div className="pt-[14px] sm:pt-[18px]">
+          <div className="hop-price text-[26px] leading-none text-text sm:text-[30px]">
             {isCash
               ? `$${option.cashPrice?.toLocaleString() ?? '—'}`
               : option.miles?.toLocaleString() ?? '—'}
@@ -191,11 +194,13 @@ const ResultRow = memo(function ResultRow({ option, rank, maxCpp, index = 0, ope
           </div>
         </div>
 
-        <div className="mt-[14px] flex items-center justify-between gap-3 border-t border-hair pt-[12px]">
-          <span className="text-[12.5px] leading-[1.45] text-text2">{assessment(option)}</span>
+        {/* footer note row — items-start so a wrapped assessment line keeps the
+            Details affordance pinned to the first line instead of floating mid-card */}
+        <div className="mt-3 flex items-start justify-between gap-3 border-t border-hair pt-[10px] sm:mt-[14px] sm:items-center sm:pt-[12px]">
+          <span className="min-w-0 flex-1 text-[12.5px] leading-[1.45] text-text2">{assessment(option)}</span>
           <span
             aria-hidden
-            className="flex flex-shrink-0 items-center gap-[3px] text-[11px] font-semibold text-text3"
+            className="mt-[2px] flex flex-shrink-0 items-center gap-[3px] text-[11px] font-semibold text-text3 sm:mt-0"
           >
             {open ? 'Less' : 'Details'}
             <span
@@ -212,7 +217,7 @@ const ResultRow = memo(function ResultRow({ option, rank, maxCpp, index = 0, ope
           collapsed it's inert + aria-hidden so its booking link leaves the tab
           order and screen-reader flow until the card is opened. */}
       <div
-        className="hop-collapse px-[22px]"
+        className="hop-collapse px-[18px] sm:px-[22px]"
         data-open={open}
         id={panelId}
         role="region"
@@ -235,7 +240,7 @@ const ResultRow = memo(function ResultRow({ option, rank, maxCpp, index = 0, ope
               <div className="flex flex-1 flex-col items-center gap-[2px]">
                 <div className="flex w-full items-center gap-[6px] text-brand">
                   <span className="h-px flex-1 bg-border" />
-                  <Icon name="flight" size={16} className="rotate-90" />
+                  <span aria-hidden className="text-[15px] font-semibold leading-none">→</span>
                   <span className="h-px flex-1 bg-border" />
                 </div>
                 <div className="text-[11px] text-text3">
@@ -280,7 +285,7 @@ const ResultRow = memo(function ResultRow({ option, rank, maxCpp, index = 0, ope
             {/* transfer steps */}
             {option.kind === 'transfer' && transfers.length > 0 && (
               <div className="mt-[14px] rounded-[10px] bg-brand-tint px-[12px] py-[10px]">
-                <div className="mb-[6px] text-[11px] font-semibold uppercase tracking-[0.08em] text-brand">
+                <div className="mb-[6px] text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
                   How to book
                 </div>
                 <ol className="space-y-[5px] text-[12.5px] leading-[1.45] text-text2">
@@ -299,10 +304,17 @@ const ResultRow = memo(function ResultRow({ option, rank, maxCpp, index = 0, ope
               </div>
             )}
 
-            {/* booking CTA */}
+            {/* booking CTA — cash bookings emit the client-side outclick
+                funnel event (the /api/go/kiwi redirect records the server
+                shadow either way). */}
             <a
               href={option.bookingUrl}
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation()
+                if (option.kind === 'cash') {
+                  track('outclick', { kind: 'cash', target: option.route })
+                }
+              }}
               className="mt-[16px] flex w-full items-center justify-center gap-[6px] rounded-[11px] border-[1.5px] border-text bg-transparent px-3 py-[11px] text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
             >
               {actionLabel(option)}

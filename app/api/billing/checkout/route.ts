@@ -10,10 +10,12 @@
 // Rate-limited per-sub + per-IP BEFORE any Stripe work (each session create is
 // otherwise a free Stripe API call for a scripted caller). NEVER throws.
 
+import { checkBotId } from 'botid/server'
 import { auth0 } from '@/lib/auth0'
 import { isBillingEnabled } from '@/lib/env'
 import { checkRateLimit, clientIp } from '@/lib/rate-limit'
-import { createCheckoutSession, type BillingInterval } from '@/lib/stripe'
+import { createCheckoutSession, createStripeCustomer, type BillingInterval } from '@/lib/stripe'
+import { stripeCustomerIdFor, saveStripeCustomer } from '@/lib/subscription'
 
 export const runtime = 'nodejs'
 
@@ -28,6 +30,11 @@ function json(body: Record<string, unknown>, status = 200): Response {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  const verification = await checkBotId()
+  if (verification.isBot) {
+    return json({ ok: false, error: 'Access denied' }, 403)
+  }
+
   if (!isBillingEnabled()) {
     return json({ ok: false, error: 'Billing is not available yet.' }, 503)
   }
@@ -61,6 +68,22 @@ export async function POST(request: Request): Promise<Response> {
     // No/invalid body is fine — default to monthly.
   }
 
+  // Attach the persistent Stripe customer BEFORE minting the session, so the
+  // webhook's hop_customers lookup and getUserTier's read both resolve. Mint a
+  // NEW Stripe customer only on a clean "no customer yet" read — on a lookup
+  // failure (DB blip) proceed customer-less instead, so a repeat customer never
+  // gets a duplicate Stripe customer; the webhook self-heals the mapping from
+  // the metadata.user_id ref minted below.
+  const lookup = await stripeCustomerIdFor(userId)
+  let customerId = lookup.ok ? (lookup.customerId ?? undefined) : undefined
+  if (lookup.ok && !customerId) {
+    const created = await createStripeCustomer({ userId, email })
+    if (created.ok) {
+      customerId = created.customerId
+      await saveStripeCustomer(userId, customerId)
+    }
+  }
+
   // Return destination. The ?upgraded=1 param is DISPLAY ONLY — tier truth is
   // written exclusively by the signed webhook, never from this redirect.
   const origin = process.env.APP_BASE_URL?.replace(/\/$/, '') || new URL(request.url).origin
@@ -68,6 +91,7 @@ export async function POST(request: Request): Promise<Response> {
     userId,
     email,
     interval,
+    customerId,
     successUrl: `${origin}/account?upgraded=1#billing`,
     cancelUrl: `${origin}/account#billing`,
   })

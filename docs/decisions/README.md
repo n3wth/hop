@@ -63,3 +63,6 @@ of these decisions automatically (e.g. `engine-invariant-reviewer` guards ADR 00
 | [0004](0004-compound-engineering-operating-model.md) | Compound-engineering operating model | Accepted |
 | [0005](0005-observed-point-valuation-sync.md) | Observed point-valuation sync | Accepted |
 | [0006](0006-deterministic-orchestration-workflows.md) | Deterministic multi-agent orchestration lives in `.claude/workflows/` | Accepted |
+| [0007](0007-self-improvement-loops.md) | Self-improvement loops | Accepted |
+| [0008](0008-docs-canon-in-git-work-state-in-linear.md) | Documentation canon lives in git; Linear owns work state | Accepted |
+| [0009](0009-tiered-autonomous-merge.md) | Tiered autonomous merge | Accepted |

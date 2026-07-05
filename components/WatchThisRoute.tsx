@@ -16,6 +16,11 @@ export interface WatchThisRouteProps {
   /** /auth/login?returnTo=... — the SAME returnTo VerdictRail builds for its own
       sign-in CTA, so a signed-out visitor lands back on this exact search. */
   signInHref: string
+  /** Whether the standing-orders runner is live (resolved server-side from
+      lib/env.ts#isStandingOrdersCronLive). Off → the copy promises only what
+      hop can do today: the watch is saved, alerts go live soon. Defaults
+      false — fail honest when a caller forgets. */
+  live?: boolean
 }
 
 type Status = 'idle' | 'success' | 'limit' | 'error'
@@ -34,6 +39,7 @@ export default function WatchThisRoute({
   threshold,
   isSignedIn,
   signInHref,
+  live = false,
 }: WatchThisRouteProps) {
   const [pending, startTransition] = useTransition()
   const [status, setStatus] = useState<Status>('idle')
@@ -62,7 +68,9 @@ export default function WatchThisRoute({
     return (
       <Shell icon="notifications">
         <p className="text-[14px] leading-[1.5] text-hero-body">
-          hop pings you the day {route} clears {thresholdLabel}/point.
+          {live
+            ? `hop pings you the day ${route} clears ${thresholdLabel}/point.`
+            : `hop saves a watch on ${route} for the day it clears ${thresholdLabel}/point — alerts aren't live yet.`}
         </p>
         <ArrowLink href={signInHref}>Sign in to watch this route</ArrowLink>
       </Shell>
@@ -72,10 +80,23 @@ export default function WatchThisRoute({
   if (status === 'success') {
     return (
       <Shell icon="check_circle">
-        <p className="text-[14px] leading-[1.5] text-hero-body">
-          Watching <b className="font-semibold text-white">{route}</b> on {dates}
-          {cabin}. hop pings you above <b className="font-semibold text-white">{thresholdLabel}</b>{' '}
-          /point.
+        {/* Post-action feedback, not page entrance: the line settles in as the
+            check pops (Shell animates the check_circle icon). */}
+        <p className="hop-text-appear text-[14px] leading-[1.5] text-hero-body">
+          {live ? (
+            <>
+              Watching <b className="font-semibold text-white">{route}</b> on {dates}
+              {cabin}. hop pings you above{' '}
+              <b className="font-semibold text-white">{thresholdLabel}</b> /point.
+            </>
+          ) : (
+            <>
+              {/* Lead with the fact that is true NOW (a saved row), not the
+                  active verb — nothing is monitoring until the runner flips. */}
+              Saved — <b className="font-semibold text-white">{route}</b> on {dates}
+              {cabin}. Alerts aren&apos;t live yet.
+            </>
+          )}
         </p>
         <ArrowLink href="/account">Manage in /account</ArrowLink>
       </Shell>
@@ -85,7 +106,9 @@ export default function WatchThisRoute({
   return (
     <Shell icon="notifications">
       <p className="text-[14px] leading-[1.5] text-hero-body">
-        hop pings you the day this exact trip clears {thresholdLabel}/point.
+        {live
+          ? `hop pings you the day this exact trip clears ${thresholdLabel}/point.`
+          : `hop saves this watch for the day this trip clears ${thresholdLabel}/point — alerts aren't live yet.`}
       </p>
       <button
         type="button"
@@ -129,7 +152,14 @@ function Shell({
       className="hop-rise mt-5 flex items-start gap-3 rounded-[14px] border-[1.5px] border-white/15 bg-white/[0.04] px-4 py-[14px]"
       style={{ ['--hop-delay' as string]: '260ms' }}
     >
-      <span aria-hidden className="mt-[2px] flex-shrink-0 text-hero-label">
+      {/* check_circle only ever renders after the save succeeds, so its settle
+          is action feedback (hop-check-in), never load-time motion. */}
+      <span
+        aria-hidden
+        className={`mt-[2px] flex-shrink-0 text-hero-label ${
+          icon === 'check_circle' ? 'hop-check-in' : ''
+        }`}
+      >
         <Icon name={icon} size={16} weight={icon === 'check_circle' ? 'fill' : 'regular'} />
       </span>
       <div className="min-w-0 flex-1">{children}</div>
@@ -144,9 +174,7 @@ function ArrowLink({ href, children }: { href: string; children: React.ReactNode
       className="group mt-[6px] inline-flex items-center gap-[6px] text-[13px] font-semibold text-mint-bright transition-colors hover:text-white"
     >
       {children}
-      <span aria-hidden className="transition-transform group-hover:translate-x-[2px]">
-        →
-      </span>
+      <span aria-hidden>→</span>
     </a>
   )
 }

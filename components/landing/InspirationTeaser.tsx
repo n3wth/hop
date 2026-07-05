@@ -19,10 +19,10 @@ export default async function InspirationTeaser() {
   return (
     <section>
       <div className="mx-auto flex max-w-[58ch] flex-col items-center gap-2 text-center">
-        <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
+        <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
           Imagine where your points could go
         </span>
-        <h2 className="mx-auto max-w-[16ch] text-balance font-display text-[32px] font-bold leading-[1.05] tracking-[-0.025em] text-text sm:text-[44px] lg:text-[52px]">
+        <h2 className="mx-auto max-w-[22ch] text-balance font-display text-[32px] font-bold leading-[1.05] tracking-[-0.025em] text-text sm:text-[44px] lg:text-[52px]">
           The trips where miles stretch furthest.
         </h2>
         <p className="mt-1 text-[15px] leading-[1.55] text-text2">

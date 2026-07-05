@@ -41,7 +41,7 @@ export default function HowItWorks() {
   return (
     <section>
       <div className="mx-auto flex max-w-[64ch] flex-col items-center gap-2 text-center">
-        <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
+        <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
           How hop works
         </span>
         <h2 className="max-w-[26ch] text-balance font-display text-[32px] font-bold leading-[1.08] tracking-[-0.025em] text-text sm:text-[44px] lg:text-[52px]">
@@ -66,7 +66,7 @@ export default function HowItWorks() {
             <div className="mt-5 text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
               {s.source}
             </div>
-            <h3 className="mt-1.5 font-display text-[18px] font-semibold leading-[1.15] tracking-[-0.01em] text-text">
+            <h3 className="mt-1.5 text-balance font-display text-[18px] font-semibold leading-[1.15] tracking-[-0.01em] text-text">
               {s.title}
             </h3>
             <p className="mt-2 text-[13.5px] leading-[1.55] text-text2">{s.body}</p>

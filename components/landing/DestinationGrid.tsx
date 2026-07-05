@@ -4,6 +4,7 @@ import { formatValue, tier } from '@/lib/cpp'
 import type { Destination } from '@/lib/destinations'
 import { computeCpp, imageQuery } from '@/lib/destinations'
 import type { DestImage } from '@/lib/images'
+import { isoOffset } from '@/lib/dates'
 
 // Map a value tier to its token chip colors. Same good/ok/weak language the
 // verdict uses, so a chip's color always means the same thing across surfaces.
@@ -23,8 +24,8 @@ function compactMiles(n: number): string {
 // A single wanderlust card: a real destination photo up top with the city + its
 // country flag overlaid, then the economics — "from X miles", a ¢/pt value chip
 // (colored by tier()), and the program that books it well. Flat, warm, solid: no
-// card shadow/lift; hover scales
-// the IMAGE inside its clipped frame and tints the border. Links into a real
+// card shadow; hover adds a restrained transform-only lift and tints the border.
+// Links into a real
 // search seeded for that destination so the dream is one tap from the verdict.
 function DestinationCard({
   d,
@@ -42,14 +43,17 @@ function DestinationCard({
   stagger?: boolean
 }) {
   const cppVal = computeCpp(d)
+  // A round trip, seeded like the header search (depart ≈ +10d, return ≈ +3d
+  // after) — the card used to omit dates entirely, which silently ran a
+  // ONE-WAY search on tap with no way to tell from the card face.
   const href = `/search?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(
     d.code,
-  )}&adults=1`
+  )}&depart=${isoOffset(10)}&return=${isoOffset(13)}&adults=1`
 
   return (
     <Link
       href={href}
-      className={`group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-colors hover:border-brand-mint-deep${
+      className={`group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-colors duration-200 ease-[var(--ease-premium)] hover:border-brand-mint-deep${
         stagger ? ' hop-rise' : ''
       }`}
       style={stagger ? { ['--hop-delay' as string]: `${120 + index * 70}ms` } : undefined}
@@ -86,7 +90,7 @@ function DestinationCard({
         />
 
         {/* IATA code badge */}
-        <span className="absolute right-3 top-3 rounded-full bg-white/90 px-2 py-0.5 font-display text-[11px] font-semibold uppercase tracking-[0.1em] text-brand">
+        <span className="absolute right-3 top-3 rounded-full bg-white/90 px-2 py-0.5 font-display text-[11px] font-semibold uppercase tracking-[var(--track-tag)] text-brand">
           {d.code}
         </span>
 
@@ -100,7 +104,7 @@ function DestinationCard({
             <h3 className="truncate font-display text-[20px] font-semibold leading-[1.1] tracking-[-0.01em] text-white">
               {d.city}
             </h3>
-            <p className="truncate text-[11px] font-medium uppercase tracking-[0.08em] text-white/85">
+            <p className="truncate text-[11px] font-medium uppercase tracking-[var(--track-label)] text-white/85">
               {d.country}
             </p>
           </div>
@@ -110,6 +114,13 @@ function DestinationCard({
       {/* ── body ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-1 flex-col p-4">
         <p className="text-[14px] leading-[1.5] text-text2">{d.vibe}</p>
+
+        {/* origin + trip type — the card used to give no way to tell where
+            "from X miles" is FROM, or whether tapping runs a one-way or round
+            trip search. Both are now explicit before the tap, not a surprise. */}
+        <p className="mt-2 text-[12px] font-medium text-text3">
+          From {origin} · Round trip
+        </p>
 
         <div className="mt-4 flex items-center justify-between border-t border-hair pt-3.5">
           <span className="text-[13px] font-semibold text-text">
