@@ -81,6 +81,34 @@ winning once their freshness window lapses.
 **Verify:** hit `/api/cron/valuation-sync` with the cron bearer; check the
 `hop_valuation_overrides` rows gain fresh `sample_count`.
 
+## Balance sync (paste / email forward)
+
+The AwardWallet-independent syncing seam (`docs/plans/2026-07-05-balance-sync.md`):
+paste a statement on `/account`, or forward balance emails to a personal
+HMAC-signed sync address. Extraction via the AI Gateway with a deterministic
+clamp (a balance must appear verbatim in the source text); no gateway key →
+regex fallback. Writes ordinary `hop_manual_balances` rows.
+
+**Turn on (paste rail only):** `HOP_ENABLE_BALANCE_SYNC=1` in Vercel. The
+`/account` affordance appears; `AI_GATEWAY_API_KEY` (already set for the
+concierge) upgrades extraction from regex to the gateway model
+(`HOP_BALANCE_SYNC_MODEL`, default `anthropic/claude-haiku-4-5`).
+
+**Turn on the email rail (worker first):**
+
+1. Deploy the worker: `cd cloudflare/balance-sync-worker && npm install`,
+   `openssl rand -hex 32`, `wrangler secret put HOP_BALANCE_INGEST_SECRET`,
+   `npm run deploy`; then point the zone's Email Routing catch-all at it
+   (worker README).
+2. In Vercel: `HOP_BALANCE_INGEST_SECRET=<the SAME value>`.
+
+**Turn off:** unset `HOP_ENABLE_BALANCE_SYNC`. The affordance disappears, the
+paste route answers `503`, and the ingest route refuses even a valid secret —
+a still-deployed Worker becomes a no-op.
+
+**Verify:** paste a statement email on `/account` → preview shows the read
+balances → Save; rows appear in "Your programs".
+
 ## Self-improve loop / degradation telemetry (ADR 0007)
 
 Deterministic health detection: `recordDegradation()` rows + the daily

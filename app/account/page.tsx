@@ -12,12 +12,16 @@ import UserAvatarImage from '@/components/UserAvatarImage'
 import { getBalances } from '@/lib/awardwallet'
 import {
   hasEnv,
+  isBalanceSyncEnabled,
   isBillingEnabled,
   isGmailHistoryEnabled,
   isEmailPasswordAuthEnabled,
   isPasskeyEnabled,
   isStandingOrdersCronLive,
+  resolveAuthSecret,
 } from '@/lib/env'
+import { makeSyncAddress } from '@/lib/balance-sync'
+import BalanceSyncPaste from '@/components/BalanceSyncPaste'
 import { getTravelHistory } from '@/lib/travel-history'
 import { isGmailConnected } from '@/lib/travel-history-sync'
 import AppShell from '@/components/AppShell'
@@ -353,6 +357,13 @@ export default async function AccountPage({
             awReason={awReason}
             awUnconfigured={awUnconfigured}
           />
+          {/* balance sync (flag-gated) — paste a statement / forward balance
+              emails; the AwardWallet-independent syncing seam. */}
+          {isBalanceSyncEnabled() && u.sub ? (
+            <div className="mt-4">
+              <BalanceSyncPaste syncAddress={makeSyncAddress(u.sub, resolveAuthSecret())} />
+            </div>
+          ) : null}
         </section>
 
         {/* elite status — the airline/hotel tiers the user holds. Sits with the

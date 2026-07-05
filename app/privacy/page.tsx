@@ -30,7 +30,7 @@ export default async function PrivacyPage() {
         eyebrow="Legal"
         title="Privacy Policy"
         intro="This policy explains what data hop collects, why, who we share it with, and the controls you have."
-        lastUpdated="June 29, 2026"
+        lastUpdated="July 5, 2026"
       >
         <h2>Who we are</h2>
         <p>
@@ -48,8 +48,11 @@ export default async function PrivacyPage() {
             <strong>Home airport.</strong> The home airport you set, used to personalize search.
           </li>
           <li>
-            <strong>Loyalty balances.</strong> Balances you enter manually, and — only if you
-            choose to connect it — balances synced from AwardWallet.
+            <strong>Loyalty balances.</strong> Balances you enter manually; balances hop reads
+            from text you paste or emails you forward to your personal sync address (we store
+            only the extracted program name and balance — never the pasted text or the email);
+            and — only if you choose to connect it — balances synced from AwardWallet. hop never
+            asks for, receives, or stores your loyalty-program or bank passwords.
           </li>
           <li>
             <strong>Saved searches.</strong> Searches you save so you can return to them.
@@ -98,6 +101,17 @@ export default async function PrivacyPage() {
             themselves — and you can disconnect and delete them at any time.
           </li>
           <li>
+            <strong>AI processing (Vercel AI Gateway / Anthropic)</strong> — when you paste a
+            statement or forward a balance email, its text is sent to an AI model once to read
+            the program names and balances out of it. The text is used only for that extraction;
+            hop keeps the extracted program + balance and discards the rest. Every extracted
+            number is verified against the text you provided before it is saved.
+          </li>
+          <li>
+            <strong>Cloudflare</strong> — receives mail sent to your personal sync address and
+            relays its text to hop for the extraction above; the email is not stored.
+          </li>
+          <li>
             <strong>seats.aero</strong> — award availability data.
           </li>
           <li>
@@ -122,7 +136,9 @@ export default async function PrivacyPage() {
         <ul>
           <li>
             <strong>Access and correction.</strong> View and edit your home airport, balances, and
-            saved searches from your <Link href="/account">account</Link>.
+            saved searches from your <Link href="/account">account</Link>. Balances read from a
+            paste or a forwarded email are stored as ordinary program rows you can edit or remove
+            the same way.
           </li>
           <li>
             <strong>Disconnect AwardWallet.</strong> You can revoke the AwardWallet connection at

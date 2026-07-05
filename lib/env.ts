@@ -31,6 +31,10 @@ export type EnvKey =
   // Worker presents it as a Bearer token to file inbound emails as tickets.
   // Absent → the ingest endpoint rejects EVERY request (no unauthenticated writes).
   | 'HOP_SUPPORT_INGEST_SECRET'
+  // Shared secret guarding POST /api/balance-sync/ingest — the Cloudflare
+  // balance-sync Email Worker presents it as a Bearer token to relay forwarded
+  // loyalty-balance emails. Absent → the ingest endpoint rejects EVERY request.
+  | 'HOP_BALANCE_INGEST_SECRET'
   // Base URL of the deployed Cloudflare Worker that aggregates live cpp
   // observations into per-program valuation overrides (no trailing slash), e.g.
   // "https://hop-valuations.<subdomain>.workers.dev". See lib/valuation-telemetry.ts
@@ -107,6 +111,7 @@ export const env = {
   googleOAuthClientSecret: () => read('GOOGLE_OAUTH_CLIENT_SECRET'),
   resendApiKey: () => read('RESEND_API_KEY'),
   supportIngestSecret: () => read('HOP_SUPPORT_INGEST_SECRET'),
+  balanceIngestSecret: () => read('HOP_BALANCE_INGEST_SECRET'),
   hopValuationWorkerUrl: () => read('HOP_VALUATION_WORKER_URL'),
   hopValuationSyncSecret: () => read('HOP_VALUATION_SYNC_SECRET'),
   stripeSecretKey: () => read('STRIPE_SECRET_KEY'),
@@ -215,6 +220,19 @@ export function isGmailHistoryEnabled(): boolean {
   const flag = process.env.HOP_ENABLE_GMAIL_HISTORY ?? ''
   const on = /^(1|true|yes)$/i.test(flag.trim())
   return on && hasEnv('GOOGLE_OAUTH_CLIENT_ID') && hasEnv('GOOGLE_OAUTH_CLIENT_SECRET')
+}
+
+// Balance sync (paste / email-forward balance extraction — the AwardWallet-
+// independent syncing seam) is GATED behind an explicit flag ONLY: the
+// deterministic fallback parser needs no key, and the AI path already degrades
+// to it when AI_GATEWAY_API_KEY is absent (lib/ai-gateway returns null). Off →
+// the /account affordance doesn't render, the paste route answers 503, and the
+// email-ingest route refuses even with a valid secret. The email rail
+// additionally needs HOP_BALANCE_INGEST_SECRET + the deployed
+// cloudflare/balance-sync-worker (see docs/plans/2026-07-05-balance-sync.md).
+export function isBalanceSyncEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_BALANCE_SYNC ?? ''
+  return /^(1|true|yes)$/i.test(flag.trim())
 }
 
 // The standing-orders watcher (app/api/cron/standing-orders) only re-checks
