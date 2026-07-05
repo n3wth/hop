@@ -1,5 +1,6 @@
 import AppShell from '@/components/AppShell'
 import { isBillingEnabled } from '@/lib/env'
+import { getSessionNavUser } from '@/lib/nav-user'
 
 // Route-level loading UI for /account. Mirrors the real page's hero, nav row,
 // and two-column section layout so the real content swaps in with no layout
@@ -42,9 +43,10 @@ const NAV_PILLS = [
   '92px', // Developers
 ]
 
-export default function Loading() {
+export default async function Loading() {
+  const user = await getSessionNavUser()
   return (
-    <AppShell hideSearch>
+    <AppShell user={user} hideSearch>
       {/* Width MUST match the real page (container-shell) — a narrower
           skeleton reads as a different design and shifts on swap. */}
       <div className="mx-auto max-w-[var(--container-shell)] pb-4 pt-8 sm:pt-12">
