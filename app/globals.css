@@ -347,6 +347,26 @@ body {
   animation: hop-float 4.5s var(--ease-premium) infinite;
 }
 
+/* Ambient postcard drift — the hero's floating destination cards. Transform-
+   only like .hop-float, but each card carries its own resting rotation
+   (--pc-rot) and period (--pc-period) so no two cards ever move in sync.
+   Under prefers-reduced-motion the drift stops but the resting rotation is
+   kept (reset block below) — the scatter is composition, not motion. */
+@keyframes hop-drift {
+  0%,
+  100% {
+    transform: rotate(var(--pc-rot, 0deg)) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: rotate(var(--pc-rot, 0deg)) translate3d(0, -9px, 0);
+  }
+}
+
+.hop-drift {
+  transform: rotate(var(--pc-rot, 0deg));
+  animation: hop-drift var(--pc-period, 11s) ease-in-out infinite;
+}
+
 /* Value bars grow from 0 to their target width once, on load. The target width
    is supplied inline as --hop-bar-w; the animation eases out to it. */
 @keyframes hop-bar-grow {
@@ -501,6 +521,10 @@ body {
     animation: none;
     opacity: 1;
     width: var(--hop-bar-w, 0%);
+  }
+  /* Drift stops; the base class's static rotation stays. */
+  .hop-drift {
+    animation: none;
   }
   .hop-appear,
   .hop-check-in {

@@ -18,8 +18,9 @@ import HowItWorks from '@/components/landing/HowItWorks'
 import ConnectBand from '@/components/landing/ConnectBand'
 import InspirationTeaser from '@/components/landing/InspirationTeaser'
 import DestinationReel from '@/components/landing/DestinationReel'
+import HeroPostcards from '@/components/landing/HeroPostcards'
 import SignedInHome from '@/components/landing/SignedInHome'
-import { conciergeBackdrop } from '@/lib/concierge-backdrop'
+import { conciergeBackdrop, conciergeGallery } from '@/lib/concierge-backdrop'
 import { isoOffset } from '@/lib/dates'
 
 // A sensible default search to seed the hero form. Picking it pre-fills the
@@ -64,13 +65,16 @@ export default async function Home() {
   //   - prefs: home airport that seeds the default From
   //   - memory: unified personalization (M5) — drops avoided places from the feed
   // Each degrades gracefully on its own; none can crash the page.
-  const [real, heroBackdropRaw, prefs, memory] = await Promise.all([
+  const [real, heroBackdropRaw, prefs, memory, heroGallery] = await Promise.all([
     su?.sub ? getUserBalances(su.sub) : Promise.resolve([]),
     conciergeBackdrop(),
     su?.sub ? getPrefs(su.sub) : Promise.resolve({} as UserPrefs),
     // M5 — unified memory (orders the destinations module to stated affinities).
     // Degrades to the empty context when signed out; never throws.
     su?.sub ? getMemoryContext(su.sub) : Promise.resolve(EMPTY_MEMORY_CONTEXT),
+    // Signed-out only: the second-door composer's live backdrop rotation.
+    // (Signed-in builds a personalized gallery from its own picks instead.)
+    su?.sub ? Promise.resolve([]) : conciergeGallery(4),
   ])
 
   // Balances power both the program count and the personalized destinations.
@@ -140,7 +144,11 @@ export default async function Home() {
         {/* Lead with the working product: a seeded search one tap from a real
             no-auth verdict, with the canonical worked example as the proof
             directly beneath. The agent moves to the second door below. */}
-        <section className="pt-2 sm:pt-4">
+        <section className="relative pt-6 sm:pt-10 lg:pt-16">
+          {/* Floating postcards — the engine's best-value places drifting in
+              and out beside the copy (wide viewports only; the reel below
+              carries the imagery everywhere else). Degrades to nothing. */}
+          <HeroPostcards origin={homeSeed.from} />
           <div className="mx-auto flex max-w-[64ch] flex-col items-center gap-2 text-center">
             <h1
               className="hop-rise max-w-[16ch] text-balance font-display text-[38px] font-semibold leading-[1.02] tracking-[-0.03em] text-text sm:text-[56px] lg:text-[64px]"
@@ -153,16 +161,15 @@ export default async function Home() {
               style={{ ['--hop-delay' as string]: '140ms' }}
             >
               Live cash fares vs award space, priced in cents per point.
-              Search any route — no account needed.
             </p>
           </div>
 
-          <div className="hop-rise mt-7" style={{ ['--hop-delay' as string]: '190ms' }}>
+          <div className="hop-rise mt-8 sm:mt-10" style={{ ['--hop-delay' as string]: '190ms' }}>
             <HeroSearch initial={homeSeed} />
           </div>
 
           {/* the proof — the canonical worked example, right under the form */}
-          <div className="mt-8 sm:mt-10">
+          <div className="mt-12 sm:mt-16 lg:mt-20">
             <SampleVerdict />
           </div>
 
@@ -179,7 +186,7 @@ export default async function Home() {
         <DestinationReel />
 
         {/* ── THE SECOND DOOR — the conversational agent ─────────────────── */}
-        <AgentComposer variant="out" backdrop={heroBackdrop} headingTag="h2" />
+        <AgentComposer variant="out" backdrop={heroBackdrop} gallery={heroGallery} headingTag="h2" />
 
         {/* ── SELL THE DREAM ─────────────────────────────────────────────── */}
         <InspirationTeaser />

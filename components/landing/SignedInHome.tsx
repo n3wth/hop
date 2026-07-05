@@ -60,6 +60,17 @@ export default async function SignedInHome({
   const picks = withoutAvoided(base, memory.avoided).slice(0, 8)
   const photos = await destinationImages(picks.map((d) => imageQuery(d)))
 
+  // The composer backdrop slowly cross-fades through the member's OWN top
+  // picks — the same photos the grid below uses, so this costs no extra
+  // fetches. Empty (no photos) → AgentComposer falls back to the single
+  // static heroBackdrop, → the flat brand-ink panel.
+  const gallery = picks
+    .flatMap((d) => {
+      const p = photos[imageQuery(d)]
+      return p ? [{ thumb: p.thumb, alt: p.alt, city: d.city, countryCode: d.countryCode }] : []
+    })
+    .slice(0, 4)
+
   // A single headline stat for the summary panel: the best-value trip the member
   // can reach right now (or the best dream if they're light on points). Order is
   // preserved above, so picks[0] is the true cpp-max of the shown set.
@@ -80,6 +91,7 @@ export default async function SignedInHome({
           first={first}
           totalPoints={programs > 0 ? totalPoints : undefined}
           backdrop={heroBackdrop}
+          gallery={gallery}
         />
       </section>
 
