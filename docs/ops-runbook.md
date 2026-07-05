@@ -178,6 +178,23 @@ aliases) and `checkRateLimit` enforces in Upstash, degrading back to the
 in-memory bucket on any Redis failure. Revisit (configure the Redis) when
 traffic justifies it.
 
+## CI (GitHub Actions — currently disabled)
+
+GitHub Actions is refusing to start jobs on this account ("recent account
+payments have failed or your spending limit needs to be increased"), so both
+workflows (`.github/workflows/ci.yml`, `deploy-valuations-worker.yml`) are
+switched to `workflow_dispatch`-only — every PR was showing a red X unrelated
+to the code. Until billing is fixed:
+
+- Pre-ship gate: `npm run check` + `npm run build` locally, plus the Vercel
+  build check that still runs on every PR.
+- Valuations-worker deploys: `cd cloudflare/valuations-worker && npx wrangler
+  deploy` (see its README for secrets).
+
+Re-enable: fix billing under GitHub Settings → Billing & plans, then restore
+the original `pull_request`/`push` triggers in both workflow files (they're
+preserved in the comments).
+
 ## Cron reference (`vercel.json`)
 
 | Route | Schedule | Gate |

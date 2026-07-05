@@ -7,6 +7,8 @@ import { auth } from '@/lib/auth'
 import { getUserId } from '@/lib/session'
 import { getUserAwId, getManualBalances } from '@/lib/accounts'
 import { safeReturnTo, returnToRouteLabel } from '@/lib/safe-return'
+import { toNavUser } from '@/lib/nav-user'
+import UserAvatarImage from '@/components/UserAvatarImage'
 import { getBalances } from '@/lib/awardwallet'
 import {
   hasEnv,
@@ -84,13 +86,10 @@ export default async function AccountPage({
   const u = session.user
   const name = u.name ?? u.email ?? 'Traveler'
   const initial = name.trim().charAt(0).toUpperCase()
-  const user = {
-    id: u.sub ?? undefined,
-    initial,
-    name: u.name ?? undefined,
-    email: u.email ?? undefined,
-    picture: u.picture ?? undefined,
-  }
+  // One construction for the header user everywhere (id for analytics
+  // identify, Gravatar fallback for accounts without an IdP picture).
+  // Non-null: the session redirect above guarantees u exists.
+  const user = toNavUser(u)!
 
   // Manual programs (primary) + the optional AwardWallet link (only the id;
   // the live-balances CALL needs this id, so it stays a genuine dependency).
@@ -242,17 +241,13 @@ export default async function AccountPage({
         >
           <div className="flex flex-col gap-5 px-6 py-8 sm:flex-row sm:items-center sm:gap-6 sm:px-10">
             <span className="grid h-20 w-20 flex-shrink-0 place-items-center overflow-hidden rounded-full bg-white/15 font-display text-[30px] font-semibold text-white ring-1 ring-white/20">
-              {user.picture ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={user.picture}
-                  alt=""
-                  className="h-full w-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                initial
-              )}
+              {/* Same source chain as the nav avatar (picture → Gravatar →
+                  initial), so the hero can never show a broken image. */}
+              <UserAvatarImage
+                picture={u.picture ?? undefined}
+                email={u.email ?? undefined}
+                initial={initial}
+              />
             </span>
             <div className="min-w-0 flex-1">
               <div className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-hero-eyebrow">

@@ -1,4 +1,5 @@
 import { auth0 } from '@/lib/auth0'
+import { toNavUser } from '@/lib/nav-user'
 import { getUserBalances } from '@/lib/accounts'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
@@ -21,14 +22,9 @@ function fmtDegradation(n: number | null): string {
 export default async function StatsPage() {
   const session = await auth0.getSession()
   const su = session?.user
-  const user = su
-    ? {
-        initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
-        name: su.name ?? su.email ?? undefined,
-        email: su.email ?? undefined,
-        picture: su.picture ?? undefined,
-      }
-    : null
+  // Same header-user construction as every other page (Gravatar fallback +
+  // the id analytics identify keys on).
+  const user = toNavUser(su)
 
   let pointsTotal: number | undefined
   if (user && su?.sub) {

@@ -6,6 +6,7 @@ import { auth0 } from '@/lib/auth0'
 import { toNavUser } from '@/lib/nav-user'
 import Logo from '@/components/Logo'
 import AccountMenu from '@/components/AccountMenu'
+import UserAvatarImage from '@/components/UserAvatarImage'
 import AdminNav from '@/components/admin/AdminNav'
 
 // The admin app shell. Unlike the site surfaces (AppShell + TopNav), admin is
@@ -39,11 +40,15 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
         <AdminNav />
 
-        {/* Rail footer — who's operating, and the way out. Initial-only avatar
-            (server-rendered; no client error-fallback needed for a 404 gravatar). */}
+        {/* Rail footer — who's operating, and the way out. Same avatar chain
+            as the nav (picture → Gravatar → initial) via UserAvatarImage. */}
         <div className="hidden border-t border-hair px-5 py-4 lg:flex lg:items-center lg:gap-3">
-          <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-brand font-display text-[13px] font-semibold text-white">
-            {user?.initial ?? 'O'}
+          <span className="grid h-9 w-9 flex-shrink-0 place-items-center overflow-hidden rounded-full bg-brand font-display text-[13px] font-semibold text-white">
+            <UserAvatarImage
+              picture={user?.picture}
+              email={user?.email ?? owner.email}
+              initial={user?.initial ?? 'O'}
+            />
           </span>
           <div className="min-w-0 flex-1">
             <div className="truncate text-[12.5px] font-semibold text-text">
