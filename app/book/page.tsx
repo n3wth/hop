@@ -7,6 +7,7 @@ import { auth0 } from '@/lib/auth0'
 import { isCheckoutEnabled } from '@/lib/env'
 import { getCheckoutOffer, freshOfferForRoute } from '@/lib/duffel-orders'
 import { pointsBookingUrl } from '@/lib/booking'
+import { loginHrefFor } from '@/lib/safe-return'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import Icon, { type IconName } from '@/components/Icon'
@@ -43,13 +44,14 @@ export default async function BookPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
+  // Read the query BEFORE the auth gate: the offer + route params are the
+  // whole booking context, and the login round-trip must carry them back here.
+  const q = await searchParams
   const session = await auth0.getSession()
-  if (!session) redirect('/login?returnTo=/book')
+  if (!session) redirect(loginHrefFor('/book', q))
 
   const su = session.user
   const user = toNavUser(su)
-
-  const q = await searchParams
   const str = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)
   const offerId = str(q.offer)
   const route = {

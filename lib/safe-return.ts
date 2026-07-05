@@ -10,6 +10,23 @@ export function safeReturnTo(raw: string | string[] | undefined): string | null 
   return v
 }
 
+// The /login href for an auth-gated page, carrying the FULL url (path + query)
+// the visitor was trying to reach. The query params often ARE the context —
+// dropping them is how "book with cash → log in → nothing to book" happens:
+// /book's offer/route live entirely in its query string.
+export function loginHrefFor(
+  path: string,
+  searchParams: Record<string, string | string[] | undefined>,
+): string {
+  const p = new URLSearchParams()
+  for (const [k, v] of Object.entries(searchParams)) {
+    const s = Array.isArray(v) ? v[0] : v
+    if (s) p.set(k, s)
+  }
+  const qs = p.toString()
+  return `/login?returnTo=${encodeURIComponent(qs ? `${path}?${qs}` : path)}`
+}
+
 // Human label for a returnTo that points at a search ("SFO → NRT"), or null
 // when the path isn't a search / has no route. Display-only — never used for
 // navigation, so a weird query string just falls back to the generic label.

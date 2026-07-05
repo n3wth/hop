@@ -6,7 +6,7 @@ import { auth0 } from '@/lib/auth0'
 import { auth } from '@/lib/auth'
 import { getUserId } from '@/lib/session'
 import { getUserAwId, getManualBalances } from '@/lib/accounts'
-import { safeReturnTo, returnToRouteLabel } from '@/lib/safe-return'
+import { safeReturnTo, returnToRouteLabel, loginHrefFor } from '@/lib/safe-return'
 import { toNavUser } from '@/lib/nav-user'
 import UserAvatarImage from '@/components/UserAvatarImage'
 import { getBalances } from '@/lib/awardwallet'
@@ -80,8 +80,11 @@ export default async function AccountPage({
 }: {
   searchParams: Promise<{ aw?: string; gmail?: string; upgraded?: string; returnTo?: string }>
 }) {
+  // Query first: aw/gmail callback flags and an inbound returnTo survive the
+  // login round-trip instead of dumping the visitor on a bare /account.
+  const sp = await searchParams
   const session = await auth0.getSession()
-  if (!session) redirect('/login')
+  if (!session) redirect(loginHrefFor('/account', sp))
 
   const u = session.user
   const name = u.name ?? u.email ?? 'Traveler'
@@ -205,7 +208,6 @@ export default async function AccountPage({
     return [...m.values()]
   })()
 
-  const sp = await searchParams
   const awFlag = sp.aw
   const awNote = awFlag ? AW_NOTES[awFlag] : undefined
   const gmailFlag = sp.gmail
