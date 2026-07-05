@@ -2,6 +2,7 @@
 
 import { memo, useId } from 'react'
 import type { CppTier, FlightOption } from '@/lib/types'
+import { TIER_CLASS } from '@/components/ui/TierChip'
 import { track } from '@/lib/posthog-client'
 import Icon from './Icon'
 import BrandIcon from './BrandIcon'
@@ -17,15 +18,14 @@ export interface ResultRowProps {
   /** Controlled expand state — all rows expand/collapse together via the toolbar. */
   open: boolean
   onToggle: (id: string) => void
-  /** One-way trip — cash price reads "ow" instead of "rt". */
   oneWay?: boolean
-}
+};
 
 // Value chip color by tier — semantic, not all-teal.
 const CHIP: Record<CppTier, string> = {
-  green: 'bg-good-bg text-good',
-  amber: 'bg-ok-bg text-ok',
-  muted: 'bg-weak-bg text-weak',
+  green: TIER_CLASS.green,
+  amber: TIER_CLASS.amber,
+  muted: TIER_CLASS.muted,
 }
 const BAR: Record<CppTier, string> = {
   green: 'var(--color-brand)',
@@ -35,9 +35,9 @@ const BAR: Record<CppTier, string> = {
 // Plain-language strength word per tier, so the chip's value isn't conveyed by
 // color alone to screen readers (mirrors DealCard's chip label).
 const TIER_WORD: Record<CppTier, string> = {
-  green: 'strong value',
-  amber: 'fair value',
-  muted: 'low value',
+  green: 'Excellent',
+  amber: 'Good',
+  muted: 'Fair',
 }
 
 function rankLabel(option: FlightOption, rank?: number): string {
