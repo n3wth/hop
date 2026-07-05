@@ -60,23 +60,27 @@ async function postCapture(
 }
 
 // Capture one server-side event. No-ops entirely without a PostHog key.
-// Synchronous (returns void) — belt and suspenders: even a synchronous throw
-// while kicking off the request can never escape to the caller.
+// Returns a promise that ALWAYS resolves (postCapture swallows every failure
+// and caps latency at TIMEOUT_MS) — most callers ignore it (fire-and-forget),
+// but where delivery matters on serverless (the sign-up hook, the outclick
+// shadow) await it or chain it into a promise handed to next/server's
+// after(), or the function can freeze before the capture leaves the box.
 export function captureServerEvent(
   event: string,
   properties: Record<string, unknown> = {},
   opts: { distinctId?: string } = {},
-): void {
-  if (!isPostHogEnabled()) return
-  if (typeof event !== 'string' || event.trim() === '') return
+): Promise<void> {
+  if (!isPostHogEnabled()) return Promise.resolve()
+  if (typeof event !== 'string' || event.trim() === '') return Promise.resolve()
   try {
     const distinctId =
       typeof opts.distinctId === 'string' && opts.distinctId.trim() !== ''
         ? opts.distinctId.trim()
         : undefined
-    void postCapture(event.trim(), properties, distinctId)
+    return postCapture(event.trim(), properties, distinctId)
   } catch {
-    // Should be unreachable (postCapture only rejects, never throws
-    // synchronously) but guarded anyway per the fire-and-forget contract.
+    // Should be unreachable (postCapture never throws synchronously and never
+    // rejects) but guarded anyway per the fire-and-forget contract.
+    return Promise.resolve()
   }
 }

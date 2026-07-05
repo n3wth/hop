@@ -6,10 +6,17 @@ vi.mock('@/lib/supabase-helpers', () => ({
   withDb: vi.fn(async (fallback: unknown) => fallback),
 }))
 
+// Mock the PostHog seam so the funnel shadow is observable and controllable.
+vi.mock('@/lib/posthog-server', () => ({
+  captureServerEvent: vi.fn(() => Promise.resolve()),
+}))
+
 import { withDb } from '@/lib/supabase-helpers'
+import { captureServerEvent } from '@/lib/posthog-server'
 import { recordOutclick, type Outclick } from '@/lib/outclicks'
 
 const mockWithDb = vi.mocked(withDb)
+const mockCapture = vi.mocked(captureServerEvent)
 
 const CLICK: Outclick = {
   kind: 'card',
@@ -22,6 +29,7 @@ const CLICK: Outclick = {
 beforeEach(() => {
   vi.clearAllMocks()
   mockWithDb.mockImplementation(async (fallback: unknown) => fallback)
+  mockCapture.mockImplementation(() => Promise.resolve())
 })
 
 describe('recordOutclick', () => {
@@ -65,6 +73,31 @@ describe('recordOutclick', () => {
 
   it('returns a promise that resolves — so after() can track the write to completion', async () => {
     await expect(recordOutclick(CLICK)).resolves.toBeUndefined()
+  })
+
+  it('emits the outclick funnel shadow beside the ledger insert', async () => {
+    await recordOutclick(CLICK)
+    expect(mockCapture).toHaveBeenCalledWith('outclick', { kind: 'card', target: 'chase-ur' })
+  })
+
+  it('resolves only after the PostHog capture settles — after() keeps it alive too', async () => {
+    let releaseCapture!: () => void
+    mockCapture.mockReturnValue(
+      new Promise<void>((resolve) => {
+        releaseCapture = resolve
+      }),
+    )
+
+    let done = false
+    const p = recordOutclick(CLICK).then(() => {
+      done = true
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(done).toBe(false)
+
+    releaseCapture()
+    await p
+    expect(done).toBe(true)
   })
 
   it('never throws or rejects, even if the withDb seam itself throws synchronously', async () => {
