@@ -7,7 +7,9 @@ import type { ImprovementFinding } from '@/lib/improvement-findings'
 import type { SupportTicket } from '@/lib/support-tickets'
 import type { Escalation } from '@/lib/escalation'
 import { CRON_JOBS } from '@/lib/health-checks'
+import { analyzeAdminHealth, analyzeAdminFindings } from '@/app/actions/admin-analysis'
 import Sparkline from '@/components/admin/Sparkline'
+import AnalyzeButton from '@/components/admin/AnalyzeButton'
 
 interface Props {
   ownerEmail: string
@@ -74,7 +76,7 @@ export default function AdminDashboard({
 
       <Section title="This week">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-          <Stat label="Registered users" value={usersTotal} />
+          <Stat label="Registered users" value={usersTotal} href="/admin/users" />
           <Stat label="New sign-ups" value={usersNew7d} sub="7 days" />
           <Stat label="Active users" metric={digest.activeUsers} sub="7-day sessions" />
           <Stat label="Booking requests" metric={digest.escalations} />
@@ -111,6 +113,7 @@ export default function AdminDashboard({
               ))}
             </div>
             {degradation ? <DegradationList degradation={degradation} /> : null}
+            <AnalyzeButton label="health" run={analyzeAdminHealth} />
           </div>
         )}
       </Section>
@@ -126,6 +129,7 @@ export default function AdminDashboard({
               .map((f) => (
                 <FindingRow key={f.id} finding={f} />
               ))}
+            <AnalyzeButton label="findings" run={analyzeAdminFindings} />
           </div>
         )}
       </Section>
@@ -207,17 +211,19 @@ function Stat({
   metric,
   value,
   sub,
+  href,
 }: {
   label: string
   metric?: WeeklyMetric | null
   value?: number | null
   sub?: string
+  href?: string
 }) {
   const count = metric !== undefined ? metric?.count ?? null : value ?? null
   const prev = metric?.prev ?? null
   const trend = metric?.trend ?? null
-  return (
-    <div className="rounded-[14px] border border-border bg-paper p-4">
+  const inner = (
+    <>
       <div className="hop-num text-[22px] font-semibold text-text">{count === null ? '—' : count}</div>
       <div className="mt-1 text-[12.5px] text-text3">{label}</div>
       {trend ? (
@@ -227,8 +233,16 @@ function Stat({
       ) : null}
       {prev !== null ? <div className="mt-1 text-[11.5px] text-text3">last week {prev}</div> : null}
       {sub ? <div className="mt-1 text-[11.5px] text-text3">{sub}</div> : null}
-    </div>
+    </>
   )
+  if (href) {
+    return (
+      <Link href={href} className="block rounded-[14px] border border-border bg-paper p-4 transition-colors hover:bg-sunk">
+        {inner}
+      </Link>
+    )
+  }
+  return <div className="rounded-[14px] border border-border bg-paper p-4">{inner}</div>
 }
 
 type Tone = 'good' | 'ok' | 'weak' | 'muted'
