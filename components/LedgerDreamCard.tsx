@@ -322,12 +322,12 @@ export default function LedgerDreamCard({
               </a>{' '}
               /{' '}
               <a
-                href="https://unsplash.com/?utm_source=hop&utm_medium=referral"
+                href={v.photo.credit.sourceLink ?? 'https://unsplash.com/?utm_source=hop&utm_medium=referral'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline decoration-border underline-offset-2 hover:text-text2"
               >
-                Unsplash
+                {v.photo.credit.source ?? 'Unsplash'}
               </a>
             </p>
           ) : null}

@@ -37,7 +37,7 @@ export interface ConciergeHeroPhoto {
   /** Unsplash attribution (API terms) — optional only so a hand-built caller
    *  without a real photo doesn't need to fake one; every photo actually
    *  resolved via lib/images.ts#DestImage carries one. */
-  credit?: { name: string; link: string }
+  credit?: { name: string; link: string; source?: string; sourceLink?: string }
 }
 
 export interface ConciergeHeroProps {
@@ -192,12 +192,12 @@ export default function ConciergeHero({
           </a>{' '}
           on{' '}
           <a
-            href="https://unsplash.com/?utm_source=hop&utm_medium=referral"
+            href={activeCredit.sourceLink ?? 'https://unsplash.com/?utm_source=hop&utm_medium=referral'}
             target="_blank"
             rel="noopener noreferrer"
             className="underline decoration-white/40 underline-offset-2 hover:text-white"
           >
-            Unsplash
+            {activeCredit.source ?? 'Unsplash'}
           </a>
         </div>
       ) : null}

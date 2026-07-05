@@ -18,7 +18,7 @@ export interface VerdictRailProps {
       `credit` (Unsplash attribution, per API terms) is optional only so callers
       that never pass a photo don't need to fake one — when a photo IS present
       it always carries a credit (lib/images.ts#DestImage). */
-  destPhoto?: { url: string; alt: string; credit?: { name: string; link: string } } | null
+  destPhoto?: { url: string; alt: string; credit?: { name: string; link: string; source?: string; sourceLink?: string } } | null
   /** True only when these balances are the SIGNED-IN user's own (real). Drives
       the ownership voice: "You have the miles" + "Book with X miles" are only
       honest when hop is reading this visitor's connected programs. Signed-out
@@ -398,12 +398,12 @@ export default function VerdictRail({
                 </a>{' '}
                 on{' '}
                 <a
-                  href="https://unsplash.com/?utm_source=hop&utm_medium=referral"
+                  href={destPhoto.credit.sourceLink ?? 'https://unsplash.com/?utm_source=hop&utm_medium=referral'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline decoration-white/40 underline-offset-2 hover:text-white"
                 >
-                  Unsplash
+                  {destPhoto.credit.source ?? 'Unsplash'}
                 </a>
               </div>
             ) : null}
