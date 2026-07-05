@@ -12,6 +12,7 @@ import { auth0 } from '@/lib/auth0'
 import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import { isStandingOrdersCronLive } from '@/lib/env'
 import { clampTravelDates, DEFAULT_DEPART } from '@/lib/travel-dates'
+import { isoOffset } from '@/lib/dates'
 import { SITE_URL } from '@/lib/seo'
 import AppShell from '@/components/AppShell'
 import RouteBar from '@/components/RouteBar'
@@ -20,6 +21,7 @@ import ResultsList from '@/components/ResultsList'
 import SearchTelemetry from '@/components/SearchTelemetry'
 import PointsPanel from '@/components/PointsPanel'
 import SiteFooter from '@/components/SiteFooter'
+import HeroSearch from '@/components/landing/HeroSearch'
 
 const DEFAULT_PARAMS: SearchParams = {
   from: 'SFO',
@@ -137,6 +139,17 @@ function fmtRange(depart: string, ret?: string): string {
   return `${fmtDay(depart)} – ${fmtDay(ret)}`
 }
 
+// True when the URL names an actual destination. A bare /search (no `to` at
+// all — e.g. the header's "Search" nav link, or someone typing the path by
+// hand) used to silently run the DEFAULT_PARAMS SFO→LAX verdict as if it were
+// a real result. Gated on `to` specifically (not `from`, which reasonably
+// defaults from the saved home airport/cookie) — naming a destination is the
+// clear signal that this is a real, intentional search.
+function hasDestination(q: Record<string, string | string[] | undefined>): boolean {
+  const raw = Array.isArray(q.to) ? q.to[0] : q.to
+  return !!raw?.trim()
+}
+
 // Per-route metadata. Title is "${from} → ${to}" — the root layout's template
 // ('%s · hop') appends the suffix, so we do NOT add '· hop' here. The canonical
 // points at the CLEAN /search path rebuilt from the parsed params (not the raw,
@@ -148,6 +161,14 @@ export async function generateMetadata({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }): Promise<Metadata> {
   const sp = await searchParams
+  if (!hasDestination(sp)) {
+    return {
+      title: 'Search flights',
+      description:
+        'Pick a route and hop reads live award space and cash fares side by side, priced in cents per point.',
+      alternates: { canonical: '/search' },
+    }
+  }
   const p = parseParams(sp)
   const nonstop = parseNonstop(sp)
   const fromCity = cityForCode(p.from)
@@ -223,6 +244,48 @@ export default async function Search({
   const cookieOrigin = cookieStore.get(ORIGIN_STORAGE_KEY)?.value?.trim().toUpperCase()
   const originSeed = prefs?.homeAirport ?? cookieOrigin
   const sp = await searchParams
+
+  // No destination named — e.g. the header's "Search" nav link — used to
+  // silently run the DEFAULT_PARAMS SFO→LAX verdict and present it as if it
+  // were a real result. Land on a plain search-initiation state instead: the
+  // engine only ever runs on a route the visitor actually asked for.
+  if (!hasDestination(sp)) {
+    const pointsTotal = userBalances?.reduce((s, b) => s + b.balance, 0)
+    return (
+      <AppShell user={user} pointsTotal={pointsTotal} homeAirport={originSeed} hideSearch>
+        <div className="mx-auto flex min-h-[70vh] max-w-[var(--container-shell)] flex-col items-center justify-center px-2 py-16 text-center">
+          <span className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand sm:text-[12px]">
+            Points or cash
+          </span>
+          <h1 className="mt-4 text-balance font-display text-[32px] font-semibold leading-[1.05] tracking-[-0.02em] text-text sm:text-[42px]">
+            Where are you flying?
+          </h1>
+          <p className="mt-3 max-w-[46ch] text-[15px] leading-[1.6] text-text2 sm:text-[16px]">
+            Pick a route and hop reads your balances, checks award space, prices the cash fare,
+            and tells you the smarter way to book it.
+          </p>
+          <div className="mt-9 w-full">
+            <HeroSearch
+              initial={{
+                from: originSeed ?? '',
+                to: '',
+                depart: isoOffset(10),
+                ret: isoOffset(13),
+                adults: 1,
+                children: 0,
+                infants: 0,
+                cabin: 'economy',
+                oneWay: false,
+                nonstop: false,
+              }}
+            />
+          </div>
+        </div>
+        <SiteFooter />
+      </AppShell>
+    )
+  }
+
   const params = parseParams(sp, originSeed)
   const nonstop = parseNonstop(sp)
   // An explicit ?nonstop=1 on THIS search always wins over any saved account

@@ -327,7 +327,7 @@ export default function TopNav({
                     href="/admin"
                     title="Admin"
                     aria-label="Admin"
-                    className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full border border-border bg-surface text-text2 transition-colors hover:bg-sunk"
+                    className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full border border-border text-text2 transition-colors hover:bg-sunk"
                   >
                     <Icon name="shield" size={20} />
                   </Link>
@@ -336,7 +336,7 @@ export default function TopNav({
                   <Link
                     href="/account"
                     title="Your points"
-                    className="hidden items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-2 transition-colors hover:bg-sunk lg:flex"
+                    className="hidden items-center gap-1.5 rounded-full border border-border px-3.5 py-2 transition-colors hover:bg-sunk lg:flex"
                   >
                     <span className="hop-num text-[14px] font-semibold text-text">
                       {compactPoints(pointsTotal)}

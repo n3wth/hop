@@ -4,6 +4,7 @@ import { formatValue, tier } from '@/lib/cpp'
 import type { Destination } from '@/lib/destinations'
 import { computeCpp, imageQuery } from '@/lib/destinations'
 import type { DestImage } from '@/lib/images'
+import { isoOffset } from '@/lib/dates'
 
 // Map a value tier to its token chip colors. Same good/ok/weak language the
 // verdict uses, so a chip's color always means the same thing across surfaces.
@@ -42,9 +43,12 @@ function DestinationCard({
   stagger?: boolean
 }) {
   const cppVal = computeCpp(d)
+  // A round trip, seeded like the header search (depart ≈ +10d, return ≈ +3d
+  // after) — the card used to omit dates entirely, which silently ran a
+  // ONE-WAY search on tap with no way to tell from the card face.
   const href = `/search?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(
     d.code,
-  )}&adults=1`
+  )}&depart=${isoOffset(10)}&return=${isoOffset(13)}&adults=1`
 
   return (
     <Link
@@ -110,6 +114,13 @@ function DestinationCard({
       {/* ── body ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-1 flex-col p-4">
         <p className="text-[14px] leading-[1.5] text-text2">{d.vibe}</p>
+
+        {/* origin + trip type — the card used to give no way to tell where
+            "from X miles" is FROM, or whether tapping runs a one-way or round
+            trip search. Both are now explicit before the tap, not a surprise. */}
+        <p className="mt-2 text-[12px] font-medium text-text3">
+          From {origin} · Round trip
+        </p>
 
         <div className="mt-4 flex items-center justify-between border-t border-hair pt-3.5">
           <span className="text-[13px] font-semibold text-text">

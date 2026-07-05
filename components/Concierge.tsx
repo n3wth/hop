@@ -53,7 +53,6 @@ import { Suggestions, Suggestion } from './ai-elements/suggestion'
 const FALLBACK_CHIPS = [
   'Plan a 5-day trip',
   'Cheaper in a different month?',
-  'Compare two cities',
   'Best use of my points',
 ] as const
 
@@ -290,7 +289,7 @@ export default function Concierge({
   const startTiles = galleryCodes
     .map((c) => photos[c])
     .filter((p): p is ConciergePhoto => Boolean(p))
-    .slice(0, 8)
+    .slice(0, 4)
     .map((p) => ({ city: p.city, thumb: p.thumb, alt: p.alt, countryCode: p.countryCode }))
 
   return (
