@@ -125,7 +125,9 @@ function DestinationCard({
         <div className="mt-4 flex items-center justify-between border-t border-hair pt-3.5">
           <span className="text-[13px] font-semibold text-text">
             from {compactMiles(d.typicalAwardMiles)}
-            <span className="ml-1 text-[12px] font-medium text-text3">miles</span>
+            <span className="ml-1 text-[12px] font-medium text-text3">
+              miles{d.cabin ? ` · ${d.cabin}` : ''}
+            </span>
           </span>
           {cppVal !== undefined ? (
             <span

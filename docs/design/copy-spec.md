@@ -12,13 +12,21 @@ Voice: terse, confident, plain. No marketing language, no "value on the table" /
 One light personality touch max per region. Every string must help the user decide or act.
 
 ## Verdict hero
+
+The canonical worked example is the SFO→LAX ROUND TRIP mock (lib/mock.ts through the real
+engine): cash $254 RT, Alaska saver 4,500 mi + $11.20 taxes per direction → 9,000 miles +
+$22 taxes, cpp = (254 − 22.40) × 100 / 9000 = 2.6¢/pt, save $254 − $22 ≈ $232. Rules that
+keep it trustworthy: the math must CLOSE on screen (cash − savings = the taxes shown — never
+hide the taxes), the unit is `¢/pt` (never `¢/mile`, never a bare "cpp"), and the route label
+must match the economics — believable figures for the labeled route and cabin, always.
+
 - Kicker: `BEST VALUE` (not "HOP'S CALL · BEST VALUE")
-- Headline: `Use your Alaska miles.` / `Save $243 vs cash.`  (two lines, the $ is the hook)
-- Subline (plain, factual): `4,500 miles at 5.4¢ each — the best redemption across your 6 programs.
-  Cash is $254. You have the miles.`
+- Headline: `Use your Alaska miles.` / `Save $232 vs cash.`  (two lines, the $ is the hook)
+- Subline (plain, factual): `9,000 miles + $22 taxes at 2.6¢ per point — the best redemption
+  across your 6 programs. Cash is $254 round trip. You have the miles.`
 - Primary CTA: `Book with Alaska miles`
 - Secondary: `See the math` (links to CPP breakdown — NOT "Why this wins →")
-- Stat row: `You pay 4,500 miles` · `Value 5.4¢/mile` · `Cash price $254` · `You save $243`
+- Stat row: `You pay 9,000 miles + $22` · `Value 2.6¢/pt` · `Cash price $254` · `You save $232`
 - Confidence chip: drop "hop is confident on this one." Replace with nothing, or a quiet
   `Direct · 1h 32m` fact. Confidence should be shown by the design, not claimed in words.
 
@@ -41,7 +49,7 @@ One light personality touch max per region. Every string must help the user deci
 ## Points panel
 - Heading: `Your points` · source `AwardWallet`
 - Total: `618,314 across 6 programs`
-- Active program note (Alaska row): `Using 4,500 here` (not "spending here" / "USING NOW")
+- Active program note (Alaska row): `Using 9,000 here` (not "spending here" / "USING NOW")
 - Drop the gold "one quiet tip" Amex→Alaska card unless it's genuinely actionable; if kept,
   make it a fact: `Amex transfers to Alaska 1:1 if you run low.`
 

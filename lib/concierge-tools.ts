@@ -42,6 +42,7 @@ export interface PriceTripResult {
   // Deterministic figures straight from the dataset + engine.
   milesNeeded: number // typical one-way award miles
   cashUsd: number // typical one-way cash
+  cabin: 'economy' | 'business' | 'first' // cabin those figures price — never omit for premium
   cpp: number | undefined // cents per point at this redemption (computeCpp)
   // Effective points the user can put toward bestProgram (direct OR transfer).
   youHave: number | undefined
@@ -96,6 +97,7 @@ export function priceTrip(
     bestProgram: d.bestProgram,
     milesNeeded,
     cashUsd,
+    cabin: d.cabin ?? 'economy',
     cpp,
     youHave,
     youHaveVia: eff?.via,

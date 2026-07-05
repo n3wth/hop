@@ -525,19 +525,19 @@ describe('mock fixtures', () => {
     expect(cash[0].roundTrip).toBe(true)
   })
 
-  it('mockAwards returns four options with the design cpp values', () => {
+  it('mockAwards never bakes a cpp — the engine computes it vs live cash', () => {
     const awards = mockAwards()
     expect(awards).toHaveLength(4)
     const byCode = Object.fromEntries(awards.map((a) => [a.id, a]))
     expect(byCode['mock-award-as'].miles).toBe(4500)
-    expect(byCode['mock-award-as'].cpp).toBe(5.6)
-    expect(byCode['mock-award-as'].tier).toBe('green')
-    expect(byCode['mock-award-wn'].cpp).toBe(4.2)
+    // cpp does not exist without a cash baseline: fixtures leave it undefined
+    // and assembleSearch computes it (a stale hand-baked 5.6 once shipped).
+    for (const a of awards) expect(a.cpp).toBeUndefined()
+    expect(byCode['mock-award-as'].tier).toBe('muted')
     expect(byCode['mock-transfer-aeroplan'].kind).toBe('transfer')
-    expect(byCode['mock-transfer-aeroplan'].miles).toBe(10000)
+    expect(byCode['mock-transfer-aeroplan'].miles).toBe(6000)
     expect(byCode['mock-transfer-aeroplan'].transferFrom).toHaveLength(2)
     expect(byCode['mock-award-ua'].miles).toBe(14100)
-    expect(byCode['mock-award-ua'].cpp).toBe(1.8)
   })
 
   it('every mock option carries a tier and bookingUrl', () => {

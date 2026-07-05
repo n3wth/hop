@@ -106,11 +106,16 @@ export async function assembleSearch(
       // Cash fixtures are authored per-seat; live Duffel returns party totals
       // (buildPassengers). Scale so mock and live share the same semantics —
       // otherwise the award scaling below would skew mock cpp for parties > 1.
+      // Cash fixtures are ROUND-TRIP totals (roundTrip: true). A one-way mock
+      // search halves them so mock cpp/verdicts stay consistent whichever trip
+      // type is searched — otherwise a one-way looked twice as good.
       ...(o.kind === 'cash'
         ? {
             bookingUrl: cashBookingUrl(params),
-            cashPrice: o.cashPrice != null ? o.cashPrice * seats : o.cashPrice,
-            taxes: o.taxes != null ? o.taxes * seats : o.taxes,
+            cashPrice:
+              o.cashPrice != null ? o.cashPrice * seats * (params.return ? 1 : 0.5) : o.cashPrice,
+            taxes: o.taxes != null ? o.taxes * seats * (params.return ? 1 : 0.5) : o.taxes,
+            roundTrip: Boolean(params.return),
           }
         : {}),
     })
@@ -195,13 +200,24 @@ export async function assembleSearch(
 
   // Annotate award/transfer options: compute cpp vs cheapest cash, tier,
   // youHave from balances, transfer sources, booking URL, and action intent.
+  //
+  // Round-trip parity: when the search has a return date, cash prices (Duffel,
+  // and the mock cash fixture) are ROUND-TRIP totals, but award availability
+  // (Seats.aero, mock awards) is priced per DIRECTION. Dividing RT cash by
+  // one-way miles silently doubled every cpp and "you save" figure — the
+  // single biggest way the math didn't add up. Scale the award side by the
+  // leg count (approximation: assumes the return leg books at the same award
+  // level, the standard way saver awards are quoted) so cpp compares
+  // like-for-like. One-way searches are unaffected.
+  const legs = params.return ? 2 : 1
   const awards: FlightOption[] = awardOptions.map((o) => {
     // Upstream award miles/taxes are per-seat (Seats.aero never scales by party
     // size); cheapestCash is a party total. Scale the award side to the party
-    // so cpp compares like-for-like — for a single seat this is a no-op. The
-    // per-seat cpp ratio is preserved: both numerator and denominator scale.
-    const partyMiles = o.miles != null ? o.miles * seats : undefined
-    const partyTaxes = o.taxes != null ? o.taxes * seats : undefined
+    // and to the trip's legs so cpp compares like-for-like — for one adult on
+    // a one-way this is a no-op. Per-seat cpp ratios are preserved: numerator
+    // and denominator scale together.
+    const partyMiles = o.miles != null ? o.miles * seats * legs : undefined
+    const partyTaxes = o.taxes != null ? o.taxes * seats * legs : undefined
     const miles = partyMiles ?? 0
     const taxes = partyTaxes ?? 0
     const value =

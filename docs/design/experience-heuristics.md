@@ -80,3 +80,10 @@ type — not scattered fragments).
     surface shows (¢/pt, miles, "points win") is computed by `lib/*`
     (`computeCpp`, `POINTS_THRESHOLD_CPP`) — degrade to nothing rather than
     fake it.
+14. **The math closes on screen.** Wherever cash, savings, and points appear
+    together, a reader must be able to reconcile them from what's VISIBLE:
+    cash − savings = the taxes/fees shown; savings ≈ miles × cpp; the route
+    and cabin label match the economics (domestic numbers never wear a
+    transpacific route; premium-cabin ¢/pt is always labeled `· business` /
+    `· first`). One unexplained dollar reads as fabricated — the audience is
+    people who check.

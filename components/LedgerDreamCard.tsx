@@ -226,7 +226,9 @@ export default function LedgerDreamCard({
                 <div className="text-[10px] font-semibold uppercase tracking-[var(--track-label)] text-text3">Award</div>
                 <div className="hop-price mt-1 text-[20px] leading-none text-text">
                   {compactMiles(v.milesNeeded)}
-                  <span className="font-sans ml-1 text-[12px] font-medium text-text3">mi</span>
+                  <span className="font-sans ml-1 text-[12px] font-medium text-text3">
+                    mi{v.cabin ? ` · ${v.cabin}` : ''}
+                  </span>
                 </div>
               </div>
               <div>
