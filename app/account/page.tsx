@@ -41,7 +41,7 @@ import type { Balance } from '@/lib/types'
 import { listStandingOrders, countActiveStandingOrders } from '@/lib/standing-orders'
 import { listAlerts, countUnseenAlerts } from '@/lib/standing-order-alerts'
 import { getUserTier, ALERT_LIMITS } from '@/lib/subscription'
-import BillingSection from '@/components/BillingSection'
+import { BillingSection } from '@/components/BillingSection'
 import SecurityPassword from '@/components/auth/SecurityPassword'
 import SecurityPasskeys, { type PasskeyInfo } from '@/components/auth/SecurityPasskeys'
 
