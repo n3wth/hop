@@ -84,17 +84,23 @@ export default async function SignedInHome({
       </section>
 
       {/* ── YOUR POINTS — compact synced state ───────────────────────────── */}
+      {/* Flex, not a 1fr/360px grid: a grid track stretches the text column to
+          absorb the FULL remaining shell width, so the short header+line sits
+          capped at its measure while the card gets pinned to the far edge —
+          a wide dead gap in between. Flex + a measure cap on the text keeps
+          the card right next to the copy; any leftover space falls after the
+          card instead of splitting the two apart. */}
       <section
-        className="hop-rise grid grid-cols-1 items-center gap-8 lg:grid-cols-[1fr_360px] lg:gap-12"
+        className="hop-rise flex flex-col items-center gap-8 lg:flex-row lg:gap-16"
         style={{ ['--hop-delay' as string]: '80ms' }}
       >
         {/* A short, secondary section header — the agent above already greeted
             the member by name, so we don't repeat "Welcome back". */}
-        <div>
+        <div className="w-full lg:max-w-[46ch]">
           <h2 className="font-display text-[26px] font-semibold leading-[1.04] tracking-[-0.02em] text-text sm:text-[34px]">
             {programs > 0 ? 'Your points, working.' : 'Get started.'}
           </h2>
-          <p className="mt-3 max-w-[52ch] text-[15px] leading-[1.55] text-text2 sm:text-[17px]">
+          <p className="mt-3 text-[15px] leading-[1.55] text-text2 sm:text-[17px]">
             {programs > 0
               ? 'What each balance is really worth — and whether to book with points or cash.'
               : 'Add your loyalty programs and hop will show you what each balance is really worth — and whether to book with points or cash.'}
@@ -104,7 +110,7 @@ export default async function SignedInHome({
         {/* Summary panel — anchors the right column.
             Flat: a bordered paper card with a sunk stat row, no shadow/lift. */}
         {programs > 0 ? (
-          <aside className="flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-6 lg:rounded-[var(--radius-hero)]">
+          <aside className="flex w-full flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-6 lg:w-[360px] lg:flex-shrink-0 lg:rounded-[var(--radius-hero)]">
             <span className="text-[11.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
               Your points
             </span>
@@ -161,7 +167,7 @@ export default async function SignedInHome({
             </Link>
           </aside>
         ) : (
-          <aside className="flex flex-col justify-center rounded-[var(--radius-lg)] border border-border bg-brand-light p-6 lg:rounded-[var(--radius-hero)]">
+          <aside className="flex w-full flex-col justify-center rounded-[var(--radius-lg)] border border-border bg-brand-light p-6 lg:w-[360px] lg:flex-shrink-0 lg:rounded-[var(--radius-hero)]">
             <span className="grid h-11 w-11 place-items-center rounded-full bg-paper text-brand">
               <Icon name="loyalty" size={24} weight="fill" />
             </span>
@@ -196,18 +202,20 @@ export default async function SignedInHome({
       {/* ── TRIPS YOUR BALANCES CAN GET YOU TO ───────────────────────────── */}
       <section>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex flex-col gap-2 sm:max-w-[54ch]">
+          <div className="flex flex-col gap-2">
             <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
               Trips your balances can get you to
             </span>
-            {/* No text-balance: it split the short headline into two even lines
-                even when one line fit — wrap only when it must. */}
+            {/* No max-width/text-balance on the heading itself: a cap sized in ch
+                is relative to THIS block's (small) font-size, not the much larger
+                heading font, so it was clipping a one-line headline to two. Only
+                the body copy gets a measure cap — the heading sizes to its text. */}
             <h2 className="font-display text-[26px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[34px]">
               {personalized
                 ? 'Within reach.'
                 : 'Dreams worth saving toward.'}
             </h2>
-            <p className="text-[15px] leading-[1.55] text-text2">
+            <p className="max-w-[46ch] text-[15px] leading-[1.55] text-text2">
               {personalized
                 ? 'Where your balances can take you as you pool and transfer — sorted by value per point.'
                 : 'A few more points and these open up. Sorted by value per point.'}
