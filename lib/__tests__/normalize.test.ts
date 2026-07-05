@@ -502,7 +502,11 @@ describe('booking urls', () => {
     const url = cashBookingUrl(PARAMS)
     expect(url.startsWith('/api/go/kiwi?')).toBe(true)
     const query = new URL(url, 'http://localhost').searchParams
-    expect(query.get('to')).toBe(kiwiSearchUrl(PARAMS))
+    // The redirect destination is the tp.media attribution wrapper whose ?u=
+    // is the Kiwi deep-link — attribution must not depend on the client tag.
+    const destination = new URL(query.get('to')!)
+    expect(destination.hostname).toBe('tp.media')
+    expect(destination.searchParams.get('u')).toBe(kiwiSearchUrl(PARAMS))
     expect(query.get('route')).toBe('SFO-LAX')
   })
 

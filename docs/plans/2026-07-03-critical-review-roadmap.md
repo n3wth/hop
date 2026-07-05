@@ -423,8 +423,14 @@ A 15-agent audit re-verified every item against code at `6ec5212`; PR #167
   events + identify, #167), R0.7, R1.1 (#167), R1.2, R1.3, R1.7 (#167),
   kill/freeze list + doc hygiene (#167).
 - **Code-complete, ops verification open:** R0.6 — the /api/go/kiwi ledger is
-  live; still unverified whether Travelpayouts attribution survives the
-  same-origin 302 (check prod devtools; tp.media hosts are pre-allowlisted).
+  live. Resolved 2026-07-04: Travelpayouts attribution does NOT survive the
+  same-origin 302 (the tag only decorates direct partner links), so
+  `cashBookingUrl` now wraps the Kiwi deep-link in the tp.media attribution
+  redirect itself (marker 745576 / trs 545389 / p 4136 — see
+  docs/solutions/2026-07-04-travelpayouts-attribution-through-first-party-redirect.md).
+  Remaining ops check: after deploy, confirm a prod cash click chains
+  /api/go/kiwi → tp.media → kiwi.com with `affilid=…-745576`, then see the
+  click in the TP dashboard.
 - **Ops-only, still open (docs/ops-runbook.md):** R0.4 — deploy
   cloudflare/valuations-worker + flip HOP_ENABLE_VALUATION_SYNC, flip
   STANDING_ORDERS_CRON_ENABLED, set explicit BETTER_AUTH_SECRET, verify

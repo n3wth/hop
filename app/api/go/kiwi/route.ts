@@ -6,15 +6,19 @@
 // first-party click ledger.
 //
 // - The ?to= target is user-controllable input, so it passes the STRICT
-//   allowlist in lib/booking.ts#isAllowedCashOutclickUrl (https-only, exact
-//   kiwi.com/tp.media hostnames, no credentials/port) before it can reach the
-//   Location header — never an open redirect. Anything else 302s to '/'
-//   (a tampered or stale link lands somewhere, never a 500).
+//   allowlist in lib/booking.ts#isAllowedCashOutclickUrl before it can reach
+//   the Location header: https-only, no credentials/port, and either a bare
+//   kiwi.com deep-link OR a tp.media/r wrapper whose ?u= is itself a kiwi.com
+//   deep-link. tp.media is an open redirector, so the allowlist validates that
+//   inner ?u= target too — never just the outer host, or this would be an open
+//   redirect. Anything else 302s to '/' (a tampered or stale link lands
+//   somewhere, never a 500).
 // - ?route= is ledger context only (normalized to AAA-BBB or stored as
 //   'unknown'), never a redirect input.
-// - 302 (temporary), deliberately NOT 308: the destination swaps from the
-//   plain kiwi.com deep-link to a tp.media attribution link when that lands —
-//   a cached permanent redirect would pin browsers to the old form.
+// - 302 (temporary), deliberately NOT 308: the destination is minted by
+//   lib/booking.ts and has already changed form once (plain kiwi.com deep-link
+//   → tp.media attribution link) — a cached permanent redirect would pin
+//   browsers to a stale form.
 // - The ledger is best-effort, the redirect is first-class: the write is
 //   scheduled with next/server's after() — executed once the 302 is sent, so
 //   the response never waits on the DB, and the serverless runtime doesn't

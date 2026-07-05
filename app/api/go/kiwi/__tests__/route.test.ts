@@ -24,7 +24,7 @@ vi.mock('next/server', () => ({
 
 import { GET } from '../route'
 import { recordOutclick } from '@/lib/outclicks'
-import { cashBookingUrl, kiwiSearchUrl } from '@/lib/booking'
+import { cashBookingUrl, kiwiSearchUrl, tpKiwiAttributionUrl } from '@/lib/booking'
 
 const mockRecord = vi.mocked(recordOutclick)
 
@@ -55,7 +55,9 @@ describe('GET /api/go/kiwi', () => {
     const params = { from: 'SFO', to: 'LAX', depart: '2026-07-09', return: '2026-07-12', adults: 1 }
     const res = await GET(request(cashBookingUrl(params)))
     expect(res.status).toBe(302)
-    expect(res.headers.get('location')).toBe(kiwiSearchUrl(params))
+    // The Location is the tp.media attribution wrapper around the Kiwi
+    // deep-link — attribution is baked into the destination, not the tag.
+    expect(res.headers.get('location')).toBe(tpKiwiAttributionUrl(kiwiSearchUrl(params)))
     expect(mockRecord).toHaveBeenCalledWith(
       expect.objectContaining({ kind: 'cash', target: 'SFO-LAX' }),
     )
@@ -96,6 +98,11 @@ describe('GET /api/go/kiwi', () => {
     ['plain http downgrade', 'http://www.kiwi.com/en/'],
     ['protocol-relative', '//evil.example/'],
     ['nested redirect in query of attacker URL', 'https://evil.example/r?to=https://www.kiwi.com'],
+    // tp.media is allowlisted but is itself an open redirector — a tp.media
+    // wrapper whose ?u= points off-kiwi must still 302 home, not launder the
+    // redirect through hop.flights → tp.media → attacker.
+    ['tp.media wrapping an attacker u=', 'https://tp.media/r?marker=745576&u=https://evil.example/phish'],
+    ['tp.media with no u= target', 'https://tp.media/r?marker=745576'],
   ])('never open-redirects: %s → 302 home, nothing logged', async (_label, to) => {
     const res = await GET(request(go(to, 'SFO-LAX')))
     expect(res.status).toBe(302)
