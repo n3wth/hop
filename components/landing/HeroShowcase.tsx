@@ -26,6 +26,7 @@ export default async function HeroShowcase({ origin }: { origin: string }) {
         cpp: cppVal,
         miles: d.typicalAwardMiles,
         program: d.bestProgram,
+        cabin: d.cabin,
         // Engine threshold, not vibes: the chip only appears when the same
         // line the verdict engine uses says points beat cash.
         pointsWin: cppVal >= POINTS_THRESHOLD_CPP,

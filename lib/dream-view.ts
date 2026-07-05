@@ -15,6 +15,8 @@ export interface DreamCardData {
   vibe: string
   code: string
   milesNeeded: number
+  /** Cabin the miles/cash figures price — shown when premium. */
+  cabin?: 'business' | 'first'
   cpp?: number
   cashValue: number
   program: string
@@ -49,6 +51,7 @@ export function toDreamCardData(
     vibe: d.vibe,
     code: d.code,
     milesNeeded: dream.milesNeeded,
+    cabin: dream.destination.cabin,
     cpp: dream.cpp,
     cashValue: dream.cashValue,
     program: dream.proof.program,

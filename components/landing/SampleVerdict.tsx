@@ -7,15 +7,19 @@ import { destinationImage } from '@/lib/images'
 // the real hero, so a first-time visitor sees exactly what hop hands back: not a
 // fare list, a decision. Hard-coded, labelled "Sample" so it never reads as live
 // data — but the FIGURES are the canonical worked example from
-// docs/design/copy-spec.md's "Verdict hero" section (4,500 miles at 5.4¢/pt,
-// cash $254, save $243 — 4500 × 0.054 = $243.00 exactly), the same numbers the
-// mock search fixtures render live on /search, so a skeptical visitor who
-// checks the arithmetic here finds it holds. The right panel shows the
-// destination (Tokyo, the example's NRT) mirroring the real verdict hero. Flat,
+// docs/design/copy-spec.md's "Verdict hero" section, and they are exactly what
+// the mock fixtures (lib/mock.ts, SFO→LAX round trip) render through the real
+// engine: cash $254 RT, Alaska saver 4,500 mi + $11.20 per direction → 9,000
+// miles + $22 taxes RT, cpp = (254 − 22.40) × 100 / 9000 = 2.6¢/pt, save
+// $254 − $22 ≈ $232. Every number closes on screen (taxes are SHOWN — a
+// skeptical points person must be able to reconcile cash − savings = taxes),
+// and the route label matches the numbers: believable domestic figures, never
+// a transpacific route wearing domestic economics. The right panel shows the
+// destination (LA, the example's LAX) mirroring the real verdict hero. Flat,
 // solid, no translucency (the dark teal's white text is the one allowed
 // exception, matching VerdictRail).
 export default async function SampleVerdict() {
-  const photo = await destinationImage('Tokyo skyline travel landmark')
+  const photo = await destinationImage('Los Angeles skyline palm trees')
   return (
     <section
       className="grid grid-cols-1 overflow-hidden rounded-[20px] text-hero-cream lg:grid-cols-[1fr_300px] lg:rounded-[28px]"
@@ -28,7 +32,7 @@ export default async function SampleVerdict() {
             Sample verdict
           </span>
           <span className="rounded-full bg-brand-deep px-2.5 py-[3px] text-[10px] font-semibold uppercase tracking-[var(--track-tag)] text-mint-bright">
-            SFO → NRT
+            SFO → LAX · Round trip
           </span>
         </span>
 
@@ -42,7 +46,7 @@ export default async function SampleVerdict() {
               Still the canonical worked example; CountUp just ticks to it. */}
           <CountUp
             className="font-display text-[58px] font-semibold leading-[0.9] tracking-[-0.04em] text-mint-bright tabular-nums sm:text-[80px] lg:text-[96px]"
-            value={243}
+            value={232}
             format="usd"
             startInView
             delayMs={180}
@@ -53,17 +57,18 @@ export default async function SampleVerdict() {
         </div>
 
         <p className="mt-5 max-w-[44ch] text-[15.5px] leading-[1.55] text-hero-body">
-          <b className="font-semibold text-white">4,500 miles</b> at{' '}
-          <b className="font-semibold text-white">5.4¢/pt</b> — the best
+          <b className="font-semibold text-white">9,000 miles</b> +{' '}
+          <b className="font-semibold text-white">$22 taxes</b> at{' '}
+          <b className="font-semibold text-white">2.6¢/pt</b> — the best
           redemption in this example. Cash is{' '}
           <b className="font-semibold text-white">$254</b>, so points win.
         </p>
 
         <div className="mt-7 flex flex-wrap gap-x-8 gap-y-4 border-t border-white/15 pt-6">
-          <Stat label="You pay" value="4,500" unit="miles" />
-          <Stat label="Value" value="5.4¢" unit="/ pt" />
+          <Stat label="You pay" value="9,000" unit="miles + $22" />
+          <Stat label="Value" value="2.6¢" unit="/ pt" />
           <Stat label="Cash price" value="$254" />
-          <Stat label="You save" value="$243" accent />
+          <Stat label="You save" value="$232" accent />
         </div>
       </div>
 

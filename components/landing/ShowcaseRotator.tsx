@@ -12,6 +12,8 @@ export interface ShowcaseEntry {
   cpp: number
   miles: number
   program: string
+  /** Set when the figures price a premium cabin — ALWAYS shown. */
+  cabin?: 'business' | 'first'
   pointsWin: boolean
   image: string
   /** Small thumb of the same photo — the blurred ambience layer uses it. */
@@ -81,7 +83,7 @@ export default function ShowcaseRotator({ entries }: { entries: ShowcaseEntry[] 
         <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="hop-price text-[14px] text-brand">{d.cpp.toFixed(1)}¢/pt</span>
           <span className="text-[13px] text-text2">
-            {Math.round(d.miles / 1000)}k miles · {d.program}
+            from {Math.round(d.miles / 1000)}k miles{d.cabin ? ` · ${d.cabin}` : ''} · {d.program}
           </span>
         </span>
         {d.pointsWin ? (

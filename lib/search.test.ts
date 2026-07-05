@@ -72,8 +72,9 @@ describe('multi-passenger economics — party totals on both legs', () => {
 
   it('leaves single-passenger figures untouched (regression guard)', async () => {
     const out = await verdictSummary({ ...params, adults: 1 })
-    // The raw mock fixtures: $254 cheapest cash, Alaska 4,500 mi + $11.20 taxes.
-    expect(out.summary.cheapestCash).toBe(254)
+    // ONE-WAY search: the RT cash fixture ($254) halves to $127 so trip types
+    // stay consistent; the Alaska award is per-direction as authored.
+    expect(out.summary.cheapestCash).toBe(127)
     expect(out.summary.bestMiles).toBe(4500)
     expect(out.pick?.taxes).toBeCloseTo(11.2, 6)
   })

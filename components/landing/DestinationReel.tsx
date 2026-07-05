@@ -68,6 +68,7 @@ function Tile({
           </div>
           <div className="truncate text-[11px] font-medium uppercase tracking-[var(--track-label)] text-white/85">
             {d.country}
+            {d.cabin ? ` · ${d.cabin}` : ''}
           </div>
         </div>
       </div>

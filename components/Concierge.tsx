@@ -672,7 +672,7 @@ function AssistantActions({
     'inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11.5px] font-medium text-text3 transition-colors hover:bg-sunk hover:text-brand'
 
   return (
-    <div className="-mt-0.5 flex flex-col items-start gap-1">
+    <div className="-mt-0.5 flex flex-wrap items-center gap-1">
       <div className="flex items-center gap-0.5">
         <button type="button" onClick={copy} aria-label={copied ? 'Copied' : 'Copy answer'} className={btn}>
           <span key={copied ? 'check' : 'copy'} className={copied ? 'hop-check-in inline-flex' : 'inline-flex'}>
@@ -713,7 +713,7 @@ function MessageFeedback({ traceId, btn }: { traceId: string; btn: string }) {
   }
 
   return (
-    <div className="flex flex-col items-start gap-1">
+    <div className="flex flex-wrap items-center gap-1">
       <div className="flex items-center gap-0.5">
         <button
           type="button"
