@@ -25,11 +25,15 @@ export interface Postcard {
 // Each side is a tight diagonal CLUSTER (the second card tucks in beside the
 // first, not below it) so the whole scatter stays within the hero copy band
 // and can never reach the verdict panel underneath, whatever the copy height.
+// One large portrait postcard per side with a smaller one tucked behind it —
+// mass is symmetric, arrangement is not. Photo-first: the label sits ON the
+// photo over the same legibility scrim the destination reel uses, so the
+// ambient cards and the reel read as one visual system.
 const SLOTS = [
-  { side: 'left', edge: 'calc(50% - 648px)', top: 40, rot: -3.4, drift: 10800, cycle: 8200, z: 20 },
-  { side: 'left', edge: 'calc(50% - 574px)', top: 152, rot: 2.4, drift: 12600, cycle: 11400, z: 10 },
-  { side: 'right', edge: 'calc(50% - 640px)', top: 54, rot: 2.8, drift: 11600, cycle: 9800, z: 20 },
-  { side: 'right', edge: 'calc(50% - 566px)', top: 166, rot: -2.2, drift: 13400, cycle: 12800, z: 10 },
+  { side: 'left', edge: 'calc(50% - 660px)', top: 24, w: 212, h: 268, rot: -3.2, drift: 10800, cycle: 8200, z: 20 },
+  { side: 'left', edge: 'calc(50% - 512px)', top: 56, w: 156, h: 196, rot: 2.6, drift: 12600, cycle: 11400, z: 10 },
+  { side: 'right', edge: 'calc(50% - 656px)', top: 44, w: 212, h: 268, rot: 2.8, drift: 11600, cycle: 9800, z: 20 },
+  { side: 'right', edge: 'calc(50% - 508px)', top: 64, w: 156, h: 196, rot: -2.6, drift: 13400, cycle: 12800, z: 10 },
 ] as const
 
 export default function PostcardDrift({ cards }: { cards: Postcard[] }) {
@@ -67,8 +71,10 @@ export default function PostcardDrift({ cards }: { cards: Postcard[] }) {
             }}
           >
             <div
-              className="hop-drift relative h-[158px] w-[160px]"
+              className="hop-drift relative"
               style={{
+                width: slot.w,
+                height: slot.h,
                 ['--pc-rot' as string]: `${slot.rot}deg`,
                 ['--pc-period' as string]: `${slot.drift}ms`,
               }}
@@ -85,27 +91,36 @@ export default function PostcardDrift({ cards }: { cards: Postcard[] }) {
                   }`}
                 >
                   <span
-                    className="block h-[102px] overflow-hidden rounded-[9px]"
+                    className="relative block h-full w-full overflow-hidden rounded-[10px]"
                     style={{ backgroundColor: c.color ?? 'var(--color-brand-deep)' }}
                   >
-                    {/* Tiny ~160px card — the small thumb, lazily. */}
+                    {/* Small ~210px card — the small thumb, lazily. */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={c.thumb} alt="" loading="lazy" className="h-full w-full object-cover" />
-                  </span>
-                  <span className="mt-2 flex items-baseline justify-between gap-2 px-1">
-                    <span className="min-w-0">
-                      <span className="block truncate font-display text-[15px] font-semibold leading-[1.15] tracking-[-0.01em] text-text">
+                    <img
+                      src={c.thumb}
+                      alt=""
+                      loading="lazy"
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                    {/* legibility scrim — same language as the reel tiles */}
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0"
+                      style={{
+                        background:
+                          'linear-gradient(to top, rgba(7,62,62,0.72) 0%, rgba(7,62,62,0.12) 44%, rgba(7,62,62,0) 66%)',
+                      }}
+                    />
+                    <span className="absolute inset-x-0 bottom-0 flex items-baseline justify-between gap-2 p-2.5">
+                      <span className="truncate font-display text-[16px] font-semibold leading-[1.1] tracking-[-0.01em] text-white">
                         {c.city}
                       </span>
-                      <span className="block truncate text-[9.5px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
-                        {c.country}
-                      </span>
+                      {c.cpp !== undefined ? (
+                        <span className="hop-price flex-shrink-0 text-[11px] text-mint-bright">
+                          {c.cpp.toFixed(1)}¢/pt
+                        </span>
+                      ) : null}
                     </span>
-                    {c.cpp !== undefined ? (
-                      <span className="hop-price flex-shrink-0 text-[12.5px] text-brand">
-                        {c.cpp.toFixed(1)}¢/pt
-                      </span>
-                    ) : null}
                   </span>
                 </Link>
               ))}
