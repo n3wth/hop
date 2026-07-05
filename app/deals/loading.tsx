@@ -3,11 +3,12 @@ import AppShell from '@/components/AppShell'
 // Route-level loading UI for /deals. Next wraps page.js in a Suspense boundary
 // with this as the fallback, so it shows on navigation while the Server
 // Component resolves destination photography + the session. Mirrors the real
-// layout (centered editorial header, the "Ask hop" on-ramp band, then a
-// 1→2→3→4-up card grid) so the page doesn't reflow when content lands. Flat +
-// on-system: no shadows; the sheen is the shared .hop-skeleton shimmer, already
-// frozen flat under prefers-reduced-motion globally.
-const SKELETON_COUNT = 8
+// layout (centered editorial header, the stat line, the "Ask hop" on-ramp
+// band, then a 1→2→3→4→5-up card grid) so the page doesn't reflow when
+// content lands. Flat + on-system: no shadows; the sheen is the shared
+// .hop-skeleton shimmer, already frozen flat under prefers-reduced-motion
+// globally. Count MUST match app/deals/page.tsx's topValue(N) call.
+const SKELETON_COUNT = 24
 
 // One feed-card placeholder — mirrors DealCard: a 16/10 photo header, a vibe
 // line, the 2-col economics grid (miles / vs. cash, then full-width best-via),
@@ -42,6 +43,14 @@ export default function Loading() {
           <span className="hop-skeleton hop-skeleton-line mx-auto block w-[88px]" />
           <span className="hop-skeleton mx-auto mt-4 block h-[44px] w-3/4 rounded-[10px] sm:h-[56px]" />
           <span className="hop-skeleton hop-skeleton-line mx-auto mt-5 block w-5/6" />
+          {/* stat line ("N routes · from X · best value first") — the real
+              page renders this as EditorialHeader children, right below the
+              intro. DegradedNote only ever appears here, never elsewhere. */}
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-1">
+            <span className="hop-skeleton hop-skeleton-line block w-[64px]" />
+            <span className="hop-skeleton hop-skeleton-line block w-[90px]" />
+            <span className="hop-skeleton hop-skeleton-line block w-[110px]" />
+          </div>
         </header>
 
         {/* "Ask hop" on-ramp band — mirrors the real page's concierge door so the
