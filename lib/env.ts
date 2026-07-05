@@ -35,6 +35,15 @@ export type EnvKey =
   // balance-sync Email Worker presents it as a Bearer token to relay forwarded
   // loyalty-balance emails. Absent → the ingest endpoint rejects EVERY request.
   | 'HOP_BALANCE_INGEST_SECRET'
+  // 64-hex (32-byte) AES-256-GCM key for the loyalty-credential vault
+  // (lib/credential-vault.ts). Absent → the credential-sync seam is OFF and no
+  // credential can be stored or read. Never logged.
+  | 'HOP_CREDENTIAL_KEY'
+  // Base URL of the deployed Cloudflare Browser Rendering worker that signs in
+  // to a loyalty site and returns the dashboard text (cloudflare/
+  // balance-fetch-worker), no trailing slash — plus its shared Bearer secret.
+  | 'HOP_BALANCE_FETCH_WORKER_URL'
+  | 'HOP_BALANCE_FETCH_SECRET'
   // Base URL of the deployed Cloudflare Worker that aggregates live cpp
   // observations into per-program valuation overrides (no trailing slash), e.g.
   // "https://hop-valuations.<subdomain>.workers.dev". See lib/valuation-telemetry.ts
@@ -112,6 +121,9 @@ export const env = {
   resendApiKey: () => read('RESEND_API_KEY'),
   supportIngestSecret: () => read('HOP_SUPPORT_INGEST_SECRET'),
   balanceIngestSecret: () => read('HOP_BALANCE_INGEST_SECRET'),
+  credentialKey: () => read('HOP_CREDENTIAL_KEY'),
+  balanceFetchWorkerUrl: () => read('HOP_BALANCE_FETCH_WORKER_URL'),
+  balanceFetchSecret: () => read('HOP_BALANCE_FETCH_SECRET'),
   hopValuationWorkerUrl: () => read('HOP_VALUATION_WORKER_URL'),
   hopValuationSyncSecret: () => read('HOP_VALUATION_SYNC_SECRET'),
   stripeSecretKey: () => read('STRIPE_SECRET_KEY'),
@@ -233,6 +245,29 @@ export function isGmailHistoryEnabled(): boolean {
 export function isBalanceSyncEnabled(): boolean {
   const flag = process.env.HOP_ENABLE_BALANCE_SYNC ?? ''
   return /^(1|true|yes)$/i.test(flag.trim())
+}
+
+// Credential-based auto-sync (hop signs in to a loyalty site and reads the
+// balance) is GATED behind an explicit flag AND a real vault key — without a
+// proper AES key no credential may ever be stored. Off → the /account
+// affordance doesn't render and the credential actions refuse softly. The
+// scheduled FETCH additionally needs the Browser Rendering worker configured
+// (isCredentialAutosyncLive) — vault on + worker absent means credentials can
+// be stored but sync stays "pending", and the UI says so honestly.
+export function isCredentialSyncEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_CREDENTIAL_SYNC ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && /^[0-9a-f]{64}$/i.test((process.env.HOP_CREDENTIAL_KEY ?? '').trim())
+}
+
+// The scheduled credential fetch runs only when the vault is enabled AND the
+// Cloudflare Browser Rendering worker is deployed + shared-secret configured.
+export function isCredentialAutosyncLive(): boolean {
+  return (
+    isCredentialSyncEnabled() &&
+    hasEnv('HOP_BALANCE_FETCH_WORKER_URL') &&
+    hasEnv('HOP_BALANCE_FETCH_SECRET')
+  )
 }
 
 // The standing-orders watcher (app/api/cron/standing-orders) only re-checks

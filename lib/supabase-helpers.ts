@@ -54,6 +54,8 @@ function toCamelRow(obj: any): any {
 
 const TABLE_MAP: Record<string, any> = {
   hop_manual_balances: schema.manualBalances,
+  hop_sync_addresses: schema.syncAddresses,
+  hop_program_credentials: schema.programCredentials,
   hop_user_accounts: schema.userAccounts,
   hop_user_prefs: schema.userPrefs,
   hop_conversations: schema.conversations,

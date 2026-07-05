@@ -11,10 +11,11 @@
 // it can never invent one. No key / failed call → a pure regex fallback parser.
 // NEVER throws anywhere on this path.
 
-import { createHmac, timingSafeEqual } from 'node:crypto'
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 import { callGateway } from '@/lib/ai-gateway'
 import { canonicalizeProgram, PROGRAMS } from '@/lib/programs'
 import { deriveCode } from '@/lib/awardwallet'
+import { withDb } from '@/lib/supabase-helpers'
 import {
   addManualBalance,
   findManualByProgram,
@@ -367,10 +368,88 @@ export async function applyExtractedBalances(
 }
 
 // --- Personal sync address ---------------------------------------------------
-// The email rail's capability: sync+<userId>.<sig>@<domain>, where sig is an
-// HMAC over the userId keyed on the app's auth secret. Resolution verifies the
-// signature instead of trusting the (spoofable) From: header, and needs no DB
-// scan. A mangled/forged address fails closed to null.
+// The email rail's capability. TWO forms resolve to a user:
+//   - PRETTY (preferred, shown in the UI): sync-<alias>@<domain>, a short
+//     random alias minted once per user into hop_sync_addresses and resolved
+//     by DB lookup. Unguessable; revocable by row delete.
+//   - LEGACY: sync+<userId>.<sig>@<domain>, an HMAC over the userId keyed on
+//     the app's auth secret — needs no DB and stays accepted for addresses
+//     already handed out.
+// Neither trusts the (spoofable) From: header. Anything mangled/forged fails
+// closed to null.
+
+// Alias alphabet omits look-alikes (0/o, 1/l/i) — this string gets read off a
+// screen and typed into a mail client.
+const ALIAS_ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789'
+const ALIAS_LEN = 6
+
+function randomAlias(): string {
+  const bytes = randomBytes(ALIAS_LEN)
+  let out = ''
+  for (let i = 0; i < ALIAS_LEN; i++) out += ALIAS_ALPHABET[bytes[i] % ALIAS_ALPHABET.length]
+  return out
+}
+
+// The user's pretty forwarding address, minting the alias on first call.
+// Null when the DB is unavailable (callers fall back to the legacy address).
+export async function getOrCreateSyncAlias(userId: string): Promise<string | null> {
+  if (!userId) return null
+  return withDb<string | null>(null, async (db) => {
+    const existing = await db
+      .from('hop_sync_addresses')
+      .select('alias')
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (existing.data?.alias) return existing.data.alias as string
+    // Mint with a couple of retries in case a random alias collides (unique
+    // index) or a concurrent request won the insert (user_id pk).
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const alias = randomAlias()
+      const { error } = await db.from('hop_sync_addresses').insert({ user_id: userId, alias })
+      if (!error) return alias
+      const again = await db
+        .from('hop_sync_addresses')
+        .select('alias')
+        .eq('user_id', userId)
+        .maybeSingle()
+      if (again.data?.alias) return again.data.alias as string
+    }
+    return null
+  })
+}
+
+// Alias local part → userId via DB lookup, or null. Case-insensitive (mail
+// pipelines may lowercase the local part; the alphabet is lowercase anyway).
+export async function resolveSyncAlias(alias: string): Promise<string | null> {
+  const clean = alias.trim().toLowerCase()
+  if (!new RegExp(`^[${ALIAS_ALPHABET}]{${ALIAS_LEN},12}$`).test(clean)) return null
+  return withDb<string | null>(null, async (db) => {
+    const { data, error } = await db
+      .from('hop_sync_addresses')
+      .select('user_id')
+      .eq('alias', clean)
+      .maybeSingle()
+    if (error || !data) return null
+    return (data.user_id as string) ?? null
+  })
+}
+
+// Extract the alias from a To: address in the pretty form, or null. Pure.
+export function parseSyncAliasAddress(to: string): string | null {
+  if (typeof to !== 'string') return null
+  const m = to.trim().match(/<([^>]+)>/)
+  const addr = (m ? m[1] : to).trim()
+  const at = addr.indexOf('@')
+  if (at <= 0) return null
+  const local = addr.slice(0, at).toLowerCase()
+  if (!local.startsWith('sync-')) return null
+  return local.slice('sync-'.length) || null
+}
+
+// The pretty address for display.
+export function formatSyncAddress(alias: string): string {
+  return `sync-${alias}@${syncEmailDomain()}`
+}
 
 const SIG_HEX_CHARS = 12
 

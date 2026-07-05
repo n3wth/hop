@@ -18,6 +18,8 @@ import { eq } from 'drizzle-orm'
 import { getDb } from './db'
 import {
   manualBalances,
+  syncAddresses,
+  programCredentials,
   userAccounts,
   userPrefs,
   conversations,
@@ -55,6 +57,8 @@ export async function deleteUserAccount(userId: string): Promise<DeleteAccountRe
   // hop_subscriptions cascades from hop_customers (FK onDelete: 'cascade').
   const domainTables = [
     manualBalances,
+    syncAddresses,
+    programCredentials,
     userAccounts,
     userPrefs,
     conversations,

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   balanceAppearsInText,
+  formatSyncAddress,
   makeSyncAddress,
   parseBalancesDeterministic,
+  parseSyncAliasAddress,
   resolveSyncAddress,
   textNumberSet,
   validateExtracted,
@@ -209,5 +211,22 @@ describe('sync address', () => {
     expect(resolveSyncAddress('sync+u.abcabcabcabc@hop.flights', null)).toBeNull()
     expect(resolveSyncAddress('support@hop.flights', 'k')).toBeNull()
     expect(resolveSyncAddress('sync+nodothere@hop.flights', 'k')).toBeNull()
+  })
+})
+
+describe('pretty sync alias address', () => {
+  it('formats and parses the pretty form', () => {
+    expect(formatSyncAddress('x7k2p9')).toBe('sync-x7k2p9@hop.flights')
+    expect(parseSyncAliasAddress('sync-x7k2p9@hop.flights')).toBe('x7k2p9')
+  })
+
+  it('parses an angle-bracketed header and lowercases', () => {
+    expect(parseSyncAliasAddress('hop <SYNC-X7K2P9@hop.flights>')).toBe('x7k2p9')
+  })
+
+  it('returns null for non-alias addresses (legacy + unrelated)', () => {
+    expect(parseSyncAliasAddress('sync+user.abcabcabcabc@hop.flights')).toBeNull()
+    expect(parseSyncAliasAddress('support@hop.flights')).toBeNull()
+    expect(parseSyncAliasAddress('not-an-address')).toBeNull()
   })
 })
