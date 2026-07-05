@@ -115,9 +115,9 @@ export default async function DealsPage({
       <div className="mx-auto max-w-[var(--container-shell)]">
         {/* editorial header — centered over the full-width feed */}
         <EditorialHeader
-          eyebrow="Sweet spots"
+          eyebrow="Deals"
           title="Where your miles go furthest"
-          intro="The redemptions where points beat cash by the widest margin, ranked by cents per point. Every one is a route you can book."
+          intro="The redemptions where points beat cash by the widest margin, ranked by cents per point net of typical taxes. Every one is a route you can book — the full program-by-program reference lives in Sweet spots."
         >
           <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[13px] text-text3">
             <span>
