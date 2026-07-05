@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Git-native guard: never commit directly to main — feature branches /
+# worktrees + PRs only (AGENTS.md, CLAUDE.md). The Claude-Code-specific
+# PreToolUse hook (guard-main-commit.sh) only protects Claude sessions;
+# this one protects EVERY tool that drives git — Cursor, Codex, Devin,
+# humans. Installed by scripts/setup-worktree.sh via core.hooksPath.
+#
+# Escape hatch for genuine emergencies: HOP_ALLOW_MAIN_COMMIT=1 git commit …
+set -euo pipefail
+
+if [ "${HOP_ALLOW_MAIN_COMMIT:-}" = "1" ]; then
+  exit 0
+fi
+
+branch=$(git symbolic-ref --short HEAD 2>/dev/null || echo '')
+if [ "$branch" = "main" ]; then
+  echo "✗ Direct commits to main are blocked (house rule: PRs only)." >&2
+  echo "  Make a branch:   git switch -c <feature-branch>" >&2
+  echo "  Or a worktree:   git worktree add /tmp/<name> origin/main -b <branch>" >&2
+  echo "  Emergency only:  HOP_ALLOW_MAIN_COMMIT=1 git commit …" >&2
+  exit 1
+fi
+exit 0
