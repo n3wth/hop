@@ -88,6 +88,55 @@ every gated seam checks both a flag and its credentials before turning on.
 
 ## Core Architecture
 
+```mermaid
+flowchart TD
+    subgraph Surfaces["Product surfaces"]
+        Pages["Pages: / /search /deals /account"]
+        Ask["/ask concierge"]
+        MCPRoute["MCP server: /api/mcp, /api/sse"]
+        Eve["eve/ agent (scheduled)"]
+    end
+
+    subgraph Engine["Verdict engine — lib/search.ts#assembleSearch"]
+        direction TB
+        Fan["Fans out concurrently, never throws"]
+        CPP["lib/cpp.ts — cpp, tiers, verdict"]
+        Fan --> CPP
+    end
+
+    subgraph Upstream["Upstream clients — always {ok} or fallback"]
+        Duffel["lib/duffel.ts — cash fares"]
+        Seats["lib/seatsaero.ts — award space"]
+        AW["lib/awardwallet.ts — live balances"]
+        Transfers["lib/transfers.ts — transfer paths"]
+    end
+
+    subgraph Data["Persistence & cache"]
+        Neon["Neon Postgres via Drizzle (lib/db/)"]
+        Accounts["lib/accounts.ts#getUserBalances"]
+        Cache["lib/cache.ts — Upstash Redis + in-memory fallback"]
+        Vals["lib/valuations.ts (static) + lib/valuations-live.ts (observed, Cloudflare Worker)"]
+    end
+
+    Pages --> Fan
+    Ask --> Fan
+    MCPRoute --> Fan
+    Eve --> Fan
+
+    Fan --> Duffel
+    Fan --> Seats
+    Fan --> AW
+    Fan --> Transfers
+    Duffel --> Cache
+    Seats --> Cache
+
+    Fan --> Accounts
+    Accounts --> AW
+    Accounts --> Neon
+
+    CPP --> Vals
+```
+
 - **Verdict engine** — `lib/search.ts#assembleSearch` is the moat: it fans out to every upstream
   source concurrently, computes per-option economics, and always resolves (upstream failures land
   in a `degraded[]` array instead of throwing). Every number — cpp, tiers, ranking, the pick — is

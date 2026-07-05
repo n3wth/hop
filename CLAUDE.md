@@ -55,6 +55,16 @@ This repo is **agent-native**: each unit of work should make the next one easier
 When you fix a non-obvious bug or make a durable decision, the work isn't done until it's captured
 where the next agent (you, or another LLM via `AGENTS.md`) will find it automatically.
 
+## Faster LLM iteration
+
+- **Concierge/prompt work (`lib/concierge-*.ts`, `/ask`)**: iterate against `MOCK=1` fixtures, not
+  live upstream calls — cheaper and faster per turn. Lock in deterministic logic (cpp, tiers,
+  ranking) with `npm run test:watch` on `lib/__tests__/`; reserve live Anthropic calls for
+  checking tone/voice against `docs/design/copy-spec.md`, not correctness.
+- **Claude Code sessions**: keep context small so turns stay fast — `/compact` before ~60%
+  context, delegate exploration/research to subagents (`Explore`, `general-purpose`) instead of
+  doing wide searches inline, and use `/review-parallel` instead of manually rereading a diff.
+
 ## Commands (run from the repo root)
 
 ```bash
