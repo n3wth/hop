@@ -37,7 +37,7 @@ export interface AskStartDestination {
   /** Unsplash attribution (API terms) — optional only so a hand-built caller
    *  without a real photo doesn't need to fake one; every photo actually
    *  resolved via lib/images.ts#DestImage carries one. */
-  credit?: { name: string; link: string }
+  credit?: { name: string; link: string; source?: string; sourceLink?: string }
 }
 
 export interface AskStartProps {

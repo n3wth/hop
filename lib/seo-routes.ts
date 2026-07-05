@@ -28,6 +28,7 @@ export const STATIC_SEO_ROUTES: StaticSeoRoute[] = [
   { path: '/support', changeFrequency: 'monthly', priority: 0.4 },
   { path: '/privacy', changeFrequency: 'yearly', priority: 0.3 },
   { path: '/terms', changeFrequency: 'yearly', priority: 0.3 },
+  { path: '/credits', changeFrequency: 'yearly', priority: 0.2 },
 ]
 
 export interface NavLink {
@@ -72,6 +73,7 @@ export const FOOTER_SECTIONS: FooterSection[] = [
     links: [
       { href: '/privacy', label: 'Privacy' },
       { href: '/terms', label: 'Terms' },
+      { href: '/credits', label: 'Photo credits' },
     ],
   },
 ]

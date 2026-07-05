@@ -26,7 +26,7 @@ export interface DreamCardData {
   viaKind?: 'direct' | 'transfer'
   saveToward: boolean
   affordableNow: boolean
-  photo?: { url: string; alt: string; credit: { name: string; link: string } } | null
+  photo?: { url: string; alt: string; credit: { name: string; link: string; source?: string; sourceLink?: string } } | null
   searchHref: string
   initialBlurb: string
 }

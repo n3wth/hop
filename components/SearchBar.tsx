@@ -1031,7 +1031,7 @@ export function SearchForm({
         e.preventDefault()
         submit()
       }}
-      className="relative flex items-center rounded-full border"
+      className="relative flex items-center rounded-full border text-left"
       style={{
         gap: 16,
         paddingLeft: 22,
