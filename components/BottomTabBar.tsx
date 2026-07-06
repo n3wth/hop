@@ -23,9 +23,11 @@ const TABS: TabDef[] = [
 ]
 
 // Persistent phone-only bottom tab bar — the signature "this is an app" nav.
-// Flat: cream surface, a single top hairline, no shadow/gradient. Sits above
-// the home-indicator safe area. Icon-only (labels live in aria-label); shown on
-// EVERY page including /ask, whose stage height makes room for it (globals.css
+// Glass: translucent cream + blur/saturate (matches the scrolled top nav's
+// treatment — nav chrome is the one approved spot for glassmorphism), a
+// single top hairline, no shadow/gradient/glow. Sits above the home-indicator
+// safe area. Icon-only (labels live in aria-label); shown on EVERY page
+// including /ask, whose stage height makes room for it (globals.css
 // .hop-ask-stage). Tapping the already-active tab scrolls to the top.
 export default function BottomTabBar() {
   const pathname = usePathname()
@@ -46,8 +48,12 @@ export default function BottomTabBar() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg md:hidden"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      className="hop-glass-surface fixed inset-x-0 bottom-0 z-40 border-t border-border md:hidden"
+      style={{
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        backdropFilter: 'blur(14px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(14px) saturate(140%)',
+      }}
     >
       <div className="flex h-14 items-stretch justify-around">
         {TABS.map((tab) => {

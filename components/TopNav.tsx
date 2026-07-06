@@ -218,17 +218,16 @@ export default function TopNav({
           disappears entirely; on search pages it survives only as the slim
           search-pill strip (the pill is the page's primary control, not chrome). */}
       <header
-        className={`sticky top-0 z-50 ${hideSearch ? 'hidden md:block' : ''}`}
+        className={`sticky top-0 z-50 ${hideSearch ? 'hidden md:block' : ''} ${c ? 'hop-glass-surface' : ''}`}
         style={{
           height: 72,
-          background: c ? 'color-mix(in srgb, var(--color-bg) 80%, transparent)' : 'transparent',
-          backdropFilter: c ? 'blur(10px) saturate(120%)' : 'none',
-          WebkitBackdropFilter: c ? 'blur(10px) saturate(120%)' : 'none',
+          backdropFilter: c ? 'blur(14px) saturate(140%)' : 'none',
+          WebkitBackdropFilter: c ? 'blur(14px) saturate(140%)' : 'none',
           borderBottom: c ? '1px solid var(--color-border)' : '1px solid transparent',
           transform: 'translateZ(0)',
           isolation: 'isolate',
           willChange: c ? 'backdrop-filter' : 'auto',
-          transition: `background ${DUR} ${EASE}, border-color ${DUR} ${EASE}`,
+          transition: `background ${DUR} ${EASE}, border-color ${DUR} ${EASE}, backdrop-filter ${DUR} ${EASE}`,
         }}
       >
         <div className="h-full px-5 sm:px-8 lg:px-12 xl:px-16">

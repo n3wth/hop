@@ -808,6 +808,36 @@ body {
   }
 }
 
+/* ── Glass nav surfaces ───────────────────────────────────────────────────
+   Shared translucent-background treatment for the sticky top nav (once
+   scrolled) and the fixed bottom tab bar — approved for nav chrome only,
+   everywhere else the flat-editorial no-shadow/gradient/glow rule stands.
+   The actual blur (backdrop-filter / -webkit-backdrop-filter) is applied
+   inline by each component, not here: Lightning CSS's prefix-dedup pass
+   silently drops the unprefixed `backdrop-filter` declaration when both
+   live in one compiled rule, so blur is set as an inline style to guarantee
+   both land in the DOM (same reasoning the pre-existing scroll-glass TopNav
+   style already followed). Background alone still degrades correctly here:
+   opaque cream for browsers without backdrop-filter support and for
+   prefers-reduced-transparency, so text never sits on unpredictable content
+   without a backdrop — any residual inline blur is invisible behind a fully
+   opaque background regardless. */
+.hop-glass-surface {
+  background: color-mix(in srgb, var(--color-bg) 75%, transparent);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .hop-glass-surface {
+    background: var(--color-bg);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .hop-glass-surface {
+    background: var(--color-bg);
+  }
+}
+
 /* ── Bottom tab bar (phone-only) ──────────────────────────────────────────
    Mobile-first fixed navigation bar. Sits above the safe-area inset to clear
    notches and home indicator. Hidden on /ask (concierge owns the bottom).
