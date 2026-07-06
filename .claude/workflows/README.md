@@ -18,6 +18,7 @@ of disappearing (house style, applied to tooling).
 |---|---|---|
 | `review-parallel.js` | Review | one captured diff → six path-gated reviewers in a pipeline → one adversarial skeptic per finding → merged P1/P2/P3 |
 | `plan-panel.js` | Plan | three blueprint drafts from forced-diverse lenses → three-judge panel with a deterministic tally → one synthesis written to `docs/plans/` |
+| `pr-merge-pipeline.js` | Ship | a PR number → three fixed-lens reviewers → P1 fix pass on the PR branch (only if needed) → CI wait + squash-merge |
 | `invariant-audit.js` | standing | seven codebase-wide finder lenses → loop until two consecutive dry rounds → 2-of-3 skeptic majority per finding |
 
 ## House patterns (reuse these when adding a workflow)

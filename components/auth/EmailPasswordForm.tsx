@@ -69,7 +69,16 @@ export default function EmailPasswordForm({
     setError(null)
     try {
       if (mode === 'signup') {
-        const name = email.split('@')[0] || email
+        // No display name is collected at sign-up — derive one from the email
+        // local part so the account isn't nameless. The local part is often
+        // word.word or word_word (e.g. "john.smith") and whatever casing the
+        // address happens to use, usually all-lowercase — normalize
+        // separators to spaces and title-case each word so it reads right in
+        // a greeting ("John Smith", not "John.smith").
+        const local = email.split('@')[0] || email
+        const words = local.replace(/[._-]+/g, ' ').trim().split(/\s+/).filter(Boolean)
+        const name =
+          words.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || local
         const res = await authClient.signUp.email({ email, password, name })
         if (res?.error) {
           setError(

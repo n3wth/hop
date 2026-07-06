@@ -8,6 +8,7 @@ import {
   offerFingerprint,
   programEligible,
   evaluateOrder,
+  isOrderExpired,
   parseStandingOrderFallback,
   MIN_CPP_FLOOR,
   MAX_CPP_CEIL,
@@ -45,6 +46,17 @@ function result(over: Partial<SearchResult> = {}): SearchResult {
     ...over,
   }
 }
+
+describe('isOrderExpired', () => {
+  it('is false for a depart date today or in the future', () => {
+    expect(isOrderExpired('2026-07-05', '2026-07-05')).toBe(false)
+    expect(isOrderExpired('2026-07-09', '2026-07-05')).toBe(false)
+  })
+  it('is true once the depart date has passed', () => {
+    expect(isOrderExpired('2026-07-04', '2026-07-05')).toBe(true)
+    expect(isOrderExpired('2026-01-01', '2026-07-05')).toBe(true)
+  })
+})
 
 describe('clampCpp', () => {
   it('floors at hop verdict threshold', () => {

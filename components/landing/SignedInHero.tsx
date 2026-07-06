@@ -43,7 +43,7 @@ export default function SignedInHero({
             {first ? `Where to next, ${first}?` : 'Where to next?'}
           </h1>
 
-          {programs > 0 ? (
+          {totalPoints > 0 ? (
             <p
               className="hop-rise mt-4 text-[15px] leading-[1.6] text-text2 sm:text-[17px]"
               style={{ ['--hop-delay' as string]: '140ms' }}
@@ -68,6 +68,23 @@ export default function SignedInHero({
                 className="font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline"
               >
                 Manage
+              </Link>
+            </p>
+          ) : programs > 0 ? (
+            // Quick-start rows exist (real programs, zero balance) — say so
+            // plainly rather than "0 points across N programs", which reads as
+            // the points system being "on" when it has nothing to show yet.
+            <p
+              className="hop-rise mt-4 max-w-[46ch] text-[15px] leading-[1.6] text-text2 sm:text-[17px]"
+              style={{ ['--hop-delay' as string]: '140ms' }}
+            >
+              {programs} {programs === 1 ? 'program' : 'programs'} linked, no
+              balances yet.{' '}
+              <Link
+                href="/account"
+                className="font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline"
+              >
+                Fill them in
               </Link>
             </p>
           ) : (

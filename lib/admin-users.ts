@@ -12,6 +12,7 @@ import { user, manualBalances, hopCustomers, hopSubscriptions, bookings, userPre
 import { getManualBalances, getUserAwId, type ManualBalance } from './accounts'
 import { countActiveStandingOrders } from './standing-orders'
 import { PREMIUM_STATUSES } from './billing'
+import { isOwner } from './owner'
 
 export const ADMIN_USERS_PAGE_SIZE = 25
 
@@ -30,12 +31,17 @@ export interface AdminUserList {
 }
 
 // Paginated, optionally search-filtered (name/email substring) user list for
-// the /admin/users index. null = db unavailable; { users: [] } = genuinely
-// no matches.
+// the /admin/users index. null = db unavailable OR the caller isn't the
+// owner; { users: [] } = genuinely no matches.
+//
+// DEFENSE IN DEPTH: the /admin/users page already gates on getOwnerSession()
+// first, but this cross-user directory is sensitive enough to re-check
+// owner-ness here too, so a future ungated call site fails closed.
 export async function listAdminUsers(opts: {
   search?: string
   page?: number
 } = {}): Promise<AdminUserList | null> {
+  if (!(await isOwner())) return null
   const db = getDb()
   if (!db) return null
   const page = Math.max(1, opts.page ?? 1)
@@ -131,10 +137,15 @@ export interface AdminUserDetail {
 }
 
 // Full read-only profile for one user — the /admin/users/[id] detail page.
-// null = user not found OR db unavailable (the page treats both as notFound,
-// same defense-in-depth stance as the owner gate: never confirm which).
+// null = user not found OR db unavailable OR the caller isn't the owner (the
+// page treats all three as notFound, same defense-in-depth stance as the
+// owner gate: never confirm which). This is the one export here that takes
+// an arbitrary userId param, so the re-check matters most: a future ungated
+// call site can't be tricked into returning one user's full profile
+// (balances, subscription, bookings) to another.
 export async function getAdminUserDetail(userId: string): Promise<AdminUserDetail | null> {
   if (!userId || !userId.trim()) return null
+  if (!(await isOwner())) return null
   const db = getDb()
   if (!db) return null
 

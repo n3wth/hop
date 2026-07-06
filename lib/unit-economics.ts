@@ -65,7 +65,9 @@ export function mrrFromSubscriptionRows(
   return { mrrUsd: Math.round(mrrUsd * 100) / 100, count }
 }
 
-async function computeMrr(): Promise<{ mrrUsd: number; count: number } | null> {
+// Exported for lib/admin-billing.ts's /admin/billing console — same MRR
+// figure Overview shows, computed once, never re-derived a second way.
+export async function computeMrr(): Promise<{ mrrUsd: number; count: number } | null> {
   if (!hasEnv('STRIPE_PRICE_ID_PRO_MONTHLY')) return null
   const monthlyId = env.stripePriceIdProMonthly()
   const yearlyId = hasEnv('STRIPE_PRICE_ID_PRO_YEARLY') ? env.stripePriceIdProYearly() : null

@@ -5,11 +5,10 @@ import { headers } from 'next/headers'
 import { auth0 } from '@/lib/auth0'
 import { auth } from '@/lib/auth'
 import { getUserId } from '@/lib/session'
-import { getUserAwId, getManualBalances } from '@/lib/accounts'
+import { getUserAwId, getManualBalances, getCachedAwBalances } from '@/lib/accounts'
 import { safeReturnTo, returnToRouteLabel, loginHrefFor } from '@/lib/safe-return'
 import { toNavUser } from '@/lib/nav-user'
 import UserAvatarImage from '@/components/UserAvatarImage'
-import { getBalances } from '@/lib/awardwallet'
 import {
   hasEnv,
   isBalanceSyncEnabled,
@@ -119,7 +118,8 @@ export default async function AccountPage({
   const user = toNavUser(u)!
 
   // Manual programs (primary) + the optional AwardWallet link (only the id;
-  // the live-balances CALL needs this id, so it stays a genuine dependency).
+  // awConnected/disconnect depend on the LINK, independent of whether a
+  // synced snapshot exists yet).
   const [manual, awId] = await Promise.all([
     u.sub ? getManualBalances(u.sub) : Promise.resolve([]),
     u.sub ? getUserAwId(u.sub) : Promise.resolve(null),
@@ -146,16 +146,14 @@ export default async function AccountPage({
       ? makeSyncAddress(u.sub, resolveAuthSecret())
       : null
 
-  // Five independent groups — the AwardWallet live-balances call (a real
-  // third-party request, typically the slowest leg) and four Neon-backed
-  // Promise.all groups — none reads another's output, so they run together
-  // instead of the AwardWallet call blocking the rest from even starting.
+  // Five independent groups — the AwardWallet balance CACHE read (a plain db
+  // read, never a live third-party call; see lib/accounts.ts#refreshAwCache
+  // for the only code paths that call AwardWallet) and four Neon-backed
+  // Promise.all groups — none reads another's output, so they run together.
   // Every group still degrades to its own empty/free fallback on failure.
   const [awResult, [orders, alerts, unseen], [tier, activeAlerts], [gmailState, travelHistory], [mcpTokens, profile, inferred, observed]] =
     await Promise.all([
-      awConnected && awId
-        ? getBalances(awId).catch(() => ({ ok: false as const, reason: 'request failed' }))
-        : Promise.resolve(null),
+      awConnected && u.sub ? getCachedAwBalances(u.sub) : Promise.resolve(null),
       Promise.all([
         u.sub ? listStandingOrders(u.sub) : Promise.resolve([]),
         u.sub ? listAlerts(u.sub) : Promise.resolve([]),
@@ -168,7 +166,9 @@ export default async function AccountPage({
           ])
         : Promise.resolve(['free', 0] as const),
       Promise.all([
-        u.sub ? isGmailConnected(u.sub) : Promise.resolve({ connected: false, email: null }),
+        u.sub
+          ? isGmailConnected(u.sub)
+          : Promise.resolve({ connected: false, email: null, syncFailed: false }),
         u.sub ? getTravelHistory(u.sub) : Promise.resolve(null),
       ]),
       Promise.all([
@@ -180,10 +180,12 @@ export default async function AccountPage({
     ])
 
   let awBalances: Balance[] = []
-  let awReason: string | undefined
+  let awSyncedAt: string | null = null
+  let awSyncOk = false
   if (awResult) {
-    if (awResult.ok) awBalances = awResult.data
-    else awReason = awResult.reason
+    awBalances = awResult.balances
+    awSyncedAt = awResult.syncedAt
+    awSyncOk = awResult.ok
   }
 
   // Security section data — resolved via getUserId()/auth.api directly (not
@@ -388,7 +390,8 @@ export default async function AccountPage({
             manual={manual}
             awConnected={awConnected}
             awBalances={awBalances}
-            awReason={awReason}
+            awSyncedAt={awSyncedAt}
+            awSyncOk={awSyncOk}
             awUnconfigured={awUnconfigured}
           />
           {/* credential auto-sync (flag-gated) — hop signs in and reads your
@@ -446,6 +449,7 @@ export default async function AccountPage({
             enabled={gmailEnabled}
             connected={gmailState.connected}
             email={gmailState.email}
+            syncFailed={gmailState.syncFailed}
             trips={travelHistory?.trips ?? []}
           />
         </section>

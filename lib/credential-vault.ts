@@ -158,18 +158,39 @@ export interface DueCredential {
   secretEnc: string
 }
 
-// Credentials due a sync: never-synced first, then stale ones. Excludes rows
-// already marked unsupported (a recipe change resets them via re-save).
+// Programs with a verified fetch-worker recipe — mirrors the RECIPES keys in
+// cloudflare/balance-fetch-worker/src/index.ts. Kept in sync BY HAND: add a
+// program's canonical id here in the same change that adds its recipe to the
+// worker (see docs/ops-runbook.md's credential auto-sync rollout steps), so
+// rows already stamped `unsupported` for that program retry on the next run
+// instead of being excluded forever.
+export const RECIPE_SUPPORTED_PROGRAMS: ReadonlySet<string> = new Set([])
+
+// Credentials due a sync: never-synced first, then stale ones, then any
+// `unsupported` row whose program has since gained a verified recipe (see
+// RECIPE_SUPPORTED_PROGRAMS) — otherwise a recipe added after the row was
+// marked unsupported would never be retried.
 export async function listDueCredentials(staleBefore: string, limit: number): Promise<DueCredential[]> {
   return withDb<DueCredential[]>([], async (db) => {
     /* eslint-disable @typescript-eslint/no-explicit-any */
     const base = () =>
       db.from(TABLE).select('id, user_id, program, secret_enc').neq('status', 'unsupported')
-    const [never, stale] = await Promise.all([
+    const queries = [
       base().is('last_synced_at', null).limit(limit),
       base().lt('last_synced_at', staleBefore).limit(limit),
-    ])
-    const rows = [...((never.data as any[]) ?? []), ...((stale.data as any[]) ?? [])]
+    ]
+    if (RECIPE_SUPPORTED_PROGRAMS.size > 0) {
+      queries.push(
+        db
+          .from(TABLE)
+          .select('id, user_id, program, secret_enc')
+          .eq('status', 'unsupported')
+          .in('program', [...RECIPE_SUPPORTED_PROGRAMS])
+          .limit(limit),
+      )
+    }
+    const results = await Promise.all(queries)
+    const rows = results.flatMap((r) => (r.data as any[]) ?? [])
     return rows.slice(0, limit).map((r) => ({
       id: r.id as string,
       userId: r.user_id as string,
