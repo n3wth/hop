@@ -23,6 +23,7 @@ const SURFACES: Item[] = [
   { href: '/admin/support', label: 'Inbox', icon: 'envelope' },
   { href: '/admin/content', label: 'Content', icon: 'content_copy' },
   { href: '/admin/agents', label: 'Agents', icon: 'compass' },
+  { href: '/admin/team', label: 'Team', icon: 'team' },
   { href: '/admin/ops', label: 'Ops', icon: 'settings' },
 ]
 
