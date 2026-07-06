@@ -96,13 +96,18 @@ type — not scattered fragments).
     the number silently morphs from the old value instead of animating
     fresh; a `startInView` observer that already fired also never refires
     for the new record.
-16. **Generated cover art is shelf furniture, not filler.** Every `CoverArt`
-    (`components/CoverArt.tsx`) instance sits inside a uniform-size grid —
-    one tile per record, same size class as its siblings, never stretched
-    or cropped to plug an uneven card height. A tile's size is only allowed
-    to change at a shelf→header transition (list tile → detail page); the
-    seed stays the same across that jump so the artwork reads as one shared
-    object, not a re-roll.
+16. **A record's identity mark stays one object across a shelf→header
+    transition.** Every `BrandIcon` (`components/BrandIcon.tsx`) instance
+    sits inside a uniform-size grid — one tile per record, same size class
+    as its siblings, never stretched or cropped to plug an uneven card
+    height. A tile's size is only allowed to change at a shelf→header
+    transition (list tile → detail page); the same `code`/`name` resolves
+    to the same mark across that jump, so the reader sees one identity, not
+    a re-roll. (Previously this used a per-seed generative `CoverArt` —
+    retired because a distinctive generative pattern reads as noise, not
+    identity, once six of them sit side by side rendering the same shape in
+    only a different color; a real logo or a stable monogram is legible at
+    tile size and doesn't need six-way differentiation to read correctly.)
 17. **A named `view-transition-name` needs its own reduced-motion pair.**
     `app/globals.css`'s reduced-motion query only freezes the root
     transition (`::view-transition-old(root)` / `::view-transition-new(root)`
