@@ -277,6 +277,35 @@ export const escalations = pgTable('hop_escalations', {
   createdAt: tz('created_at').defaultNow(),
 })
 
+// Newsletter foundation (R1.6 capture + R2.3 weekly digest). email is stored
+// lowercased and unique (dedup, same convention as hop_escalations' lead
+// capture). userId is nullable-by-design — like hop_escalations, a signed-out
+// visitor is a valid, expected row, not a scoping bug; the weekly digest
+// re-resolves the user by email at send time rather than trusting a
+// point-in-time userId, so an account created after signup still personalizes.
+// confirmToken stays valid after use (a second click on the same email link
+// is a no-op success, not a broken-link error) — re-confirming an
+// already-confirmed row is harmless. unsubscribeToken is likewise permanent
+// so the one-click footer link never expires.
+// lastDigestSentAt is the per-subscriber idempotency guard for R2.3 (no
+// generic outbox — hop_notification_outbox is keyed on a non-null user_id,
+// which anonymous subscribers don't have).
+export const newsletterSubscribers = pgTable('hop_newsletter_subscribers', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id'),
+  email: text('email').notNull(),
+  confirmToken: text('confirm_token'),
+  unsubscribeToken: text('unsubscribe_token').notNull(),
+  confirmedAt: tz('confirmed_at'),
+  unsubscribedAt: tz('unsubscribed_at'),
+  lastDigestSentAt: tz('last_digest_sent_at'),
+  createdAt: tz('created_at').defaultNow(),
+}, (t) => [
+  uniqueIndex('hop_newsletter_subscribers_email_idx').on(t.email),
+  uniqueIndex('hop_newsletter_subscribers_confirm_token_idx').on(t.confirmToken),
+  uniqueIndex('hop_newsletter_subscribers_unsubscribe_token_idx').on(t.unsubscribeToken),
+])
+
 // Owner-drafted sweet-spot entries awaiting review before they join the
 // static seed table (lib/sweet-spots.ts). `seq` is a plain auto-increment used
 // only to derive a stable numeric SweetSpot#id above the static table's small

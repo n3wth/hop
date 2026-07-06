@@ -382,6 +382,20 @@ export function isEmailPasswordAuthEnabled(): boolean {
   return on && hasEnv('RESEND_API_KEY')
 }
 
+// Newsletter foundation (R1.6 capture + R2.3 weekly digest) is GATED behind
+// an explicit flag AND a working Resend key — same double-lock shape as
+// isEmailPasswordAuthEnabled, because delivery is load-bearing here too (no
+// confirmation email means no confirmed subscriber, ever). Off → the signup
+// route is a full no-op (no DB write, generic success so the client never
+// sees a broken form) and the digest cron returns 503 disabled, so nothing
+// sends to a real inbox until Oliver flips both HOP_ENABLE_NEWSLETTER and a
+// real RESEND_API_KEY.
+export function isNewsletterEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_NEWSLETTER ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && hasEnv('RESEND_API_KEY')
+}
+
 // Passkey/WebAuthn sign-in (@better-auth/passkey) is GATED behind its own
 // explicit flag — no upstream credential is needed (WebAuthn needs only the
 // `passkey` table plus the browser's platform authenticator), but flipping
