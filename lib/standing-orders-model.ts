@@ -155,6 +155,20 @@ export function validateDraft(raw: unknown): StandingOrderDraft | null {
   return draft
 }
 
+// A watch's stored depart date has already passed. The cron re-runs `params`
+// VERBATIM (it's "the exact engine the user would run by hand"), so an unpaused
+// watch whose date has lapsed would otherwise send Duffel/seats.aero a
+// known-invalid past departure on EVERY tick forever — a permanent 422, not a
+// graceful degrade, and a standing paid-API cost with no chance of ever
+// crossing. The cron skips these before calling the engine (see
+// app/api/cron/standing-orders/route.ts) rather than rolling the date forward:
+// rolling forward would change offerFingerprint's `date` component daily,
+// re-alerting on the SAME persistent deal every tick instead of dedupe-ing it.
+// PURE: bare "YYYY-MM-DD" string compare, no Date parsing.
+export function isOrderExpired(depart: string, todayIso: string): boolean {
+  return depart < todayIso
+}
+
 // --- Crossing rule (the heart of "fire on the VERDICT") ----------------------
 
 // A stable fingerprint for the picked redemption. Used as lastNotifiedOffer so a
