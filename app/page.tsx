@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
-import { toNavUser } from '@/lib/nav-user'
+import { toNavUser, firstName } from '@/lib/nav-user'
 import { auth0 } from '@/lib/auth0'
 import { mockBalances } from '@/lib/mock'
 import { getPrefs, type UserPrefs } from '@/lib/prefs'
@@ -95,7 +95,7 @@ export default async function Home() {
     pointsWorth = walletValue(balances)
   }
 
-  const first = user?.name?.trim().split(' ')[0]
+  const first = firstName(su)
 
   // Never crashes the home if the image call fails.
   const heroBackdrop = heroBackdropRaw ?? undefined

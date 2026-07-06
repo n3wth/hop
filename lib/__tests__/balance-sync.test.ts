@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   balanceAppearsInText,
+  formatSyncAddress,
   makeSyncAddress,
   parseBalancesDeterministic,
+  parseSyncAliasAddress,
   resolveSyncAddress,
   textNumberSet,
   validateExtracted,
@@ -109,6 +111,27 @@ describe('validateExtracted — the clamp', () => {
     expect(out![0].code).toBe('UA')
   })
 
+  it('rejects a balance whose near occurrence is only a substring of an order number (P1 regression)', () => {
+    // The only STANDALONE "500" ($500 cert) sits far from the program; near the
+    // program, "500" exists only inside the order number 9004500. The old
+    // substring proximity check accepted it; the token-boundary check rejects it.
+    const text =
+      `United MileagePlus. Order ref 9004500.\n${'filler text. '.repeat(40)}\nSeparately, a $500 companion certificate.`
+    expect(
+      validateExtracted({ balances: [{ program: 'United MileagePlus', balance: 500 }] }, text),
+    ).toBeNull()
+  })
+
+  it('accepts a balance that appears as a standalone token near the program', () => {
+    const text = 'United MileagePlus balance: 45,230 miles. Order ref 9004500.'
+    const out = validateExtracted(
+      { balances: [{ program: 'United MileagePlus', balance: 45230 }] },
+      text,
+    )
+    expect(out).not.toBeNull()
+    expect(out![0].balance).toBe(45230)
+  })
+
   it('rejects a real number that appears nowhere near the claimed program', () => {
     // An order number 500+ chars away from the only program mention must not
     // be attributable to it on the auto-apply email rail.
@@ -209,5 +232,22 @@ describe('sync address', () => {
     expect(resolveSyncAddress('sync+u.abcabcabcabc@hop.flights', null)).toBeNull()
     expect(resolveSyncAddress('support@hop.flights', 'k')).toBeNull()
     expect(resolveSyncAddress('sync+nodothere@hop.flights', 'k')).toBeNull()
+  })
+})
+
+describe('pretty sync alias address', () => {
+  it('formats and parses the pretty form', () => {
+    expect(formatSyncAddress('x7k2p9')).toBe('sync-x7k2p9@hop.flights')
+    expect(parseSyncAliasAddress('sync-x7k2p9@hop.flights')).toBe('x7k2p9')
+  })
+
+  it('parses an angle-bracketed header and lowercases', () => {
+    expect(parseSyncAliasAddress('hop <SYNC-X7K2P9@hop.flights>')).toBe('x7k2p9')
+  })
+
+  it('returns null for non-alias addresses (legacy + unrelated)', () => {
+    expect(parseSyncAliasAddress('sync+user.abcabcabcabc@hop.flights')).toBeNull()
+    expect(parseSyncAliasAddress('support@hop.flights')).toBeNull()
+    expect(parseSyncAliasAddress('not-an-address')).toBeNull()
   })
 })

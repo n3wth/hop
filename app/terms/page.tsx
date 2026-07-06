@@ -64,8 +64,19 @@ export default async function TermsPage() {
           uses automated (including AI-assisted) extraction to read program names and balances
           from the text you provide. Extraction can misread; every number is checked against your
           text before it is saved, and you can review, edit, or remove any synced balance from
-          your account. hop never asks for or stores your loyalty-program passwords, and balances
-          you track in hop do not change anything in the underlying loyalty program.
+          your account. Balances you track in hop do not change anything in the underlying loyalty
+          program.
+        </p>
+        <p>
+          <strong>Credential auto-sync (optional).</strong> If you choose to store a
+          loyalty-program login, you authorize hop to use it to sign in to that program on your
+          behalf and read your balance on a recurring basis. You confirm you are permitted to
+          grant that access; automated access may be limited or blocked by a program and may
+          violate that program&rsquo;s own terms, which are between you and the program. hop
+          encrypts stored credentials, uses them only to read balances (never to make changes,
+          bookings, or redemptions), and lets you remove them at any time. This feature is
+          provided &ldquo;as is&rdquo;; a login can fail or become unsupported, and paste/forward
+          remain available as a fallback.
         </p>
 
         <h2>4. Third-party services</h2>

@@ -60,6 +60,7 @@ export type CronJob =
   | 'business-digest'
   | 'health-sentinel'
   | 'sync-stripe'
+  | 'balance-autosync'
 
 export interface CronJobSpec {
   job: CronJob
@@ -75,6 +76,7 @@ export const CRON_JOBS: readonly CronJobSpec[] = [
   { job: 'sync-stripe', path: '/api/cron/sync-stripe', schedule: '0 2 * * *', expectedIntervalMs: DAY_MS },
   { job: 'business-digest', path: '/api/cron/business-digest', schedule: '7 14 * * 1', expectedIntervalMs: 7 * DAY_MS },
   { job: 'health-sentinel', path: '/api/cron/health-sentinel', schedule: '17 11 * * *', expectedIntervalMs: DAY_MS },
+  { job: 'balance-autosync', path: '/api/cron/balance-autosync', schedule: '45 9 * * *', expectedIntervalMs: DAY_MS },
 ]
 
 // ── Flag/key seam registry (D3) ─────────────────────────────────────────────

@@ -23,7 +23,9 @@ import { user } from '@/lib/db/schema'
 import {
   applyExtractedBalances,
   extractBalances,
+  parseSyncAliasAddress,
   resolveSyncAddress,
+  resolveSyncAlias,
   MAX_SYNC_TEXT_CHARS,
 } from '@/lib/balance-sync'
 
@@ -81,8 +83,12 @@ export async function POST(request: Request): Promise<Response> {
     return json({ ok: false, error: 'bad json' }, 400)
   }
 
+  // Two address forms resolve to a user: the pretty DB alias (sync-<alias>@)
+  // is tried first, then the legacy HMAC address (sync+<userId>.<sig>@).
   const to = typeof body.to === 'string' ? body.to : ''
-  const userId = resolveSyncAddress(to, resolveAuthSecret())
+  const alias = parseSyncAliasAddress(to)
+  const userId =
+    (alias ? await resolveSyncAlias(alias) : null) ?? resolveSyncAddress(to, resolveAuthSecret())
   if (!userId) return json({ ok: false, error: 'unknown address' }, 404)
 
   // The HMAC proves hop minted this address; still confirm the account exists

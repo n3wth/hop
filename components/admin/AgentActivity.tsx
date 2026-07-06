@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHeader'
 import type { ImprovementFinding } from '@/lib/improvement-findings'
 import type { SupportTicket } from '@/lib/support-tickets'
+import type { AdminMcpTokenRow, AdminMcpCallerRow } from '@/lib/admin-mcp'
 import Sparkline from '@/components/admin/Sparkline'
 
 // What the machines did — read-only, every figure a counted row:
@@ -17,6 +18,8 @@ export default function AgentActivity({
   dayBuckets,
   toolCounts,
   mcpWindowDays,
+  mcpTokens,
+  mcpCallers,
 }: {
   findings: ImprovementFinding[] | null
   tickets: SupportTicket[]
@@ -25,6 +28,10 @@ export default function AgentActivity({
   /** [tool, calls] pairs, busiest first (server-counted). null = degraded. */
   toolCounts: Array<[string, number]> | null
   mcpWindowDays: number
+  /** Token inventory across all users, newest-minted first. null = degraded. */
+  mcpTokens: AdminMcpTokenRow[] | null
+  /** Busiest callers in the window, ranked. null = degraded. */
+  mcpCallers: AdminMcpCallerRow[] | null
 }) {
   const drafted = tickets.filter((t) => t.draftReply && !t.repliedAt).length
   const sent = tickets.filter((t) => t.repliedAt).length
@@ -142,6 +149,62 @@ export default function AgentActivity({
           </div>
         )}
       </Section>
+
+      <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">
+        <Section title={`Top MCP callers — last ${mcpWindowDays} days`}>
+          {mcpCallers === null ? (
+            <Empty>Caller ranking is unavailable.</Empty>
+          ) : mcpCallers.length === 0 ? (
+            <Empty>No calls in the window.</Empty>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              {mcpCallers.slice(0, 10).map((c, i) => (
+                <div
+                  key={`${c.userId ?? 'unlinked'}-${i}`}
+                  className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3 py-2"
+                >
+                  <span className="truncate text-[12.5px] font-semibold text-text">
+                    {c.email ?? 'Unlinked / stateless'}
+                  </span>
+                  <span className="flex-shrink-0 text-[12px] text-text3">
+                    {c.callCount} call{c.callCount === 1 ? '' : 's'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+
+        <Section title="MCP token inventory">
+          {mcpTokens === null ? (
+            <Empty>Token inventory is unavailable.</Empty>
+          ) : mcpTokens.length === 0 ? (
+            <Empty>No tokens minted yet.</Empty>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              {mcpTokens.slice(0, 10).map((t, i) => (
+                <div
+                  key={`${t.email}-${t.lastFour}-${i}`}
+                  className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-[12.5px] font-semibold text-text">
+                      {t.email}
+                      {t.name ? <span className="font-normal text-text3"> · {t.name}</span> : null}
+                    </div>
+                    <div className="font-mono text-[11px] text-text3">…{t.lastFour}</div>
+                  </div>
+                  <span className="flex-shrink-0 text-right text-[11.5px] text-text3">
+                    {t.lastUsedAt ? `used ${fmtDate(t.lastUsedAt)}` : 'never used'}
+                    <br />
+                    <span className="text-text3/70">no cap configured yet</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+      </div>
     </AdminPageShell>
   )
 }

@@ -24,7 +24,13 @@ export default function HeroAmbience({ entries }: { entries: ShowcaseEntry[] }) 
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute top-[-160px] -z-10 h-[820px] overflow-hidden"
+      // bottom-0 (not a fixed height) pins this to the hero SECTION's own
+      // bottom edge, whatever that renders to on a given page/viewport — the
+      // signed-out hero (search bar + sample-verdict panel) is much taller
+      // than the signed-in hero (heading + composer only). A fixed height
+      // tuned for the tall variant used to spill past the short variant's
+      // section boundary, bleeding the wash into the next section's content.
+      className="pointer-events-none absolute top-[-160px] bottom-0 -z-10 overflow-hidden"
       style={{ left: 'calc(50% - 50vw)', right: 'calc(50% - 50vw)' }}
     >
       {entries.map((e, j) => (
