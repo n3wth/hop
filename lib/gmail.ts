@@ -126,14 +126,19 @@ export async function refreshAccessToken(refreshToken: string): Promise<string |
 
 // Best-effort revoke of a refresh/access token at Google's revocation endpoint.
 // Called on disconnect so our access is killed upstream, not just locally.
-export async function revokeToken(token: string): Promise<void> {
+// Returns whether the upstream call itself succeeded — best-effort means the
+// caller's local disconnect proceeds regardless, but a caller can still log a
+// failure here (a token that silently stayed valid at Google is worth knowing
+// about, even though the local row is gone).
+export async function revokeToken(token: string): Promise<boolean> {
   try {
-    await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(token)}`, {
+    const res = await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(token)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     })
+    return res.ok
   } catch {
-    // best effort — local delete still happens regardless
+    return false
   }
 }
 
