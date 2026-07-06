@@ -90,6 +90,27 @@ scheduled cron to discover a mismatch. A stale secret on either side doesn't
 fail at rotation time; it fails silently as a generic `worker-unreachable` at
 the next run (see `docs/solutions/2026-07-05-paired-secret-rotation.md`).
 
+## Content candidate pipeline (`docs/plans/2026-07-05-content-candidate-pipeline.md`)
+
+Mines `assembleSearch` directly (not the valuation Worker) over a curated
+4-hub × rotating-destination × sampled-date grid for notable Business-cabin
+award redemptions, and drops up to 3/run into the existing
+`hop_sweet_spot_drafts` review queue as `pending_review` — never
+auto-approved. Deliberately independent of valuation sync/the Worker.
+
+**Turn on:** `HOP_ENABLE_CONTENT_CANDIDATES=1` — no new secret; it reuses the
+live pricing keys `/search` already needs (`SEATS_AERO_API_KEY` +
+`DUFFEL_API_KEY_LIVE`). Off → `/api/cron/sweet-spot-candidates` answers
+`503 disabled` and the owner's "Find candidates now" button
+(`/admin/content`) refuses softly.
+
+**Turn off:** unset `HOP_ENABLE_CONTENT_CANDIDATES`. Existing drafts are
+unaffected; the queue just stops filling itself.
+
+**Verify:** hit `/api/cron/sweet-spot-candidates` with the cron bearer, or
+click "Find candidates now" as the owner; check `/admin/content` for new rows
+tagged "Auto-found".
+
 ## Balance sync (paste / email forward)
 
 The AwardWallet-independent syncing seam (`docs/plans/2026-07-05-balance-sync.md`):
@@ -393,8 +414,9 @@ preserved in the comments).
 | `/api/cron/business-digest` | Mondays | `isEmailEnabled()` (`RESEND_API_KEY`) |
 | `/api/cron/health-sentinel` | daily | `isSelfImproveEnabled()` |
 | `/api/cron/balance-autosync` | daily | `isCredentialAutosyncLive()` |
+| `/api/cron/sweet-spot-candidates` | daily | `isContentCandidatesEnabled()` |
 | `/api/cron/awardwallet-sync` | every 6h (offset from standing-orders) | `isAwardWalletSyncCronLive()` (`AWARDWALLET_SYNC_CRON_ENABLED`) |
 
-All eight honor the same `Authorization: Bearer ${CRON_SECRET}` check and
-record a liveness heartbeat (`lib/cron-heartbeat.ts`) even when disabled —
-"off" is an owner choice, not an outage.
+All honor the same `Authorization: Bearer ${CRON_SECRET}` check and record a
+liveness heartbeat (`lib/cron-heartbeat.ts`) even when disabled — "off" is an
+owner choice, not an outage.
