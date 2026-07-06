@@ -86,7 +86,7 @@ export default function OriginSelector() {
         aria-label={origin ? `Departure airport: ${origin}. Change` : 'Set your departure airport'}
         onClick={() => setOpen((o) => !o)}
         className={`hop-ink-border flex items-center rounded-full border px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:border-text2 hover:bg-sunk ${
-          open ? 'border-text2 bg-sunk' : ''
+          open ? 'hop-ink-border-active bg-sunk' : ''
         }`}
       >
         <span className="tabular-nums">{label}</span>

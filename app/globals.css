@@ -820,6 +820,14 @@ body {
   border-color: color-mix(in srgb, currentColor 30%, transparent);
 }
 
+/* Open/active state needs to beat .hop-ink-border on specificity, not just
+   cascade order (Tailwind's plain `border-text2` utility ties with
+   `.hop-ink-border` at 0,1,0, and source order isn't a safe way to decide a
+   tie) — so this pairs with `.hop-ink-border` on the same element for 0,2,0. */
+.hop-ink-border.hop-ink-border-active {
+  border-color: var(--color-text2);
+}
+
 /* ── Glass nav surfaces ───────────────────────────────────────────────────
    Shared translucent-background treatment for the sticky top nav (once
    scrolled) and the fixed bottom tab bar — approved for nav chrome only,
