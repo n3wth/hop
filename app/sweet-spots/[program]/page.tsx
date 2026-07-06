@@ -2,10 +2,11 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
-import CoverArt from '@/components/CoverArt'
+import BrandIcon from '@/components/BrandIcon'
 import { pageMeta, absoluteUrl } from '@/lib/seo'
 import { allPrograms, VERIFY_CAVEAT, type Cabin, type Program, type SweetSpot } from '@/lib/sweet-spots'
 import { getProgramBySlug } from '@/lib/sweet-spots-live'
+import { canonicalizeProgram } from '@/lib/programs'
 
 // Prerender one page per program; nothing else is valid. Static params come
 // from the STATIC table only (never the DB) — a draft can only add spots to
@@ -104,15 +105,14 @@ export default async function ProgramSweetSpotsPage({
           <span className="text-text2">{program.name}</span>
         </nav>
 
-        {/* header — the cover art shares the index tile's seed (program.slug),
-            so it's the same artwork the reader saw on the /sweet-spots shelf,
-            just at the header size class (experience-heuristics.md #16) */}
+        {/* header — the same brand mark the reader saw on the /sweet-spots
+            shelf tile, just at the header size class
+            (experience-heuristics.md #16) */}
         <header className="mt-6 flex max-w-[60ch] items-start gap-4">
-          <CoverArt
-            seed={program.slug}
-            decorative
+          <BrandIcon
+            code={canonicalizeProgram(program.name)?.code}
+            name={program.name}
             size={72}
-            className="flex-shrink-0 rounded-[var(--radius)]"
           />
           <div className="min-w-0">
             <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
