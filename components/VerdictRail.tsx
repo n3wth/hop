@@ -11,6 +11,7 @@ import SeeTheMath from './SeeTheMath'
 import CountUp from './CountUp'
 import CardAffiliateCTA from './CardAffiliateCTA'
 import WatchThisRoute from './WatchThisRoute'
+import ShareVerdict from './ShareVerdict'
 
 export interface VerdictRailProps {
   result: SearchResult
@@ -46,6 +47,12 @@ export interface VerdictRailProps {
       promise copy: off → "alerts go live soon", never a ping we can't send.
       Defaults false — fail honest when a caller forgets. */
   watchLive?: boolean
+  /** Whether R1.5 verdict receipts are on (lib/env.ts#isShareReceiptsEnabled,
+      resolved server-side) AND this result is receipt-grade (mirrors
+      lib/shared-verdicts.ts#buildVerdictSnapshot's gate: no degradation).
+      Off (either half) → the share button never renders — no client JS ships
+      for it, and there is no client-side flag to drift from the server one. */
+  shareEnabled?: boolean
 }
 
 function fmt(n: number | undefined): string {
@@ -87,6 +94,7 @@ export default function VerdictRail({
   isSignedIn = false,
   nonstop,
   watchLive = false,
+  shareEnabled = false,
 }: VerdictRailProps) {
   const { pick, summary, verdict, cashOption } = result
   const usingPoints = verdict === 'use-points'
@@ -296,6 +304,12 @@ export default function VerdictRail({
               Add to calendar
             </a>
           ) : null}
+          {/* Share this verdict — beside the secondary CTAs, before "See the
+              math" (which must stay last: its hop-collapse panel expands
+              directly below this row). Server-gated only: shareEnabled is
+              already isShareReceiptsEnabled() AND a clean, non-degraded
+              result, so there is no separate client-side flag to drift. */}
+          {shareEnabled ? <ShareVerdict params={result.params} /> : null}
           {/* See the math — last; its panel expands below the whole row. */}
           {pick ? (
             <SeeTheMath

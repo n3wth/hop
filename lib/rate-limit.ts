@@ -70,9 +70,16 @@ export function _resetRateLimitForTest() {
 // limiter per-caller. Falls back to a shared 'unknown' bucket when nothing is
 // present (still caps anonymous abuse per node). Pure + total.
 export function clientIp(request: Request): string {
-  const first = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+  return clientIpFromHeaders(request.headers)
+}
+
+// Same proxy-header parsing as clientIp(), for callers that never receive a
+// Request — server actions only get `headers()` from `next/headers` (Next 16
+// has no `Request` in that context), so this is the shared source both read.
+export function clientIpFromHeaders(h: Headers): string {
+  const first = h.get('x-forwarded-for')?.split(',')[0]?.trim()
   if (first) return first
-  return request.headers.get('x-real-ip')?.trim() || 'unknown'
+  return h.get('x-real-ip')?.trim() || 'unknown'
 }
 
 // ── Durable, cross-instance limiting via Upstash (optional) ─────────────────
