@@ -8,6 +8,7 @@
     "build": "node scripts/db-migrate.mjs && next build",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node scripts/db-migrate.mjs",
+    "verify:desk": "node scripts/verify-desk-run.mjs",
     "start": "next start",
     "lint": "eslint --cache --cache-location .next/cache/eslint/",
     "typecheck": "tsc --noEmit",
