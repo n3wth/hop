@@ -8,13 +8,14 @@
     "build": "node scripts/db-migrate.mjs && next build",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node scripts/db-migrate.mjs",
+    "db:check-migrations": "node scripts/check-migration-sequence.mjs",
     "verify:desk": "node scripts/verify-desk-run.mjs",
     "start": "next start",
     "lint": "eslint --cache --cache-location .next/cache/eslint/",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run lint && npm run typecheck && npm test"
+    "check": "npm run db:check-migrations && npm run lint && npm run typecheck && npm test"
   },
   "dependencies": {
     "@ai-sdk/react": "^4.0.5",
