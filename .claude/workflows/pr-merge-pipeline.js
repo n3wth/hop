@@ -5,6 +5,7 @@ export const meta = {
     'Once a PR is open and ready to land. args: { pr: <number> } (required) — the GitHub PR number. Runs Review → Fix (only if P1s found) → Merge.',
   phases: [
     { title: 'Review', detail: '3 parallel reviewers over the PR diff (engine, security, style)' },
+    { title: 'Adjudicate', detail: 'only if two lenses disagree about the same file/line — one fresh-evidence pass to resolve it' },
     { title: 'Fix', detail: 'apply P1 fixes on the PR branch, in a dedicated worktree, if any were found' },
     { title: 'Merge', detail: 'wait for CI, mark ready, squash-merge' },
   ],
@@ -77,8 +78,76 @@ const reviews = await parallel(
     ),
   ),
 )
-const p1 = reviews.filter(Boolean).flatMap((r) => r.p1)
+// Index BEFORE filtering nulls — `parallel` preserves order, so `LENSES[i]` only lines up
+// with `reviews[i]` while the array is unfiltered. Filtering dead lenses out first (as the
+// previous version did) shifts indices and silently mislabels a survivor's findings with a
+// dead lens's key.
+let p1 = reviews.flatMap((r, i) => ((r && r.p1) || []).map((f) => ({ ...f, lens: LENSES[i].key })))
 const p2 = reviews.filter(Boolean).flatMap((r) => r.p2)
+
+// Tie-break for contradictory P1s: group by exact file(+line), then flag any location where
+// two DIFFERENT lenses independently landed a P1 with materially different issue text. That's
+// a contradiction, not corroboration — the previous behavior here was a bare flatMap, which
+// either silently kept both conflicting claims in the fix list or let the Fix agent guess
+// which one to believe. Escalate once to a single adjudicating pass that re-reads the current
+// PR diff/file with fresh eyes instead of trusting either lens's framing.
+const byLocation = new Map()
+for (const f of p1) {
+  const key = `${f.file}:${f.line ?? ''}`
+  if (!byLocation.has(key)) byLocation.set(key, [])
+  byLocation.get(key).push(f)
+}
+const contested = [...byLocation.entries()].filter(([, items]) => {
+  if (items.length < 2) return false
+  const distinctIssues = new Set(items.map((it) => it.issue.trim().toLowerCase()))
+  return distinctIssues.size > 1
+})
+
+if (contested.length > 0) {
+  phase('Adjudicate')
+  log(`${contested.length} contested location(s) — lenses disagree, running fresh-evidence adjudication`)
+  const ADJUDICATE_SCHEMA = {
+    type: 'object',
+    required: ['verdict', 'issue'],
+    properties: {
+      verdict: { type: 'string', enum: ['upheld', 'refuted', 'reconciled'] },
+      issue: { type: 'string' },
+      fix: { type: 'string' },
+    },
+  }
+  const resolutions = await parallel(
+    contested.map(([key, items]) => () =>
+      agent(
+        [
+          `Two or more reviewer lenses disagree about hop PR #${PR} at ${key}.`,
+          `cd ${REPO} && gh pr diff ${PR} (and Read the referenced file at the PR branch's HEAD if you need more context).`,
+          'Conflicting claims:',
+          items.map((it) => `- [${it.lens}] ${it.issue}${it.fix ? ` (suggested fix: ${it.fix})` : ''}`).join('\n'),
+          'Re-check the code as it actually exists right now — do not trust either lens\'s framing or defer to whichever sounds more confident. Return verdict="upheld" if exactly one claim is correct (put it in issue/fix); verdict="reconciled" if both lenses found a real but different problem at this same spot that should become one combined issue/fix; verdict="refuted" if neither claim survives contact with the current code and this location should NOT block merge.',
+        ].join('\n\n'),
+        { label: `adjudicate:${key}`, phase: 'Adjudicate', model: 'sonnet', schema: ADJUDICATE_SCHEMA },
+      ),
+    ),
+  )
+  const contestedKeys = new Set(contested.map(([key]) => key))
+  p1 = p1.filter((f) => !contestedKeys.has(`${f.file}:${f.line ?? ''}`))
+  contested.forEach(([key, items], i) => {
+    const resolution = resolutions[i]
+    const [file, lineStr] = [key.slice(0, key.lastIndexOf(':')), key.slice(key.lastIndexOf(':') + 1)]
+    if (!resolution || resolution.verdict === 'refuted') {
+      log(`Adjudication dropped contested finding at ${key} (${resolution ? 'refuted' : 'adjudicator failed'})`)
+      return
+    }
+    p1.push({
+      file,
+      line: lineStr ? Number(lineStr) : undefined,
+      issue: resolution.issue,
+      fix: resolution.fix,
+      lens: `adjudicated(${items.map((it) => it.lens).join(',')})`,
+    })
+  })
+}
+
 log(`${p1.length} P1, ${p2.length} P2`)
 
 if (p1.length > 0) {
@@ -90,8 +159,13 @@ if (p1.length > 0) {
 }
 
 phase('Merge')
+// main's branch protection does not require a PR to be up to date with main before merging
+// (required_status_checks.strict is false — docs/agent-playbook.md §1.5), so two desks
+// merging minutes apart can each show a green check against a main that's already stale by
+// the time they land. Updating the branch and re-waiting on checks immediately before the
+// merge call is the repo-side substitute for that missing platform guarantee.
 const merged = await agent(
-  `Merge hop PR #${PR} once green. cd ${REPO}. Steps: gh pr checks ${PR} --watch (up to 15 min; if no checks configured, verify npm run check passed per PR conversation or run it in a worktree of the head branch). If checks fail, do NOT merge — return the failure verbatim. Otherwise: gh pr ready ${PR} (ignore error if already ready), then gh pr merge ${PR} --squash --delete-branch. Return "MERGED <sha>" or the blocking failure.`,
+  `Merge hop PR #${PR} once green. cd ${REPO}. Steps: gh pr checks ${PR} --watch (up to 15 min; if no checks configured, verify npm run check passed per PR conversation or run it in a worktree of the head branch). If checks fail, do NOT merge — return the failure verbatim. Then, immediately before merging: gh pr update-branch ${PR} (brings the branch up to date with main; ignore "already up to date" errors), then gh pr checks ${PR} --watch again to confirm the re-run is green (if update-branch changed nothing, this is a fast no-op re-check). Only then: gh pr ready ${PR} (ignore error if already ready), then gh pr merge ${PR} --squash --delete-branch. Return "MERGED <sha>" or the blocking failure.`,
   { label: 'merge', phase: 'Merge', model: 'haiku' },
 )
 

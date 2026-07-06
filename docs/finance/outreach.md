@@ -1,10 +1,10 @@
 # Finance outreach queue
 
-This file is a processing queue for hop's CFO desk agent. On its Tuesday runs, the
-CFO desk scans this file for items with `status: approved-to-send`, sends each one
-from its own AgentMail inbox (reply-to `oliver@newth.ai`), and updates the item's
-`status` to `sent` (with a `sent-date`) once delivered. Items with any other status
-are left untouched. Add new items above this note, following the same format.
+This file is a processing queue for hop's CFO desk agent. **Every run** (no day-of-week
+gate), the CFO desk scans this file for items with `status: approved-to-send`, sends
+each one from its own AgentMail inbox (reply-to `oliver@newth.ai`), and updates the
+item's `status` to `sent` (with a `sent-date`) once delivered. Items with any other
+status are left untouched. Add new items above this note, following the same format.
 
 ---
 
@@ -12,7 +12,8 @@ are left untouched. Add new items above this note, following the same format.
 
 - **to:** support@seats.aero
 - **subject:** Commercial API terms for hop.flights (award-availability data)
-- **status:** approved-to-send
+- **status:** sent
+- **sent-date:** 2026-07-06
 
 **Body:**
 
@@ -38,7 +39,8 @@ The hop.flights team, on behalf of founder Oliver Newth <oliver@newth.ai>
   through this same support address — flag to the CFO desk if this bounces so it can
   retry via the contact form instead)
 - **subject:** AwardWallet Account Access API — partner onboarding request
-- **status:** approved-to-send
+- **status:** sent
+- **sent-date:** 2026-07-06
 
 **Body:**
 

@@ -13,11 +13,14 @@ emailed approval first.
   <date>`).
 - **Mirrors to**: Linear issue "Finance desk — approvals & budget" in the `hop` project
   (team `n3wth`) — same memo posted as a comment each run.
-- **`custom_domain_status`**: `blocked` (checked 2026-07-06) — the AgentMail MCP tool surface
-  has no domain-creation/DNS capability (only `create_inbox(domain=...)` for a domain already
-  configured on the account). See `agentmail-domain-dns.md` for the full check and the human
-  workaround. Still sending as `finance-hop@agentmail.to`; do not re-check until the AgentMail
-  tool surface changes or Oliver reports adding `agents.hop.flights` manually.
+- **`custom_domain_status`**: `resolved` (2026-07-06) — the AgentMail MCP tool surface has no
+  domain-creation/DNS capability, so `agents.hop.flights` was never pursued (see
+  `agentmail-domain-dns.md` for that dead end). Instead, `finance@hop.flights` now routes to
+  this inbox via a plain Cloudflare Email Routing forward rule (destination
+  `finance-hop@agentmail.to` verified 2026-07-06T06:17Z, rule `finance to agentmail` added the
+  same day) — mail sent to `finance@hop.flights` lands here automatically. **Do not include the
+  Cloudflare destination-verification link in memos anymore** — verification is done and the
+  routing rule exists; this was a one-time setup step, not a recurring check.
 
 ## Files
 
@@ -32,8 +35,8 @@ emailed approval first.
 - `outreach.md` — the queue for owner-approved external outreach (e.g. seats.aero commercial
   terms, AwardWallet partner onboarding). Items only move to `status: sent` once Oliver has
   marked them `approved-to-send` in a prior reply — this desk never adds an item as
-  pre-approved. Processed **Tuesday-only** (see the file's own header note); other days, leave
-  it untouched rather than silently skipping it forever.
+  pre-approved. Processed **every run**, no day-of-week gate (a prior version of this note
+  incorrectly claimed a Tuesday-only cadence — corrected 2026-07-06).
 
 ## Weekly run protocol
 
@@ -41,8 +44,7 @@ emailed approval first.
 2. Skim the ledger inputs, append a note to `ledger.md`.
 3. Spend ~20 min searching for 1-2 new credit/discount opportunities; update
    `opportunities.md` (skip anything already tracked or rejected there).
-4. **On Tuesday runs only**: scan `outreach.md` for items with `status: approved-to-send`,
-   send each from this inbox, and update its `status` to `sent` (with a `sent-date`). On any
-   other day, leave the file untouched — do not send and do not mark items as processed.
+4. **Every run**: scan `outreach.md` for items with `status: approved-to-send`, send each
+   from this inbox, and update its `status` to `sent` (with a `sent-date`).
 5. Send one consolidated memo to oliver@newth.ai and mirror it to the Linear issue.
 6. Commit `docs/finance/` on a `finance/<date>` branch, push, open a draft PR.

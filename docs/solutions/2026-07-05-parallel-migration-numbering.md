@@ -37,3 +37,11 @@ the migration process for anyone who already applied the original version.
 **Evidence:** this is exactly what happened with pull request #217 — after it was updated to
 include pull request #207's already-merged migration (numbered 5), regenerating produced migration
 number 6 correctly, with no manual edits.
+
+**Update 2026-07-06 — now mechanically enforced:** the rule above depended on a human or agent
+noticing the collision, which kept happening anyway (at least 4 times in one week, including two
+different PRs both generating `0008_*.sql`). `scripts/check-migration-sequence.mjs`
+(`npm run db:check-migrations`, wired into `npm run check`, which CI runs) now scans `drizzle/`
+for duplicate sequence-number prefixes and `drizzle/meta/_journal.json` for duplicate `idx` values
+or a `.sql` file/journal-entry mismatch, and fails the check before merge. See
+`lib/__tests__/migration-sequence-check.test.ts` for the synthetic-fixture proof.

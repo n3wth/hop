@@ -459,6 +459,18 @@ export const sharedVerdicts = pgTable(
   (t) => [index('hop_shared_verdicts_created_by_idx').on(t.createdBy)],
 )
 
+// Email suppression list — addresses that bounced or complained, reported by
+// the Resend webhook (app/api/webhooks/resend/route.ts). Keyed directly by
+// email (not user_id): bounces/complaints arrive from Resend by raw address
+// and may not map to an account. lib/email-suppressions.ts#isSuppressed
+// consults this before any future outbound send (alerts, newsletter) to
+// protect Resend deliverability/sender reputation.
+export const emailSuppressions = pgTable('hop_email_suppressions', {
+  email: text('email').primaryKey(),
+  reason: text('reason').notNull(), // 'bounced' | 'complained'
+  createdAt: tz('created_at').defaultNow(),
+})
+
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
