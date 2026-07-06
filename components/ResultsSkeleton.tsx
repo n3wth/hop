@@ -97,8 +97,13 @@ export default function ResultsSkeleton() {
       >
         {/* LEFT — headline + subline + stat strip (on-brand: tint shimmer on teal) */}
         <div className="px-6 pb-9 pt-8 sm:px-10 lg:px-[52px] lg:pb-[46px] lg:pt-12">
+          {/* Same slot the loaded page's "BEST VALUE" kicker fills (VerdictRail) —
+              real copy instead of a shimmer bar, so the wait reads as the engine
+              doing something specific, not a generic spinner. */}
           <div className="mb-[26px] border-b border-white/15 pb-4">
-            <span className="hop-skeleton-dark block h-[12px] w-[110px] rounded-[6px]" />
+            <span className="inline-flex items-center text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-hero-eyebrow">
+              Pricing cash. Checking award space.
+            </span>
           </div>
           <div className="space-y-[14px]">
             <span className="hop-skeleton-dark block h-[52px] w-[78%] rounded-[10px]" />

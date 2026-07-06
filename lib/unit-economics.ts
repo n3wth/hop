@@ -1,17 +1,18 @@
 // Owner-facing unit economics for /admin — revenue vs cost, every figure
 // computed from ledgers or documented constants, never LLM-generated.
 //
-// MRR is estimated from hop_subscriptions rows × list prices (matching
-// BillingSection). LLM cost is null until a PostHog billing export is wired.
-// Infra is a monthly constant (override via HOP_INFRA_COST_MONTHLY_USD).
+// MRR is estimated from hop_subscriptions rows × list prices (sourced from
+// lib/pricing.ts, the single place hop's Pro price is defined — see that
+// file's header for why). LLM cost is null until a PostHog billing export is
+// wired. Infra is a monthly constant (override via HOP_INFRA_COST_MONTHLY_USD).
 
 import { withDb } from '@/lib/supabase-helpers'
 import { getOutclickSummary } from '@/lib/outclicks'
 import { env, hasEnv } from '@/lib/env'
+import { PRO_PRICE_MONTHLY_USD, PRO_PRICE_YEARLY_USD } from '@/lib/pricing'
 
-/** List prices — must stay in sync with components/BillingSection.tsx */
-export const PRO_PRICE_MONTHLY_USD = 9.99
-export const PRO_PRICE_YEARLY_USD = 99
+// Re-exported for existing callers/tests — lib/pricing.ts is the source now.
+export { PRO_PRICE_MONTHLY_USD, PRO_PRICE_YEARLY_USD }
 
 const DEFAULT_INFRA_COST_MONTHLY_USD = 75
 

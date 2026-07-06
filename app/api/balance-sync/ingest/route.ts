@@ -34,6 +34,11 @@ export const runtime = 'nodejs'
 // One authenticated machine caller (the Worker); throttle blunts a leaked-
 // secret loop. Same shape as the support-ingest limit.
 const INGEST_RATE = { capacity: 30, refillPerSec: 1 }
+// Tighter, separate bucket for unresolved addresses — a scripted alias-guessing
+// loop looks like a burst of "unknown address" misses, not normal mail relay
+// traffic, so it gets throttled harder than the general limit and logged once
+// it's clearly repeated (not on every single miss, which real typos also hit).
+const UNKNOWN_ADDRESS_RATE = { capacity: 10, refillPerSec: 0.05 }
 
 function json(body: Record<string, unknown>, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -89,7 +94,13 @@ export async function POST(request: Request): Promise<Response> {
   const alias = parseSyncAliasAddress(to)
   const userId =
     (alias ? await resolveSyncAlias(alias) : null) ?? resolveSyncAddress(to, resolveAuthSecret())
-  if (!userId) return json({ ok: false, error: 'unknown address' }, 404)
+  if (!userId) {
+    const unknown = await checkRateLimit(`balance-ingest:unknown:ip:${ip}`, UNKNOWN_ADDRESS_RATE)
+    if (!unknown.ok) {
+      console.warn(`[balance-sync-ingest] repeated unknown-address attempts from ip=${ip}`)
+    }
+    return json({ ok: false, error: 'unknown address' }, 404)
+  }
 
   // The HMAC proves hop minted this address; still confirm the account exists
   // so a deleted user's forwards can't accumulate orphan rows.

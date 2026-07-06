@@ -81,8 +81,14 @@ export default function GmailHistory({
       const res = await resyncGmailHistory()
       if (res.ok) {
         if (res.note) setNote(res.note)
-        router.refresh()
-      } else setError(res.error ?? 'Could not sync')
+      } else {
+        setError(res.error ?? 'Could not sync')
+      }
+      // Refresh even on failure — an 'auth-failed' result already flipped the
+      // persistent syncFailed flag server-side; without this the "Reconnect
+      // needed" banner only appears after some UNRELATED navigation, while
+      // this transient inline error is the only thing the user sees now.
+      router.refresh()
     })
   }
 

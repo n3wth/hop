@@ -106,9 +106,15 @@ export async function addProgram(
     })
     if (!ok) return { ok: false, error: "Couldn't add — try again" }
     revalidateBalances()
+    // An empty/unknown-balance submission (parses to 0) against an existing
+    // program is a genuine no-op — merged === existing.balance — so don't
+    // claim anything was "added".
     return {
       ok: true,
-      note: `Added to your existing ${name} — now ${merged.toLocaleString('en-US')}.`,
+      note:
+        balance === 0
+          ? `You already have ${name} — balance unchanged.`
+          : `Added to your existing ${name} — now ${merged.toLocaleString('en-US')}.`,
     }
   }
 
@@ -136,10 +142,15 @@ export async function addQuickStartPrograms(): Promise<Result> {
   if ('error' in auth) return { ok: false, error: auth.error }
 
   const before = await getManualBalances(auth.userId)
-  const { added } = await seedQuickStartPrograms(auth.userId)
+  const { added, alreadyHeld } = await seedQuickStartPrograms(auth.userId)
 
   if (added.length === 0) {
-    return { ok: true, note: 'Already had all 5 — nothing new to add.' }
+    // Only claim "already had all 5" when that's actually why nothing was
+    // added — a mid-loop insert failure (neither added nor alreadyHeld) is a
+    // real error, not "you already had it".
+    return alreadyHeld.length === QUICK_START_PROGRAM_IDS.length
+      ? { ok: true, note: 'Already had all 5 — nothing new to add.' }
+      : { ok: false, error: "Couldn't add — try again" }
   }
 
   // R0.5 funnel event #2 — fires when this was the user's first program row,
@@ -152,12 +163,11 @@ export async function addQuickStartPrograms(): Promise<Result> {
   captureServerEvent('quick_start_used', { added_count: added.length }, { distinctId: auth.userId })
 
   revalidateBalances()
-  const skipped = QUICK_START_PROGRAM_IDS.length - added.length
   return {
     ok: true,
     note:
-      skipped > 0
-        ? `Added ${added.length} — you already had ${skipped}. Fill in real balances below.`
+      alreadyHeld.length > 0
+        ? `Added ${added.length} — you already had ${alreadyHeld.length}. Fill in real balances below.`
         : `Added ${added.length} programs. Fill in real balances below.`,
   }
 }
@@ -295,7 +305,6 @@ export async function resyncGmailHistory(): Promise<Result> {
 
   const { syncTravelHistory } = await import('@/lib/travel-history-sync')
   const result = await syncTravelHistory(auth.userId)
-  revalidateBalances()
   if (!result.ok) {
     const error =
       result.reason === 'not-connected'
@@ -305,6 +314,7 @@ export async function resyncGmailHistory(): Promise<Result> {
           : "Couldn't reach Gmail — try again shortly."
     return { ok: false, error }
   }
+  revalidateBalances()
   return { ok: true, note: `Synced ${result.count} trip${result.count === 1 ? '' : 's'} from Gmail.` }
 }
 

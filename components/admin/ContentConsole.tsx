@@ -3,12 +3,14 @@
 import Link from 'next/link'
 import { useMemo, useState, type ReactNode } from 'react'
 import type { SweetSpotDraft, DraftStatus } from '@/lib/sweet-spot-drafts'
+import { CONTENT_CANDIDATES_CREATED_BY } from '@/lib/sweet-spot-constants'
 import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHeader'
 import {
   createSweetSpotDraftAction,
   draftSweetSpotWhyAction,
   updateSweetSpotDraftWhyAction,
   setSweetSpotDraftStatusAction,
+  findSweetSpotCandidatesAction,
 } from '@/app/actions/admin'
 
 // The owner-gated sweet-spot content review queue: draft the facts, ask the
@@ -30,6 +32,7 @@ export default function ContentConsole({
   const onCreated = (d: SweetSpotDraft) => setItems((prev) => [d, ...prev])
   const onChanged = (d: SweetSpotDraft) =>
     setItems((prev) => prev.map((x) => (x.id === d.id ? d : x)))
+  const onFound = (found: SweetSpotDraft[]) => setItems((prev) => [...found, ...prev])
 
   return (
     <AdminPageShell>
@@ -45,14 +48,17 @@ export default function ContentConsole({
           { label: 'Content' },
         ]}
         actions={
-          approved.length > 0 ? (
-            <Link
-              href="/sweet-spots"
-              className="rounded-full border border-border bg-surface px-3.5 py-2 text-[13px] font-semibold text-text2 transition-colors hover:bg-sunk"
-            >
-              View live pages →
-            </Link>
-          ) : null
+          <div className="flex items-center gap-2">
+            <FindCandidatesButton onFound={onFound} />
+            {approved.length > 0 ? (
+              <Link
+                href="/sweet-spots"
+                className="rounded-full border border-border bg-surface px-3.5 py-2 text-[13px] font-semibold text-text2 transition-colors hover:bg-sunk"
+              >
+                View live pages →
+              </Link>
+            ) : null}
+          </div>
         }
       />
 
@@ -118,6 +124,42 @@ function WorkflowSteps({ className }: { className?: string }) {
         </li>
       ))}
     </ol>
+  )
+}
+
+// Owner-triggered twin of the daily sweet-spot-candidates cron: mines
+// assembleSearch for notable Business-cabin redemptions right now instead of
+// waiting for the schedule. Refuses softly (inline error) when the flag/keys
+// aren't configured — same {ok:false} contract as every other action here.
+// Passes the created drafts back up (not just a refresh signal) so the
+// already-mounted ContentConsole can splice them into its own `items` state —
+// matching the onCreated/onChanged pattern the rest of this file uses instead
+// of relying on router.refresh(), which doesn't resync client-side useState.
+function FindCandidatesButton({ onFound }: { onFound: (drafts: SweetSpotDraft[]) => void }) {
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  const run = async () => {
+    if (busy) return
+    setBusy(true)
+    setMsg('')
+    const res = await findSweetSpotCandidatesAction()
+    setBusy(false)
+    if (!res.ok) {
+      setMsg(res.error ?? "Couldn't search")
+      return
+    }
+    setMsg(`Found ${res.created ?? 0}`)
+    if (res.drafts && res.drafts.length > 0) onFound(res.drafts)
+  }
+
+  return (
+    <span className="flex items-center gap-2">
+      <button type="button" className={GHOST_BTN} disabled={busy} onClick={run}>
+        {busy ? 'Searching…' : 'Find candidates now'}
+      </button>
+      {msg && <span className="text-[12px] text-text3">{msg}</span>}
+    </span>
   )
 }
 
@@ -448,6 +490,11 @@ function DraftCard({
         {draft.confidence === 'med' && (
           <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
             Soft figure
+          </span>
+        )}
+        {draft.createdBy === CONTENT_CANDIDATES_CREATED_BY && (
+          <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
+            Auto-found
           </span>
         )}
       </div>

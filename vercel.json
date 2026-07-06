@@ -29,6 +29,10 @@
       "schedule": "45 9 * * *"
     },
     {
+      "path": "/api/cron/sweet-spot-candidates",
+      "schedule": "0 12 * * *"
+    },
+    {
       "path": "/api/cron/awardwallet-sync",
       "schedule": "20 */6 * * *"
     }

@@ -14,6 +14,9 @@ execution detail for R-items; the individual `docs/plans/*` docs remain the impl
 `docs/plans/2026-07-02-competitive-positioning.md` remains the positioning source. Nothing here
 contradicts them — it sequences and prices them.
 
+**North-star extension**: see `2026-07-05-agentic-travel-agent-northstar.md` (agentic
+personal-travel-agent vision + $10k-MRR-in-30-days goal + weekly gates).
+
 **Tracker**: Linear team `n3wth`, project [hop](https://linear.app/newth/project/hop-9365da373b9a).
 Every epic below exists as a Linear issue (`R#.#` / `B#` title prefixes, phase milestones).
 

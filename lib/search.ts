@@ -57,11 +57,22 @@ function youHaveFor(option: FlightOption, balances: Balance[]): number | undefin
 // by lib/accounts.getUserBalances). When omitted, falls back to the AwardWallet
 // env global via getBalances() — preserving the original behavior for callers
 // without a session and for the test suite.
+//
+// opts.recordTelemetry (default true) gates BOTH telemetry side effects below
+// (the cpp-observation POST and the degradation-incident record/capture) —
+// every existing call site is unaffected. Set to false for a call that isn't a
+// real user search (e.g. lib/sweet-spot-candidates.ts mining a curated route
+// grid): those cpp values must never feed the live valuation worker's trust
+// gate (ADR 0005), and a burst of synthetic scan calls hitting a rate-limited
+// upstream must not read as a live-traffic degradation spike to the health
+// sentinel's D2 detector (lib/health-checks.ts).
 export async function assembleSearch(
   params: SearchParams,
   userBalances?: Balance[],
   prefs?: TravelPrefs,
+  opts?: { recordTelemetry?: boolean },
 ): Promise<SearchResult> {
+  const recordTelemetry = opts?.recordTelemetry ?? true
   let cashOptions: FlightOption[] = []
   let awardOptions: FlightOption[] = []
   let balances: Balance[] = []
@@ -293,7 +304,7 @@ export async function assembleSearch(
   // must account for party size first.
   // Mock runs never record (mirrors the recordDegradation guard below) —
   // fixture cpp values must never reach the live valuation worker's trust gate.
-  if (!useMock) {
+  if (!useMock && recordTelemetry) {
     recordCppObservations(
       awards
         .filter((o) => o.program && typeof o.cpp === 'number' && o.cpp > 0)
@@ -407,7 +418,7 @@ export async function assembleSearch(
   // (HOP_ENABLE_SELF_IMPROVE) feeds the sentinel's D2 detector; the PostHog
   // "search_degraded" event (key presence) gives ops a live, queryable trail.
   // Both stay PII-free: no user id, validated route only, sanitized reasons.
-  if (!useMock && degraded.length > 0) {
+  if (!useMock && recordTelemetry && degraded.length > 0) {
     recordDegradation(
       degraded.map((source) => ({ source, reason: degradedReasons[source] })),
       { from: params.from, to: params.to },

@@ -78,7 +78,12 @@ export async function disconnectGmail(userId: string): Promise<boolean> {
       .eq('user_id', userId)
       .maybeSingle()
     const token = (data?.google_refresh_token as string | null) ?? null
-    if (token) await revokeToken(token)
+    if (token) {
+      const revoked = await revokeToken(token)
+      if (!revoked) {
+        console.warn(`[travel-history-sync] Gmail token revoke failed for user ${userId} — token may remain valid upstream`)
+      }
+    }
     const { error } = await db.from(TABLE).delete().eq('user_id', userId)
     return !error
   })
@@ -112,9 +117,23 @@ export async function isGmailConnected(
 // Stamp the failure onto the existing jsonb payload WITHOUT touching the
 // previously-synced trips/favoriteRegions — a failed sync must never wipe a
 // user's history with an empty result.
-async function markSyncFailed(db: Db, userId: string, storedTrips: unknown): Promise<void> {
+//
+// RACE GUARD: `storedTrips` was read at the START of this sync attempt, before
+// the (possibly slow) token refresh + message fetch. If a CONCURRENT sync for
+// the same user completed successfully in the meantime, that fresh write's
+// trips/favoriteRegions must not be clobbered by the stale snapshot this call
+// is holding. `expectedUpdatedAt` (also read at the start) makes the update
+// conditional: it only applies if the row's updated_at is still what we last
+// saw, so a concurrently-completed fresh sync (which bumps updated_at) makes
+// this a no-op instead of an overwrite.
+async function markSyncFailed(
+  db: Db,
+  userId: string,
+  storedTrips: unknown,
+  expectedUpdatedAt: string | null,
+): Promise<void> {
   const prior = (storedTrips ?? {}) as StoredTrips
-  await db
+  const query = db
     .from(TABLE)
     .update({
       trips: JSON.parse(
@@ -127,6 +146,8 @@ async function markSyncFailed(db: Db, userId: string, storedTrips: unknown): Pro
       updated_at: new Date().toISOString(),
     })
     .eq('user_id', userId)
+  if (expectedUpdatedAt) query.eq('updated_at', expectedUpdatedAt)
+  await query
 }
 
 // Distinguishable failure reasons so callers (the resync server action) can
@@ -143,16 +164,17 @@ export async function syncTravelHistory(userId: string): Promise<SyncResult> {
   return withDb<SyncResult>({ ok: false, reason: 'db-error' }, async (db) => {
     const { data, error } = await db
       .from(TABLE)
-      .select('google_refresh_token, trips')
+      .select('google_refresh_token, trips, updated_at')
       .eq('user_id', userId)
       .maybeSingle()
     if (error || !data?.google_refresh_token) return { ok: false, reason: 'not-connected' }
+    const expectedUpdatedAt = (data.updated_at as string | null) ?? null
 
     const accessToken = await refreshAccessToken(data.google_refresh_token as string)
     if (!accessToken) {
       // Refresh token is dead/revoked/expired — the defining "silent staleness"
       // case this fixes. Preserve the existing trips, just flag the failure.
-      await markSyncFailed(db, userId, data.trips)
+      await markSyncFailed(db, userId, data.trips, expectedUpdatedAt)
       return { ok: false, reason: 'auth-failed' }
     }
 
@@ -162,7 +184,7 @@ export async function syncTravelHistory(userId: string): Promise<SyncResult> {
       // for a genuine auth failure. A transient network blip or Gmail 5xx here
       // must not force a full OAuth re-consent — leave the row untouched so the
       // normal Sync retry stays available.
-      if (listResult.authFailed) await markSyncFailed(db, userId, data.trips)
+      if (listResult.authFailed) await markSyncFailed(db, userId, data.trips, expectedUpdatedAt)
       return { ok: false, reason: listResult.authFailed ? 'auth-failed' : 'fetch-failed' }
     }
 

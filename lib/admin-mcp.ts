@@ -15,6 +15,7 @@
 import { desc, eq, gte, inArray, sql } from 'drizzle-orm'
 import { getDb } from './db'
 import { apiTokens, mcpUsage, user } from './db/schema'
+import { isOwner } from './owner'
 
 export interface AdminMcpTokenRow {
   email: string
@@ -25,8 +26,15 @@ export interface AdminMcpTokenRow {
 }
 
 // Newest-minted-first token inventory across ALL users. null = db
-// unavailable; [] = no tokens minted yet.
+// unavailable OR the caller isn't the owner; [] = no tokens minted yet.
+//
+// DEFENSE IN DEPTH: every /admin page already gates on getOwnerSession()
+// before calling in here, but this cross-user read is sensitive enough to
+// re-check owner-ness at the source too — so a future call site that forgets
+// the page-level gate (an API route, an MCP tool) fails closed instead of
+// leaking every user's token inventory.
 export async function listMcpTokens(limit = 100): Promise<AdminMcpTokenRow[] | null> {
+  if (!(await isOwner())) return null
   const db = getDb()
   if (!db) return null
   try {
@@ -82,11 +90,13 @@ export function attachCallerEmails(
 }
 
 // Top callers by tool-call volume within the trailing window. null = db
-// unavailable; [] = no calls in the window.
+// unavailable OR the caller isn't the owner; [] = no calls in the window.
+// Same defense-in-depth re-check as listMcpTokens above.
 export async function listTopMcpCallers(
   windowDays = 14,
   limit = 20,
 ): Promise<AdminMcpCallerRow[] | null> {
+  if (!(await isOwner())) return null
   const db = getDb()
   if (!db) return null
   try {

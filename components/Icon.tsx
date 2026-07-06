@@ -51,6 +51,7 @@ import {
   TrendUp,
   Trophy,
   User,
+  UsersThree,
   Wallet,
   Warning,
   WarningCircle,
@@ -113,6 +114,7 @@ const ICONS = {
   star: Star,
   // People
   person: User,
+  team: UsersThree,
   logout: SignOut,
   lightbulb: Lightbulb,
   // Feedback

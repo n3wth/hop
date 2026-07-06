@@ -73,4 +73,18 @@ describe('lib/search.ts recordCppObservations() call site — mock-mode guard', 
     expect(vi.mocked(searchCash)).not.toHaveBeenCalled()
     expect(vi.mocked(searchAwards)).not.toHaveBeenCalled()
   })
+
+  // Regression guard for lib/sweet-spot-candidates.ts (the content-candidate
+  // pipeline mines this SAME live path with recordTelemetry:false so its
+  // synthetic scan volume never reaches the valuation worker's trust gate) —
+  // the 4th opts arg must suppress the call while leaving every existing
+  // (3-arg-or-fewer) call site's behavior, asserted just above, unchanged.
+  it('opts.recordTelemetry:false suppresses the observation on an otherwise-identical live run', async () => {
+    vi.mocked(searchCash).mockResolvedValue({ ok: true, data: [LIVE_CASH] })
+    vi.mocked(searchAwards).mockResolvedValue({ ok: true, data: [LIVE_AWARD] })
+
+    await assembleSearch(params, [], undefined, { recordTelemetry: false })
+
+    expect(vi.mocked(recordCppObservations)).not.toHaveBeenCalled()
+  })
 })

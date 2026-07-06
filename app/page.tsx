@@ -21,8 +21,11 @@ import InspirationTeaser from '@/components/landing/InspirationTeaser'
 import DestinationReel from '@/components/landing/DestinationReel'
 import HeroShowcase from '@/components/landing/HeroShowcase'
 import SignedInHome from '@/components/landing/SignedInHome'
+import LedgerDream from '@/components/landing/LedgerDream'
 import { conciergeBackdrop, conciergeGallery } from '@/lib/concierge-backdrop'
 import { isoOffset } from '@/lib/dates'
+import { topValue, imageQuery } from '@/lib/destinations'
+import { destinationImages, type DestImage } from '@/lib/images'
 import type { Balance } from '@/lib/types'
 
 // A sensible default search to seed the hero form. Picking it pre-fills the
@@ -67,7 +70,14 @@ export default async function Home() {
   //   - prefs: home airport that seeds the default From
   //   - memory: unified personalization (M5) — drops avoided places from the feed
   // Each degrades gracefully on its own; none can crash the page.
-  const [real, heroBackdropRaw, prefs, memory, heroGallery] = await Promise.all([
+  // Signed-out "Where points already beat cash" sample tiles — the SAME
+  // best-value table (lib/destinations#topValue) HeroShowcase (indices 0-4)
+  // and InspirationTeaser (indices 4-7, see components/landing/
+  // InspirationTeaser.tsx) already draw from; this row takes 8-10 so all
+  // three sections show distinct cities.
+  const reachSamplePicks = topValue(11).slice(8, 11)
+
+  const [real, heroBackdropRaw, prefs, memory, heroGallery, reachSamplePhotos] = await Promise.all([
     su?.sub ? getUserBalances(su.sub) : Promise.resolve([]),
     // Signed-in no longer renders the composer teaser — skip the image fetch.
     su?.sub ? Promise.resolve(null) : conciergeBackdrop(),
@@ -78,6 +88,10 @@ export default async function Home() {
     // Signed-out only: the second-door composer's live backdrop rotation.
     // (Signed-in builds a personalized gallery from its own picks instead.)
     su?.sub ? Promise.resolve([]) : conciergeGallery(4),
+    // Signed-out only: photos for the sample reach tiles below.
+    su?.sub
+      ? Promise.resolve({} as Record<string, DestImage | null>)
+      : destinationImages(reachSamplePicks.map((d) => imageQuery(d))),
   ])
 
   // Balances power both the program count and the personalized destinations.
@@ -144,7 +158,11 @@ export default async function Home() {
   return (
     <AppShell user={null} hideSearch>
       <div className="mx-auto flex max-w-[var(--container-shell)] flex-col gap-16 pt-4 sm:gap-20 sm:pt-6 lg:gap-24 lg:pt-8">
-        {/* ── HERO — the verdict demo is the front door (R1.2) ────────────── */}
+        {/* ── HERO + IMMEDIATE REACH — one coupled unit ────────────────────── */}
+        {/* Tighter inner gap than the outer rhythm below: the sample reach
+            tiles are the hero's direct payoff, not a new section — closing
+            this "dead band" is what makes the two read as one move. */}
+        <div className="flex flex-col gap-10 sm:gap-12">
         {/* Lead with the working product: a seeded search one tap from a real
             no-auth verdict, with the canonical worked example as the proof
             directly beneath. The agent moves to the second door below. */}
@@ -213,6 +231,16 @@ export default async function Home() {
             </Suspense>
           </div>
         </section>
+
+        {/* ── SAMPLE: WHERE POINTS ALREADY BEAT CASH ───────────────────── */}
+        {/* Signed-out parallel of SignedInHome's "Where your points already
+            reach" — same tile component, same verdict-first hierarchy, but
+            fed the generic best-value table (not a real balance) and labeled
+            sample. Personalizes the instant the visitor signs in. */}
+        {reachSamplePicks.length > 0 ? (
+          <LedgerDream picks={reachSamplePicks} origin={homeSeed.from} sample photos={reachSamplePhotos} />
+        ) : null}
+        </div>
 
         {/* ── THE DREAM, IMMEDIATELY — a reel of real destinations ───────── */}
         <Suspense

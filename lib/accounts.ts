@@ -159,16 +159,13 @@ export async function getManualBalances(userId: string): Promise<ManualBalance[]
   })
 }
 
-// Find an existing manual program that resolves to the SAME canonical identity
-// as `program` (so "amex" and "Membership Rewards" collide on amex-mr). Falls
-// back to a normalized exact-name match when the input doesn't canonicalize.
-// Returns the matching row, or null if the user has no equivalent program yet.
-export async function findManualByProgram(
-  userId: string,
-  program: string,
-): Promise<ManualBalance | null> {
+// Pure matcher shared by findManualByProgram (single lookup) and
+// seedQuickStartPrograms (checks all 5 against one already-fetched list) so
+// both apply IDENTICAL dedupe semantics: same canonical identity as `program`
+// (so "amex" and "Membership Rewards" collide on amex-mr), falling back to a
+// normalized exact-name match when the input doesn't canonicalize.
+function matchManualByProgram(rows: ManualBalance[], program: string): ManualBalance | null {
   const target = canonicalizeProgram(program)
-  const rows = await getManualBalances(userId)
   if (target) {
     return rows.find((r) => canonicalizeProgram(r.program)?.id === target.id) ?? null
   }
@@ -176,6 +173,17 @@ export async function findManualByProgram(
   // of an unknown program still dedupes.
   const norm = program.trim().toLowerCase()
   return rows.find((r) => r.program.trim().toLowerCase() === norm) ?? null
+}
+
+// Find an existing manual program that resolves to the SAME canonical identity
+// as `program`. Returns the matching row, or null if the user has no
+// equivalent program yet.
+export async function findManualByProgram(
+  userId: string,
+  program: string,
+): Promise<ManualBalance | null> {
+  const rows = await getManualBalances(userId)
+  return matchManualByProgram(rows, program)
 }
 
 // Add a program. Code is derived from the name when not supplied. Returns the
@@ -248,6 +256,15 @@ export async function removeManualBalance(userId: string, id: string): Promise<b
 // (lib/programs.ts) so a future registry edit stays the single source of truth.
 export const QUICK_START_PROGRAM_IDS = ['amex-mr', 'chase-ur', 'citi-typ', 'capital-one', 'bilt']
 
+export interface SeedQuickStartResult {
+  added: string[]
+  // Already held (by canonical identity) — distinct from a mid-loop insert
+  // failure, which is neither added nor alreadyHeld. Callers must not
+  // attribute a failure to "already had" (see app/actions/accounts.ts#
+  // addQuickStartPrograms).
+  alreadyHeld: string[]
+}
+
 // Seed the 5 majors as zero-balance rows so a signed-in user can reach a real
 // verdict without knowing an exact balance yet (0 is the engine's existing
 // "don't claim ownership" representation — see
@@ -255,17 +272,24 @@ export const QUICK_START_PROGRAM_IDS = ['amex-mr', 'chase-ur', 'citi-typ', 'capi
 // Idempotent: skips any of the 5 the user already holds (by canonical identity)
 // rather than overwriting a real balance. Never throws — each insert already
 // goes through withDb, and a mid-loop failure just leaves `added` short.
-export async function seedQuickStartPrograms(userId: string): Promise<{ added: string[] }> {
+//
+// Fetches the user's manual balances ONCE and checks all 5 in memory (via
+// matchManualByProgram) instead of 5 sequential findManualByProgram round trips.
+export async function seedQuickStartPrograms(userId: string): Promise<SeedQuickStartResult> {
+  const rows = await getManualBalances(userId)
   const added: string[] = []
+  const alreadyHeld: string[] = []
   for (const id of QUICK_START_PROGRAM_IDS) {
     const def = programById(id)
     if (!def) continue
-    const existing = await findManualByProgram(userId, def.name)
-    if (existing) continue
+    if (matchManualByProgram(rows, def.name)) {
+      alreadyHeld.push(id)
+      continue
+    }
     const rowId = await addManualBalance(userId, def.name, 0, def.kind)
     if (rowId) added.push(id)
   }
-  return { added }
+  return { added, alreadyHeld }
 }
 
 // --- Unified resolution -----------------------------------------------------

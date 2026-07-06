@@ -16,7 +16,10 @@ import {
   DRAFT_STATUSES,
   type DraftStatus,
   type SweetSpotDraftInput,
+  type SweetSpotDraft,
 } from '@/lib/sweet-spot-drafts'
+import { runSweetSpotCandidatePipeline } from '@/lib/sweet-spot-candidates'
+import { isContentCandidatesEnabled } from '@/lib/env'
 
 // Server Actions for the owner-only admin surfaces: the support console
 // (close/reopen a ticket, flip an escalation's status) and the sweet-spot
@@ -26,6 +29,7 @@ import {
 // client; never throws.
 
 type Result = { ok: boolean; error?: string }
+type Drafts = { drafts?: SweetSpotDraft[] }
 
 const NOT_AUTHORIZED: Result = { ok: false, error: 'Not authorized' }
 
@@ -134,4 +138,22 @@ export async function setSweetSpotDraftStatusAction(
     revalidatePath('/admin/content')
   }
   return { ok: true }
+}
+
+// "Find candidates now" — the owner-triggered twin of the daily
+// sweet-spot-candidates cron (lib/sweet-spot-candidates.ts), same flag gate.
+// Mines assembleSearch for notable Business-cabin redemptions and drops them
+// into the queue as pending_review; never auto-approves.
+export async function findSweetSpotCandidatesAction(): Promise<Result & Drafts & { created?: number }> {
+  if (!(await getOwnerSession())) return NOT_AUTHORIZED
+  if (!isContentCandidatesEnabled()) {
+    return { ok: false, error: 'Content candidates are off — set HOP_ENABLE_CONTENT_CANDIDATES to enable' }
+  }
+  const { created, drafts } = await runSweetSpotCandidatePipeline()
+  // revalidatePath keeps the server cache fresh for the NEXT full navigation
+  // to this route — it does not touch ContentConsole's already-mounted
+  // client `items` state, which is why the caller also needs `drafts` back
+  // to splice in directly (see ContentConsole.tsx's FindCandidatesButton).
+  if (created > 0) revalidatePath('/admin/content')
+  return { ok: true, created, drafts }
 }
