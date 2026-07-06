@@ -13,8 +13,17 @@
 //
 // Gated on isBillingEnabled(): off → redirect with billingError=unavailable.
 // Rate-limited per-user + per-IP before any Stripe work. NEVER throws.
+//
+// NOT behind checkBotId(): botid's client SDK (instrumentation-client.ts)
+// only patches window.fetch/XMLHttpRequest to attach the x-is-human challenge
+// header — it never intercepts a native HTMLFormElement submit. Since this
+// route is deliberately invoked via a plain <form method="POST"> (see
+// above), the browser can never send that header, so checkBotId() here would
+// just hit its "possible misconfiguration" fallback on every legitimate
+// request and silently downgrade bot classification. The auth requirement
+// (getUserId() below) plus the per-user/per-IP rate limit are the defense on
+// this route instead.
 
-import { checkBotId } from 'botid/server'
 import { getUserId } from '@/lib/session'
 import { isBillingEnabled } from '@/lib/env'
 import { checkRateLimit, clientIp } from '@/lib/rate-limit'
@@ -26,15 +35,12 @@ export const runtime = 'nodejs'
 // Same shape as checkout's throttle — a real person opens the portal rarely.
 const PORTAL_RATE = { capacity: 4, refillPerSec: 0.05 } // 4 burst, ~3/min
 
-type BillingErrorCode = 'bot' | 'unavailable' | 'rate-limited' | 'no-customer' | 'stripe'
+type BillingErrorCode = 'unavailable' | 'rate-limited' | 'no-customer' | 'stripe'
 
 export async function POST(request: Request): Promise<Response> {
   const origin = process.env.APP_BASE_URL?.replace(/\/$/, '') || new URL(request.url).origin
   const toAccount = (error: BillingErrorCode) =>
     Response.redirect(`${origin}/account?billingError=${error}#billing`, 303)
-
-  const verification = await checkBotId()
-  if (verification.isBot) return toAccount('bot')
 
   if (!isBillingEnabled()) return toAccount('unavailable')
 

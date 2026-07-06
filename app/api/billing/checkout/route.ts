@@ -17,8 +17,17 @@
 // HOP_ENABLE_BILLING with the Stripe keys set. Rate-limited per-sub + per-IP
 // BEFORE any Stripe work (each session create is otherwise a free Stripe API
 // call for a scripted caller). NEVER throws.
+//
+// NOT behind checkBotId(): botid's client SDK (instrumentation-client.ts)
+// only patches window.fetch/XMLHttpRequest to attach the x-is-human challenge
+// header — it never intercepts a native HTMLFormElement submit. Since this
+// route is deliberately invoked via a plain <form method="POST"> (see
+// above), the browser can never send that header, so checkBotId() here would
+// just hit its "possible misconfiguration" fallback on every legitimate
+// request and silently downgrade bot classification. The auth requirement
+// (session sub required below) plus the per-sub/per-IP rate limit are the
+// defense on this route instead.
 
-import { checkBotId } from 'botid/server'
 import { auth0 } from '@/lib/auth0'
 import { isBillingEnabled } from '@/lib/env'
 import { checkRateLimit, clientIp } from '@/lib/rate-limit'
@@ -30,15 +39,12 @@ export const runtime = 'nodejs'
 // A small burst then a trickle — a real person picks a plan once, maybe twice.
 const CHECKOUT_RATE = { capacity: 4, refillPerSec: 0.05 } // 4 burst, ~3/min
 
-type BillingErrorCode = 'bot' | 'unavailable' | 'rate-limited' | 'stripe'
+type BillingErrorCode = 'unavailable' | 'rate-limited' | 'stripe'
 
 export async function POST(request: Request): Promise<Response> {
   const origin = process.env.APP_BASE_URL?.replace(/\/$/, '') || new URL(request.url).origin
   const toPricing = (error: BillingErrorCode) =>
     Response.redirect(`${origin}/pricing?billingError=${error}`, 303)
-
-  const verification = await checkBotId()
-  if (verification.isBot) return toPricing('bot')
 
   if (!isBillingEnabled()) return toPricing('unavailable')
 

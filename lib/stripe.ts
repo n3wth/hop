@@ -58,11 +58,16 @@ export async function createCheckoutSession(args: {
   cancelUrl: string
 }): Promise<CheckoutSessionResult> {
   if (!isBillingEnabled()) return { ok: false, reason: 'unconfigured' }
-  // Yearly is optional config — fall back to monthly when it isn't set up.
+  // Yearly is optional config. hop is annual-only at launch — the UI has no
+  // monthly CTA — so if a caller asks for 'yearly' and no yearly Stripe price
+  // is configured, fail closed instead of silently selling the monthly price
+  // under a yearly label (a customer could be charged monthly for a "$/yr"
+  // promise with no error surfaced anywhere in the chain).
+  if (args.interval === 'yearly' && !hasEnv('STRIPE_PRICE_ID_PRO_YEARLY')) {
+    return { ok: false, reason: 'unconfigured' }
+  }
   const priceId =
-    args.interval === 'yearly' && hasEnv('STRIPE_PRICE_ID_PRO_YEARLY')
-      ? env.stripePriceIdProYearly()
-      : env.stripePriceIdProMonthly()
+    args.interval === 'yearly' ? env.stripePriceIdProYearly() : env.stripePriceIdProMonthly()
   try {
     const { default: Stripe } = await import('stripe')
     const stripe = new Stripe(env.stripeSecretKey())

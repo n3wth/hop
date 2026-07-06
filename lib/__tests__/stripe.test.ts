@@ -96,6 +96,20 @@ describe('lib/stripe keyless — resolves unconfigured, never throws', () => {
   })
 })
 
+describe('createCheckoutSession yearly — fails closed instead of substituting monthly', () => {
+  it('interval "yearly" with no yearly price configured → {ok:false, unconfigured}, never falls back to monthly', async () => {
+    configureFakeBilling() // monthly configured, yearly deliberately absent
+    const res = await createCheckoutSession({
+      userId: 'auth0|u1',
+      email: 'u@example.com',
+      interval: 'yearly',
+      successUrl: 'https://hop.flights/account?upgraded=1#billing',
+      cancelUrl: 'https://hop.flights/account#billing',
+    })
+    expect(res).toEqual({ ok: false, reason: 'unconfigured' })
+  })
+})
+
 describe('verifyStripeEvent configured — signature checked, forgeries rejected', () => {
   it('garbage signature with a real-looking secret → bad-signature', async () => {
     configureFakeBilling()
