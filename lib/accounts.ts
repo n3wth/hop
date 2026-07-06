@@ -100,12 +100,14 @@ export async function getCachedAwBalances(userId: string): Promise<CachedAwBalan
 // periodic cron — never from a page render. On failure, the write omits
 // cached_balances entirely so a bad pull can never clobber a good prior
 // snapshot; only last_synced_at/last_sync_ok are stamped, so staleness is
-// still honestly surfaced. Never throws; returns whether the LIVE pull
-// succeeded (not whether the write succeeded).
+// still honestly surfaced. Never throws; returns whether the LIVE pull AND
+// the cache write both succeeded — a persisted-but-unread write is as good
+// as no refresh at all, so callers (cron heartbeat, Refresh button) must not
+// see it as a clean success.
 export async function refreshAwCache(userId: string, awUserId: string): Promise<boolean> {
   const res = await getBalances(awUserId).catch(() => ({ ok: false as const, reason: 'request failed' }))
   const now = new Date().toISOString()
-  await withDb(false, async (db) => {
+  const wrote = await withDb(false, async (db) => {
     const patch: Record<string, unknown> = {
       user_id: userId,
       last_synced_at: now,
@@ -115,7 +117,10 @@ export async function refreshAwCache(userId: string, awUserId: string): Promise<
     const { error } = await db.from(TABLE).upsert(patch, { onConflict: 'user_id' })
     return !error
   })
-  return res.ok
+  if (res.ok && !wrote) {
+    console.error(`refreshAwCache: live pull ok but cache write failed for user ${userId}`)
+  }
+  return res.ok && wrote
 }
 
 // Every user with an AwardWallet link, for the periodic cron to iterate. The
