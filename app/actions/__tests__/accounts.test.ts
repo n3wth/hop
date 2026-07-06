@@ -16,12 +16,18 @@ const {
   getManualBalancesMock,
   updateManualBalanceMock,
   seedQuickStartProgramsMock,
+  getUserAwIdMock,
+  refreshAwCacheMock,
+  getCachedAwBalancesMock,
 } = vi.hoisted(() => ({
   addManualBalanceMock: vi.fn(),
   findManualByProgramMock: vi.fn(),
   getManualBalancesMock: vi.fn(),
   updateManualBalanceMock: vi.fn(),
   seedQuickStartProgramsMock: vi.fn(),
+  getUserAwIdMock: vi.fn(),
+  refreshAwCacheMock: vi.fn(),
+  getCachedAwBalancesMock: vi.fn(),
 }))
 
 vi.mock('@/lib/accounts', () => ({
@@ -32,6 +38,11 @@ vi.mock('@/lib/accounts', () => ({
   getManualBalances: getManualBalancesMock,
   seedQuickStartPrograms: seedQuickStartProgramsMock,
   QUICK_START_PROGRAM_IDS: ['amex-mr', 'chase-ur', 'citi-typ', 'capital-one', 'bilt'],
+  setUserAwId: vi.fn(),
+  clearUserAwId: vi.fn(),
+  getUserAwId: getUserAwIdMock,
+  refreshAwCache: refreshAwCacheMock,
+  getCachedAwBalances: getCachedAwBalancesMock,
 }))
 
 // canonicalizeProgram isn't the thing under test here — keep it a no-op
@@ -60,7 +71,8 @@ vi.mock('@/lib/auth0', () => ({
   auth0: { getSession: getSessionMock },
 }))
 
-const { addProgram, addQuickStartPrograms, resyncGmailHistory } = await import('../accounts')
+const { addProgram, addQuickStartPrograms, resyncGmailHistory, refreshAwardWallet } =
+  await import('../accounts')
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -70,6 +82,7 @@ beforeEach(() => {
   addManualBalanceMock.mockResolvedValue('row-1')
   updateManualBalanceMock.mockResolvedValue(true)
   seedQuickStartProgramsMock.mockResolvedValue({ added: [], alreadyHeld: [] })
+  getUserAwIdMock.mockResolvedValue('aw-user-1')
 })
 
 describe('addProgram — balance parsing (R1.4 balance-optional add)', () => {
@@ -225,5 +238,49 @@ describe('resyncGmailHistory — only revalidates on an actual success', () => {
 
     expect(res.ok).toBe(false)
     expect(revalidatePathMock).not.toHaveBeenCalled()
+  })
+})
+
+// #217 review P2: the 60s throttle used to key off syncedAt alone, so a
+// second click within the window after a FAILED refresh returned ok:true
+// without retrying — looking like recovery when nothing had actually
+// changed. The throttle must only short-circuit after a GOOD last sync
+// (cached.ok); a failed one should always retry the live pull.
+describe('refreshAwardWallet — throttle only applies after a good sync', () => {
+  it('within 60s of a successful sync: throttled, does not call refreshAwCache again', async () => {
+    const recentGoodSync = new Date(Date.now() - 5_000).toISOString()
+    getCachedAwBalancesMock.mockResolvedValue({ balances: [], syncedAt: recentGoodSync, ok: true })
+
+    const res = await refreshAwardWallet()
+
+    expect(res.ok).toBe(true)
+    expect(res.syncedAt).toBe(recentGoodSync)
+    expect(refreshAwCacheMock).not.toHaveBeenCalled()
+  })
+
+  it('within 60s of a FAILED sync: not throttled, retries the live pull', async () => {
+    const recentFailedSync = new Date(Date.now() - 5_000).toISOString()
+    getCachedAwBalancesMock
+      .mockResolvedValueOnce({ balances: [], syncedAt: recentFailedSync, ok: false })
+      .mockResolvedValueOnce({ balances: [], syncedAt: new Date().toISOString(), ok: true })
+    refreshAwCacheMock.mockResolvedValue(true)
+
+    const res = await refreshAwardWallet()
+
+    expect(refreshAwCacheMock).toHaveBeenCalledWith('user-1', 'aw-user-1')
+    expect(res.ok).toBe(true)
+  })
+
+  it('past 60s of a successful sync: not throttled, retries as usual', async () => {
+    const staleGoodSync = new Date(Date.now() - 120_000).toISOString()
+    getCachedAwBalancesMock
+      .mockResolvedValueOnce({ balances: [], syncedAt: staleGoodSync, ok: true })
+      .mockResolvedValueOnce({ balances: [], syncedAt: new Date().toISOString(), ok: true })
+    refreshAwCacheMock.mockResolvedValue(true)
+
+    const res = await refreshAwardWallet()
+
+    expect(refreshAwCacheMock).toHaveBeenCalledWith('user-1', 'aw-user-1')
+    expect(res.ok).toBe(true)
   })
 })

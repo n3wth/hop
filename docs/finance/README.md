@@ -13,11 +13,14 @@ emailed approval first.
   <date>`).
 - **Mirrors to**: Linear issue "Finance desk — approvals & budget" in the `hop` project
   (team `n3wth`) — same memo posted as a comment each run.
-- **`custom_domain_status`**: `blocked` (checked 2026-07-06) — the AgentMail MCP tool surface
-  has no domain-creation/DNS capability (only `create_inbox(domain=...)` for a domain already
-  configured on the account). See `agentmail-domain-dns.md` for the full check and the human
-  workaround. Still sending as `finance-hop@agentmail.to`; do not re-check until the AgentMail
-  tool surface changes or Oliver reports adding `agents.hop.flights` manually.
+- **`custom_domain_status`**: `resolved` (2026-07-06) — the AgentMail MCP tool surface has no
+  domain-creation/DNS capability, so `agents.hop.flights` was never pursued (see
+  `agentmail-domain-dns.md` for that dead end). Instead, `finance@hop.flights` now routes to
+  this inbox via a plain Cloudflare Email Routing forward rule (destination
+  `finance-hop@agentmail.to` verified 2026-07-06T06:17Z, rule `finance to agentmail` added the
+  same day) — mail sent to `finance@hop.flights` lands here automatically. **Do not include the
+  Cloudflare destination-verification link in memos anymore** — verification is done and the
+  routing rule exists; this was a one-time setup step, not a recurring check.
 
 ## Files
 
