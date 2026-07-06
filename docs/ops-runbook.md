@@ -29,6 +29,7 @@ Live state is visible at a glance on `/admin/ops` (owner-only preflight table).
 | Product analytics | `NEXT_PUBLIC_POSTHOG_KEY`/host set; the five funnel events ship as of PR #167. |
 | Billing (`HOP_ENABLE_BILLING`) | **ON** (Stripe keys + webhook secret set). Still owed: one real test purchase end-to-end. |
 | Checkout (`HOP_ENABLE_CHECKOUT`) | Set with `DUFFEL_API_KEY_TEST` (test-only by design). |
+| Gmail travel-history (`HOP_ENABLE_GMAIL_HISTORY`) | **OFF.** Code + UI are complete but un-provisioned — no `GOOGLE_OAUTH_CLIENT_ID/SECRET` set, and `gmail.readonly` is a Google restricted scope requiring OAuth verification before wide rollout (owner-only testing until then). See the Gmail section below. |
 | `MOCK` | Removed from production env (live upstreams). |
 | GitHub Actions CI | **Disabled** (billing broken — see the CI section below). Required PR check is the Vercel build. |
 
@@ -108,6 +109,68 @@ a still-deployed Worker becomes a no-op.
 
 **Verify:** paste a statement email on `/account` → preview shows the read
 balances → Save; rows appear in "Your programs".
+
+## Gmail travel-history
+
+Optional consent-based seam: connect Gmail on `/account` and hop reads ONLY
+travel-confirmation emails (`lib/gmail.ts` `CONFIRMATION_QUERY` — subject
+keywords + a curated airline/hotel/OTA domain list, `newer_than:3y`), parses
+them into normalized trip facts (`lib/gmail-parser.ts`), and stores ONLY those
+facts — never raw email bodies — in `hop_travel_history`. The concierge cites
+the derived patterns (usual travel months, favorite regions, typical cabin).
+Code, routes, UI, and privacy copy are all already built and tested
+(`lib/__tests__/gmail-parser.test.ts`, `lib/__tests__/travel-history.test.ts`,
+`lib/__tests__/travel-history-sync.test.ts`); the seam is gated **off**.
+
+**Before turning on for anyone but the owner:** `gmail.readonly` is a Google
+**restricted scope**. Real external users require Google OAuth app
+verification (domain/brand verification, a scope-justification writeup, a demo
+video, and — depending on user count/data sensitivity — an annual CASA
+security assessment) before the consent screen stops showing an "unverified
+app" warning and refresh tokens survive past ~7 days. This is a weeks-to-months
+Google-side review, not a Vercel env-var flip. Confirm in Google Cloud Console:
+(1) the OAuth client's publishing status (Testing vs. In production — Testing
+means every connected user's refresh token dies after ~7 days) and (2) the
+intended audience (owner-only vs. all signed-in users), before committing to a
+rollout date. Until verification is done, keep the flag off for everyone but a
+small owner/test-user list added to the OAuth client in Testing mode.
+
+**Turn on:**
+
+1. Register a **separate** OAuth client in Google Cloud Console scoped to
+   `gmail.readonly` + `userinfo.email` only — deliberately distinct from the
+   Better Auth sign-in client (`GOOGLE_CLIENT_ID/SECRET` / `GOOGLE_ID/SECRET`),
+   so sign-in never carries a Gmail-read grant.
+2. Add `{APP_BASE_URL}/auth/gmail/callback` as an authorized redirect URI on
+   that client. If the client stays in "Testing" mode, add each test user's
+   Google account under "Test users" on the consent screen (required — Testing
+   clients reject anyone not on that list).
+3. Set `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` in Vercel
+   (Production) — the seam stays off until the flag is also set.
+4. Set `HOP_ENABLE_GMAIL_HISTORY=1`. The "Connect Gmail" affordance appears on
+   `/account` and the `/ask` hero/A2UI block drop their "Soon" pill.
+
+**Turn off:** unset `HOP_ENABLE_GMAIL_HISTORY` (or either `GOOGLE_OAUTH_*`
+var). `isGmailHistoryEnabled()` requires both the flag AND both credentials, so
+any one missing reverts every surface to the "coming soon" state —
+`getTravelHistory` degrades to the not-connected empty history, the OAuth
+start route redirects to `/account?gmail=unconfigured`. Already-connected rows
+are untouched (no data loss); they simply stop syncing until re-enabled.
+
+**Staleness:** a dead/revoked refresh token (7-day Testing-mode expiry,
+explicit revocation from the user's Google Account, or a failed Gmail API
+call) is detected on the next sync attempt and stamped as `syncFailedAt`
+inside the row's `trips` jsonb (no schema migration — an additive field on the
+existing payload). `/account` then shows "Reconnect needed" instead of a
+falsely-eternal "Connected", with a one-click reconnect (re-consent mints a
+fresh refresh token). Re-sync is manual-only today (the "Sync" button /
+initial connect) — there is no cron; a stale connection is only caught the
+next time the user opens `/account` or hits Sync.
+
+**Verify:** with credentials + flag set, `npm run dev` → `/account` → Connect
+Gmail → OAuth consent (as a test user, if the client is in Testing mode) →
+redirected back with trips parsed → Sync re-reads → Disconnect deletes the row
+and revokes the token upstream.
 
 ## Credential auto-sync (hop signs in and reads your balance)
 

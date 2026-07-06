@@ -253,9 +253,18 @@ export async function resyncGmailHistory(): Promise<Result> {
   if ('error' in auth) return { ok: false, error: auth.error }
 
   const { syncTravelHistory } = await import('@/lib/travel-history-sync')
-  const count = await syncTravelHistory(auth.userId)
+  const result = await syncTravelHistory(auth.userId)
   revalidateBalances()
-  return { ok: true, note: `Synced ${count} trip${count === 1 ? '' : 's'} from Gmail.` }
+  if (!result.ok) {
+    const error =
+      result.reason === 'not-connected'
+        ? 'Gmail is not connected.'
+        : result.reason === 'auth-failed'
+          ? 'Gmail access expired — reconnect to keep syncing.'
+          : "Couldn't reach Gmail — try again shortly."
+    return { ok: false, error }
+  }
+  return { ok: true, note: `Synced ${result.count} trip${result.count === 1 ? '' : 's'} from Gmail.` }
 }
 
 // --- Account deletion (the /privacy promise) ---------------------------------
