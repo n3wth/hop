@@ -4,7 +4,25 @@ import {
   recordSubscription,
   stripeCustomerIdFor,
   saveStripeCustomer,
+  ALERT_LIMITS,
+  MCP_DAILY_LIMITS,
 } from '@/lib/subscription'
+
+// The business plan's tier caps (§3.1/§7 B2) — Free 3 alerts / 25 MCP calls
+// per day, Pro unlimited alerts / 1,000 MCP calls per day. Pinned here so a
+// future edit to either table gets caught by a failing test, not silently
+// drifting from what the checkout page + MCP quota actually promise.
+describe('tier caps — the numbers every billing surface renders', () => {
+  it('ALERT_LIMITS: free is finite, premium is unlimited', () => {
+    expect(ALERT_LIMITS.free).toBe(3)
+    expect(ALERT_LIMITS.premium).toBe(Infinity)
+  })
+
+  it('MCP_DAILY_LIMITS: free 25/day, premium 1,000/day', () => {
+    expect(MCP_DAILY_LIMITS.free).toBe(25)
+    expect(MCP_DAILY_LIMITS.premium).toBe(1000)
+  })
+})
 
 // Without DATABASE_URL every withDb call resolves its fallback — the graceful-
 // degradation contract for the money path: reads say 'free'/null, writes say

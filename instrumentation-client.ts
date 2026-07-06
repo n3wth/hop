@@ -15,6 +15,10 @@ initBotId({
       method: 'POST',
     },
     {
+      path: '/api/billing/portal',
+      method: 'POST',
+    },
+    {
       path: '/api/concierge',
       method: 'POST',
     },

@@ -86,6 +86,34 @@ export async function createCheckoutSession(args: {
   }
 }
 
+export type BillingPortalResult =
+  | { ok: true; url: string }
+  | { ok: false; reason: 'unconfigured' | 'stripe-error' }
+
+// Create a Stripe-hosted Billing Portal session — the self-serve "manage
+// subscription" surface (update payment method, cancel). Same money-safety
+// shape as checkout: hop never touches card data, and a cancellation here
+// only takes effect once Stripe's customer.subscription.deleted webhook
+// fires (lib/subscription.ts#recordSubscription) — this function itself
+// writes no tier state.
+export async function createBillingPortalSession(args: {
+  customerId: string
+  returnUrl: string
+}): Promise<BillingPortalResult> {
+  if (!isBillingEnabled()) return { ok: false, reason: 'unconfigured' }
+  try {
+    const { default: Stripe } = await import('stripe')
+    const stripe = new Stripe(env.stripeSecretKey())
+    const session = await stripe.billingPortal.sessions.create({
+      customer: args.customerId,
+      return_url: args.returnUrl,
+    })
+    return { ok: true, url: session.url }
+  } catch {
+    return { ok: false, reason: 'stripe-error' }
+  }
+}
+
 export type CustomerResult =
   | { ok: true; customerId: string }
   | { ok: false; reason: 'unconfigured' | 'stripe-error' }

@@ -49,7 +49,6 @@ import type { Balance } from '@/lib/types'
 import { listStandingOrders, countActiveStandingOrders } from '@/lib/standing-orders'
 import { listAlerts, countUnseenAlerts } from '@/lib/standing-order-alerts'
 import { getUserTier, ALERT_LIMITS } from '@/lib/subscription'
-import { BillingSection } from '@/components/BillingSection'
 import SecurityPassword from '@/components/auth/SecurityPassword'
 import SecurityPasskeys, { type PasskeyInfo } from '@/components/auth/SecurityPasskeys'
 
@@ -74,6 +73,17 @@ const GMAIL_NOTES: Record<string, { tone: 'ok' | 'warn'; text: string }> = {
   error: { tone: 'warn', text: 'Couldn’t finish connecting Gmail. Try again.' },
 }
 
+// Human-readable note for a failed billing-portal round-trip (the
+// ?billingError=… flag app/api/billing/portal/route.ts sets on its redirect
+// back to /account).
+const BILLING_ERROR_NOTES: Record<string, string> = {
+  bot: 'That didn’t look like a real request — try again from the page.',
+  unavailable: 'Billing isn’t available yet.',
+  'rate-limited': 'One moment — try again shortly.',
+  'no-customer': 'Upgrade first — there’s no billing account to manage yet.',
+  stripe: 'Couldn’t reach billing — try again in a minute.',
+}
+
 // The account page is private, per-user, and behind auth — keep it out of the
 // index. (Crawlers redirect to login anyway, but say it plainly.)
 export const metadata: Metadata = {
@@ -86,7 +96,13 @@ export default async function AccountPage({
   // Next.js 16: searchParams is async.
   searchParams,
 }: {
-  searchParams: Promise<{ aw?: string; gmail?: string; upgraded?: string; returnTo?: string }>
+  searchParams: Promise<{
+    aw?: string
+    gmail?: string
+    upgraded?: string
+    returnTo?: string
+    billingError?: string
+  }>
 }) {
   // Query first: aw/gmail callback flags and an inbound returnTo survive the
   // login round-trip instead of dumping the visitor on a bare /account.
@@ -467,16 +483,45 @@ export default async function AccountPage({
         </section>
 
         {/* plan / billing — flag-gated: absent entirely until HOP_ENABLE_BILLING
-            + the Stripe keys are set. Sits with the watches it un-caps. Tier
-            truth is the webhook-written row; ?upgraded=1 is display only. */}
+            + the Stripe keys are set. A one-line status, not a pricing ad —
+            the actual Free/Pro comparison + upgrade CTA lives at /pricing.
+            Tier truth is the webhook-written row; ?upgraded=1 is display only. */}
         {billingEnabled ? (
-          <BillingSection
-            tier={tier}
-            activeCount={activeAlerts}
-            freeLimit={ALERT_LIMITS.free}
-            upgraded={sp.upgraded === '1'}
-            yearlyAvailable={hasEnv('STRIPE_PRICE_ID_PRO_YEARLY')}
-          />
+          <section id="billing" className="mt-10 scroll-mt-24">
+            {sp.upgraded === '1' ? (
+              <p className="mb-3 rounded-[12px] border border-brand-light bg-brand-light px-4 py-2.5 text-[13px] font-medium text-brand-deep">
+                You&apos;re on Pro. Thanks for upgrading.
+              </p>
+            ) : null}
+            {sp.billingError ? (
+              <p className="mb-3 rounded-[12px] border border-border bg-sunk px-4 py-2.5 text-[13px] font-medium text-text2">
+                {BILLING_ERROR_NOTES[sp.billingError] ?? 'Couldn’t reach billing — try again.'}
+              </p>
+            ) : null}
+            <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13.5px] text-text2">
+              <span>
+                {tier === 'premium'
+                  ? "You're on Pro."
+                  : `You're on Free — ${activeAlerts}/${ALERT_LIMITS.free} alerts used.`}
+              </span>
+              <Link
+                href="/pricing"
+                className="font-semibold text-brand transition-colors hover:text-brand-deep"
+              >
+                See plans
+              </Link>
+              {tier === 'premium' ? (
+                <form action="/api/billing/portal" method="POST" className="contents">
+                  <button
+                    type="submit"
+                    className="font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline"
+                  >
+                    Manage billing
+                  </button>
+                </form>
+              ) : null}
+            </p>
+          </section>
         ) : null}
 
         {/* counterfactual you — "what if I had a different points portfolio?" */}
