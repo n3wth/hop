@@ -17,12 +17,17 @@
 
 import { revalidatePath } from 'next/cache'
 import { isContentCandidatesEnabled } from '@/lib/env'
-import { findSweetSpotCandidates, createCandidateDrafts } from '@/lib/sweet-spot-candidates'
+import { runSweetSpotCandidatePipeline } from '@/lib/sweet-spot-candidates'
 import { recordHeartbeat } from '@/lib/cron-heartbeat'
 import { isAuthorizedCron } from '@/lib/cron-auth'
 
 // This route reads live remote pricing and must never be cached or statically rendered.
 export const dynamic = 'force-dynamic'
+// The full hub×destination×date grid is dozens of routes; the pipeline's own
+// internal time budget (MINING_TIME_BUDGET_MS in lib/sweet-spot-candidates.ts)
+// stops starting new routes well before this ceiling so the response always
+// returns cleanly instead of being killed mid-grid.
+export const maxDuration = 300
 
 function isEnabled(): boolean {
   return isContentCandidatesEnabled()
@@ -38,9 +43,8 @@ export async function GET(request: Request) {
     return Response.json({ ok: false, error: 'unauthorized' }, { status: 401 })
   }
 
-  const candidates = await findSweetSpotCandidates()
-  const { created } = await createCandidateDrafts(candidates)
-  const skipped = candidates.length - created
+  const { created, found } = await runSweetSpotCandidatePipeline()
+  const skipped = found - created
 
   if (created > 0) revalidatePath('/admin/content')
 

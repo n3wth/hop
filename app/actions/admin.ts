@@ -18,7 +18,7 @@ import {
   type SweetSpotDraftInput,
   type SweetSpotDraft,
 } from '@/lib/sweet-spot-drafts'
-import { findSweetSpotCandidates, createCandidateDrafts } from '@/lib/sweet-spot-candidates'
+import { runSweetSpotCandidatePipeline } from '@/lib/sweet-spot-candidates'
 import { isContentCandidatesEnabled } from '@/lib/env'
 
 // Server Actions for the owner-only admin surfaces: the support console
@@ -149,8 +149,7 @@ export async function findSweetSpotCandidatesAction(): Promise<Result & Drafts &
   if (!isContentCandidatesEnabled()) {
     return { ok: false, error: 'Content candidates are off — set HOP_ENABLE_CONTENT_CANDIDATES to enable' }
   }
-  const candidates = await findSweetSpotCandidates()
-  const { created, drafts } = await createCandidateDrafts(candidates)
+  const { created, drafts } = await runSweetSpotCandidatePipeline()
   // revalidatePath keeps the server cache fresh for the NEXT full navigation
   // to this route — it does not touch ContentConsole's already-mounted
   // client `items` state, which is why the caller also needs `drafts` back
