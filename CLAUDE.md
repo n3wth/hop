@@ -213,6 +213,12 @@ in one round-trip.
   the files your change touches, commit/push/PR from there, then remove the temp worktree
   (`git worktree remove`) once merged. Use `gh pr create --head <branch> --base main` explicitly —
   `gh` can't reliably infer the current branch from inside a worktree.
+- **Multi-agent hygiene** (see `docs/solutions/2026-07-05-*.md`): after any merge-conflict
+  resolution, grep for leftover `<<<<<<<`/`=======`/`>>>>>>>` markers and run `npm run check`
+  before pushing. Mark roadmap items done only with a commit/PR link; grep for a feature before
+  proposing to build it. Byte-compare stray uncommitted files against `origin/main` before
+  committing them — they may be stale pre-merge artifacts. Regenerate Drizzle migrations after
+  rebasing; never hand-edit the sequence number.
 
 ## Design & copy — hold this bar on any UI change
 

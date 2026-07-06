@@ -82,6 +82,14 @@ winning once their freshness window lapses.
 **Verify:** hit `/api/cron/valuation-sync` with the cron bearer; check the
 `hop_valuation_overrides` rows gain fresh `sample_count`.
 
+**Rotating `HOP_VALUATION_SYNC_SECRET` (or any paired Worker secret —
+`HOP_BALANCE_INGEST_SECRET`, `HOP_SUPPORT_INGEST_SECRET`):** update the Worker
+side (`wrangler secret put`) **and** the Vercel side to the identical value
+**and** verify end-to-end in the same sitting — don't wait for the next
+scheduled cron to discover a mismatch. A stale secret on either side doesn't
+fail at rotation time; it fails silently as a generic `worker-unreachable` at
+the next run (see `docs/solutions/2026-07-05-paired-secret-rotation.md`).
+
 ## Balance sync (paste / email forward)
 
 The AwardWallet-independent syncing seam (`docs/plans/2026-07-05-balance-sync.md`):
