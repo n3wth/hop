@@ -5,6 +5,9 @@ import { auth0 } from '@/lib/auth0'
 import {
   setUserAwId,
   clearUserAwId,
+  getUserAwId,
+  refreshAwCache,
+  getCachedAwBalances,
   addManualBalance,
   updateManualBalance,
   removeManualBalance,
@@ -23,6 +26,10 @@ import { captureServerEvent } from '@/lib/posthog-server'
 // `note` carries a human-readable confirmation when an action did something the
 // user should know about (e.g. it folded a duplicate into an existing program).
 type Result = { ok: boolean; error?: string; note?: string }
+
+// A user mashing Refresh shouldn't hammer AwardWallet outside the cron
+// cadence — a plain synced-at diff, no new table.
+const REFRESH_THROTTLE_MS = 60_000
 
 // Fold free-text onto the canonical registry so "amex" / "membership rewards" /
 // typos all persist as ONE program identity. Returns the canonical display name
@@ -216,6 +223,10 @@ export async function connectAwardWallet(awUserId: string): Promise<Result> {
   const saved = await setUserAwId(auth.userId, id)
   if (!saved) return { ok: false, error: "Couldn't connect — try again" }
 
+  // Bootstrap the cache right away, best-effort, so /account shows real
+  // balances immediately instead of waiting for the next cron tick.
+  await refreshAwCache(auth.userId, id).catch(() => false)
+
   revalidateBalances()
   return { ok: true }
 }
@@ -229,6 +240,36 @@ export async function disconnectAwardWallet(): Promise<Result> {
 
   revalidateBalances()
   return { ok: true }
+}
+
+// User-initiated re-sync — the ONLY other live-call path besides bootstrap and
+// the cron. Throttled to one live pull per REFRESH_THROTTLE_MS so mashing the
+// button can't hammer AwardWallet outside the cron cadence; a throttled call
+// still returns ok with the existing syncedAt (the UI has nothing new to show,
+// not an error). Never throws.
+export async function refreshAwardWallet(): Promise<Result & { syncedAt: string | null }> {
+  const auth = await requireUser()
+  if ('error' in auth) return { ok: false, error: auth.error, syncedAt: null }
+
+  const awId = await getUserAwId(auth.userId)
+  if (!awId) return { ok: false, error: 'Not connected to AwardWallet', syncedAt: null }
+
+  const cached = await getCachedAwBalances(auth.userId)
+  if (cached.syncedAt) {
+    const age = Date.now() - Date.parse(cached.syncedAt)
+    if (Number.isFinite(age) && age >= 0 && age < REFRESH_THROTTLE_MS) {
+      return { ok: true, syncedAt: cached.syncedAt }
+    }
+  }
+
+  const ok = await refreshAwCache(auth.userId, awId)
+  const fresh = await getCachedAwBalances(auth.userId)
+  revalidateBalances()
+  return {
+    ok,
+    error: ok ? undefined : "Couldn't reach AwardWallet — showing your last known balances",
+    syncedAt: fresh.syncedAt,
+  }
 }
 
 // --- Gmail travel-history seam ---------------------------------------------
@@ -253,9 +294,18 @@ export async function resyncGmailHistory(): Promise<Result> {
   if ('error' in auth) return { ok: false, error: auth.error }
 
   const { syncTravelHistory } = await import('@/lib/travel-history-sync')
-  const count = await syncTravelHistory(auth.userId)
+  const result = await syncTravelHistory(auth.userId)
   revalidateBalances()
-  return { ok: true, note: `Synced ${count} trip${count === 1 ? '' : 's'} from Gmail.` }
+  if (!result.ok) {
+    const error =
+      result.reason === 'not-connected'
+        ? 'Gmail is not connected.'
+        : result.reason === 'auth-failed'
+          ? 'Gmail access expired — reconnect to keep syncing.'
+          : "Couldn't reach Gmail — try again shortly."
+    return { ok: false, error }
+  }
+  return { ok: true, note: `Synced ${result.count} trip${result.count === 1 ? '' : 's'} from Gmail.` }
 }
 
 // --- Account deletion (the /privacy promise) ---------------------------------

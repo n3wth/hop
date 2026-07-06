@@ -29,6 +29,7 @@ Live state is visible at a glance on `/admin/ops` (owner-only preflight table).
 | Product analytics | `NEXT_PUBLIC_POSTHOG_KEY`/host set; the five funnel events ship as of PR #167. |
 | Billing (`HOP_ENABLE_BILLING`) | **ON** (Stripe keys + webhook secret set). Still owed: one real test purchase end-to-end. |
 | Checkout (`HOP_ENABLE_CHECKOUT`) | Set with `DUFFEL_API_KEY_TEST` (test-only by design). |
+| Gmail travel-history (`HOP_ENABLE_GMAIL_HISTORY`) | **OFF.** Code + UI are complete but un-provisioned — no `GOOGLE_OAUTH_CLIENT_ID/SECRET` set, and `gmail.readonly` is a Google restricted scope requiring OAuth verification before wide rollout (owner-only testing until then). See the Gmail section below. |
 | `MOCK` | Removed from production env (live upstreams). |
 | GitHub Actions CI | **Disabled** (billing broken — see the CI section below). Required PR check is the Vercel build. |
 
@@ -130,6 +131,68 @@ a still-deployed Worker becomes a no-op.
 **Verify:** paste a statement email on `/account` → preview shows the read
 balances → Save; rows appear in "Your programs".
 
+## Gmail travel-history
+
+Optional consent-based seam: connect Gmail on `/account` and hop reads ONLY
+travel-confirmation emails (`lib/gmail.ts` `CONFIRMATION_QUERY` — subject
+keywords + a curated airline/hotel/OTA domain list, `newer_than:3y`), parses
+them into normalized trip facts (`lib/gmail-parser.ts`), and stores ONLY those
+facts — never raw email bodies — in `hop_travel_history`. The concierge cites
+the derived patterns (usual travel months, favorite regions, typical cabin).
+Code, routes, UI, and privacy copy are all already built and tested
+(`lib/__tests__/gmail-parser.test.ts`, `lib/__tests__/travel-history.test.ts`,
+`lib/__tests__/travel-history-sync.test.ts`); the seam is gated **off**.
+
+**Before turning on for anyone but the owner:** `gmail.readonly` is a Google
+**restricted scope**. Real external users require Google OAuth app
+verification (domain/brand verification, a scope-justification writeup, a demo
+video, and — depending on user count/data sensitivity — an annual CASA
+security assessment) before the consent screen stops showing an "unverified
+app" warning and refresh tokens survive past ~7 days. This is a weeks-to-months
+Google-side review, not a Vercel env-var flip. Confirm in Google Cloud Console:
+(1) the OAuth client's publishing status (Testing vs. In production — Testing
+means every connected user's refresh token dies after ~7 days) and (2) the
+intended audience (owner-only vs. all signed-in users), before committing to a
+rollout date. Until verification is done, keep the flag off for everyone but a
+small owner/test-user list added to the OAuth client in Testing mode.
+
+**Turn on:**
+
+1. Register a **separate** OAuth client in Google Cloud Console scoped to
+   `gmail.readonly` + `userinfo.email` only — deliberately distinct from the
+   Better Auth sign-in client (`GOOGLE_CLIENT_ID/SECRET` / `GOOGLE_ID/SECRET`),
+   so sign-in never carries a Gmail-read grant.
+2. Add `{APP_BASE_URL}/auth/gmail/callback` as an authorized redirect URI on
+   that client. If the client stays in "Testing" mode, add each test user's
+   Google account under "Test users" on the consent screen (required — Testing
+   clients reject anyone not on that list).
+3. Set `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` in Vercel
+   (Production) — the seam stays off until the flag is also set.
+4. Set `HOP_ENABLE_GMAIL_HISTORY=1`. The "Connect Gmail" affordance appears on
+   `/account` and the `/ask` hero/A2UI block drop their "Soon" pill.
+
+**Turn off:** unset `HOP_ENABLE_GMAIL_HISTORY` (or either `GOOGLE_OAUTH_*`
+var). `isGmailHistoryEnabled()` requires both the flag AND both credentials, so
+any one missing reverts every surface to the "coming soon" state —
+`getTravelHistory` degrades to the not-connected empty history, the OAuth
+start route redirects to `/account?gmail=unconfigured`. Already-connected rows
+are untouched (no data loss); they simply stop syncing until re-enabled.
+
+**Staleness:** a dead/revoked refresh token (7-day Testing-mode expiry,
+explicit revocation from the user's Google Account, or a failed Gmail API
+call) is detected on the next sync attempt and stamped as `syncFailedAt`
+inside the row's `trips` jsonb (no schema migration — an additive field on the
+existing payload). `/account` then shows "Reconnect needed" instead of a
+falsely-eternal "Connected", with a one-click reconnect (re-consent mints a
+fresh refresh token). Re-sync is manual-only today (the "Sync" button /
+initial connect) — there is no cron; a stale connection is only caught the
+next time the user opens `/account` or hits Sync.
+
+**Verify:** with credentials + flag set, `npm run dev` → `/account` → Connect
+Gmail → OAuth consent (as a test user, if the client is in Testing mode) →
+redirected back with trips parsed → Sync re-reads → Disconnect deletes the row
+and revokes the token upstream.
+
 ## Credential auto-sync (hop signs in and reads your balance)
 
 Credential-based rail on top of paste/forward (`docs/plans/2026-07-05-credential-sync.md`):
@@ -164,6 +227,50 @@ sync. Rotate only deliberately; there is no re-encryption path by design.
 **Verify:** save a login on `/account`; run `/api/cron/balance-autosync` with
 the cron bearer; the row's status moves to `ok` (recipe exists) or a truthful
 `failed`/`unsupported`.
+
+## AwardWallet (live balance auto-sync)
+
+Optional auto-sync on top of manual balances (`lib/awardwallet.ts`,
+`lib/accounts.ts`). `getUserBalances()` never calls AwardWallet live — every
+read is a `hop_user_accounts.cached_balances` snapshot, refreshed only by
+connect-time bootstrap, the `/account` "Refresh" button, and the periodic
+cron below. This split (cache read vs. the three write paths) is deliberate:
+a dead AwardWallet link degrades to the last-known-good snapshot with an
+honest staleness note, instead of a live call blocking a page render.
+
+**Engineering-owned, ready to flip:**
+
+1. `AWARDWALLET_API_KEY` + `AWARDWALLET_USER_ID` (business-account
+   credentials) — already required for the manual-ID connect path
+   (`ProgramsManager`'s "Advanced: paste a connected-user ID") to do anything.
+2. `AWARDWALLET_SYNC_CRON_ENABLED=1` — gates `/api/cron/awardwallet-sync`
+   (every 6h, offset from `standing-orders`). **Not required** for balances to
+   populate: bootstrap-on-connect and manual Refresh both call
+   `refreshAwCache` directly, so the cache works before this flag is ever
+   set — flip it once `npm run check`/`build` are green and Refresh has been
+   exercised against a real connected account.
+
+**Turn off:** unset `AWARDWALLET_SYNC_CRON_ENABLED`. The cron answers
+`503 disabled`; bootstrap and manual Refresh keep working (a byte-for-byte
+no-op otherwise).
+
+**Owner-blocked (do not attempt without AwardWallet business-dashboard
+access):**
+
+- `AWARDWALLET_CONNECT_URL` — the hosted "Connect Users" URL for the OAuth-
+  style connect flow (`app/auth/awardwallet/start|callback`). Absent → the
+  primary "Connect AwardWallet" CTA is a dead link; the manual-ID escape
+  hatch still works regardless.
+- The exact callback param name AwardWallet returns the connected-user id
+  under — `app/auth/awardwallet/callback/route.ts` currently tries four
+  plausible names (`userId`/`connectedUserId`/`connectedUser`/`id`).
+  Confirm against the real dashboard before relying on the OAuth path.
+
+**Verify:** connect via the manual-ID field on `/account` → balances and a
+"synced <time>" note appear immediately (bootstrap). Click Refresh → the
+synced time updates. `curl -H "Authorization: Bearer $CRON_SECRET"
+https://hop.flights/api/cron/awardwallet-sync` returns a refreshed/failed
+summary (or `{"ok":false,"disabled":true}` while the flag is off).
 
 ## Self-improve loop / degradation telemetry (ADR 0007)
 
@@ -295,7 +402,9 @@ preserved in the comments).
 | `/api/cron/sync-stripe` | daily | `isBillingEnabled()` |
 | `/api/cron/business-digest` | Mondays | `isEmailEnabled()` (`RESEND_API_KEY`) |
 | `/api/cron/health-sentinel` | daily | `isSelfImproveEnabled()` |
+| `/api/cron/balance-autosync` | daily | `isCredentialAutosyncLive()` |
 | `/api/cron/sweet-spot-candidates` | daily | `isContentCandidatesEnabled()` |
+| `/api/cron/awardwallet-sync` | every 6h (offset from standing-orders) | `isAwardWalletSyncCronLive()` (`AWARDWALLET_SYNC_CRON_ENABLED`) |
 
 All honor the same `Authorization: Bearer ${CRON_SECRET}` check and record a
 liveness heartbeat (`lib/cron-heartbeat.ts`) even when disabled — "off" is an

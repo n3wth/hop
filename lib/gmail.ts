@@ -139,7 +139,15 @@ export async function revokeToken(token: string): Promise<void> {
 
 // --- Gmail read -------------------------------------------------------------
 
-async function gmailGet(path: string, accessToken: string): Promise<unknown | null> {
+// Discriminated so callers can tell "the mailbox has nothing to say" (ok, empty
+// result) apart from "we couldn't ask" (dead/revoked token vs. a transient
+// network/5xx blip) — the root-cause gap this seam had: a 401 and an empty
+// inbox both used to collapse to the same `null`.
+type GmailGetResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; status: number | null; authFailed: boolean }
+
+async function gmailGet<T>(path: string, accessToken: string): Promise<GmailGetResult<T>> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
   try {
@@ -147,10 +155,12 @@ async function gmailGet(path: string, accessToken: string): Promise<unknown | nu
       headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
       signal: controller.signal,
     })
-    if (!res.ok) return null
-    return await res.json()
+    if (!res.ok) {
+      return { ok: false, status: res.status, authFailed: res.status === 401 || res.status === 403 }
+    }
+    return { ok: true, data: (await res.json()) as T }
   } catch {
-    return null
+    return { ok: false, status: null, authFailed: false }
   } finally {
     clearTimeout(timer)
   }
@@ -158,8 +168,8 @@ async function gmailGet(path: string, accessToken: string): Promise<unknown | nu
 
 // The connected account's email, for display ("Connected as you@gmail.com").
 export async function getProfileEmail(accessToken: string): Promise<string | null> {
-  const json = (await gmailGet('/profile', accessToken)) as { emailAddress?: string } | null
-  return json?.emailAddress ?? null
+  const res = await gmailGet<{ emailAddress?: string }>('/profile', accessToken)
+  return res.ok ? res.data.emailAddress ?? null : null
 }
 
 // A parsed confirmation message we hand to the parser: subject, sender, the
@@ -172,17 +182,30 @@ export interface RawMessage {
   body: string
 }
 
+// Discriminated so the caller (syncTravelHistory) can tell a dead/revoked
+// access token (authFailed) apart from a genuinely empty/no-match inbox
+// (ok: true, ids: []) apart from a transient fetch failure (ok: false,
+// authFailed: false) — three different situations that used to all read as
+// "0 messages."
+export type MessageListResult =
+  | { ok: true; ids: string[] }
+  | { ok: false; authFailed: boolean }
+
 // List message ids matching the tight confirmation query (capped).
 export async function listConfirmationMessageIds(
   accessToken: string,
   max = 50,
-): Promise<string[]> {
+): Promise<MessageListResult> {
   const q = encodeURIComponent(CONFIRMATION_QUERY)
-  const json = (await gmailGet(
+  const res = await gmailGet<{ messages?: Array<{ id?: string }> }>(
     `/messages?q=${q}&maxResults=${Math.min(max, 100)}`,
     accessToken,
-  )) as { messages?: Array<{ id?: string }> } | null
-  return (json?.messages ?? []).map((m) => m.id).filter((id): id is string => Boolean(id))
+  )
+  if (!res.ok) return { ok: false, authFailed: res.authFailed }
+  return {
+    ok: true,
+    ids: (res.data.messages ?? []).map((m) => m.id).filter((id): id is string => Boolean(id)),
+  }
 }
 
 // base64url → utf8 string (Gmail encodes part bodies this way).
@@ -227,12 +250,15 @@ export async function getMessage(
   accessToken: string,
   id: string,
 ): Promise<RawMessage | null> {
-  const json = (await gmailGet(`/messages/${id}?format=full`, accessToken)) as {
+  const res = await gmailGet<{
     internalDate?: string
     payload?: GmailPart & { headers?: Array<{ name?: string; value?: string }> }
-  } | null
-  if (!json?.payload) return null
-  const headers = json.payload.headers ?? []
+  }>(`/messages/${id}?format=full`, accessToken)
+  if (!res.ok) return null
+  const json = res.data
+  const payload = json.payload
+  if (!payload) return null
+  const headers = payload.headers ?? []
   const header = (name: string): string =>
     headers.find((h) => (h.name ?? '').toLowerCase() === name)?.value ?? ''
   return {
@@ -240,6 +266,6 @@ export async function getMessage(
     subject: header('subject'),
     from: header('from'),
     internalDate: Number(json.internalDate ?? 0),
-    body: extractPlainText(json.payload),
+    body: extractPlainText(payload),
   }
 }

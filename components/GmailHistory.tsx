@@ -47,11 +47,13 @@ export default function GmailHistory({
   enabled,
   connected,
   email,
+  syncFailed,
   trips,
 }: {
   enabled: boolean
   connected: boolean
   email: string | null
+  syncFailed: boolean
   trips: PastTrip[]
 }) {
   const router = useRouter()
@@ -89,25 +91,40 @@ export default function GmailHistory({
     return (
       <section className="mt-4 overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
         <div className="flex items-center justify-between gap-3 px-5 py-3.5 sm:px-6">
-          <span className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-text2">
-            <Icon name="check_circle" size={16} weight="fill" />
+          <span
+            className={`flex min-w-0 items-center gap-2 text-[13px] font-semibold ${
+              syncFailed ? 'text-weak' : 'text-text2'
+            }`}
+          >
+            <Icon name={syncFailed ? 'error' : 'check_circle'} size={16} weight="fill" />
             <span className="truncate">
-              Connected{email ? ` · ${email}` : ''}
+              {syncFailed ? 'Reconnect needed' : 'Connected'}
+              {email ? ` · ${email}` : ''}
               <span className="ml-2 font-normal text-text3">
                 {trips.length} {trips.length === 1 ? 'trip' : 'trips'} learned
               </span>
             </span>
           </span>
           <div className="flex flex-shrink-0 items-center gap-1.5">
-            <button
-              type="button"
-              onClick={resync}
-              disabled={syncing || disconnecting}
-              className="inline-flex items-center gap-1.5 rounded-[10px] px-3 py-2 text-[13px] font-semibold text-brand transition-colors hover:bg-brand-light disabled:opacity-60"
-            >
-              <Icon name="refresh" size={16} />
-              {syncing ? 'Syncing…' : 'Sync'}
-            </button>
+            {syncFailed ? (
+              <a
+                href="/auth/gmail/start"
+                className="inline-flex items-center gap-1.5 rounded-[10px] px-3 py-2 text-[13px] font-semibold text-weak transition-colors hover:bg-weak-bg"
+              >
+                <Icon name="shield" size={16} />
+                Reconnect
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={resync}
+                disabled={syncing || disconnecting}
+                className="inline-flex items-center gap-1.5 rounded-[10px] px-3 py-2 text-[13px] font-semibold text-brand transition-colors hover:bg-brand-light disabled:opacity-60"
+              >
+                <Icon name="refresh" size={16} />
+                {syncing ? 'Syncing…' : 'Sync'}
+              </button>
+            )}
             {confirm.armed ? (
               <>
                 <button
@@ -140,6 +157,12 @@ export default function GmailHistory({
           </div>
         </div>
 
+        {syncFailed ? (
+          <p className="border-t border-border bg-weak-bg px-5 py-2.5 text-[13px] text-weak sm:px-6">
+            hop lost access to this inbox — trips below may be out of date.
+            Reconnect to keep learning from new trips.
+          </p>
+        ) : null}
         {note ? (
           <p
             role="status"
