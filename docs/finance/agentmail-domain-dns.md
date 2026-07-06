@@ -50,8 +50,8 @@ end. **Action needed from Oliver**: click the verification link in the Cloudflar
 forwarding alias. Once verified, this desk can switch its reply-to from `oliver@newth.ai` to
 `finance@hop.flights`.
 
-**Update (run 4, same day)**: the first two memos (runs 1-3) only described this email and
-pointed Oliver at the inbox — neither actually included the raw clickable link. This run
+**Update (run 4, same day)**: the first three memos (runs 1-3) only described this email and
+pointed Oliver at the inbox — none of them actually included the raw clickable link. This run
 extracted the full verification URL from the Cloudflare message body
 (`https://dash.cloudflare.com/email_fwdr/verify?token=...`, ~230-char token) and sent it directly
 in the memo email so Oliver can click it without needing to open the inbox himself. Still
