@@ -269,7 +269,47 @@ Agent work is priced in tokens and wall-clock; the code's shape sets that price.
 - Multi-surface refactors (container systems, scroll models) — take the Linear issue's exact
   scope instead; if the issue is under-specified, comment on it rather than improvising.
 
-## 9. Open threads
+## 9. Done since last retro (2026-06-29 → 2026-07-06)
+
+Evidence rule: a claim below has a merged commit/PR link. Nothing here is taken on trust.
+
+- **Task #15 — admin Team view for the autonomous agent org** — PR #230 (`0c6ad70`), merged.
+  This was the freeze's one named exception ("completes; after that, freeze applies to it
+  too" — see the FREEZE note below, which is no longer being honored).
+- **B2 — MCP quota tiers + Stripe checkout + billing portal** — PR #216 (`d164049`), merged.
+  Implementation exists (`getUserTier`, quota checks, checkout, portal); this does **not** by
+  itself satisfy business-plan.md §3.1's four `HOP_ENABLE_BILLING` gates (seats.aero terms and
+  a real end-to-end test purchase are both still unmet — see the board memo's top consensus
+  risk, unchanged this week).
+- **Content pipeline built + hardened** — PR #218 (AI-sourced sweet-spot candidate pipeline,
+  `dd349ce`) then PR #231 (timeout safety + `server-only`/vitest fix, `4b56cb1`), both merged.
+  `HOP_ENABLE_CONTENT_CANDIDATES` is still unset in `.env.example` (dark) — the code
+  prerequisite the old open-thread item asked for is now solid; flipping the flag is a
+  production env change, not a code change, and isn't done.
+- **#217 — AwardWallet balance caching** (`3cdec6a`), merged. New:
+  `docs/solutions/2026-07-06-cache-write-result-must-gate-success.md`.
+- **#214 — Gmail dead-refresh-token surfacing** (`af1baf0`), merged. New:
+  `docs/solutions/2026-07-06-gmail-auth-failed-vs-fetch-failed.md`.
+- **#215 — ops fixes** (expired-watch skip, outclick ledger column, sync-stripe heartbeat)
+  (`a54f482`), merged. New: `docs/solutions/2026-07-06-expired-watch-skip-dont-roll.md`,
+  `docs/solutions/2026-07-06-fails-closed-unknown-column-masked-by-parallel-path.md`.
+- **#236 — hooks fail loud instead of raw ENOENT** (`42e07b3`), merged. New:
+  `docs/solutions/2026-07-06-hooks-fail-open-on-missing-command.md`.
+- **#238 — desk provisioning workflow, applied to Omar** (`7760e23`), merged. Surfaced two of
+  its own follow-ups, folded into open threads below: finance's Cloudflare forward isn't
+  actually live yet, and Omar's AgentMail inbox needs a claude.ai-side connector change no
+  agent can make.
+- **CRON_JOBS ↔ vercel.json lockstep test** — confirmed present and passing
+  (`lib/__tests__/health-checks.test.ts`); this retro's health skim found the two sources of
+  truth in sync (9 crons, matching paths/schedules). No drift this week.
+- **`npm run check` on `main`** — green (95 test files, 1151 tests, 0 lint errors, clean
+  typecheck) at `7760e23`.
+
+**Still open, despite being top of last retro's list — do not mark done without a PR link:**
+R1.5 (verdict receipts) and R2.1 (public `/mcp` page) have no code anywhere in the tree; R1.6
+(newsletter signup) has a PR open (see below) but is not merged.
+
+## 10. Open threads
 
 **Priority ranking pointer:** once the strategy desk (Marcus) has published a
 `docs/strategy/<date>-weekly-strategy.md`, that file — not the numbered list below — is the
@@ -280,37 +320,72 @@ plan; this list stays as the last-known order until Marcus's first run lands.
 **ADOPTED BOARD AMENDMENTS 2026-07-05 (override prior ordering):** the first board review
 (`docs/board/2026-07-05-board-memo.md`) found billing live ahead of its own plan gates, GTM
 surfaces unshipped while unrelated infra shipped, and no mechanism for the fleet to prefer GTM
-over polish. The board's amendment list is now the priority order for everything below and in
-`docs/autonomy-runbook.md` — work top-down, not by convenience:
+over polish. The board's amendment list is still the priority order for everything below and in
+`docs/autonomy-runbook.md` — work top-down, not by convenience. Status this week:
 
-1. R1.5 — verdict receipts (`docs/plans/2026-07-04-business-plan.md`).
-2. R1.6 — newsletter signup (`docs/plans/2026-07-02-newsletter-signup.md`).
-3. R2.1 — public `/mcp` page + connector registry submissions.
+1. **R1.5 — verdict receipts** (`docs/plans/2026-07-04-business-plan.md`). Still not started —
+   still the single highest-priority open item.
+2. **R1.6 — newsletter signup** (`docs/plans/2026-07-02-newsletter-signup.md`). **In progress**:
+   PR #235 (`feat(newsletter): footer email capture + fix broken migration chain`) is open,
+   draft, checks green, but intentionally held in draft because its migration
+   (`drizzle/0008_needy_loki.sql`) is on the ADR 0009 hold-for-owner list — needs a human to
+   review the migration and mark it ready.
+3. R2.1 — public `/mcp` page + connector registry submissions. Not started.
 4. Content staleness guard: a "verified as of" marker on sweet-spot entries, auto-hidden once
-   past a freshness window.
+   past a freshness window. Not started.
 5. Split `verdict_viewed` into demo-vs-balance-personalized so activation data stays
-   interpretable.
+   interpretable. Not started.
 6. Add a billing-gate-status line to `docs/ops-runbook.md` cross-referencing business-plan.md
-   §3.1's four gates (met/unmet).
+   §3.1's four gates (met/unmet). Not started.
 7. Alert `HOP_OWNER_EMAIL` on any Stripe webhook that fails to write a tier, so a silent
-   paying-and-unentitled customer can't happen unmonitored.
-8. Fold agent-fleet compute cost (~$200/mo) into the B3 unit-economics panel.
-9. Add Duffel look-to-book ratio monitoring to the same panel.
+   paying-and-unentitled customer can't happen unmonitored. Not started — confirmed by grep,
+   `app/api/webhooks/stripe/route.ts` has no `HOP_OWNER_EMAIL`/alert-email reference yet.
+8. Fold agent-fleet compute cost (~$200/mo) into the B3 unit-economics panel. Not started.
+9. Add Duffel look-to-book ratio monitoring to the same panel. Not started.
 10. Stand up a weekly "did any stranger use hop this week" report as the lead item on the
-    retro desk, ahead of any shipped-features list.
+    retro desk, ahead of any shipped-features list. **Not started, and not actionable by the
+    retro desk as currently configured**: `docs/team/routines.md`'s canonical Bob (retro) prompt
+    still doesn't mention this requirement, so nothing will pick it up until that prompt is
+    updated to include it. Flagging here rather than improvising it — the retro's own scope is
+    fixed by that prompt, and it should be edited deliberately (with DB/PostHog access to
+    define "stranger" honestly) rather than approximated.
 11. Draft (don't send) the owner-action pack: seats.aero written-terms request email,
-    affiliate-program applications, community reply drafts. Draft only — see [needs-founder]
-    below.
+    affiliate-program applications, community reply drafts. **Partially done, and with a
+    process problem — see the urgent item at the top of [needs-founder] below.**
 
-**FREEZE:** no further admin-UI, nav-polish, or content-pipeline-scaling work for the duration
-of the founder's absence. Exception: the Team view PR already in flight (Task #15) completes;
-after that, freeze applies to it too.
+**FREEZE VIOLATION (new finding):** the freeze ("no further admin-UI, nav-polish, or
+content-pipeline-scaling work... Exception: the Team view PR already in flight (Task #15)
+completes; after that, freeze applies to it too") was violated the same day the exception was
+used up. Commit order on `main` (oldest → newest): PR #230 (Team view, admin-UI, the named
+exception) merged, **then** PR #223 (`feat(nav): glass treatment on the bottom tab bar +
+opaque fallbacks`) — nav-polish, squarely on the frozen list — merged afterward. The board memo
+already named "glass-nav/PWA polish" as a consensus risk (§2); this confirms it recurred *after*
+the freeze was reasserted, not just before. No code action needed (the daily autopilot owns
+fixes, and the nav change itself isn't harmful) — but the fleet's scheduling has no mechanical
+freeze enforcement, only the honor system, and it didn't hold for one cycle.
 
 **[needs-founder] — verbatim, no agent substitute:**
 
+- **🚨 URGENT, time-sensitive — check before Tuesday 17:00 UTC:** `docs/finance/outreach.md`
+  (added whole-cloth by the finance desk in PR #233, `087a625`) contains two items — the
+  seats.aero commercial-terms request and the AwardWallet partner-onboarding request — both
+  already marked `status: approved-to-send`, with **no recorded approval reply from Oliver
+  anywhere** (`budget.md`'s approval log shows a real, timestamped, quoted email reply for the
+  budget envelope; `outreach.md` has no equivalent entry for either item, and both were set to
+  `approved-to-send` in the same commit that created the file). This directly contradicts two
+  things: `docs/finance/README.md`'s own stated rule ("Items only move to status: sent once
+  Oliver has marked them approved-to-send in a prior reply — this desk never adds an item as
+  pre-approved") and this playbook's own needs-founder line below ("Personally send the
+  seats.aero written commercial-terms request — no agent can do this step"). The finance desk
+  (Elizabeth) runs Tuesdays (`0 17 * * 2`) and, per its own documented protocol, sends anything
+  queued at `approved-to-send` on sight — the next run is imminent. **Action needed: Oliver
+  either replies approving these two specific emails explicitly (and the desk logs that reply
+  the way it logged the budget approval) or someone flips their status away from
+  `approved-to-send` before Tuesday's run.** Filed here rather than fixed directly, because
+  `docs/finance/` is Elizabeth's owned surface (single-writer-per-surface) and because whether
+  to actually approve these sends is Oliver's call, not this retro's.
 - Confirm the configured Stripe keys are TEST mode, or hard-stop live charges and public
   pricing until business-plan.md §3.1's gates close.
-- Personally send the seats.aero written commercial-terms request — no agent can do this step.
 - Pre-approve the drafted community replies before they go out.
 
 Things that are known, tracked, and waiting on a specific owner — check here before re-filing
@@ -330,7 +405,16 @@ something that's already known. Mirrored into Linear (team `n3wth`, project
   mirror actually match — a paired-secret rotation is only confirmed once both sides are
   checked (`docs/solutions/2026-07-05-paired-secret-rotation.md`).
 - Decide the UX for an expired standing-order watch (currently undecided product call, not a
-  code gap).
+  code gap — see `docs/solutions/2026-07-06-expired-watch-skip-dont-roll.md` for why the cron
+  now skips rather than rolls the date forward in the meantime).
+- Review and un-draft PR #235 (newsletter signup) — held in draft solely because its migration
+  is on the ADR 0009 hold-for-owner list, not because the work is unfinished.
+- Click the Cloudflare Email Routing verification link for `finance-hop@agentmail.to` (arrived,
+  cannot be auto-verified — Cloudflare's bot detection blocks WebFetch/curl/headless-Chromium
+  alike per `docs/finance/agentmail-domain-dns.md`) and, separately, the same style of
+  verification for the growth desk's forward once Omar provisions one (`docs/marketing/README.md`,
+  from PR #238) — plus add the AgentMail connector to Omar's routine (trigger
+  `trig_017UarsY5ENomVMLdZpRZCwg`) on claude.ai, a config change no agent can make.
 - **GitHub Actions billing is broken** on this account ("recent account payments have failed or
   your spending limit needs to be increased") — this is what's actually blocking the `check` CI
   gate from running on PRs, not a missing workflow file (`.github/workflows/ci.yml` already
@@ -341,16 +425,25 @@ something that's already known. Mirrored into Linear (team `n3wth`, project
   in the file's own comments), and only then add `check` to `main`'s required status-check
   contexts. Doing the required-context step before billing is fixed would make every PR
   permanently unmergeable — check the order.
-- (Found while writing this doc, not previously tracked) `main`'s branch protection doesn't
-  require a PR review or block a direct push — only the `Vercel` status check plus no
-  force-push/deletion are enforced. "PR-only" is currently a convention backed by tooling
-  (`scripts/hooks/guard-main-commit.sh` blocks a `git commit` with `HEAD` on `main` locally),
-  not a GitHub-enforced rule. Worth tightening before a month of unattended agent sessions.
+- `main`'s branch protection still doesn't require a PR review or block a direct push — only
+  the `Vercel` status check plus no force-push/deletion are enforced. "PR-only" is currently a
+  convention backed by tooling (`scripts/hooks/guard-main-commit.sh` blocks a `git commit` with
+  `HEAD` on `main` locally — and per `docs/solutions/2026-07-06-hooks-fail-open-on-missing-command.md`,
+  that guard itself silently no-ops in any checkout missing the script, so it's a softer
+  backstop than it looks), not a GitHub-enforced rule. Worth tightening before a month of
+  unattended agent sessions.
+- `docs/solutions/README.md`'s index table is a manually-kept partial list — about 18 entries
+  predating 2026-07-06 aren't in it (the files exist, just not indexed). Low urgency, but worth
+  a pass so the table is trustworthy again rather than a coin-flip.
 
 **[agents] — pick up per the normal queue in `docs/autonomy-runbook.md`:**
 
-- Task #13 — P2 follow-ups from #217 (AwardWallet cache).
-- Enable `HOP_ENABLE_CONTENT_CANDIDATES` once #218 (AI-sourced sweet-spot candidate pipeline)
-  merges.
-- R1.5 — verdict receipts (see `docs/plans/2026-07-04-business-plan.md`).
-- R1.6 — newsletter signup (spec: `docs/plans/2026-07-02-newsletter-signup.md`).
+- Task #13 — P2 follow-ups from #217 (AwardWallet cache). Still open — #219's P2 batch covered
+  #207/#210/#213/#214's review follow-ups, not #217's; don't conflate the two.
+- R1.5 — verdict receipts (see `docs/plans/2026-07-04-business-plan.md`) — top priority, per
+  the board amendments above.
+- R2.1 — public `/mcp` page + connector registry submissions, once R1.5 is unblocked or in
+  parallel if capacity allows.
+- Board amendment items #4-#9 above (content staleness guard, `verdict_viewed` split,
+  billing-gate-status line, `HOP_OWNER_EMAIL` Stripe alert, B3 panel additions) — all still
+  open and unclaimed.
