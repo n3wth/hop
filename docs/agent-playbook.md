@@ -29,6 +29,48 @@
 > - **Flag-gated** — a feature wrapped in an environment-variable check (`HOP_ENABLE_*`) so it
 >   ships in the codebase but does nothing until explicitly turned on in production.
 
+## The goal
+
+**$10k+ MRR by 2026-08-05** (declared 2026-07-05; the "$10k-MRR-within-30-days" target in
+`docs/plans/2026-07-05-agentic-travel-agent-northstar.md`, whose "The revenue goal" section also
+sets the weekly gates — Wk2/Wk4 checkpoints — every desk works against). Where the two disagree
+on priority, the board's amendment list in `docs/board/2026-07-05-board-memo.md` overrides this
+playbook's own §9 ordering.
+
+## Reliability practices
+
+Plain-language ground rules for running this as an unattended agent fleet. Where a
+`docs/solutions/2026-07-05-*.md` entry already covers the mechanism in depth, this list points at
+it rather than repeating it.
+
+- **One unit of work per run** bounds cost and blast radius (blast radius = how much of the
+  system a single mistake could reach). A scheduled desk does exactly one well-chosen thing per
+  run instead of chaining unrelated work, so a bad run costs one unit, not a cascade.
+- **Done-claims need PR links.** A claim that something shipped doesn't count without an attached
+  commit/PR link — `docs/solutions/2026-07-05-roadmap-done-claims-need-evidence.md`.
+- **Least-privilege connectors.** A connector is a third-party integration (Linear, PostHog,
+  AgentMail, etc.) a routine is allowed to call. The claude.ai platform auto-attaches **all** of
+  the account's connectors to any newly created routine by default — always strip that down to
+  the short list the desk actually needs (see the connector column in `docs/team/routines.md`'s
+  desk table).
+- **Human approval only for money, identity, or anything irreversible** — spending, charging,
+  transferring points, canceling a booking, changing auth/credentials. Everything reversible, a
+  desk handles on its own.
+- **Liveness monitoring.** Scheduled checks ("crons") on Oliver's Mac mini, run by his own agent
+  there (Hermes), confirm the fleet is actually alive: `hop-uptime-watchdog` runs daily and stays
+  silent unless something is failing; `hop-watchdog-heartbeat` runs Mondays as a positive
+  "still alive" signal; `hop-org-liveness-watchdog` runs Tuesday and Friday and checks that each
+  desk produced output within its own cadence window (e.g. the growth desk should show activity
+  every Mon/Wed/Fri). All three alert Oliver on Telegram.
+- **Kill switch.** Disable the routine at https://claude.ai/code/routines — the single, immediate
+  way to stop a desk.
+- **Single-writer per surface.** Each desk owns its own branch prefix (`autopilot/`, `growth/`,
+  `retro/`, `finance/` — see `docs/team/routines.md`) so two desks never race to edit the same
+  branch.
+- **`docs/team/routines.md` is canonical.** If a routine's schedule or prompt ever needs to be
+  recreated or audited, that file — not whatever happens to be configured in the claude.ai UI —
+  wins; bring claude.ai's config back into line with it, never the other way around.
+
 ## 1. How work ships here
 
 One task = one worktree off `origin/main` = one branch = one **draft** PR. Never commit to
