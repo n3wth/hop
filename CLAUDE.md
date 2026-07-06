@@ -55,6 +55,9 @@ This repo is **agent-native**: each unit of work should make the next one easier
 When you fix a non-obvious bug or make a durable decision, the work isn't done until it's captured
 where the next agent (you, or another LLM via `AGENTS.md`) will find it automatically.
 
+Write every `docs/solutions/` entry for a reader new to LLM-assisted development — define terms
+on first use, lead with what/why in plain language.
+
 ## Faster LLM iteration
 
 - **Concierge/prompt work (`lib/concierge-*.ts`, `/ask`)**: iterate against `MOCK=1` fixtures, not

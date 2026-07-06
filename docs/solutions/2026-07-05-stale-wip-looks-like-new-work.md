@@ -1,5 +1,5 @@
 ---
-title: "Uncommitted files in a shared checkout can be stale artifacts, not new work"
+title: "Uncommitted files sitting in a shared checkout can be leftover scraps, not new work"
 date: 2026-07-05
 tags: [git, worktree, wip, stale-state, false-positive]
 files: []
@@ -7,31 +7,35 @@ status: solved
 ---
 
 **What happened:**
-A shared checkout had uncommitted files that looked like an unshipped feature
-worth extracting and committing. They were actually stale, pre-#201 artifacts
-left over from before that PR shipped its own (different, already-merged)
-version of the same work. Committing them as-is would have **reverted** the
-polish #201 already landed on `main` — the uncommitted copy was older, not
-newer.
+A shared checkout (a local copy of the repository files on disk) had some files with changes
+that had never been formally saved into the project's history ("uncommitted"). At a glance, they
+looked like a half-finished feature worth finishing and saving properly. They weren't — they were
+leftover scraps from *before* another already-completed and merged piece of work (pull request
+#201) had shipped its own, different version of that same feature. Saving the leftover scraps as
+they were would have quietly **undone** the improvement #201 already delivered, because the
+leftover copy was actually older, not newer, than what was already in the shared codebase.
 
-**Root cause:**
-Untracked/modified files in a working tree carry no timestamp or provenance
-signal that survives a glance — "this file exists and isn't committed" is
-consistent with both "new work in progress" and "abandoned work predating a
-merged PR." The two look identical in `git status`.
+**Why it matters:**
+An uncommitted file gives no visible clue about its age or origin — "this file has unsaved
+changes" looks exactly the same whether those changes are new work in progress or an abandoned
+draft from before someone else already solved the same problem. Trusting that look can silently
+erase already-shipped work instead of adding to it, with no error or warning at the moment it
+happens — the mistake only becomes visible later, when the "finished" feature turns out to be
+missing something.
 
-**Rule:** before extracting or committing any uncommitted work found sitting
-in a checkout, verify it's actually ahead of `main`, not behind it:
+**The rule going forward:**
+Before saving or building on any uncommitted work found sitting in a checkout, confirm it's
+actually ahead of the shared codebase, not behind it:
 
-1. `git diff origin/main -- <file>` — byte-compare against main. If the diff
-   shows the working copy *removing* fields/logic that main has, it's stale,
-   not new.
-2. `git log --all --oneline -- <file>` — check whether a PR already shipped
-   equivalent content for this file. If a merged commit already touches it
-   with a similar shape, treat the uncommitted copy as suspect by default.
+1. Compare it byte-for-byte against the shared codebase's latest version
+   (`git diff origin/main -- <file>`). If the comparison shows the uncommitted copy *removing*
+   fields or logic that the shared version already has, it's leftover, not new.
+2. Check whether a merged pull request already shipped equivalent content for that file
+   (`git log --all --oneline -- <file>`). If one has, treat the uncommitted copy as suspect by
+   default rather than assuming it's the newer version.
 
-This is the same failure shape as
-`docs/solutions/2026-07-05-half-resolved-merge-broke-main.md` — an operation
-that looks like "integrate work" but is actually "silently regress
-already-shipped work" — just triggered by inherited WIP instead of a bad
-merge resolution.
+This is the same underlying mistake as the one in
+`docs/solutions/2026-07-05-half-resolved-merge-broke-main.md` — something that looks like
+"combine this work into the shared codebase" is actually "silently regress work that's already
+shipped." There it was triggered by a badly resolved merge; here it was triggered by inherited,
+unfinished files sitting in a shared workspace.
