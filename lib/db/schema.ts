@@ -286,7 +286,13 @@ export const escalations = pgTable('hop_escalations', {
 // confirmToken stays valid after use (a second click on the same email link
 // is a no-op success, not a broken-link error) — re-confirming an
 // already-confirmed row is harmless. unsubscribeToken is likewise permanent
-// so the one-click footer link never expires.
+// so the one-click footer link never expires. Both columns store a SHA-256
+// HASH of the token, never the plaintext (lib/newsletter.ts, mirroring
+// lib/api-tokens.ts's hashToken pattern) — a leaked row can't be replayed.
+// unsubscribeToken's plaintext is itself derived deterministically from the
+// email (HMAC, lib/newsletter.ts#deriveUnsubscribeToken) rather than stored
+// randomly, so the weekly digest can always reproduce the same working link
+// from just the email without ever persisting it in recoverable form.
 // lastDigestSentAt is the per-subscriber idempotency guard for R2.3 (no
 // generic outbox — hop_notification_outbox is keyed on a non-null user_id,
 // which anonymous subscribers don't have).

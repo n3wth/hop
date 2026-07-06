@@ -12,6 +12,22 @@
 // error (re-confirming an already-confirmed row is harmless), and
 // unsubscribeToken permanently so the one-click footer link always works.
 //
+// TOKEN STORAGE: both confirm_token and unsubscribe_token are stored as a
+// SHA-256 HASH (lib/api-tokens.ts#hashToken — the same pattern hop's bearer
+// API tokens use, "a leaked row can't be replayed"), never plaintext. The
+// raw token only ever exists in the emailed link.
+//   - confirmToken is a one-shot random value: minted once at signup, emailed
+//     once, thereafter only ever verified (hash the presented token, look up
+//     by hash) — never re-read by our own code.
+//   - unsubscribeToken can't work the same way: the weekly digest embeds it
+//     in EVERY send, so the app must be able to reproduce the exact same
+//     plaintext on demand, indefinitely — which a hash-only store can't do
+//     for a random secret. Instead it's DERIVED, not stored-random:
+//     deriveUnsubscribeToken(email) is an HMAC-SHA256 keyed on the app's auth
+//     secret, so it's the same value every time for a given email. Only its
+//     hash is persisted (for the O(1) lookup on the unsubscribe click); the
+//     plaintext is recomputed from the email whenever the digest needs it.
+//
 // SQL (run manually — this code does NOT run DDL; the migration lives in
 // drizzle/, generated from lib/db/schema.ts#newsletterSubscribers):
 //
@@ -19,17 +35,19 @@
 //     id                  uuid primary key default gen_random_uuid(),
 //     user_id             text,                 -- Better Auth user.id; NULL when signed out
 //     email               text not null,        -- stored lowercased; unique
-//     confirm_token       text,                 -- kept after use; re-confirm is a no-op
-//     unsubscribe_token   text not null,        -- permanent
+//     confirm_token       text,                 -- HASH; kept after use; re-confirm is a no-op
+//     unsubscribe_token   text not null,        -- HASH of the email-derived token; permanent
 //     confirmed_at        timestamptz,
 //     unsubscribed_at     timestamptz,
 //     last_digest_sent_at timestamptz,          -- R2.3's per-subscriber idempotency guard
 //     created_at          timestamptz not null default now()
 //   );
 
-import { randomBytes } from 'node:crypto'
+import { createHmac, randomBytes } from 'node:crypto'
 import { withDb } from '@/lib/supabase-helpers'
 import { normalizeEmail } from '@/lib/escalation'
+import { hashToken } from '@/lib/api-tokens'
+import { resolveAuthSecret } from '@/lib/env'
 
 export { normalizeEmail }
 
@@ -43,8 +61,21 @@ function normalizeEmailLower(raw: unknown): string | null {
   return email ? email.toLowerCase() : null
 }
 
+// One-shot random token (confirm_token's plaintext) — minted, emailed once,
+// then only ever verified by hash. Never reconstructed after signup.
 function generateToken(): string {
   return randomBytes(TOKEN_BYTES).toString('hex')
+}
+
+// unsubscribe_token's plaintext, deterministically DERIVED from the email
+// rather than stored randomly, so it can be reproduced identically every
+// time the weekly digest needs to embed it in a link — see the file-level
+// comment above. Falls back to a fixed (non-secret) key only when the app
+// has no auth secret AND no DATABASE_URL configured (local/test only — the
+// newsletter feature itself is gated off in that case anyway); never throws.
+export function deriveUnsubscribeToken(email: string): string {
+  const secret = resolveAuthSecret() ?? 'hop-newsletter-unsubscribe-dev-fallback'
+  return createHmac('sha256', secret).update(email).digest('hex')
 }
 
 interface SubscriberRow {
@@ -76,7 +107,7 @@ export async function createNewsletterSignup(input: {
   const userId =
     typeof input.userId === 'string' && input.userId.trim() ? input.userId.trim() : null
   const confirmToken = generateToken()
-  const unsubscribeToken = generateToken()
+  const unsubscribeToken = deriveUnsubscribeToken(email)
 
   return withDb<SignupResult>({ ok: false }, async (db) => {
     const { data, error } = await db
@@ -85,8 +116,8 @@ export async function createNewsletterSignup(input: {
         {
           user_id: userId,
           email,
-          confirm_token: confirmToken,
-          unsubscribe_token: unsubscribeToken,
+          confirm_token: hashToken(confirmToken),
+          unsubscribe_token: hashToken(unsubscribeToken),
         },
         { onConflict: 'email', ignoreDuplicates: true },
       )
@@ -114,7 +145,7 @@ export async function confirmNewsletterSubscriber(token: unknown): Promise<boole
     const { data, error: selectError } = await db
       .from(TABLE)
       .select('id, confirmed_at')
-      .eq('confirm_token', t)
+      .eq('confirm_token', hashToken(t))
       .maybeSingle()
     if (selectError || !data?.id) return false
     if (data.confirmed_at) return true
@@ -137,7 +168,7 @@ export async function unsubscribeNewsletter(token: unknown): Promise<boolean> {
     const { error } = await db
       .from(TABLE)
       .update({ unsubscribed_at: new Date().toISOString() })
-      .eq('unsubscribe_token', t)
+      .eq('unsubscribe_token', hashToken(t))
     return !error
   })
 }
@@ -174,7 +205,10 @@ export async function listDueDigestSubscribers(sinceMs: number): Promise<DigestS
         id: r.id,
         userId: r.user_id,
         email: r.email as string,
-        unsubscribeToken: r.unsubscribe_token as string,
+        // Re-derived, not read off the row — the column holds only a hash
+        // (see the file-level comment). Deterministic per email, so this is
+        // always the exact same plaintext the row's stored hash matches.
+        unsubscribeToken: deriveUnsubscribeToken(r.email as string),
       }))
   })
 }
