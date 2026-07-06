@@ -1,10 +1,13 @@
 # Budget envelope
 
-**Status**: proposed, awaiting Oliver's approval (email sent 2026-07-06 — see `ledger.md` for
-the run log). This file is the single source of truth for the agreed envelope; it is updated
-only from Oliver's actual replies (approval / rejection / counter), never from assumption.
+**Status**: **approved** by Oliver (email reply, 2026-07-06 04:46 UTC — "approved but i do want
+you to do some marketing - ideally finding free ad credit opportunities?"). This file is the
+single source of truth for the agreed envelope; it is updated only from Oliver's actual replies
+(approval / rejection / counter), never from assumption. The marketing ask is being worked as a
+credit/discount opportunity hunt (see `opportunities.md`), not paid spend — the $0/mo marketing
+line stands until a specific paid channel is proposed and approved.
 
-## Starter envelope (proposed 2026-07-06)
+## Starter envelope (approved 2026-07-06)
 
 | Line | Amount | Basis |
 |---|---|---|
@@ -18,6 +21,7 @@ only from Oliver's actual replies (approval / rejection / counter), never from a
 | Date | Action | Who | Note |
 |---|---|---|---|
 | 2026-07-06 | Envelope proposed | Finance desk | First run — no prior budget.md existed. Emailed to oliver@newth.ai for approval. |
+| 2026-07-06 | Envelope approved | Oliver (email reply) | "approved" — plus asked for free ad-credit opportunities to be worked (marketing spend stays $0/mo; credits are a cost offset, not new spend). |
 
 ## Rules
 

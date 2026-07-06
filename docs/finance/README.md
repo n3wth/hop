@@ -13,6 +13,11 @@ emailed approval first.
   <date>`).
 - **Mirrors to**: Linear issue "Finance desk — approvals & budget" in the `hop` project
   (team `n3wth`) — same memo posted as a comment each run.
+- **`custom_domain_status`**: `blocked` (checked 2026-07-06) — the AgentMail MCP tool surface
+  has no domain-creation/DNS capability (only `create_inbox(domain=...)` for a domain already
+  configured on the account). See `agentmail-domain-dns.md` for the full check and the human
+  workaround. Still sending as `finance-hop@agentmail.to`; do not re-check until the AgentMail
+  tool surface changes or Oliver reports adding `agents.hop.flights` manually.
 
 ## Files
 

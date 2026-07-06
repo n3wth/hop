@@ -12,6 +12,58 @@ submission).
 
 ---
 
+## 3. HubSpot for Startups (free ad-credit + tool-perk aggregator) — `drafted`
+
+- **Eligibility**: free to join, explicitly "no purchase or credit card required." General
+  HubSpot for Startups program terms target early-stage/bootstrapped companies; no VC backing
+  required for the base tier.
+- **Value**: not a direct credit itself — it's a gateway that unlocks a bundle of partner offers
+  in one sign-up, several of which are the "free ad credit" Oliver asked for: ~$1,000 Google Ads
+  credit, ~$1,000 LinkedIn Ads credit, up to ~$6,000 TikTok Ads credit, plus Reddit Ads credit and
+  non-ad perks (Notion, Clay, Gamma, AWS, Anthropic/Claude offers). Redeeming each individual
+  offer still requires its own sign-up per platform.
+- **Effort**: low — one sign-up form, no card required, unlocks the rest.
+- **Deadline**: rolling.
+- **Why it fits**: single lowest-friction entry point to the ad-credit hunt Oliver asked for
+  this run, and it's genuinely free to join (unlike the ad platforms themselves — see below).
+- **Recommendation**: apply now — zero cost, zero commitment, worth doing purely to see the
+  live offer list (which changes over time and isn't fully published outside the portal).
+- **Approval needed**: Oliver to sign up (company email/website, standard startup-program form)
+  — this desk doesn't hold the account. No card requested at this step.
+
+---
+
+## 4. Reddit Ads "spend $500, get $500" credit — `drafted`, spend required — [needs-founder]
+
+- **Eligibility**: new Reddit Ads account (or no prior spend), no funding-stage requirement.
+  Self-serve at redditforbusiness.com/advertise-with-bogo.
+- **Value**: Reddit matches new advertisers' spend dollar-for-dollar, up to $500 (some
+  promo/partner links have shown higher tiers, e.g. $1,500 matched — terms vary and would need
+  reconfirming at signup time).
+- **Effort**: low to set up, but **this is not free** — it requires actually spending $500 of
+  real money to unlock the $500 credit. That is a real marketing-spend commitment, which
+  conflicts with the budget envelope's current $0/mo marketing line (`budget.md`) unless Oliver
+  explicitly approves the spend.
+- **Deadline**: rolling signup; the match must be spent within ~30 days of redemption once
+  claimed.
+- **Why it fits**: of every ad platform checked, Reddit is the strongest audience fit for hop —
+  r/awardtravel, r/churning, r/travelhacks, r/personalfinance are exactly hop's target user
+  (points/miles-literate travelers) and Reddit's CPMs for this niche are reported as
+  under-priced relative to Google/LinkedIn (fewer advertisers competing for these subreddits).
+- **Recommendation**: worth doing if/when Oliver wants to commit real ad spend — this is the
+  best $-for-$ channel found, not a no-cost opportunity. **Do not commit spend without Oliver's
+  explicit sign-off**, per this desk's standing rule (never spends money).
+- **Approval needed**: Oliver's explicit go-ahead on the $500 spend, plus the Reddit Ads account
+  itself (payment method required).
+
+**Honest framing for the memo**: checked Google Ads, Meta, TikTok, LinkedIn, Microsoft/Bing,
+Snapchat, Amazon, and X — every major ad platform's "startup credit" is a **spend-match**
+(you pay first, then get matched credit), not free money. There is no real no-cost ad-credit
+program among major platforms; HubSpot for Startups (above) is the closest thing to a genuinely
+free step, and it's a gateway to the same spend-match offers, not cash.
+
+---
+
 ## 1. Anthropic Startup Program (Claude API credits) — `drafted`
 
 - **Eligibility**: explicitly open to bootstrapped founders, no VC backing required (per the
