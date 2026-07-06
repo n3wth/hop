@@ -37,6 +37,11 @@ sets the weekly gates — Wk2/Wk4 checkpoints — every desk works against). Whe
 on priority, the board's amendment list in `docs/board/2026-07-05-board-memo.md` overrides this
 playbook's own §9 ordering.
 
+**Ongoing priority ownership (from 2026-07-06):** the board memo above was a one-time review; the
+strategy desk (Marcus, `docs/team/routines.md`) now owns re-ranking priority on a weekly cadence
+via `docs/strategy/<date>-weekly-strategy.md`. Once Marcus has run at least once, his latest file
+is the current priority order — see the pointer at the top of §9.
+
 ## Reliability practices
 
 Plain-language ground rules for running this as an unattended agent fleet. Where a
@@ -238,6 +243,12 @@ Agent work is priced in tokens and wall-clock; the code's shape sets that price.
   scope instead; if the issue is under-specified, comment on it rather than improvising.
 
 ## 9. Open threads
+
+**Priority ranking pointer:** once the strategy desk (Marcus) has published a
+`docs/strategy/<date>-weekly-strategy.md`, that file — not the numbered list below — is the
+current priority order; check for one newer than 2026-07-06 before working top-down here. The
+retro desk (Bob) adopts Marcus's latest ranking rather than re-deriving one from the business
+plan; this list stays as the last-known order until Marcus's first run lands.
 
 **ADOPTED BOARD AMENDMENTS 2026-07-05 (override prior ordering):** the first board review
 (`docs/board/2026-07-05-board-memo.md`) found billing live ahead of its own plan gates, GTM
