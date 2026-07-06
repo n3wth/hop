@@ -59,6 +59,21 @@ describe('mergeCandidates', () => {
     expect(candidate.sha).toBe('merged-sha')
     expect(candidate.committedAt).toBe('2026-07-04T00:00:00Z')
   })
+
+  it('keeps candidate.sha in sync with the winning PR, not just candidate.pr, when the branch is deleted and two PRs share a head ref', () => {
+    // Regression for #262's own follow-up finding: the first-arriving PR seeded `sha` via the
+    // else-branch, but a later, higher-numbered PR for the same (already-deleted) head ref only
+    // updated `existing.pr`, leaving `candidate.sha` stuck on the first PR's headSha — a stale
+    // sha that would trigger a false sha-mismatch even though candidate.pr.headSha was correct.
+    const prs = [
+      { number: 50, headRef: 'growth/weekly', headSha: 'old-sha', merged: true, updatedAt: '2026-07-01T00:00:00Z' },
+      { number: 90, headRef: 'growth/weekly', headSha: 'new-sha', merged: true, updatedAt: '2026-07-02T00:00:00Z' },
+    ]
+    const [candidate] = mergeCandidates([], prs)
+    expect(candidate.pr?.number).toBe(90)
+    expect(candidate.pr?.headSha).toBe('new-sha')
+    expect(candidate.sha).toBe('new-sha')
+  })
 })
 
 describe('evaluateDeskRun', () => {

@@ -44,17 +44,27 @@ export function pickLatestBranch(branches) {
  */
 export function mergeCandidates(branches, prs) {
   const byName = new Map()
-  for (const b of branches || []) byName.set(b.name, { name: b.name, sha: b.sha, committedAt: null, pr: null })
+  // Real branches are the only entries with an independently-fetched sha — track membership
+  // so the loop below can tell "this sha came from git" apart from "this sha is just an
+  // earlier PR's headSha we're still free to replace."
+  const realBranchNames = new Set()
+  for (const b of branches || []) {
+    realBranchNames.add(b.name)
+    byName.set(b.name, { name: b.name, sha: b.sha, committedAt: null, pr: null })
+  }
   for (const p of prs || []) {
     const existing = byName.get(p.headRef)
     const pr = { number: p.number, headSha: p.headSha, merged: p.merged }
     if (existing) {
       // A PR already won this head ref — only replace it with a strictly newer PR number.
       if (existing.pr && existing.pr.number > pr.number) continue
-      // Branch still exists: keep its independently-fetched sha (from `branches`) so the
-      // PR-vs-branch sha comparison in evaluateDeskRun is a real cross-check, not an echo.
       existing.pr = pr
       existing.committedAt = p.updatedAt
+      // Branch still exists: keep its independently-fetched sha (from `branches`) so the
+      // PR-vs-branch sha comparison in evaluateDeskRun is a real cross-check, not an echo.
+      // Branch already deleted: `sha` has no independent source, so it must track whichever
+      // PR just won, or a stale first-arriving PR's sha survives under the winning PR's number.
+      if (!realBranchNames.has(p.headRef)) existing.sha = pr.headSha
     } else {
       // Branch already deleted (the normal post-merge state) — the PR is all that's left.
       byName.set(p.headRef, { name: p.headRef, sha: p.headSha, committedAt: p.updatedAt, pr })
