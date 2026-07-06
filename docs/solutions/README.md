@@ -78,3 +78,4 @@ a documented seam. The guardrail, not just the patch.
 | 2026-06-30 | [Standing-order crossings had no delivery channel](2026-06-30-standing-order-delivery-seam.md) | notifications, delivery, idempotent, standing-orders |
 | 2026-06-30 | [Isolate the Eve scaffold from the Next.js build](2026-06-30-isolate-eve-scaffold-from-next-build.md) | eve, build-isolation, tsconfig, eslint |
 | 2026-07-01 | [Workflow scripts are a third runtime](2026-07-01-workflow-scripts-are-a-third-runtime.md) | workflows, orchestration, eslint, sandbox, resume |
+| 2026-07-05 | [Lightning CSS silently drops unprefixed backdrop-filter in compiled classes](2026-07-05-lightning-css-drops-unprefixed-backdrop-filter.md) | css, backdrop-filter, glass, lightning-css, tailwind-v4, prefixing, nav |

@@ -808,6 +808,56 @@ body {
   }
 }
 
+/* ── Outlined nav pills ───────────────────────────────────────────────────
+   Origin selector, admin shield, and points chip in the top nav: border
+   derived from the pill's own text color (currentColor) at low opacity
+   instead of the flat --color-border hairline token, so the outline reads
+   as intentional against any background — including the ambient-tinted
+   hero and photo cards under the glass nav, not just the plain cream canvas
+   --color-border was tuned for. Text colors are unchanged; the border stays
+   quieter than the label (30% vs. full-strength text). */
+.hop-ink-border {
+  border-color: color-mix(in srgb, currentColor 30%, transparent);
+}
+
+/* Open/active state needs to beat .hop-ink-border on specificity, not just
+   cascade order (Tailwind's plain `border-text2` utility ties with
+   `.hop-ink-border` at 0,1,0, and source order isn't a safe way to decide a
+   tie) — so this pairs with `.hop-ink-border` on the same element for 0,2,0. */
+.hop-ink-border.hop-ink-border-active {
+  border-color: var(--color-text2);
+}
+
+/* ── Glass nav surfaces ───────────────────────────────────────────────────
+   Shared translucent-background treatment for the sticky top nav (once
+   scrolled) and the fixed bottom tab bar — approved for nav chrome only,
+   everywhere else the flat-editorial no-shadow/gradient/glow rule stands.
+   The actual blur (backdrop-filter / -webkit-backdrop-filter) is applied
+   inline by each component, not here: Lightning CSS's prefix-dedup pass
+   silently drops the unprefixed `backdrop-filter` declaration when both
+   live in one compiled rule, so blur is set as an inline style to guarantee
+   both land in the DOM (same reasoning the pre-existing scroll-glass TopNav
+   style already followed). Background alone still degrades correctly here:
+   opaque cream for browsers without backdrop-filter support and for
+   prefers-reduced-transparency, so text never sits on unpredictable content
+   without a backdrop — any residual inline blur is invisible behind a fully
+   opaque background regardless. */
+.hop-glass-surface {
+  background: color-mix(in srgb, var(--color-bg) 75%, transparent);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .hop-glass-surface {
+    background: var(--color-bg);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .hop-glass-surface {
+    background: var(--color-bg);
+  }
+}
+
 /* ── Bottom tab bar (phone-only) ──────────────────────────────────────────
    Mobile-first fixed navigation bar. Sits above the safe-area inset to clear
    notches and home indicator. Hidden on /ask (concierge owns the bottom).

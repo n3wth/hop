@@ -218,17 +218,16 @@ export default function TopNav({
           disappears entirely; on search pages it survives only as the slim
           search-pill strip (the pill is the page's primary control, not chrome). */}
       <header
-        className={`sticky top-0 z-50 ${hideSearch ? 'hidden md:block' : ''}`}
+        className={`sticky top-0 z-50 ${hideSearch ? 'hidden md:block' : ''} ${c ? 'hop-glass-surface' : ''}`}
         style={{
           height: 72,
-          background: c ? 'color-mix(in srgb, var(--color-bg) 80%, transparent)' : 'transparent',
-          backdropFilter: c ? 'blur(10px) saturate(120%)' : 'none',
-          WebkitBackdropFilter: c ? 'blur(10px) saturate(120%)' : 'none',
+          backdropFilter: c ? 'blur(14px) saturate(140%)' : 'none',
+          WebkitBackdropFilter: c ? 'blur(14px) saturate(140%)' : 'none',
           borderBottom: c ? '1px solid var(--color-border)' : '1px solid transparent',
           transform: 'translateZ(0)',
           isolation: 'isolate',
           willChange: c ? 'backdrop-filter' : 'auto',
-          transition: `background ${DUR} ${EASE}, border-color ${DUR} ${EASE}`,
+          transition: `background ${DUR} ${EASE}, border-color ${DUR} ${EASE}, backdrop-filter ${DUR} ${EASE}`,
         }}
       >
         <div className="h-full px-5 sm:px-8 lg:px-12 xl:px-16">
@@ -328,7 +327,7 @@ export default function TopNav({
                     href="/admin"
                     title="Admin"
                     aria-label="Admin"
-                    className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full border border-border text-text2 transition-colors hover:bg-sunk"
+                    className="hop-ink-border grid h-10 w-10 flex-shrink-0 place-items-center rounded-full border text-text2 transition-colors hover:bg-sunk"
                   >
                     <Icon name="shield" size={20} />
                   </Link>
@@ -337,7 +336,7 @@ export default function TopNav({
                   <Link
                     href="/account"
                     title="Your points"
-                    className="hidden items-center gap-1.5 rounded-full border border-border px-3.5 py-2 transition-colors hover:bg-sunk lg:flex"
+                    className="hop-ink-border hidden items-center gap-1.5 rounded-full border px-3.5 py-2 text-text2 transition-colors hover:bg-sunk lg:flex"
                   >
                     <span className="hop-num text-[14px] font-semibold text-text">
                       {compactPoints(pointsTotal)}
