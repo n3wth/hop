@@ -16,8 +16,11 @@
 // by app/api/cron/business-digest/route.ts via sendOwnerNotification, weekly.
 
 import { withDb } from '@/lib/supabase-helpers'
+<<<<<<< HEAD
 import { getDb, schema } from '@/lib/db'
 import { gte } from 'drizzle-orm'
+=======
+>>>>>>> origin/claude/business-digest
 
 // ---------------------------------------------------------------------------
 // Types
@@ -29,6 +32,7 @@ import { gte } from 'drizzle-orm'
 export interface WeeklyMetric {
   count: number
   prev: number | null
+<<<<<<< HEAD
   /** Weekly counts for the trailing TREND_WEEKS weeks, oldest → newest (the
    *  last bucket is the current week). null when the trend query degraded —
    *  the tile then shows the number without a sparkline, never a guessed line. */
@@ -40,14 +44,19 @@ export interface WeeklyMetric {
 export interface OutclickMetric extends WeeklyMetric {
   /** All outclicks in the window regardless of kind. null when that count degraded. */
   total: number | null
+=======
+>>>>>>> origin/claude/business-digest
 }
 
 export interface BusinessDigest {
   /** ISO datetimes bounding the 7-day window [start, end). */
   window: { start: string; end: string }
+<<<<<<< HEAD
   /** Distinct users with a Better Auth session touched in the window (a
    *  weekly-active-users proxy — sessions refresh on use). null = degraded. */
   activeUsers: WeeklyMetric | null
+=======
+>>>>>>> origin/claude/business-digest
   /** New expert-booking requests (hop_escalations), last 7d. null = degraded. */
   escalations: WeeklyMetric | null
   /** New standing orders created (hop_standing_orders), last 7d. null = degraded. */
@@ -59,10 +68,13 @@ export interface BusinessDigest {
   /** Users on a paid tier (hop_subscriptions, tier != 'free'). null = degraded
    *  — expected until that table exists/has rows. */
   activeSubscriptions: number | null
+<<<<<<< HEAD
   /** Card-affiliate outclicks (hop_outclicks, kind='card'), last 7d, plus the
    *  window total across all kinds. null = degraded — expected until
    *  the hop_outclicks migration has been applied. */
   outclicks: OutclickMetric | null
+=======
+>>>>>>> origin/claude/business-digest
 }
 
 export interface RenderedDigest {
@@ -79,9 +91,12 @@ export interface RenderedDigest {
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
+<<<<<<< HEAD
 /** How many trailing weeks a metric's trend covers (sparkline points). */
 export const TREND_WEEKS = 8
 
+=======
+>>>>>>> origin/claude/business-digest
 // The reporting windows: [start, end) is the last 7 days ending at `now`;
 // [prevStart, start) is the 7 days before that.
 export function weekWindow(now: Date = new Date()): {
@@ -97,6 +112,7 @@ export function weekWindow(now: Date = new Date()): {
   }
 }
 
+<<<<<<< HEAD
 // Bucket timestamps into TREND_WEEKS trailing 7-day windows ending at `now`,
 // oldest bucket first. Pure (exported for tests). Unparseable or out-of-range
 // stamps are dropped, never guessed into a bucket.
@@ -117,6 +133,8 @@ export function bucketWeeks(
   return buckets
 }
 
+=======
+>>>>>>> origin/claude/business-digest
 // ---------------------------------------------------------------------------
 // Resolver — every count degrades to null, never throws
 // ---------------------------------------------------------------------------
@@ -143,6 +161,7 @@ async function countCreatedBetween(
   })
 }
 
+<<<<<<< HEAD
 // Fetch a table's timestamp column for the trailing trend window so the
 // sparkline buckets can be computed in JS (row volumes here are tiny). null on
 // any failure — the metric then ships without a trend, never with a guessed one.
@@ -216,6 +235,21 @@ async function activeUsersMetric(
   } catch {
     return null
   }
+=======
+// A week metric = this week's count + last week's (for the delta). When the
+// current week degrades the whole metric is null; when only the previous week
+// degrades we keep the current count and drop the comparison.
+async function weeklyMetric(
+  table: CountedTable,
+  w: { start: string; end: string; prevStart: string },
+): Promise<WeeklyMetric | null> {
+  const [count, prev] = await Promise.all([
+    countCreatedBetween(table, w.start, w.end),
+    countCreatedBetween(table, w.prevStart, w.start),
+  ])
+  if (count === null) return null
+  return { count, prev }
+>>>>>>> origin/claude/business-digest
 }
 
 // Total active watches right now. null on failure.
@@ -230,6 +264,7 @@ async function countActiveWatches(): Promise<number | null> {
   })
 }
 
+<<<<<<< HEAD
 // Count hop_outclicks rows clicked in [sinceIso, untilIso), optionally
 // filtered to one kind. hop_outclicks stamps clicked_at (not created_at), so
 // it gets its own counter. The table may not exist yet (migration authored,
@@ -271,6 +306,8 @@ async function outclickMetric(
   return { count, prev, total, trend: stamps === null ? null : bucketWeeks(stamps, now) }
 }
 
+=======
+>>>>>>> origin/claude/business-digest
 // Paid subscribers (any non-free tier). The table may not exist yet — that
 // surfaces as a query error, which degrades to null exactly like everything
 // else. null on failure.
@@ -278,9 +315,14 @@ async function countActiveSubscriptions(): Promise<number | null> {
   return withDb<number | null>(null, async (db) => {
     const { count, error } = await db
       .from('hop_subscriptions')
+<<<<<<< HEAD
       .select('id', { count: 'exact', head: true })
       .in('status', ['active', 'trialing'])
       .gt('current_period_end', new Date().toISOString())
+=======
+      .select('user_id', { count: 'exact', head: true })
+      .neq('tier', 'free')
+>>>>>>> origin/claude/business-digest
     if (error || typeof count !== 'number') return null
     return count
   })
@@ -290,6 +332,7 @@ async function countActiveSubscriptions(): Promise<number | null> {
 // independent query; a failure in one degrades only that section. NEVER throws.
 export async function computeBusinessDigest(now: Date = new Date()): Promise<BusinessDigest> {
   const w = weekWindow(now)
+<<<<<<< HEAD
   const [activeUsers, escalations, ordersCreated, alertsFired, activeWatches, activeSubscriptions, outclicks] =
     await Promise.all([
       activeUsersMetric(w, now),
@@ -303,12 +346,27 @@ export async function computeBusinessDigest(now: Date = new Date()): Promise<Bus
   return {
     window: { start: w.start, end: w.end },
     activeUsers,
+=======
+  const [escalations, ordersCreated, alertsFired, activeWatches, activeSubscriptions] =
+    await Promise.all([
+      weeklyMetric('hop_escalations', w),
+      weeklyMetric('hop_standing_orders', w),
+      weeklyMetric('hop_standing_order_alerts', w),
+      countActiveWatches(),
+      countActiveSubscriptions(),
+    ])
+  return {
+    window: { start: w.start, end: w.end },
+>>>>>>> origin/claude/business-digest
     escalations,
     ordersCreated,
     alertsFired,
     activeWatches,
     activeSubscriptions,
+<<<<<<< HEAD
     outclicks,
+=======
+>>>>>>> origin/claude/business-digest
   }
 }
 
@@ -344,6 +402,7 @@ interface Section {
 
 function buildSections(d: BusinessDigest): Section[] {
   const sections: Section[] = []
+<<<<<<< HEAD
   if (d.activeUsers) {
     sections.push({
       key: 'activeUsers',
@@ -351,6 +410,8 @@ function buildSections(d: BusinessDigest): Section[] {
       line: `Active users: ${d.activeUsers.count}${vsLastWeek(d.activeUsers.prev)}`,
     })
   }
+=======
+>>>>>>> origin/claude/business-digest
   if (d.escalations) {
     sections.push({
       key: 'escalations',
@@ -386,6 +447,7 @@ function buildSections(d: BusinessDigest): Section[] {
       line: `Paid subscribers: ${d.activeSubscriptions}`,
     })
   }
+<<<<<<< HEAD
   if (d.outclicks) {
     // The all-kinds window total is appended only when it differs from the
     // card count — today card is the only kind, so the line stays terse.
@@ -397,6 +459,8 @@ function buildSections(d: BusinessDigest): Section[] {
       line: `Card outclicks: ${count}${vsLastWeek(prev)}${totalSuffix}`,
     })
   }
+=======
+>>>>>>> origin/claude/business-digest
   return sections
 }
 
