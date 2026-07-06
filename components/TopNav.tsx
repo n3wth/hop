@@ -46,10 +46,10 @@ const DUR = '280ms'
 // Static logo lockup — memoized so scroll-state toggles never re-render the
 // (path-heavy) bunny SVG. Only the wrapper's transform animates.
 const LogoLockup = memo(function LogoLockup() {
-  // Lockup color matches the nav's bordered controls (text-text2, same ink
-  // the pills' border-current/30 derives from) so the masthead reads as one
-  // quiet system; hover restores the brand flip. Hover is a color flip only
-  // (house rule: no hover movement).
+  // Lockup color matches the nav's bordered controls (the Sign in pill's
+  // border-text2/text-text2) so the masthead reads as one quiet system;
+  // hover restores the brand flip. Hover is a color flip only (house rule:
+  // no hover movement).
   return (
     <Link href="/" aria-label="hop — home" className="group flex items-center gap-[9px]">
       <FlyingBunny
@@ -328,7 +328,7 @@ export default function TopNav({
                     href="/admin"
                     title="Admin"
                     aria-label="Admin"
-                    className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full border border-current/30 text-text2 transition-colors hover:bg-sunk"
+                    className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full border border-border text-text2 transition-colors hover:bg-sunk"
                   >
                     <Icon name="shield" size={20} />
                   </Link>
@@ -337,7 +337,7 @@ export default function TopNav({
                   <Link
                     href="/account"
                     title="Your points"
-                    className="hidden items-center gap-1.5 rounded-full border border-current/30 px-3.5 py-2 text-text2 transition-colors hover:bg-sunk lg:flex"
+                    className="hidden items-center gap-1.5 rounded-full border border-border px-3.5 py-2 transition-colors hover:bg-sunk lg:flex"
                   >
                     <span className="hop-num text-[14px] font-semibold text-text">
                       {compactPoints(pointsTotal)}
@@ -350,7 +350,7 @@ export default function TopNav({
             ) : (
               <a
                 href={signInHref}
-                className="rounded-full border border-current/30 px-5 py-2.5 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hop-press"
+                className="rounded-full border border-text2 px-5 py-2.5 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hop-press"
               >
                 Sign in
               </a>
