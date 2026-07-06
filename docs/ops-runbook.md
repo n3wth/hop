@@ -201,7 +201,10 @@ Users can now save logins; they sit `pending` until the fetch worker is live.
 2. In Vercel: `HOP_BALANCE_FETCH_WORKER_URL=<workers.dev URL, no trailing slash>`
    and `HOP_BALANCE_FETCH_SECRET=<the SAME value>`.
 3. Add verified `RECIPES` entries in the worker per program (empty by default —
-   nothing syncs until a recipe exists and is tested live).
+   nothing syncs until a recipe exists and is tested live). In the SAME change,
+   add the program's canonical id to `RECIPE_SUPPORTED_PROGRAMS` in
+   `lib/credential-vault.ts` — otherwise rows already stamped `unsupported`
+   for that program stay excluded forever instead of retrying.
 
 **Turn off:** unset `HOP_ENABLE_CREDENTIAL_SYNC`. The affordance disappears,
 credential actions refuse softly, and `/api/cron/balance-autosync` answers

@@ -86,21 +86,23 @@ export interface BillingOverview {
   /** Same figure as Overview's unit-economics tile. null = MRR undeterminable (no price id configured, or db down). */
   mrrUsd: number | null
   activePaidCount: number | null
-  /** Row count per Stripe status, across ALL subscriptions ever recorded. */
-  statusCounts: Record<string, number>
-  recent: AdminSubscriptionRow[]
+  /** Row count per Stripe status, across ALL subscriptions ever recorded. null = that read failed. */
+  statusCounts: Record<string, number> | null
+  /** null = that read failed; [] = genuinely no subscriptions yet. */
+  recent: AdminSubscriptionRow[] | null
 }
 
-// Composes the three reads above. null ONLY on a hard DB failure — a
-// reachable db with zero subscription rows returns a real BillingOverview
-// with empty collections, never a fabricated zero disguised as "unavailable".
-export async function getBillingOverview(): Promise<BillingOverview | null> {
+// Composes the three reads above. Each degrades INDEPENDENTLY — one failing
+// sub-query no longer blanks the whole page, since the other two are still
+// real, useful figures. Never throws; a reachable db with zero subscription
+// rows returns empty collections, never a fabricated zero disguised as
+// "unavailable".
+export async function getBillingOverview(): Promise<BillingOverview> {
   const [mrr, statusCounts, recent] = await Promise.all([
     computeMrr(),
     getSubscriptionStatusCounts(),
     listSubscriptions(),
   ])
-  if (statusCounts === null || recent === null) return null
   return {
     mrrUsd: mrr?.mrrUsd ?? null,
     activePaidCount: mrr?.count ?? null,

@@ -3,8 +3,7 @@ import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHea
 import type { BillingOverview } from '@/lib/admin-billing'
 
 interface Props {
-  /** null = the db read failed (unavailable). */
-  overview: BillingOverview | null
+  overview: BillingOverview
   billingEnabled: boolean
 }
 
@@ -12,104 +11,105 @@ interface Props {
 // subscriptions list. MRR is the SAME figure Overview's unit-economics tile
 // shows (lib/unit-economics.ts#computeMrr, reused not re-derived); this page
 // adds the status breakdown + subscriber list Overview doesn't have room for.
-// Read-only. Flat editorial, mirrors OpsPanel/UsersTable's vocabulary.
+// Read-only. Flat editorial, mirrors OpsPanel/UsersTable's vocabulary. Each
+// section degrades independently — getBillingOverview only nulls the section
+// whose own query failed, so e.g. a status-breakdown outage doesn't blank the
+// MRR tile or the recent-subscriptions list.
 export default function BillingConsole({ overview, billingEnabled }: Props) {
   const zeroDespiteEnabled =
-    overview !== null && overview.recent.length === 0 && billingEnabled
+    overview.recent !== null && overview.recent.length === 0 && billingEnabled
 
   return (
     <AdminPageShell>
       <AdminPageHeader
         title="Billing"
-        description={
-          overview === null ? 'Billing data unavailable.' : 'MRR, subscriber mix, and recent activity.'
-        }
+        description="MRR, subscriber mix, and recent activity."
         crumbs={[
           { label: 'Admin', href: '/admin' },
           { label: 'Billing' },
         ]}
       />
 
-      {overview === null ? (
-        <div className="mt-8">
-          <Empty>Couldn&apos;t load billing data — try again shortly.</Empty>
+      <Section title="Overview">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Tile
+            value={overview.mrrUsd === null ? '—' : `$${overview.mrrUsd.toFixed(2)}`}
+            label="MRR"
+            sub={overview.mrrUsd === null ? 'no monthly price id configured' : undefined}
+          />
+          <Tile
+            value={overview.activePaidCount === null ? '—' : String(overview.activePaidCount)}
+            label="Paying (in MRR)"
+            sub="recognized price id, unexpired period"
+          />
+          {STATUS_ORDER.filter((s) => s !== 'active' && s !== 'trialing').map((s) => (
+            <Tile
+              key={s}
+              value={overview.statusCounts === null ? '—' : String(overview.statusCounts[s] ?? 0)}
+              label={STATUS_LABEL[s] ?? s}
+            />
+          ))}
         </div>
-      ) : (
-        <>
-          <Section title="Overview">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Tile
-                value={overview.mrrUsd === null ? '—' : `$${overview.mrrUsd.toFixed(2)}`}
-                label="MRR"
-                sub={overview.mrrUsd === null ? 'no monthly price id configured' : undefined}
-              />
-              <Tile
-                value={overview.activePaidCount === null ? '—' : String(overview.activePaidCount)}
-                label="Paying (in MRR)"
-                sub="recognized price id, unexpired period"
-              />
-              {STATUS_ORDER.filter((s) => s !== 'active' && s !== 'trialing').map((s) => (
-                <Tile key={s} value={String(overview.statusCounts[s] ?? 0)} label={STATUS_LABEL[s] ?? s} />
+        {zeroDespiteEnabled ? (
+          <p className="mt-3 text-[12px] text-text3">
+            Billing is on but no subscriptions exist yet — if a customer has actually paid, check
+            the checkout-webhook wiring (known open item: verify <code>hop_customers</code> rows are
+            being created).
+          </p>
+        ) : null}
+      </Section>
+
+      <Section title="Status breakdown">
+        {overview.statusCounts === null ? (
+          <Empty>Couldn&apos;t load status breakdown — try again shortly.</Empty>
+        ) : Object.keys(overview.statusCounts).length === 0 ? (
+          <Empty>No subscriptions recorded yet.</Empty>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(overview.statusCounts)
+              .sort((a, b) => b[1] - a[1])
+              .map(([status, count]) => (
+                <div
+                  key={status}
+                  className="flex items-center gap-2 rounded-full border border-border bg-paper px-3 py-1.5"
+                >
+                  <StatusPill status={status} />
+                  <span className="hop-num text-[13px] font-semibold text-text">{count}</span>
+                </div>
               ))}
-            </div>
-            {zeroDespiteEnabled ? (
-              <p className="mt-3 text-[12px] text-text3">
-                Billing is on but no subscriptions exist yet — if a customer has actually paid, check
-                the checkout-webhook wiring (known open item: verify <code>hop_customers</code> rows are
-                being created).
-              </p>
-            ) : null}
-          </Section>
+          </div>
+        )}
+      </Section>
 
-          <Section title="Status breakdown">
-            {Object.keys(overview.statusCounts).length === 0 ? (
-              <Empty>No subscriptions recorded yet.</Empty>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(overview.statusCounts)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([status, count]) => (
-                    <div
-                      key={status}
-                      className="flex items-center gap-2 rounded-full border border-border bg-paper px-3 py-1.5"
-                    >
-                      <StatusPill status={status} />
-                      <span className="hop-num text-[13px] font-semibold text-text">{count}</span>
-                    </div>
-                  ))}
+      <Section title="Recent subscriptions">
+        {overview.recent === null ? (
+          <Empty>Couldn&apos;t load recent subscriptions — try again shortly.</Empty>
+        ) : overview.recent.length === 0 ? (
+          <Empty>No subscriptions yet.</Empty>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {overview.recent.map((s, i) => (
+              <div
+                key={`${s.email}-${i}`}
+                className="flex flex-col gap-1 rounded-[var(--radius-sm)] border border-border bg-paper px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+              >
+                <div className="min-w-0">
+                  <div className="truncate text-[13.5px] font-semibold text-text">{s.email}</div>
+                  <div className="truncate font-mono text-[11.5px] text-text3">{s.priceId}</div>
+                </div>
+                <div className="flex flex-shrink-0 items-center gap-3 text-[12px] text-text3">
+                  <StatusPill status={s.status} />
+                  {s.cancelAtPeriodEnd ? (
+                    <span className="text-weak">cancels {fmtDate(s.currentPeriodEnd)}</span>
+                  ) : (
+                    <span>renews {fmtDate(s.currentPeriodEnd)}</span>
+                  )}
+                </div>
               </div>
-            )}
-          </Section>
-
-          <Section title="Recent subscriptions">
-            {overview.recent.length === 0 ? (
-              <Empty>No subscriptions yet.</Empty>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {overview.recent.map((s, i) => (
-                  <div
-                    key={`${s.email}-${i}`}
-                    className="flex flex-col gap-1 rounded-[var(--radius-sm)] border border-border bg-paper px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
-                  >
-                    <div className="min-w-0">
-                      <div className="truncate text-[13.5px] font-semibold text-text">{s.email}</div>
-                      <div className="truncate font-mono text-[11.5px] text-text3">{s.priceId}</div>
-                    </div>
-                    <div className="flex flex-shrink-0 items-center gap-3 text-[12px] text-text3">
-                      <StatusPill status={s.status} />
-                      {s.cancelAtPeriodEnd ? (
-                        <span className="text-weak">cancels {fmtDate(s.currentPeriodEnd)}</span>
-                      ) : (
-                        <span>renews {fmtDate(s.currentPeriodEnd)}</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Section>
-        </>
-      )}
+            ))}
+          </div>
+        )}
+      </Section>
     </AdminPageShell>
   )
 }
@@ -166,7 +166,7 @@ function Tile({ value, label, sub }: { value: string; label: string; sub?: strin
     <div className="rounded-[14px] border border-border bg-paper p-4">
       <div className="hop-num text-[20px] font-semibold text-text">{value}</div>
       <div className="mt-1 text-[12.5px] text-text3">{label}</div>
-      {sub ? <div className="mt-0.5 text-[11px] text-text3/70">{sub}</div> : null}
+      {sub ? <div className="mt-0.5 text-[11px] text-text3">{sub}</div> : null}
     </div>
   )
 }
