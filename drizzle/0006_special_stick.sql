@@ -1,1 +1,0 @@
-CREATE INDEX "hop_mcp_usage_token_id_created_at_idx" ON "hop_mcp_usage" USING btree ("token_id","created_at");
