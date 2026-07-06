@@ -51,8 +51,15 @@ export default async function PrivacyPage() {
             <strong>Loyalty balances.</strong> Balances you enter manually; balances hop reads
             from text you paste or emails you forward to your personal sync address (we store
             only the extracted program name and balance — never the pasted text or the email);
-            and — only if you choose to connect it — balances synced from AwardWallet. hop never
-            asks for, receives, or stores your loyalty-program or bank passwords.
+            and — only if you choose to connect it — balances synced from AwardWallet.
+          </li>
+          <li>
+            <strong>Loyalty-program logins (optional).</strong> If you choose credential
+            auto-sync, hop stores the username and password for that loyalty program so it can
+            sign in on your behalf and read your balance. Credentials are <strong>encrypted at
+            rest</strong> (AES-256-GCM), are used only to sign in to that program, are never shown
+            back to you (you see a masked username), and can be removed at any time from your{' '}
+            <Link href="/account">account</Link>. hop never stores your bank passwords.
           </li>
           <li>
             <strong>Saved searches.</strong> Searches you save so you can return to them.
@@ -109,7 +116,10 @@ export default async function PrivacyPage() {
           </li>
           <li>
             <strong>Cloudflare</strong> — receives mail sent to your personal sync address and
-            relays its text to hop for the extraction above; the email is not stored.
+            relays its text to hop for the extraction above; and, if you use credential auto-sync,
+            runs the automated browser session that signs in to your loyalty program to read the
+            balance. The email and the login session are not stored by Cloudflare on hop&rsquo;s
+            behalf.
           </li>
           <li>
             <strong>seats.aero</strong> — award availability data.
@@ -144,6 +154,11 @@ export default async function PrivacyPage() {
             <strong>Disconnect AwardWallet.</strong> You can revoke the AwardWallet connection at
             any time from your <Link href="/account">account</Link>; we stop syncing balances from
             it.
+          </li>
+          <li>
+            <strong>Remove a saved login.</strong> You can delete any stored loyalty-program login
+            at any time from your <Link href="/account">account</Link>; the encrypted credential
+            is deleted and auto-sync for that program stops.
           </li>
           <li>
             <strong>Disconnect Gmail.</strong> You can revoke Gmail access at any time from your{' '}

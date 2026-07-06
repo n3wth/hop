@@ -37,6 +37,39 @@ export const manualBalances = pgTable('hop_manual_balances', {
   updatedAt: tz('updated_at').defaultNow(),
 })
 
+// Pretty, opaque forwarding aliases for the balance-sync email rail
+// (sync-<alias>@…). One per user, minted lazily on /account. The alias is the
+// capability: random, unguessable, DB-resolved — replaces the long legacy
+// HMAC address (which the ingest route still accepts).
+export const syncAddresses = pgTable('hop_sync_addresses', {
+  userId: text('user_id').primaryKey(),
+  alias: text('alias').notNull().unique(),
+  createdAt: tz('created_at').defaultNow(),
+})
+
+// Loyalty-program logins for credential-based auto-sync (the "hop signs in
+// and reads your balance" rail). secret_enc holds the username+password as
+// ONE AES-256-GCM blob (lib/credential-vault.ts) keyed by HOP_CREDENTIAL_KEY —
+// never stored or logged in the clear, never sent to the client (username_mask
+// is the display form). status is the honest per-connection sync state the
+// account page surfaces: pending | ok | failed | unsupported.
+export const programCredentials = pgTable(
+  'hop_program_credentials',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: text('user_id').notNull(),
+    program: text('program').notNull(),
+    usernameMask: text('username_mask').notNull(),
+    secretEnc: text('secret_enc').notNull(),
+    status: text('status').notNull().default('pending'),
+    lastError: text('last_error'),
+    lastSyncedAt: tz('last_synced_at'),
+    createdAt: tz('created_at').defaultNow(),
+    updatedAt: tz('updated_at').defaultNow(),
+  },
+  (t) => [uniqueIndex('hop_program_credentials_user_program_idx').on(t.userId, t.program)],
+)
+
 export const userAccounts = pgTable('hop_user_accounts', {
   userId: text('user_id').primaryKey(), // unique → pk
   awUserId: text('aw_user_id'),
