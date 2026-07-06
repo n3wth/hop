@@ -6,7 +6,7 @@ to book with points, transfer to a partner, or just pay cash.
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.2.9-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Autonomous org](https://img.shields.io/badge/autonomous_org-6-0d6e6e?style=flat-square)](#built-and-run-by-an-ai-native-team)
+[![Autonomous org](https://img.shields.io/badge/autonomous_org-8-0d6e6e?style=flat-square)](#built-and-run-by-an-ai-native-team)
 [![Engine](https://img.shields.io/badge/engine-computed_not_generated-0d6e6e?style=flat-square)](#how-it-works)
 
 ![hop — your personal travel agent. A flat cream-and-teal banner with the hop bunny mark above the headline "Your personal travel agent" and the line "Points or cash — the verdict on every flight."](docs/social-preview.png)
@@ -53,6 +53,8 @@ against this actual repository. This is a genuine operating structure, not a met
 | Head of finance | **Elizabeth** | Tuesdays | Has her own inbox, tracks the budget envelope, hunts startup credit programs, and emails a CFO memo — but can't spend a dollar or commit to anything without an emailed yes back. |
 | Weekly retro | **Bob** | Mondays | Reviews what shipped, updates the open-work playbook, and writes up any non-obvious bug fix as a permanent [`docs/solutions/`](docs/solutions/) entry so nobody debugs it twice. |
 | Strategy | **Marcus** | Sundays | Runs an outside-in market and competitive scan and re-ranks what the rest of the team should work on next. |
+| Project manager | **Priya** | Daily | Read-only: cross-checks Linear against actual PR activity and posts one honest status update — never touches code. |
+| Merge sheriff | *(ops function)* | Hourly | Sweeps every open PR: merges what's green and safe, retries what's red, and escalates anything that needs the founder's own review instead of nagging forever. |
 | Board review | *five adversarial personas* | Periodic | Reads the state of the company and produces consensus risks, contested points, a kill list, and double-downs — then checks, next time, whether its own prior amendments actually got executed. |
 
 The self-improvement loop is real, not aspirational: a bug fixed today becomes a
