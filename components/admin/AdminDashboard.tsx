@@ -9,7 +9,6 @@ import type { SupportTicket } from '@/lib/support-tickets'
 import type { Escalation } from '@/lib/escalation'
 import { CRON_JOBS } from '@/lib/health-checks'
 import { analyzeAdminHealth, analyzeAdminFindings } from '@/app/actions/admin-analysis'
-import Sparkline from '@/components/admin/Sparkline'
 import AnalyzeButton from '@/components/admin/AnalyzeButton'
 import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHeader'
 
@@ -84,7 +83,7 @@ export default function AdminDashboard({
       </Section>
 
       <Section title="This week">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Stat label="Registered users" value={usersTotal} href="/admin/users" />
           <Stat label="New sign-ups" value={usersNew7d} sub="7 days" href="/admin/users" />
           <Stat label="Active users" metric={digest.activeUsers} sub="7-day sessions" href="/admin/users" />
@@ -103,6 +102,13 @@ export default function AdminDashboard({
                 : undefined
             }
           />
+        </div>
+      </Section>
+
+      <Section title="Activity">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <OutclicksCard economics={unitEconomics} />
+          <BookingPipelineCard economics={unitEconomics} />
         </div>
       </Section>
 
@@ -208,10 +214,6 @@ function SectionLink({ href, label }: { href: string; label: string }) {
 }
 
 function UnitEconomicsPanel({ economics }: { economics: UnitEconomics }) {
-  const kinds = economics.outclicksByKind
-    ? Object.entries(economics.outclicksByKind).sort((a, b) => b[1] - a[1])
-    : null
-
   return (
     <div className="rounded-[14px] border border-border bg-paper p-4 sm:p-5">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -237,55 +239,66 @@ function UnitEconomicsPanel({ economics }: { economics: UnitEconomics }) {
           sub={economics.llmCostUsd === null ? 'MRR − infra (LLM omitted)' : undefined}
         />
       </div>
+    </div>
+  )
+}
 
-      <div className="mt-4 grid gap-4 border-t border-hair pt-4 sm:grid-cols-2">
-        <div>
-          <h3 className="text-[12px] font-semibold text-text2">Outclicks · 7 days</h3>
-          {kinds === null ? (
-            <p className="mt-2 text-[13px] text-text3">Ledger unavailable.</p>
-          ) : kinds.length === 0 ? (
-            <p className="mt-2 text-[13px] text-text3">None yet.</p>
-          ) : (
-            <ul className="mt-2 flex flex-col gap-1.5">
-              {kinds.map(([kind, count]) => (
-                <li key={kind} className="flex justify-between text-[13px]">
-                  <span className="font-medium text-text">{kind}</span>
-                  <span className="text-text3">{count}</span>
-                </li>
-              ))}
-              {economics.outclicksTotal7d !== null ? (
-                <li className="flex justify-between border-t border-hair pt-1.5 text-[13px] font-semibold text-text">
-                  <span>Total</span>
-                  <span>{economics.outclicksTotal7d}</span>
-                </li>
-              ) : null}
-            </ul>
-          )}
-          <Link href="/admin/ops" className="mt-2 inline-block text-[12px] font-semibold text-text2 transition-colors hover:text-text">
-            Ops ledger →
-          </Link>
-        </div>
-        <div>
-          <h3 className="text-[12px] font-semibold text-text2">Booking pipeline</h3>
-          {economics.escalationsNew === null ? (
-            <p className="mt-2 text-[13px] text-text3">Unavailable.</p>
-          ) : (
-            <ul className="mt-2 flex flex-col gap-1.5 text-[13px]">
-              <li className="flex justify-between">
-                <span className="text-text2">Open</span>
-                <span className="font-semibold text-text">{economics.escalationsNew}</span>
-              </li>
-              <li className="flex justify-between">
-                <span className="text-text2">Done</span>
-                <span className="font-semibold text-text">{economics.escalationsDone ?? '—'}</span>
-              </li>
-            </ul>
-          )}
-          <Link href="/admin/support" className="mt-2 inline-block text-[12px] font-semibold text-text2 transition-colors hover:text-text">
-            Inbox →
-          </Link>
-        </div>
-      </div>
+function OutclicksCard({ economics }: { economics: UnitEconomics }) {
+  const kinds = economics.outclicksByKind
+    ? Object.entries(economics.outclicksByKind).sort((a, b) => b[1] - a[1])
+    : null
+
+  return (
+    <div className="rounded-[14px] border border-border bg-paper p-4 sm:p-5">
+      <h3 className="text-[12px] font-semibold text-text2">Outclicks · 7 days</h3>
+      {kinds === null ? (
+        <p className="mt-2 text-[13px] text-text3">Ledger unavailable.</p>
+      ) : kinds.length === 0 ? (
+        <p className="mt-2 text-[13px] text-text3">None yet.</p>
+      ) : (
+        <ul className="mt-2 flex flex-col gap-1.5">
+          {kinds.map(([kind, count]) => (
+            <li key={kind} className="flex justify-between text-[13px]">
+              <span className="font-medium text-text">{kind}</span>
+              <span className="text-text3">{count}</span>
+            </li>
+          ))}
+          {economics.outclicksTotal7d !== null ? (
+            <li className="flex justify-between border-t border-hair pt-1.5 text-[13px] font-semibold text-text">
+              <span>Total</span>
+              <span>{economics.outclicksTotal7d}</span>
+            </li>
+          ) : null}
+        </ul>
+      )}
+      <Link href="/admin/ops" className="mt-2 inline-block text-[12px] font-semibold text-text2 transition-colors hover:text-text">
+        Ops ledger →
+      </Link>
+    </div>
+  )
+}
+
+function BookingPipelineCard({ economics }: { economics: UnitEconomics }) {
+  return (
+    <div className="rounded-[14px] border border-border bg-paper p-4 sm:p-5">
+      <h3 className="text-[12px] font-semibold text-text2">Booking pipeline</h3>
+      {economics.escalationsNew === null ? (
+        <p className="mt-2 text-[13px] text-text3">Unavailable.</p>
+      ) : (
+        <ul className="mt-2 flex flex-col gap-1.5 text-[13px]">
+          <li className="flex justify-between">
+            <span className="text-text2">Open</span>
+            <span className="font-semibold text-text">{economics.escalationsNew}</span>
+          </li>
+          <li className="flex justify-between">
+            <span className="text-text2">Done</span>
+            <span className="font-semibold text-text">{economics.escalationsDone ?? '—'}</span>
+          </li>
+        </ul>
+      )}
+      <Link href="/admin/support" className="mt-2 inline-block text-[12px] font-semibold text-text2 transition-colors hover:text-text">
+        Inbox →
+      </Link>
     </div>
   )
 }
@@ -339,10 +352,13 @@ function Empty({ children }: { children: ReactNode }) {
   )
 }
 
-// A single stat tile — either a WeeklyMetric (count + last-week delta + weekly
-// trend sparkline) or a plain point-in-time number. `value === null` /
-// `metric === null` both read as "degraded", not zero — the em dash makes that
-// visible instead of lying; a degraded trend simply drops the line.
+// A single stat tile — either a WeeklyMetric (count + last-week delta) or a
+// plain point-in-time number. `value === null` / `metric === null` both read
+// as "degraded", not zero — the em dash makes that visible instead of lying.
+// No sparkline here: only some metrics have real trend history, and showing
+// it on some tiles but not others read as broken rather than intentional —
+// the "last week N" comparison is the one trend signal every WeeklyMetric
+// tile can show consistently.
 function Stat({
   label,
   metric,
@@ -358,16 +374,10 @@ function Stat({
 }) {
   const count = metric !== undefined ? metric?.count ?? null : value ?? null
   const prev = metric?.prev ?? null
-  const trend = metric?.trend ?? null
   const inner = (
     <>
       <div className="hop-num text-[22px] font-semibold text-text">{count === null ? '—' : count}</div>
       <div className="mt-1 text-[12.5px] text-text3">{label}</div>
-      {trend ? (
-        <div className="mt-2">
-          <Sparkline data={trend} label={label} />
-        </div>
-      ) : null}
       {prev !== null ? <div className="mt-1 text-[11.5px] text-text3">last week {prev}</div> : null}
       {sub ? <div className="mt-1 text-[11.5px] text-text3">{sub}</div> : null}
     </>
