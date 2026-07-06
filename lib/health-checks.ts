@@ -63,6 +63,7 @@ export type CronJob =
   | 'balance-autosync'
   | 'sweet-spot-candidates'
   | 'awardwallet-sync'
+  | 'newsletter-digest'
 
 export interface CronJobSpec {
   job: CronJob
@@ -81,6 +82,7 @@ export const CRON_JOBS: readonly CronJobSpec[] = [
   { job: 'balance-autosync', path: '/api/cron/balance-autosync', schedule: '45 9 * * *', expectedIntervalMs: DAY_MS },
   { job: 'sweet-spot-candidates', path: '/api/cron/sweet-spot-candidates', schedule: '0 12 * * *', expectedIntervalMs: DAY_MS },
   { job: 'awardwallet-sync', path: '/api/cron/awardwallet-sync', schedule: '20 */6 * * *', expectedIntervalMs: 6 * HOUR_MS },
+  { job: 'newsletter-digest', path: '/api/cron/newsletter-digest', schedule: '0 13 * * 1', expectedIntervalMs: 7 * DAY_MS },
 ]
 
 // ── Flag/key seam registry (D3) ─────────────────────────────────────────────

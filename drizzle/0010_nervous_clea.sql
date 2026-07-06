@@ -10,3 +10,5 @@ CREATE TABLE "hop_shared_verdicts" (
 );
 --> statement-breakpoint
 CREATE INDEX "hop_shared_verdicts_created_by_idx" ON "hop_shared_verdicts" USING btree ("created_by");
+--> statement-breakpoint
+ALTER TABLE "hop_shared_verdicts" ENABLE ROW LEVEL SECURITY;
