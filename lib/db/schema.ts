@@ -470,6 +470,30 @@ export const supportTickets = pgTable(
   (t) => [uniqueIndex('hop_support_tickets_message_id_idx').on(t.messageId)],
 )
 
+// Shareable verdict receipts (/v/[id] — docs/plans/2026-07-02-viral-
+// differentiation.md, N-309). `snapshot` holds ONLY the engine-computed,
+// balance-/prefs-free VerdictSnapshot (lib/shared-verdicts.ts) — never
+// balances, identity, or a bookable action. `content_hash` (canonical params +
+// UTC day) is the idempotency key: re-sharing the same trip on the same day
+// upserts onto the same row instead of growing one per click. `created_by` is
+// abuse-forensics only (Better Auth user id or null for a signed-out share)
+// and is never selected into any render path. RLS enabled, no anon policies —
+// service-role only, same posture as every other hop_* table (the DDL lives
+// in the migration; this file never runs it).
+export const sharedVerdicts = pgTable(
+  'hop_shared_verdicts',
+  {
+    id: text('id').primaryKey(),
+    contentHash: text('content_hash').notNull().unique(),
+    createdBy: text('created_by'),
+    params: jsonb('params').notNull(),
+    snapshot: jsonb('snapshot').notNull(),
+    revoked: boolean('revoked').notNull().default(false),
+    createdAt: tz('created_at').defaultNow(),
+  },
+  (t) => [index('hop_shared_verdicts_created_by_idx').on(t.createdBy)],
+)
+
 // Email suppression list — addresses that bounced or complained, reported by
 // the Resend webhook (app/api/webhooks/resend/route.ts). Keyed directly by
 // email (not user_id): bounces/complaints arrive from Resend by raw address
