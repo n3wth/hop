@@ -43,12 +43,13 @@ import {
   markAlertDelivered,
 } from '@/lib/standing-orders'
 import { recordAlert, type StandingOrderAlert } from '@/lib/standing-order-alerts'
-import { evaluateOrder } from '@/lib/standing-orders-model'
+import { evaluateOrder, isOrderExpired } from '@/lib/standing-orders-model'
 import { isEmailEnabled, sendAlertEmail } from '@/lib/email'
 import { recordHeartbeat } from '@/lib/cron-heartbeat'
 import { reserve as reserveOutbox, markSent as markOutboxSent, release as releaseOutbox } from '@/lib/notification-outbox'
 import type { TravelPrefs } from '@/lib/prefs-model'
 import { isAuthorizedCron } from '@/lib/cron-auth'
+import { todayISO } from '@/lib/travel-dates'
 
 const OUTBOX_KIND = 'standing_order_alert'
 
@@ -119,6 +120,18 @@ export async function GET(request: Request) {
     try {
       evaluated++
       const uid = order.userId
+
+      // A watch's depart date can lapse while it sits active (there's no edit
+      // affordance, only pause/delete) — re-running it would send Duffel/
+      // seats.aero a known-invalid past departure and 422 on EVERY tick forever
+      // (this was root-caused from repeated Duffel 422s on a real LAX-HKG
+      // watch). Skip before paying for the engine call rather than rolling the
+      // date forward: forward-rolling would shift offerFingerprint's `date`
+      // component daily and re-alert on the SAME persistent deal every tick.
+      if (isOrderExpired(order.params.depart, todayISO())) {
+        reasonTally['expired'] = (reasonTally['expired'] ?? 0) + 1
+        continue
+      }
 
       if (!balancesCache.has(uid)) {
         balancesCache.set(uid, await getUserBalances(uid))

@@ -131,7 +131,7 @@ export default async function Home() {
     return (
       <AppShell
         user={user}
-        pointsTotal={programs > 0 ? totalPoints : undefined}
+        pointsTotal={totalPoints > 0 ? totalPoints : undefined}
         homeAirport={prefs.homeAirport}
         hideSearch
       >

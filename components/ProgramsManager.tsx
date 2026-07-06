@@ -6,10 +6,12 @@ import type { Balance } from '@/lib/types'
 import type { ManualBalance } from '@/lib/accounts'
 import {
   addProgram,
+  addQuickStartPrograms,
   editProgram,
   removeProgram,
   connectAwardWallet,
   disconnectAwardWallet,
+  refreshAwardWallet,
 } from '@/app/actions/accounts'
 import BrandIcon from './BrandIcon'
 import ProgramPicker from './ProgramPicker'
@@ -53,15 +55,18 @@ export default function ProgramsManager({
   manual,
   awConnected,
   awBalances,
-  awReason,
+  awSyncedAt,
+  awSyncOk,
   awUnconfigured,
 }: {
   // The user's hand-entered programs (editable).
   manual: ManualBalance[]
-  // Whether an AwardWallet link exists, and the live balances it returned.
+  // Whether an AwardWallet link exists, and its cached snapshot (never a live
+  // read — see lib/accounts.ts#getCachedAwBalances).
   awConnected: boolean
   awBalances: Balance[]
-  awReason?: string
+  awSyncedAt: string | null
+  awSyncOk: boolean
   // True when AWARDWALLET_CONNECT_URL isn't set yet — auto-sync can't go live.
   awUnconfigured?: boolean
 }) {
@@ -71,11 +76,32 @@ export default function ProgramsManager({
       <AwardWalletSection
         connected={awConnected}
         balances={awBalances}
-        reason={awReason}
+        syncedAt={awSyncedAt}
+        syncOk={awSyncOk}
         unconfigured={awUnconfigured}
       />
     </div>
   )
+}
+
+// A cached snapshot older than this reads as stale (4x the 6h cron interval —
+// lib/health-checks.ts's awardwallet-sync cadence).
+const STALE_AFTER_MS = 24 * 60 * 60 * 1000
+
+function formatSyncedAt(iso: string): string {
+  return new Date(iso).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+// A helper function boundary (not an inline expression in the component body)
+// so Date.now() — impure — never runs directly during render.
+function isStaleSync(syncedAt: string | null, syncOk: boolean): boolean {
+  if (syncedAt === null || !syncOk) return true
+  return Date.now() - Date.parse(syncedAt) > STALE_AFTER_MS
 }
 
 // --- Manual (primary) -------------------------------------------------------
@@ -100,11 +126,64 @@ function ManualSection({ manual }: { manual: ManualBalance[] }) {
               Enter a program and your balance — hop reads it the same way it
               reads a live sync, and tells you when points beat cash.
             </p>
+            <QuickStartButton />
           </div>
         </div>
       )}
       <AddProgramForm hasRows={manual.length > 0} />
     </section>
+  )
+}
+
+// R1.4 cold-start affordance: one tap seeds the 5 transferable bank currencies
+// at balance 0, so a signed-in user with nothing yet can reach a real verdict
+// instead of 5 separate add-flows. Only shown before the first manual add
+// (ManualSection's empty state) — not a persistent feature once any exist.
+function QuickStartButton() {
+  const router = useRouter()
+  const [pending, start] = useTransition()
+  const [note, setNote] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  function run() {
+    setError(null)
+    setNote(null)
+    start(async () => {
+      const res = await addQuickStartPrograms()
+      if (res.ok) {
+        setNote(res.note ?? null)
+        router.refresh()
+      } else {
+        setError(res.error ?? 'Could not add')
+      }
+    })
+  }
+
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={run}
+        disabled={pending}
+        className="inline-flex items-center justify-center gap-1.5 rounded-[10px] border border-border bg-paper px-4 py-2.5 text-[13.5px] font-semibold text-text transition-colors hover:border-brand hover:text-brand disabled:opacity-70"
+      >
+        {pending ? 'Adding…' : 'Add the 5 majors'}
+      </button>
+      <p className="mt-1.5 max-w-[52ch] text-[12.5px] leading-[1.5] text-text3">
+        Amex, Chase, Citi, Capital One, and Bilt — hop shows what your points
+        are worth once you fill in real balances.
+      </p>
+      {error ? (
+        <p role="alert" className="mt-1.5 text-[12.5px] font-medium text-weak">
+          {error}
+        </p>
+      ) : null}
+      {note ? (
+        <p role="status" className="mt-1.5 text-[12.5px] font-medium text-brand">
+          {note}
+        </p>
+      ) : null}
+    </div>
   )
 }
 
@@ -220,9 +299,19 @@ function ProgramRow({ program, first }: { program: ManualBalance; first: boolean
         ) : null}
       </div>
       <div className="flex items-center gap-3 sm:gap-4">
-        <span className="font-display text-[15px] font-semibold tabular-nums text-text">
-          {program.balance.toLocaleString('en-US')}
-        </span>
+        {program.balance === 0 ? (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="text-[13px] font-semibold text-text3 underline decoration-dotted underline-offset-2 transition-colors hover:text-brand"
+          >
+            Balance not set — add it
+          </button>
+        ) : (
+          <span className="font-display text-[15px] font-semibold tabular-nums text-text">
+            {program.balance.toLocaleString('en-US')}
+          </span>
+        )}
         <span className="flex items-center gap-0.5 border-l border-hair pl-2 sm:pl-3">
           <button
             type="button"
@@ -286,10 +375,8 @@ function AddProgramForm({ hasRows }: { hasRows: boolean }) {
       setError('Pick a program')
       return
     }
-    if (!balance.trim()) {
-      setError('Enter a balance')
-      return
-    }
+    // Balance is optional (R1.4) — an empty value saves as "balance unknown" (0),
+    // not an error. Only a missing program blocks the add.
     setError(null)
     setNote(null)
     setSaved(false)
@@ -340,8 +427,8 @@ function AddProgramForm({ hasRows }: { hasRows: boolean }) {
             }
           }}
           inputMode="numeric"
-          placeholder="Balance"
-          aria-label="Balance"
+          placeholder="Balance (optional)"
+          aria-label="Balance (optional)"
           autoComplete="off"
           className="w-full rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[14px] font-semibold tabular-nums text-text outline-none transition-colors focus:border-brand sm:w-[140px]"
         />
@@ -381,23 +468,27 @@ function AddProgramForm({ hasRows }: { hasRows: boolean }) {
 function AwardWalletSection({
   connected,
   balances,
-  reason,
+  syncedAt,
+  syncOk,
   unconfigured,
 }: {
   connected: boolean
   balances: Balance[]
-  reason?: string
+  // Last cache write, or null if never synced (see lib/accounts.ts#getCachedAwBalances).
+  syncedAt: string | null
+  // Whether the LAST sync attempt succeeded — false means AwardWallet was
+  // unreachable and balances[] is whatever the prior good snapshot held.
+  syncOk: boolean
   unconfigured?: boolean
 }) {
   const router = useRouter()
   const [disconnecting, startDisconnect] = useTransition()
+  const [refreshing, startRefresh] = useTransition()
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // Last time the user re-read balances in this session. router.refresh() returns
-  // void (no revalidation promise to await), so we don't fake a pending state —
-  // we just re-read and stamp when it happened.
-  const [syncedAt, setSyncedAt] = useState<Date | null>(null)
   const confirm = useConfirm()
+
+  const stale = isStaleSync(syncedAt, syncOk)
 
   function disconnect() {
     setError(null)
@@ -411,8 +502,11 @@ function AwardWalletSection({
 
   function refresh() {
     setError(null)
-    router.refresh()
-    setSyncedAt(new Date())
+    startRefresh(async () => {
+      const res = await refreshAwardWallet()
+      router.refresh()
+      if (!res.ok) setError(res.error ?? 'Could not refresh')
+    })
   }
 
   if (connected) {
@@ -422,12 +516,11 @@ function AwardWalletSection({
           <span className="min-w-0 truncate text-[13px] font-semibold text-text2">
             Synced with AwardWallet
             <span className="ml-2 font-normal text-text3">
-              {balances.length} {balances.length === 1 ? 'program' : 'programs'} live
+              {balances.length} {balances.length === 1 ? 'program' : 'programs'}
             </span>
             {syncedAt ? (
               <span className="ml-2 font-normal text-text3">
-                · refreshed{' '}
-                {syncedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                · synced {formatSyncedAt(syncedAt)}
               </span>
             ) : null}
           </span>
@@ -435,11 +528,11 @@ function AwardWalletSection({
             <button
               type="button"
               onClick={refresh}
-              disabled={disconnecting}
+              disabled={disconnecting || refreshing}
               className="inline-flex items-center gap-1.5 rounded-[10px] px-3 py-2 text-[13px] font-semibold text-brand transition-colors hover:bg-brand-light disabled:opacity-60"
             >
               <Icon name="refresh" size={16} />
-              Refresh
+              {refreshing ? 'Refreshing…' : 'Refresh'}
             </button>
             {confirm.armed ? (
               <>
@@ -472,11 +565,15 @@ function AwardWalletSection({
             )}
           </div>
         </div>
-        {balances.length === 0 ? (
+        {syncedAt === null ? (
           <p className="border-t border-border px-5 py-3 text-[14px] leading-[1.5] text-text2 sm:px-6">
-            {reason
-              ? `Connected, but balances didn't load (${reason}). Try Refresh.`
-              : 'Connected, but no balances came back yet. Try Refresh.'}
+            Not synced yet. Tap Refresh.
+          </p>
+        ) : stale ? (
+          <p className="border-t border-border px-5 py-3 text-[14px] leading-[1.5] text-text2 sm:px-6">
+            {syncOk
+              ? `Last synced ${formatSyncedAt(syncedAt)}. Tap Refresh for the latest.`
+              : `Last synced ${formatSyncedAt(syncedAt)} — AwardWallet unreachable since. Showing your last known balances.`}
           </p>
         ) : null}
         {error ? (

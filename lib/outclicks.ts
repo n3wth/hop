@@ -41,6 +41,7 @@ export interface OutclickRow {
   kind: string
   target: string
   program: string | null
+  /** hop_outclicks has no created_at column — this is clicked_at (see schema.ts). */
   createdAt: string | null
 }
 
@@ -58,8 +59,8 @@ export async function listRecentOutclicks(limit = 20): Promise<OutclickRow[] | n
   return withDb<OutclickRow[] | null>(null, async (db) => {
     const { data, error } = await db
       .from('hop_outclicks')
-      .select('kind, target, program, created_at')
-      .order('created_at', { ascending: false })
+      .select('kind, target, program, clicked_at')
+      .order('clicked_at', { ascending: false })
       .limit(limit)
     if (error || !data) return null
     return (data as Array<Record<string, unknown>>).map((r) => ({
@@ -67,7 +68,7 @@ export async function listRecentOutclicks(limit = 20): Promise<OutclickRow[] | n
       target: String(r.target ?? ''),
       program: typeof r.program === 'string' ? r.program : null,
       // withDb returns Postgrest-style snake_case rows.
-      createdAt: typeof r.created_at === 'string' ? r.created_at : null,
+      createdAt: typeof r.clicked_at === 'string' ? r.clicked_at : null,
     }))
   })
 }
@@ -77,8 +78,8 @@ export async function getOutclickSummary(now: Date = new Date()): Promise<Outcli
     const since = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
     const { data, error } = await db
       .from('hop_outclicks')
-      .select('kind, created_at')
-      .gte('created_at', since)
+      .select('kind, clicked_at')
+      .gte('clicked_at', since)
     if (error || !data) return null
     const last7d: Record<string, number> = {}
     for (const row of data as Array<Record<string, unknown>>) {

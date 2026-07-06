@@ -21,6 +21,7 @@ import {
   index,
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
+import type { Balance } from '@/lib/types'
 
 // mode 'string' matches the Postgrest convention every hop_* caller already
 // speaks: ISO strings in, timestamptz text out. (Drizzle's default 'date' mode
@@ -70,11 +71,20 @@ export const programCredentials = pgTable(
   (t) => [uniqueIndex('hop_program_credentials_user_program_idx').on(t.userId, t.program)],
 )
 
+// cachedBalances/lastSyncedAt/lastSyncOk back the AwardWallet snapshot cache
+// (lib/accounts.ts#refreshAwCache/getCachedAwBalances) — getUserBalances()
+// reads this cache instead of calling AwardWallet live on every request. A
+// connected row with a null cache (pre-migration, or before the first
+// bootstrap/refresh/cron tick) means "no synced snapshot yet", handled
+// identically to "not connected" by getCachedAwBalances.
 export const userAccounts = pgTable('hop_user_accounts', {
   userId: text('user_id').primaryKey(), // unique → pk
   awUserId: text('aw_user_id'),
   connectedAt: tz('connected_at'),
   updatedAt: tz('updated_at'),
+  cachedBalances: jsonb('cached_balances').$type<Balance[]>(),
+  lastSyncedAt: tz('last_synced_at'),
+  lastSyncOk: boolean('last_sync_ok'),
 })
 
 export const userPrefs = pgTable('hop_user_prefs', {
@@ -233,7 +243,13 @@ export const mcpUsage = pgTable(
     tool: text('tool').notNull(),
     createdAt: tz('created_at').defaultNow(),
   },
-  (t) => [index('hop_mcp_usage_user_id_created_at_idx').on(t.userId, t.createdAt)],
+  (t) => [
+    index('hop_mcp_usage_user_id_created_at_idx').on(t.userId, t.createdAt),
+    // Backs mcpCallsToday's per-token day-quota count (lib/mcp-usage.ts) —
+    // without this, a stateless-by-user but linked-by-token query scans the
+    // whole table.
+    index('hop_mcp_usage_token_id_created_at_idx').on(t.tokenId, t.createdAt),
+  ],
 )
 
 export const travelHistory = pgTable('hop_travel_history', {

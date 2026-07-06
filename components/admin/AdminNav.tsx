@@ -19,6 +19,7 @@ interface Item {
 const SURFACES: Item[] = [
   { href: '/admin', label: 'Overview', icon: 'chart', exact: true },
   { href: '/admin/users', label: 'Users', icon: 'person' },
+  { href: '/admin/billing', label: 'Billing', icon: 'currency' },
   { href: '/admin/support', label: 'Inbox', icon: 'envelope' },
   { href: '/admin/content', label: 'Content', icon: 'content_copy' },
   { href: '/admin/agents', label: 'Agents', icon: 'compass' },

@@ -42,9 +42,13 @@ export default function PointsPanel({ balances, pick, isExample = false }: Point
   const spend = pick?.miles
   const worth = walletValue(balances)
 
-  // No programs yet → don't show a fake "0 across 0 programs" wallet. Invite the
-  // user to add their points so hop can value redemptions against what they hold.
-  if (balances.length === 0) {
+  // No REAL value yet → don't show a fake "0 across N programs" wallet — this
+  // fires both for zero programs AND for the R1.4 quick-start's zero-balance
+  // rows (5 real programs, no balances filled in yet). Either way there's
+  // nothing to render as a wallet, so invite the user to add value instead of
+  // rendering a $0 total next to a row of real brand logos.
+  if (balances.length === 0 || total === 0) {
+    const hasPrograms = balances.length > 0
     return (
       <section
         className="overflow-hidden rounded-[22px] px-5 py-7 text-hero-cream sm:px-[30px]"
@@ -54,14 +58,15 @@ export default function PointsPanel({ balances, pick, isExample = false }: Point
           Your points
         </h2>
         <p className="mt-2 max-w-[40ch] text-[14px] leading-[1.55] text-hero-body">
-          Add your loyalty programs and hop will tell you which redemptions your
-          points actually unlock — and whether to book with miles or cash.
+          {hasPrograms
+            ? `You've added ${balances.length} ${balances.length === 1 ? 'program' : 'programs'} but no balances yet. Fill in real numbers so hop can tell you which redemptions they actually unlock.`
+            : 'Add your loyalty programs and hop will tell you which redemptions your points actually unlock — and whether to book with miles or cash.'}
         </p>
         <Link
           href="/account"
           className="mt-4 inline-flex items-center gap-2 rounded-[12px] bg-white px-5 py-3 text-[14px] font-semibold text-brand-ink transition-colors hover:bg-hero-cream"
         >
-          Add your programs
+          {hasPrograms ? 'Add your balances' : 'Add your programs'}
           <span aria-hidden className="text-[15px] leading-none">→</span>
         </Link>
       </section>

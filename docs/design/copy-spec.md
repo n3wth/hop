@@ -53,6 +53,16 @@ must match the economics — believable figures for the labeled route and cabin,
 - Drop the gold "one quiet tip" Amex→Alaska card unless it's genuinely actionable; if kept,
   make it a fact: `Amex transfers to Alaska 1:1 if you run low.`
 
+## Your programs (/account) — balance-optional add + quick-start
+- Balance field placeholder/label: `Balance (optional)` (not "Balance") — an empty balance is a
+  valid submission, not an error.
+- A saved program with balance `0` (unset, not a real zero): `Balance not set — add it` (a text
+  link into edit mode) — never show a bare `0`, which reads as "you hold nothing here."
+- Quick-start button (empty state only): `Add the 5 majors`
+- Quick-start subtext: `Amex, Chase, Citi, Capital One, and Bilt — hop shows what your points are
+  worth once you fill in real balances.` (plain, no exclamation points, no "just add your cards!"
+  flattery)
+
 ## Footer / utility (keep it a real tool)
 - `hop compares cash, miles, and transfer partners in one search.` (one plain line, no "tells you
   which one to actually use" swagger)

@@ -2,10 +2,11 @@ import Link from 'next/link'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import EditorialHeader from '@/components/EditorialHeader'
-import CoverArt from '@/components/CoverArt'
+import BrandIcon from '@/components/BrandIcon'
 import { pageMeta } from '@/lib/seo'
 import { VERIFY_CAVEAT } from '@/lib/sweet-spots'
 import { getSweetSpotsByProgram, getAllSweetSpots } from '@/lib/sweet-spots-live'
+import { canonicalizeProgram } from '@/lib/programs'
 
 // Static SEO guide — no per-request data, so it prerenders. Weekly cron
 // (app/api/cron/revalidate-seo) calls revalidatePath when content changes; an
@@ -59,14 +60,15 @@ export default async function SweetSpotsIndexPage() {
                 className="group flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-6 transition-colors duration-200 ease-[var(--ease-premium)] hover:border-brand"
               >
                 <div className="flex items-center gap-3">
-                  {/* generative cover art — same seed as the program's own
-                      header, so the tile reads as one shared object across
-                      the shelf and the detail page (docs/design/experience-heuristics.md #16) */}
-                  <CoverArt
-                    seed={p.slug}
-                    decorative
+                  {/* real program mark (or a house monogram for programs with
+                      no logo asset) via the shared brand registry — the same
+                      code the detail header renders, so the tile reads as one
+                      identity across the shelf and the detail page
+                      (docs/design/experience-heuristics.md #16) */}
+                  <BrandIcon
+                    code={canonicalizeProgram(p.name)?.code}
+                    name={p.name}
                     size={48}
-                    className="flex-shrink-0 rounded-[var(--radius-sm)]"
                   />
                   <div className="flex min-w-0 flex-1 items-baseline justify-between gap-3">
                     <h2 className="font-display text-[22px] font-semibold leading-tight tracking-[-0.01em] text-text">

@@ -28,9 +28,13 @@ import { applyExtractedBalances, extractBalances } from '@/lib/balance-sync'
 // tolerates schedule jitter without double-syncing.
 const STALE_HOURS = 20
 // Browser Rendering runs a real headless login — give it room, then cut it off.
-const FETCH_TIMEOUT_MS = 60_000
-// Per-run cap: a Vercel cron invocation must finish well inside its window.
-const MAX_PER_RUN = 8
+export const FETCH_TIMEOUT_MS = 60_000
+// Per-run cap: rows sync sequentially, so worst case is
+// MAX_PER_RUN * FETCH_TIMEOUT_MS. Kept well under the cron route's
+// maxDuration=300s (app/api/cron/balance-autosync/route.ts) so the platform
+// never kills the run mid-batch — 4 * 60s = 240s leaves ~60s of headroom for
+// extraction + DB writes on top of the raw fetches.
+export const MAX_PER_RUN = 4
 
 interface WorkerFetchResponse {
   ok: boolean
