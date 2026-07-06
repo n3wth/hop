@@ -254,9 +254,10 @@ export async function getMessage(
     internalDate?: string
     payload?: GmailPart & { headers?: Array<{ name?: string; value?: string }> }
   }>(`/messages/${id}?format=full`, accessToken)
-  if (!res.ok || !res.data.payload) return null
+  if (!res.ok) return null
   const json = res.data
   const payload = json.payload
+  if (!payload) return null
   const headers = payload.headers ?? []
   const header = (name: string): string =>
     headers.find((h) => (h.name ?? '').toLowerCase() === name)?.value ?? ''
