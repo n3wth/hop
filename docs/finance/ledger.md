@@ -45,3 +45,25 @@ One 5-line note per run. Figures come only from the repo's own signals (business
   — no domain-creation tool exists in the AgentMail MCP surface; documented and parked.
 - **Unknowns flagged**: same as this morning — active Pro subscriber count, card-affiliate
   status, outclick/escalation counts (all require live DB/dashboard access this session lacks).
+
+## 2026-07-06 (run 3 — outreach sent)
+
+- **MRR**: still ~$0 (unchanged; no DB access from this session, no new billing signal in the
+  merged commits since run 2).
+- **Known burn**: unchanged, ~$75/mo infra + unmeasured LLM spend. Budget envelope stays
+  approved at ~$125/mo (`budget.md`), no change.
+- **Notable changes**: sent the two queued, Oliver-approved outreach emails — seats.aero
+  commercial API terms and AwardWallet partner/API onboarding (both `docs/finance/outreach.md`,
+  now `status: sent`). Corrected a stale process note (this desk's own prior write-up wrongly
+  claimed a Tuesday-only send cadence for the outreach queue — there was never such a rule;
+  fixed in `README.md` and `outreach.md`). Repo continues shipping fast: BIMI sender logo and a
+  Resend webhook handler (bounce/complaint suppression list) landed since run 2 — used the
+  latter as the trigger to research a Resend startup-credit program (see `opportunities.md`).
+  Other desks are now standing up too (`docs/team/` shows a strategy desk and a provisioning
+  process for new desks) — no finance action needed from that, noted for awareness only.
+- **No-cost opportunity found**: Resend for Startups (extended free tier + email credits) —
+  hop already runs production Resend usage, real fit, added as `drafted` in `opportunities.md`.
+  AWS Activate Founders and Google for Startups Cloud were researched and rejected — no
+  existing AWS/GCP usage to offset either credit.
+- **Unknowns flagged**: same as run 2 — active Pro subscriber count, card-affiliate status,
+  outclick/escalation counts (all require live DB/dashboard access this session lacks).

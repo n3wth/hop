@@ -1,24 +1,81 @@
 # hop
 
-hop is a points-vs-cash flight optimizer and travel companion.
-It compares cash fares against award options, computes real cents-per-point (cpp) off the user's
-actual loyalty balances, and tells them whether to book with points, transfer to a partner, or pay
-cash — plus a growing layer of deals, destination inspiration, and an AI concierge.
+**The points-vs-cash verdict engine.** hop looks at your real airline and hotel loyalty
+balances, computes the actual value of redeeming them, and tells you — in one sentence — whether
+to book with points, transfer to a partner, or just pay cash.
 
-## What This Repo Is
+[![Next.js](https://img.shields.io/badge/Next.js-16.2.9-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Autonomous org](https://img.shields.io/badge/autonomous_org-6-0d6e6e?style=flat-square)](#built-and-run-by-an-ai-native-team)
+[![Engine](https://img.shields.io/badge/engine-computed_not_generated-0d6e6e?style=flat-square)](#how-it-works)
 
-- Single Next.js app at the repo root (App Router + RSC + TypeScript strict)
-- `eve/` is a separate agent runtime (Vercel Eve) that shares the `lib/*` engine but is excluded
-  from the Next app's build — see [`eve/README.md`](eve/README.md)
-- Production target: Vercel (cron jobs, Neon Postgres, AI Gateway)
-- Main product surfaces: home, search, deals, `/ask` concierge, account, destinations, and an
-  MCP server for third-party agents
+![hop — your personal travel agent. A flat cream-and-teal banner with the hop bunny mark above the headline "Your personal travel agent" and the line "Points or cash — the verdict on every flight."](docs/social-preview.png)
 
-This codebase runs on **Next.js 16.2.9 + React 19** — APIs and conventions differ from older Next.
-Before writing framework code, read the relevant guide in `node_modules/next/dist/docs/` (see
-`CLAUDE.md` / `AGENTS.md`).
+## Why this exists
 
-## Stack
+Loyalty points are opaque by design, and most people mis-redeem them as a result. Every existing
+tool either shows you that a seat exists, or lets an AI chatbot guess at whether it's a good
+deal. Neither tells you what your points are actually worth. hop computes that number from your
+real balances instead of guessing at it, and gives you a plain answer: use the points, transfer
+them first, or pay cash and keep them for something better.
+
+## How it works
+
+Everything funnels through one function, `assembleSearch` (`lib/search.ts`). It fans out
+concurrently to live cash fares (Duffel), live award availability (seats.aero), and your actual
+loyalty balances (AwardWallet, plus whatever you've entered manually), then computes the
+economics of every option it finds:
+
+```
+cpp = (cash price − taxes) × 100 / miles required
+```
+
+That cents-per-point number is tiered (green ≥ 3.0¢, amber ≥ 1.5¢, otherwise muted), ranked
+against every other option, and reduced to one verdict — the same math a points-and-miles expert
+would do by hand, computed instead of eyeballed. Two rules keep it trustworthy:
+
+- **It always resolves, never crashes.** If an upstream source is down, that section degrades
+  with a visible note instead of taking the page with it.
+- **Every number is computed, never generated.** cpp, tiers, ranking, and the pick come from
+  deterministic code. Even hop's AI concierge only ever narrates numbers the engine already
+  computed — it never invents one.
+
+## Built and run by an AI-native team
+
+hop's day-to-day engineering, growth, and finance work is run largely by a standing team of
+autonomous Claude Code agents — each with a name, an animal avatar, and a real cron schedule
+against this actual repository. It's a genuine operating structure, not a metaphor:
+
+| Function | Who | Runs | Does |
+|---|---|---|---|
+| Engineering autopilot | **Jeffrey** 🦫 | Daily | Picks one unit of work — fix a broken build, rescue a stalled PR, review and merge a clean one, or advance the roadmap — and ships it end to end as a draft PR. |
+| Growth | **Omar** 🦊 | Mon / Wed / Fri | Owns SEO content and MCP directory listings outright, ship-and-self-merge. Drafts anything that needs a human hand on an external account rather than guessing at one. |
+| Head of finance | **Elizabeth** 🦉 | Tuesdays | Has her own inbox, tracks the budget envelope, hunts startup credit programs, and emails a CFO memo — but can't spend a dollar or commit to anything without an emailed yes back. |
+| Weekly retro | **Bob** 🐢 | Mondays | Reviews what shipped, updates the open-work playbook, and writes up any non-obvious bug fix as a permanent [`docs/solutions/`](docs/solutions/) entry so nobody debugs it twice. |
+| Strategy | **Marcus** 🦅 | Sundays | Runs an outside-in market and competitive scan and re-ranks what the rest of the team should work on next. |
+| Board review | *five adversarial personas* | Periodic | Reads the state of the company and produces consensus risks, contested points, a kill list, and double-downs — then checks, next time, whether its own prior amendments actually got executed. |
+
+The self-improvement loop is real, not aspirational: a bug fixed today becomes a
+[`docs/solutions/`](docs/solutions/) entry so the next agent inherits the lesson automatically,
+and each board review is graded in part on whether the last one's amendments actually landed.
+
+None of this replaces judgment where it matters. A human founder still makes every call that
+touches money, identity, or anything irreversible — that's a hard rule for every desk, not a
+suggestion. The agents own everything reversible: code, content, drafts, market scans, and the
+numbers.
+
+## Look under the hood
+
+- [`docs/team/routines.md`](docs/team/routines.md) — the exact cron schedule and prompt each desk
+  runs on, verbatim
+- [`docs/board/`](docs/board/) — the board's own memos, unedited
+- [hop.flights](https://hop.flights) — the live product
+
+---
+
+## What's under the hood
+
+### Stack
 
 - Next.js 16.2.9 (App Router) + React 19, TypeScript (strict), Tailwind CSS v4
 - Neon Postgres + Drizzle ORM (`lib/db/`), Better Auth for identity (`lib/auth.ts`)
@@ -27,7 +84,11 @@ Before writing framework code, read the relevant guide in `node_modules/next/dis
   Upstash Redis (rate limiting), Stripe (billing)
 - Vitest (node environment) for tests
 
-## Run Locally
+This codebase runs on **Next.js 16.2.9 + React 19** — APIs and conventions differ from older
+Next. Before writing framework code, read the relevant guide in `node_modules/next/dist/docs/`
+(see `CLAUDE.md` / `AGENTS.md`).
+
+### Run locally
 
 ```bash
 npm install
@@ -40,7 +101,7 @@ No upstream keys are required to see full-fidelity pages with fixture data:
 npm run dev:mock    # MOCK=1 — swaps in cash/awards/balances fixtures
 ```
 
-Useful commands:
+Commands:
 
 ```bash
 npm run build       # also runs DB migrations + catches RSC/route errors
@@ -57,7 +118,7 @@ npx vitest run lib/__tests__/cpp.test.ts
 npx vitest run -t "ranks options by cpp"
 ```
 
-## Environment Setup
+### Environment setup
 
 Copy `.env.example` to `.env.local` — it's tiered and annotated in place. The top two vars
 (`MOCK=1`, `UNSPLASH_ACCESS_KEY`) are enough for full-fidelity local UI work; everything else is
@@ -73,12 +134,13 @@ production functionality that's OFF by default and degrades to a clean no-op whe
 See `lib/env.ts` for access patterns — env reads are lazy (evaluated at call time, not import) and
 every gated seam checks both a flag and its credentials before turning on.
 
-## Project Layout
+### Project layout
 
 - `app/` — routes, pages, API route handlers (App Router)
 - `components/` — UI components and page building blocks
 - `lib/` — the verdict engine, integrations, and all deterministic domain logic
-- `eve/` — the Eve agent scaffold (separate runtime, not part of the Next build)
+- `eve/` — the Eve agent scaffold (separate runtime, not part of the Next build) — see
+  [`eve/README.md`](eve/README.md)
 - `docs/decisions/` — ADRs: the load-bearing architectural decisions
 - `docs/solutions/` — searchable log of solved problems (grep before you debug something familiar)
 - `docs/plans/` — implementation blueprints
@@ -86,7 +148,7 @@ every gated seam checks both a flag and its credentials before turning on.
 - `.claude/agents/` — specialized review subagents; `.claude/workflows/` — saved multi-agent
   orchestration scripts (review, plan panel, standing audit)
 
-## Core Architecture
+### Architecture
 
 ```mermaid
 flowchart TD
@@ -137,12 +199,6 @@ flowchart TD
     CPP --> Vals
 ```
 
-- **Verdict engine** — `lib/search.ts#assembleSearch` is the moat: it fans out to every upstream
-  source concurrently, computes per-option economics, and always resolves (upstream failures land
-  in a `degraded[]` array instead of throwing). Every number — cpp, tiers, ranking, the pick — is
-  computed by `lib/*`, never generated by an LLM.
-- **CPP economics** — `lib/cpp.ts`: `cpp = (cash − taxes) × 100 / miles`; tiers are `≥3.0 green`,
-  `≥1.5 amber`, else muted; `POINTS_THRESHOLD_CPP = 2.5` drives the use-points verdict.
 - **Balances** — `lib/accounts.ts#getUserBalances` merges manual balances (Neon) with an optional
   live AwardWallet link, de-duped by program; every surface reads through this one resolver.
 - **Point valuations** — `lib/valuations.ts` is a hand-curated static baseline; `lib/valuations-live.ts`
@@ -159,7 +215,7 @@ flowchart TD
 - **Eve agent** — `eve/` runs the same `lib/*` engine on a schedule against real user balances and
   proactively pushes crossings (email-first); see [`eve/README.md`](eve/README.md).
 
-## Key Routes
+### Key routes
 
 - `/` — auth-aware home (marketing when signed out, personalized dashboard when signed in)
 - `/search` (+ `/search/loading`) — the flight optimizer and verdict flow
@@ -169,13 +225,13 @@ flowchart TD
 - `/account` — program and balance management
 - `/api/[transport]` — MCP server (`/api/mcp`, `/api/sse`)
 
-## Cron Jobs
+### Cron jobs
 
 Defined in `vercel.json`, all guarded by `CRON_SECRET`: standing-order sweeps (every 6h), weekly
 SEO revalidation, daily valuation sync, daily Stripe sync, a weekly business digest, and a daily
 health sentinel.
 
-## Documentation & How We Work Here
+## Documentation & how we work here
 
 This repo is **agent-native**: every unit of work should make the next one easier (the compound
 engineering loop — Plan → Work → Review → Compound — is detailed in `CLAUDE.md` and
@@ -188,8 +244,11 @@ engineering loop — Plan → Work → Review → Compound — is detailed in `C
 - `docs/design/copy-spec.md` — strict UI copy voice
 - `.claude/workflows/README.md` — the saved multi-agent review/plan/audit scripts and their
   manual-fallback equivalents in `.claude/commands/`
+- `docs/team/routines.md` — the standing autonomous agent org (canonical over claude.ai config)
+- `docs/board/` — periodic independent business/execution reviews + adopted amendments
+- `docs/strategy/` — the weekly market/competitive review that sets desk priorities
 
-## Notes for Contributors
+## Notes for contributors
 
 - The verdict engine is deterministic — rankings and recommendations are computed, not generated.
 - Graceful degradation is the house style: `lib/*` clients and DB helpers

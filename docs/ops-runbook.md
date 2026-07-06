@@ -59,6 +59,75 @@ alerts persist; evaluation just stops.
 returns a JSON summary (or `{"status":"disabled"}` when off). Failed sends leave
 `delivered=false` and retry next run via the idempotent outbox (ADR 0003).
 
+## Email sender branding (BIMI)
+
+BIMI (Brand Indicators for Message Identification) shows a logo next to hop's
+sender name in a recipient's inbox. It's discovered by the mailbox provider at
+`default._bimi.<domain-in-the-From-header>`, so it only ever applies to the
+exact domain a message's `RFC5322.From` uses — **not** any domain sends merely
+pass through (SPF/Return-Path, DKIM signing host, etc.).
+
+**What's live now:**
+
+- All Resend-sent mail (`lib/email.ts` — alerts, the business digest, support
+  replies, auth verification/reset) sends From `@hop.flights`
+  (`fromAddress()` / `supportFromAddress()`), and DKIM signs with
+  `d=hop.flights` (`resend._domainkey.hop.flights`). **`hop.flights` — the
+  apex, not `send.hop.flights`** — is therefore the correct BIMI domain: it
+  already has `_dmarc.hop.flights` at `p=reject; adkim=s; aspf=s`, which is
+  enforcing and DKIM-aligned (SPF doesn't align under `aspf=s` since Resend's
+  envelope/Return-Path domain is `send.hop.flights`, the SES custom
+  MAIL FROM — but DKIM alignment alone satisfies DMARC and BIMI's
+  precondition). `send.hop.flights` never appears in a From header, so a BIMI
+  record there would be inert — it is **not** used.
+- The logo: `public/bimi-logo.svg` — hop's bunny mark on the brand teal
+  (`#0d6e6e` background, `#f3f1ec` bunny), full-bleed square, single silhouette
+  path kept inside the safe zone so a circular or rounded-square crop never
+  clips it (same treatment as `app/maskable-icon.tsx`). Authored directly to
+  the SVG Tiny PS profile BIMI requires (`version="1.2"
+  baseProfile="tiny-ps"`, no scripts/CSS/external refs/raster images, no
+  `x`/`y` on the root `<svg>`, `<title>`/`<desc>` present, ~2.3 KB, well under
+  the 32 KB cap). It validates as well-formed XML (`xmllint`); a full
+  Tiny-PS-profile validator (e.g. the BIMI Group RNC schema, or a tool like
+  sequenzy's/powerdmarc's BIMI SVG validator) needs a browser or `jing`,
+  neither available in this environment — **run one before or right after
+  deploy** to catch anything this can't check.
+- DNS: `default._bimi.hop.flights TXT "v=BIMI1;
+  l=https://hop.flights/bimi-logo.svg;"` is live in Cloudflare (no `a=` tag —
+  no VMC exists). The `l=` URL 404s until this PR's `public/bimi-logo.svg`
+  deploys; harmless in the meantime (BIMI just won't validate — mail delivery
+  is untouched since DMARC enforcement doesn't depend on BIMI).
+
+**What shows where, right now (no VMC):**
+
+| Client | Shows the bunny? |
+| --- | --- |
+| Yahoo / AOL | Yes — these render a BIMI logo off DMARC + the SVG alone. |
+| Gmail | **No.** Gmail additionally requires a **Verified Mark Certificate** (VMC) — see below. |
+| Outlook, Apple Mail | No native BIMI support as of this writing; unaffected either way. |
+
+**To unlock Gmail: buy a VMC.** [Founder decision — ~$1500+/yr, some CAs
+require a registered trademark on the mark being certified.] A VMC is issued
+by an authorized CA (DigiCert, Entrust) after verifying trademark ownership,
+and its certificate URL goes in the DNS record's `a=` tag. Not pursued in this
+PR — no money spent, nothing implies one was purchased.
+
+**Not covered by this (follow-up if wanted):** Elizabeth's finance desk sends
+from AgentMail (`finance-hop@agentmail.to`, eventually `agents.hop.flights`),
+a separate domain from `hop.flights` with its own DNS/DMARC — BIMI there would
+need its own from-scratch setup (logo record + DMARC enforcement on that
+domain) and can't be configured from this repo. Two options if it's ever
+prioritized:
+1. Real BIMI on `agents.hop.flights` once that domain exists and has DMARC
+   enforcement — same recipe as above.
+2. A free, low-effort partial fallback: some mail clients show a
+   [Gravatar](https://gravatar.com) image keyed to the sender address's email
+   hash even without BIMI. Creating a Gravatar account for
+   `finance-hop@agentmail.to` and uploading the bunny mark is a ~2-minute
+   founder to-do (needs an actual login to Gravatar — not scriptable from
+   here) with no guarantee of coverage, since support for this varies by
+   client and isn't a formal standard the way BIMI is.
+
 ## Valuation sync (ADR 0005)
 
 Live first-party cpp observations override the static `BASELINE_CPP` once a
@@ -317,6 +386,34 @@ aliases win when set). Point a Stripe webhook at `/api/webhooks/stripe`.
 
 **Turn off:** unset `HOP_ENABLE_BILLING` — /account hides billing, checkout and
 webhook routes refuse softly (`{ok:false}`/503), alert-cap copy reverts.
+
+## Resend webhooks (deliverability / suppression list)
+
+`app/api/webhooks/resend/route.ts` receives Resend's email-event webhook
+(endpoint id `5ed0155c-869a-49f2-bf0b-e7594ba1ab57`, pointed at
+`https://hop.flights/api/webhooks/resend`), subscribed to: `email.bounced`,
+`email.complained`, `email.delivered`, `email.delivery_delayed`,
+`email.opened`, `email.clicked`. Resend signs deliveries the Svix way
+(`svix-id`/`svix-timestamp`/`svix-signature` headers), verified with the
+`svix` package against `RESEND_WEBHOOK_SECRET` (a `whsec_…` secret — see
+`lib/resend-webhook.ts`).
+
+`email.bounced` / `email.complained` upsert the recipient into
+`hop_email_suppressions` (`lib/email-suppressions.ts`) — this protects Resend
+sending-domain reputation/deliverability: repeatedly sending to a bounced or
+complained address risks the domain being throttled or suspended. Any future
+outbound-mail path (alerts, newsletter) **must** call `isSuppressed(email)`
+before sending; it fails OPEN (returns `false`) on a DB error so a transient
+blip never silently blocks a real send.
+
+`email.delivered` / `email.opened` / `email.clicked` / `email.delivery_delayed`
+are logged only — no existing table is a cheap fit for per-message engagement
+signals, and none is added speculatively. Persist them once there's a real
+consumer.
+
+**Missing `RESEND_WEBHOOK_SECRET`:** the route still exists (won't crash a
+build/deploy) but logs a warning and 200-acks every delivery without
+verifying or processing it — this is the dev/local state.
 
 ## Checkout (Duffel — TEST ONLY)
 

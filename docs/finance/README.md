@@ -32,8 +32,8 @@ emailed approval first.
 - `outreach.md` — the queue for owner-approved external outreach (e.g. seats.aero commercial
   terms, AwardWallet partner onboarding). Items only move to `status: sent` once Oliver has
   marked them `approved-to-send` in a prior reply — this desk never adds an item as
-  pre-approved. Processed **Tuesday-only** (see the file's own header note); other days, leave
-  it untouched rather than silently skipping it forever.
+  pre-approved. Processed **every run**, no day-of-week gate (a prior version of this note
+  incorrectly claimed a Tuesday-only cadence — corrected 2026-07-06).
 
 ## Weekly run protocol
 
@@ -41,8 +41,7 @@ emailed approval first.
 2. Skim the ledger inputs, append a note to `ledger.md`.
 3. Spend ~20 min searching for 1-2 new credit/discount opportunities; update
    `opportunities.md` (skip anything already tracked or rejected there).
-4. **On Tuesday runs only**: scan `outreach.md` for items with `status: approved-to-send`,
-   send each from this inbox, and update its `status` to `sent` (with a `sent-date`). On any
-   other day, leave the file untouched — do not send and do not mark items as processed.
+4. **Every run**: scan `outreach.md` for items with `status: approved-to-send`, send each
+   from this inbox, and update its `status` to `sent` (with a `sent-date`).
 5. Send one consolidated memo to oliver@newth.ai and mirror it to the Linear issue.
 6. Commit `docs/finance/` on a `finance/<date>` branch, push, open a draft PR.
