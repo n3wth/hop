@@ -318,6 +318,34 @@ aliases win when set). Point a Stripe webhook at `/api/webhooks/stripe`.
 **Turn off:** unset `HOP_ENABLE_BILLING` — /account hides billing, checkout and
 webhook routes refuse softly (`{ok:false}`/503), alert-cap copy reverts.
 
+## Resend webhooks (deliverability / suppression list)
+
+`app/api/webhooks/resend/route.ts` receives Resend's email-event webhook
+(endpoint id `5ed0155c-869a-49f2-bf0b-e7594ba1ab57`, pointed at
+`https://hop.flights/api/webhooks/resend`), subscribed to: `email.bounced`,
+`email.complained`, `email.delivered`, `email.delivery_delayed`,
+`email.opened`, `email.clicked`. Resend signs deliveries the Svix way
+(`svix-id`/`svix-timestamp`/`svix-signature` headers), verified with the
+`svix` package against `RESEND_WEBHOOK_SECRET` (a `whsec_…` secret — see
+`lib/resend-webhook.ts`).
+
+`email.bounced` / `email.complained` upsert the recipient into
+`hop_email_suppressions` (`lib/email-suppressions.ts`) — this protects Resend
+sending-domain reputation/deliverability: repeatedly sending to a bounced or
+complained address risks the domain being throttled or suspended. Any future
+outbound-mail path (alerts, newsletter) **must** call `isSuppressed(email)`
+before sending; it fails OPEN (returns `false`) on a DB error so a transient
+blip never silently blocks a real send.
+
+`email.delivered` / `email.opened` / `email.clicked` / `email.delivery_delayed`
+are logged only — no existing table is a cheap fit for per-message engagement
+signals, and none is added speculatively. Persist them once there's a real
+consumer.
+
+**Missing `RESEND_WEBHOOK_SECRET`:** the route still exists (won't crash a
+build/deploy) but logs a warning and 200-acks every delivery without
+verifying or processing it — this is the dev/local state.
+
 ## Checkout (Duffel — TEST ONLY)
 
 Native cash checkout books against the **test** key only; payments must never
