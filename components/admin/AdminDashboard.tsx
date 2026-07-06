@@ -105,7 +105,7 @@ export default function AdminDashboard({
         </div>
       </Section>
 
-      <Section title="Activity">
+      <Section title="Revenue & bookings">
         <div className="grid gap-4 sm:grid-cols-2">
           <OutclicksCard economics={unitEconomics} />
           <BookingPipelineCard economics={unitEconomics} />
@@ -250,7 +250,8 @@ function OutclicksCard({ economics }: { economics: UnitEconomics }) {
 
   return (
     <div className="rounded-[14px] border border-border bg-paper p-4 sm:p-5">
-      <h3 className="text-[12px] font-semibold text-text2">Outclicks · 7 days</h3>
+      <h3 className="text-[12px] font-semibold text-text2">Outclicks by kind · 7 days</h3>
+      <p className="mt-0.5 text-[11.5px] text-text3">All affiliate kinds — the This week tile above is card outclicks only.</p>
       {kinds === null ? (
         <p className="mt-2 text-[13px] text-text3">Ledger unavailable.</p>
       ) : kinds.length === 0 ? (
@@ -282,16 +283,17 @@ function BookingPipelineCard({ economics }: { economics: UnitEconomics }) {
   return (
     <div className="rounded-[14px] border border-border bg-paper p-4 sm:p-5">
       <h3 className="text-[12px] font-semibold text-text2">Booking pipeline</h3>
+      <p className="mt-0.5 text-[11.5px] text-text3">Current backlog, all-time — not scoped to this week.</p>
       {economics.escalationsNew === null ? (
         <p className="mt-2 text-[13px] text-text3">Unavailable.</p>
       ) : (
         <ul className="mt-2 flex flex-col gap-1.5 text-[13px]">
           <li className="flex justify-between">
-            <span className="text-text2">Open</span>
+            <span className="text-text2">Awaiting action</span>
             <span className="font-semibold text-text">{economics.escalationsNew}</span>
           </li>
           <li className="flex justify-between">
-            <span className="text-text2">Done</span>
+            <span className="text-text2">Resolved</span>
             <span className="font-semibold text-text">{economics.escalationsDone ?? '—'}</span>
           </li>
         </ul>
