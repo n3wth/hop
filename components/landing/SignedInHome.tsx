@@ -68,14 +68,19 @@ export default async function SignedInHome({
   // → today's exact feed.
   const base = personalized ? affordable : topValue(24)
   const pool = withoutAvoided(base, memory.avoided)
-  // The hero rotator takes the TOP picks; the grid continues where it ends so
-  // one page never shows the same destination photo twice (experience
-  // heuristic: repetition reads as template, not curation). Value order is
-  // preserved across the seam.
+  // The hero rotator takes the TOP picks; "Where your points already reach"
+  // takes the next 2-3; the grid continues where THAT ends — so one page
+  // never shows the same destination photo twice (experience heuristic:
+  // repetition reads as template, not curation). Value order is preserved
+  // across every seam.
   const heroPicks = pool.slice(0, 5)
-  const picks = pool.slice(heroPicks.length, heroPicks.length + 8)
+  const reachPicks = pool.slice(heroPicks.length, heroPicks.length + 3)
+  const picks = pool.slice(
+    heroPicks.length + reachPicks.length,
+    heroPicks.length + reachPicks.length + 8,
+  )
   const photos = await destinationImages(
-    [...heroPicks, ...picks].map((d) => imageQuery(d)),
+    [...heroPicks, ...reachPicks, ...picks].map((d) => imageQuery(d)),
   )
 
   // The hero showcase — the member's own reachable picks, in the exact visual
@@ -99,32 +104,43 @@ export default async function SignedInHome({
         thumb: photo.thumb,
         color: photo.color,
         href: `/search?from=${encodeURIComponent(seed.from)}&to=${encodeURIComponent(d.code)}&adults=1`,
+        cashValue: d.typicalCashUSD,
       },
     ]
   })
 
   return (
     <div className="flex flex-col gap-14 pt-4 sm:gap-16 sm:pt-6 lg:gap-20">
-      {/* ── THE FRONT DOOR — split hero, same language as signed-out ────── */}
-      {/* Greeting + engine-computed wallet line + the conversation composer on
-          the left; the member's own reachable trips rotating on the right with
-          the photo ambience washing the section. The old stats panel folded
-          into the hero status line — the showcase card already carries the
-          best-value figures. */}
-      <SignedInHero
-        first={first}
-        programs={programs}
-        totalPoints={totalPoints}
-        pointsWorth={pointsWorth}
-        entries={heroEntries}
-      />
+      {/* ── THE FRONT DOOR — hero + immediate reach, one coupled unit ─────── */}
+      {/* Tighter inner gap than the outer rhythm below: the reach tiles are
+          the hero's balance line paying off immediately, not a new section —
+          closing this "dead band" is what makes the two read as one move. */}
+      <div className="flex flex-col gap-8 sm:gap-10">
+        {/* Greeting + engine-computed wallet line + the conversation composer
+            on the left; the member's own reachable trips rotating on the
+            right with the photo ambience washing the section. The old stats
+            panel folded into the hero status line — the showcase card already
+            carries the best-value figures. */}
+        <SignedInHero
+          first={first}
+          programs={programs}
+          totalPoints={totalPoints}
+          pointsWorth={pointsWorth}
+          entries={heroEntries}
+          balances={balances}
+        />
 
-      {/* ── THE LEDGER DREAM — a cinematic "Dream of the Week" ───────────── */}
-      {/* The single most aspirational-yet-affordable redemption built FROM their
-          real points stack, with the engine's transparent "how you afford it"
-          proof and a live AI narration. A highlight, placed right under their
-          points so the dream sits next to the wealth that funds it. */}
-      <LedgerDream excludeCodes={heroEntries.map((e) => e.code)} />
+        {/* ── WHERE YOUR POINTS ALREADY REACH ────────────────────────────── */}
+        {/* A compact, static row of the member's next-best reachable
+            redemptions (continuing the ranked pool right where the hero
+            rotator left off — see the slicing above). `personalized`
+            (computed above from the real reachableDestinations() gate)
+            decides whether this is genuinely theirs or the generic
+            best-value sample. */}
+        {reachPicks.length > 0 ? (
+          <LedgerDream picks={reachPicks} origin={seed.from} sample={!personalized} photos={photos} />
+        ) : null}
+      </div>
 
       {/* ── SET HOME AIRPORT (only until they've set one) ────────────────── */}
       {!hasHomeAirport ? <HomeAirportPrompt /> : null}
@@ -175,7 +191,11 @@ export default async function SignedInHome({
           (returns null) when there's nothing left to show. */}
       <TransferUnlockShelf
         balances={balances}
-        excludeCodes={[...heroEntries.map((e) => e.code), ...picks.map((d) => d.code)]}
+        excludeCodes={[
+          ...heroEntries.map((e) => e.code),
+          ...reachPicks.map((d) => d.code),
+          ...picks.map((d) => d.code),
+        ]}
         origin={seed.from}
       />
 

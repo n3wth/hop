@@ -2,6 +2,15 @@
 
 import Link from 'next/link'
 import { useEffect, useState, ViewTransition } from 'react'
+import { tier } from '@/lib/cpp'
+
+// Same good/ok/weak language the verdict + destination grid chips use, so a
+// cpp figure's color always means the same thing across surfaces.
+const TIER_TEXT: Record<ReturnType<typeof tier>, string> = {
+  green: 'text-good',
+  amber: 'text-ok',
+  muted: 'text-weak',
+}
 
 // One showcase entry. Every number here was computed on the server
 // (lib/destinations + lib/search's threshold) — this component only cycles.
@@ -20,6 +29,11 @@ export interface ShowcaseEntry {
   thumb: string
   color?: string
   href: string
+  /** Typical one-way cash for this redemption (lib/destinations
+      #typicalCashUSD) — "the cash you skip" by using points. Optional: only
+      the signed-in hero's balance-line teaser needs it; the signed-out
+      showcase leaves it unset. */
+  cashValue?: number
 }
 
 // The photo and its verdict card advance TOGETHER on one slow clock — a
@@ -70,33 +84,34 @@ export default function ShowcaseRotator({ entries }: { entries: ShowcaseEntry[] 
       </div>
 
       {/* The product, layered on the dream: the engine's numbers for THIS
-          place. Text lives on paper, never on the photo. */}
+          place. Text lives on paper, never on the photo. Verdict-first
+          hierarchy: the pill + cpp are the loudest thing on the card — the
+          number IS the pitch. City/country is a small context header, not
+          the headline (docs/design/copy-spec.md — state the answer, then the
+          number). */}
       <Link
         href={d.href}
-        aria-label={`${d.city} — see the points-vs-cash verdict`}
+        aria-label={`${d.city} — ${d.cpp.toFixed(1)} cents per point — see the points-vs-cash verdict`}
         className="absolute bottom-0 left-5 block w-[min(82%,360px)] rounded-[var(--radius-lg)] border border-border bg-paper p-4 transition-colors hover:border-brand sm:left-8 sm:p-5"
       >
-        <span className="flex items-baseline justify-between gap-3">
-          <span className="truncate font-display text-[19px] font-semibold leading-[1.1] tracking-[-0.01em] text-text sm:text-[21px]">
-            {d.city}
-          </span>
-          <span className="flex-shrink-0 text-[11px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
-            {/* city-states would read twice (Hong Kong / HONG KONG) — show the
-                IATA code instead when country adds nothing */}
-            {d.country === d.city ? d.code : d.country}
+        <span className="block truncate text-[11px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
+          {/* city-states would read twice (Hong Kong / HONG KONG) — show the
+              IATA code instead when country adds nothing */}
+          {d.country === d.city ? d.code : `${d.city} · ${d.country}`}
+        </span>
+        <span className="mt-1.5 flex flex-wrap items-center gap-2">
+          {d.pointsWin ? (
+            <span className="inline-flex rounded-full bg-brand-light px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-[var(--track-tag)] text-brand-deep">
+              Points win
+            </span>
+          ) : null}
+          <span className={`hop-price text-[24px] leading-none sm:text-[28px] ${TIER_TEXT[tier(d.cpp)]}`}>
+            {d.cpp.toFixed(1)}¢/pt
           </span>
         </span>
-        <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="hop-price text-[14px] text-brand">{d.cpp.toFixed(1)}¢/pt</span>
-          <span className="text-[13px] text-text2">
-            from {Math.round(d.miles / 1000)}k miles{d.cabin ? ` · ${d.cabin}` : ''} · {d.program}
-          </span>
+        <span className="mt-2 block truncate text-[13px] text-text2">
+          from {Math.round(d.miles / 1000)}k miles{d.cabin ? ` · ${d.cabin}` : ''} · {d.program}
         </span>
-        {d.pointsWin ? (
-          <span className="mt-3 inline-flex rounded-full bg-brand-light px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-[var(--track-tag)] text-brand-deep">
-            Points win
-          </span>
-        ) : null}
       </Link>
     </div>
   )

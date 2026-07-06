@@ -3,6 +3,18 @@ import HeroAsk from '@/components/landing/HeroAsk'
 import HeroAmbience from '@/components/landing/HeroAmbience'
 import ShowcaseRotator, { type ShowcaseEntry } from '@/components/landing/ShowcaseRotator'
 import { WALLET_VALUE_CAVEAT } from '@/lib/valuations'
+import type { Balance } from '@/lib/types'
+
+// Below this total (or with only a single program held), hop can't yet see
+// "the whole hand" — one card's balance rarely clears a real award on its
+// own, so the line pushes toward connecting more programs rather than
+// quoting a redemption teaser. Matches the affordableWith() floor most
+// short-haul economy awards need (lib/destinations).
+const LOW_BALANCE_THRESHOLD = 25_000
+
+function money(n: number): string {
+  return `$${Math.round(n).toLocaleString('en-US')}`
+}
 
 // The signed-in front door — the SAME split-hero language as the signed-out
 // page (confident display type left, one composed showcase right, the blurred
@@ -17,6 +29,7 @@ export default function SignedInHero({
   totalPoints,
   pointsWorth,
   entries,
+  balances = [],
 }: {
   first?: string
   programs: number
@@ -25,8 +38,17 @@ export default function SignedInHero({
   pointsWorth: number
   /** Personalized showcase — every number computed server-side. */
   entries: ShowcaseEntry[]
+  /** Real per-program balances (lib/accounts#getUserBalances) — only the
+      single-program display name in the low-balance line needs this. */
+  balances?: Balance[]
 }) {
   const showcase = entries.length >= 2
+  // The engine's own best-value reachable pick — entries is already sorted by
+  // cpp desc (lib/destinations#affordableWith), so entries[0] IS the best
+  // reachable redemption. Used for the healthy-balance teaser below; the
+  // rotator itself needs >=2 entries but this line only needs one.
+  const bestReach = entries[0]
+  const isLowBalance = programs === 1 || totalPoints < LOW_BALANCE_THRESHOLD
 
   return (
     // isolate: HeroAmbience sits at -z inside THIS stacking context, above the
@@ -43,7 +65,45 @@ export default function SignedInHero({
             {first ? `Where to next, ${first}?` : 'Where to next?'}
           </h1>
 
-          {programs > 0 ? (
+          {programs === 0 ? (
+            <p
+              className="hop-rise mt-4 max-w-[46ch] text-[15px] leading-[1.6] text-text2 sm:text-[17px]"
+              style={{ ['--hop-delay' as string]: '140ms' }}
+            >
+              Link a loyalty program and hop prices every trip against what you
+              actually hold.{' '}
+              <Link
+                href="/account#programs"
+                className="font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline"
+              >
+                Add a program
+              </Link>
+            </p>
+          ) : isLowBalance ? (
+            // The engine can't yet see "the whole hand" — one program (or a
+            // small stack) rarely clears a real award alone, so this pushes
+            // toward connecting more rather than teasing a redemption.
+            <p
+              className="hop-rise mt-4 max-w-[46ch] text-[15px] leading-[1.6] text-text2 sm:text-[17px]"
+              style={{ ['--hop-delay' as string]: '140ms' }}
+            >
+              <span className="hop-price font-semibold text-text">
+                {totalPoints.toLocaleString('en-US')}
+              </span>{' '}
+              {programs === 1 ? (
+                <>{balances[0]?.program ?? 'points'} points</>
+              ) : (
+                <>points across {programs} programs</>
+              )}
+              . Add your other programs and hop sees your whole hand.{' '}
+              <Link
+                href="/account#programs"
+                className="font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline"
+              >
+                Add a program
+              </Link>
+            </p>
+          ) : (
             <p
               className="hop-rise mt-4 text-[15px] leading-[1.6] text-text2 sm:text-[17px]"
               style={{ ['--hop-delay' as string]: '140ms' }}
@@ -51,8 +111,33 @@ export default function SignedInHero({
               <span className="hop-price font-semibold text-text">
                 {totalPoints.toLocaleString('en-US')}
               </span>{' '}
-              points across {programs} {programs === 1 ? 'program' : 'programs'}
-              {pointsWorth > 0 ? (
+              across {programs} programs
+              {bestReach ? (
+                // The best reachable redemption straight from the engine
+                // (entries[0], already cpp-ranked) — cashValue is the route's
+                // typical one-way cash (lib/destinations#typicalCashUSD), the
+                // same "cash you skip" figure the Ledger Dream card uses.
+                <>
+                  {' '}
+                  — enough for{' '}
+                  <span className="font-semibold text-text">
+                    {bestReach.city}
+                    {bestReach.cabin ? ` in ${bestReach.cabin}` : ''}
+                  </span>
+                  {bestReach.cashValue ? (
+                    // "Skipping $X" — the trip's typical one-way cash price
+                    // (lib/destinations#typicalCashUSD), the exact figure the
+                    // Ledger Dream card labels "Cash you skip". Deliberately
+                    // NOT "$X to spare" — cashValue isn't leftover budget,
+                    // it's the cash outlay the points redemption avoids.
+                    <>
+                      {', skipping '}
+                      <span className="font-semibold text-text">{money(bestReach.cashValue)}</span>
+                      {' in cash'}
+                    </>
+                  ) : null}
+                </>
+              ) : pointsWorth > 0 ? (
                 <span title={WALLET_VALUE_CAVEAT}>
                   {' '}
                   — worth ~
@@ -64,29 +149,18 @@ export default function SignedInHero({
               ) : null}
               .{' '}
               <Link
-                href="/account"
+                href="/account#programs"
                 className="font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline"
               >
                 Manage
               </Link>
             </p>
-          ) : (
-            <p
-              className="hop-rise mt-4 max-w-[46ch] text-[15px] leading-[1.6] text-text2 sm:text-[17px]"
-              style={{ ['--hop-delay' as string]: '140ms' }}
-            >
-              Link a loyalty program and hop prices every trip against what you
-              actually hold.{' '}
-              <Link
-                href="/account"
-                className="font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline"
-              >
-                Add a program
-              </Link>
-            </p>
           )}
 
-          <div className="hop-rise mt-7" style={{ ['--hop-delay' as string]: '200ms' }}>
+          {/* Tightened from mt-7 — the composer is the headline's direct
+              continuation ("say where"), not a separate block; it should read
+              coupled to the greeting + balance line above it. */}
+          <div className="hop-rise mt-5" style={{ ['--hop-delay' as string]: '200ms' }}>
             <HeroAsk />
           </div>
         </div>

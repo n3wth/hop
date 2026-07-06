@@ -33,19 +33,20 @@ export default function HeroAmbience({ entries }: { entries: ShowcaseEntry[] }) 
       className="pointer-events-none absolute top-[-160px] bottom-0 -z-10 overflow-hidden"
       style={{ left: 'calc(50% - 50vw)', right: 'calc(50% - 50vw)' }}
     >
-      {entries.map((e, j) => (
-        // The tiny thumb is plenty — 70px of blur erases any resolution.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={e.code}
-          src={e.thumb}
-          alt=""
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1800ms] ${
-            j === active ? 'opacity-[0.32]' : 'opacity-0'
-          }`}
-          style={{ filter: 'blur(70px) saturate(1.15)', transform: 'scale(1.2)' }}
-        />
-      ))}
+      {/* ONE confident tint, not a rotating set of hues — only the active
+          photo is ever mounted (the old N-image stack, cross-fading between
+          every entry's own color, read busier than the single restrained
+          wash the flat-editorial bar calls for). Swaps with the rotator's
+          own beat; the tiny thumb is plenty — 70px of blur erases any
+          resolution. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        key={entries[active].code}
+        src={entries[active].thumb}
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover opacity-[0.32]"
+        style={{ filter: 'blur(70px) saturate(1.15)', transform: 'scale(1.2)' }}
+      />
       {/* veil: keeps nav/heading contrast honest up top, melts the wash into
           the plain canvas before the sample-verdict panel */}
       <div
