@@ -256,7 +256,10 @@ export async function disconnectAwardWallet(): Promise<Result> {
 // the cron. Throttled to one live pull per REFRESH_THROTTLE_MS so mashing the
 // button can't hammer AwardWallet outside the cron cadence; a throttled call
 // still returns ok with the existing syncedAt (the UI has nothing new to show,
-// not an error). Never throws.
+// not an error). The throttle only applies after a GOOD sync (cached.ok) — if
+// the last attempt failed, a mash of the button should keep retrying rather
+// than silently reporting a throttled "ok" that looks like recovery when
+// nothing was actually re-fetched. Never throws.
 export async function refreshAwardWallet(): Promise<Result & { syncedAt: string | null }> {
   const auth = await requireUser()
   if ('error' in auth) return { ok: false, error: auth.error, syncedAt: null }
@@ -265,7 +268,7 @@ export async function refreshAwardWallet(): Promise<Result & { syncedAt: string 
   if (!awId) return { ok: false, error: 'Not connected to AwardWallet', syncedAt: null }
 
   const cached = await getCachedAwBalances(auth.userId)
-  if (cached.syncedAt) {
+  if (cached.ok && cached.syncedAt) {
     const age = Date.now() - Date.parse(cached.syncedAt)
     if (Number.isFinite(age) && age >= 0 && age < REFRESH_THROTTLE_MS) {
       return { ok: true, syncedAt: cached.syncedAt }
