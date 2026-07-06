@@ -7,15 +7,15 @@ import { createNewsletterSignup, listRecentNewsletterSignups } from '@/lib/newsl
 // own validation cases already live in lib/escalation.test.ts (reused, not duplicated).
 
 describe('createNewsletterSignup (graceful, no db)', () => {
-  it('returns false when the email is unusable, without attempting a db call', async () => {
-    await expect(createNewsletterSignup({ email: 'garbage' })).resolves.toBe(false)
-    await expect(createNewsletterSignup({ email: undefined })).resolves.toBe(false)
+  it('returns null when the email is unusable, without attempting a db call', async () => {
+    await expect(createNewsletterSignup({ email: 'garbage' })).resolves.toBeNull()
+    await expect(createNewsletterSignup({ email: undefined })).resolves.toBeNull()
   })
 
-  it('returns false when no db is configured, even for a valid email', async () => {
+  it('returns null when no db is configured, even for a valid email', async () => {
     await expect(
       createNewsletterSignup({ userId: 'user_abc', email: 'Traveler@Example.com' }),
-    ).resolves.toBe(false)
+    ).resolves.toBeNull()
   })
 })
 

@@ -69,8 +69,8 @@ export async function POST(request: Request): Promise<Response> {
     return json({ ok: false, error: 'Add an email to join.' }, 400)
   }
 
-  const saved = await createNewsletterSignup({ userId, email })
-  if (!saved) {
+  const result = await createNewsletterSignup({ userId, email })
+  if (!result) {
     return json(
       { ok: false, error: "Couldn't save that just now — try again in a bit." },
       503,
@@ -78,10 +78,13 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   // Best-effort owner ping, after responding — gated on Resend, no-ops cleanly
-  // when email is unconfigured.
-  after(async () => {
-    await sendOwnerNotification('New newsletter signup', `Email: ${email}`)
-  })
+  // when email is unconfigured. Only a genuinely new row is worth a ping; a
+  // repeat submission of an already-captured address is a silent no-op.
+  if (result === 'inserted') {
+    after(async () => {
+      await sendOwnerNotification('New newsletter signup', `Email: ${email}`)
+    })
+  }
 
   return json({ ok: true })
 }

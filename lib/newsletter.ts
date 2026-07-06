@@ -49,24 +49,29 @@ function rowToSignup(row: NewsletterSignupRow): NewsletterSignup | null {
 }
 
 // Store a newsletter lead. Validates + lowercases defensively (case-insensitive
-// dedup via the unique index on email). Returns true when the address is now
-// saved — including when it was already saved (dedup is a no-op success, never
-// an error). Returns false for an unusable email or an unconfigured/failing db.
-// NEVER throws — mirrors createEscalation's contract.
+// dedup via the unique index on email). Returns 'inserted' for a genuinely new
+// row, 'duplicate' when the address was already saved (a no-op success, never
+// an error), or null for an unusable email or an unconfigured/failing db. NEVER
+// throws — mirrors createEscalation's contract. Callers that only care whether
+// the address is now saved can check the result is non-null.
 export async function createNewsletterSignup(input: {
   userId?: string
   email: unknown
-}): Promise<boolean> {
-  return withDb<boolean>(false, async (db) => {
+}): Promise<'inserted' | 'duplicate' | null> {
+  return withDb<'inserted' | 'duplicate' | null>(null, async (db) => {
     const email = normalizeEmail(input?.email)?.toLowerCase()
-    if (!email) return false
+    if (!email) return null
     const userId =
       typeof input?.userId === 'string' && input.userId.trim() ? input.userId.trim() : null
 
-    const { error } = await db
+    const { data, error } = await db
       .from(TABLE)
       .upsert({ user_id: userId, email }, { onConflict: 'email', ignoreDuplicates: true })
-    return !error
+      .select('id')
+    if (error) return null
+    // onConflictDoNothing skips the row entirely on a duplicate, so `.select()`
+    // comes back empty — that's how we tell an insert from a dedup no-op.
+    return Array.isArray(data) && data.length > 0 ? 'inserted' : 'duplicate'
   })
 }
 
