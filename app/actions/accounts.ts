@@ -47,15 +47,23 @@ async function requireUser(): Promise<{ userId: string } | { error: string }> {
 }
 
 // Parse a balance from form input: strip commas/spaces, reject negatives/NaN.
-// R1.4: an empty/whitespace-only input is a valid "balance unknown" submission
-// (parses to 0, the engine's existing "don't claim ownership" value) — not an
-// error. A genuinely invalid input (letters, negative, over-max) still errors
-// exactly as before.
+// An empty/whitespace-only input is invalid here — this is the STRICT parser,
+// used everywhere except addProgram's optional-balance flow (see
+// parseOptionalBalance below), so clearing an existing balance (editProgram)
+// is still rejected, never silently saved as 0.
 function parseBalance(raw: unknown): number | null {
-  if (typeof raw !== 'number' && String(raw ?? '').trim() === '') return 0
   const n = typeof raw === 'number' ? raw : parseFloat(String(raw ?? '').replace(/[^0-9.]/g, ''))
   if (!Number.isFinite(n) || n < 0 || n > MAX_BALANCE) return null
   return Math.round(n)
+}
+
+// R1.4: addProgram's balance is optional — an empty/whitespace-only input is a
+// valid "balance unknown" submission (parses to 0, the engine's existing
+// "don't claim ownership" value), not an error. Scoped to addProgram only —
+// editProgram keeps using the strict parseBalance above.
+function parseOptionalBalance(raw: unknown): number | null {
+  if (typeof raw !== 'number' && String(raw ?? '').trim() === '') return 0
+  return parseBalance(raw)
 }
 
 // --- Manual balances (primary path) ----------------------------------------
@@ -71,7 +79,7 @@ export async function addProgram(
   if (!raw) return { ok: false, error: 'Enter a program' }
   if (raw.length > MAX_PROGRAM_LEN) return { ok: false, error: 'That name is too long' }
 
-  const balance = parseBalance(balanceRaw)
+  const balance = parseOptionalBalance(balanceRaw)
   if (balance == null) return { ok: false, error: 'Enter a valid balance' }
 
   // Canonicalize so the stored name is the one true program identity.
