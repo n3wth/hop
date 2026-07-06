@@ -39,6 +39,8 @@ function candidate(overrides: Partial<SweetSpotCandidate> = {}): SweetSpotCandid
     baseline: 1.4,
     sampleCount: 3,
     notes: 'Observed ~4.1¢/pt over 3 sampled dates vs ~1.4¢/pt typical for this program.',
+    destCountry: 'Japan',
+    destRegion: 'Asia',
     ...overrides,
   }
 }
@@ -114,6 +116,34 @@ describe('draftKey() / buildExistingKeys() / filterNewCandidates() — dedup, pu
 
   it('draftKey() is case/whitespace-insensitive', () => {
     expect(draftKey('  sfo → nrt ', 'ALASKA-ATMOS', 'business')).toBe(draftKey('SFO → NRT', 'alaska-atmos', 'Business'))
+  })
+
+  // The P1 this covers: mined candidates are airport pairs ("SFO → NRT"), but
+  // lib/sweet-spots.ts's static seed table uses region strings ("US ↔ Japan",
+  // "US ↔ Asia") — an exact draftKey() match between the two can never fire,
+  // so the static half of dedup was dead code for real mined data. This test
+  // fails against a filterNewCandidates() that only checks the candidate's
+  // own literal route (the pre-fix behavior) and passes once static-table
+  // dedup goes through staticRouteAliasKeys()'s country/region aliases.
+  it('a mined airport-pair candidate is dropped as a duplicate of a static region-string seed row for the same program/cabin', () => {
+    // Real static row: lib/sweet-spots.ts has { route: 'US ↔ Japan', programSlug:
+    // 'alaska-atmos', cabin: 'Business' } — candidate()'s defaults (SFO → NRT,
+    // alaska-atmos, Business, destCountry 'Japan') are chosen to collide with it.
+    const mined = candidate()
+    const keys = buildExistingKeys([], sweetSpots)
+    expect(filterNewCandidates([mined], keys)).toEqual([])
+  })
+
+  it('a mined candidate for a genuinely new combo survives dedup against the static table', () => {
+    const mined = candidate({
+      route: 'ORD → GIG',
+      programSlug: 'lifemiles',
+      cabin: 'Business',
+      destCountry: 'Brazil',
+      destRegion: 'South America',
+    })
+    const keys = buildExistingKeys([], sweetSpots)
+    expect(filterNewCandidates([mined], keys)).toEqual([mined])
   })
 })
 
@@ -224,11 +254,11 @@ describe('findSweetSpotCandidates() — degrade-safe', () => {
 
 describe('createCandidateDrafts() — degrade-safe with no db configured', () => {
   it('resolves without throwing and creates nothing', async () => {
-    await expect(createCandidateDrafts([candidate()])).resolves.toEqual({ created: 0 })
+    await expect(createCandidateDrafts([candidate()])).resolves.toEqual({ created: 0, drafts: [] })
   })
 
   it('an empty candidate list resolves immediately with created:0', async () => {
-    await expect(createCandidateDrafts([])).resolves.toEqual({ created: 0 })
+    await expect(createCandidateDrafts([])).resolves.toEqual({ created: 0, drafts: [] })
   })
 })
 

@@ -100,6 +100,12 @@ export interface SweetSpotCandidate {
   baseline: number // lib/valuations.ts static baseline for this program
   sampleCount: number
   notes: string // deterministic — see buildNotes()
+  // Destination's own country/region (lib/destinations.ts) — carried through
+  // solely so the static-seed half of dedup (staticRouteAliasKeys) can
+  // recognize a mined airport pair against lib/sweet-spots.ts's region-string
+  // route vocabulary. Never shown to the owner or persisted on the draft.
+  destCountry: string
+  destRegion: string
 }
 
 // Notable if the observed cpp clears the engine's own "use points" line AND is
@@ -132,13 +138,40 @@ export function buildExistingKeys(
   return keys
 }
 
+// lib/sweet-spots.ts's static seed table describes routes as region strings
+// ("US ↔ Japan", "US ↔ Asia"), never as airport pairs — a mined "SFO → NRT"
+// can never exact-match one of those by draftKey() alone, which made the
+// static half of dedup dead code in practice (every mining hub is a US
+// airport, so "US ↔ <country/region>" is the vocabulary to reproduce). This
+// returns every key a candidate could plausibly collide under: its own exact
+// (mined or hand-typed) route, plus a "US ↔ <country>" and "US ↔ <region>"
+// alias derived from the destination. Known gap: a handful of pre-existing
+// static rows use bespoke phrasing outside that pattern (e.g. "Short-haul
+// Europe (off-peak)", "Middle East ↔ region / to US") and won't be caught —
+// acceptable since those are hand-authored legacy rows, not new pipeline
+// output, and this still closes the common case the plan promised.
+export function staticRouteAliasKeys(
+  candidate: Pick<SweetSpotCandidate, 'route' | 'programSlug' | 'cabin' | 'destCountry' | 'destRegion'>,
+): string[] {
+  const keys = [draftKey(candidate.route, candidate.programSlug, candidate.cabin)]
+  if (candidate.destCountry) {
+    keys.push(draftKey(`US ↔ ${candidate.destCountry}`, candidate.programSlug, candidate.cabin))
+  }
+  if (candidate.destRegion) {
+    keys.push(draftKey(`US ↔ ${candidate.destRegion}`, candidate.programSlug, candidate.cabin))
+  }
+  return keys
+}
+
 // Drop any candidate whose {route, programSlug, cabin} the owner has already
-// seen in any status, or that's already a static seed row.
+// seen in any status, or that's already a static seed row (matched via
+// staticRouteAliasKeys — see its doc comment for why an exact route match
+// alone isn't enough).
 export function filterNewCandidates(
   candidates: SweetSpotCandidate[],
   existingKeys: Set<string>,
 ): SweetSpotCandidate[] {
-  return candidates.filter((c) => !existingKeys.has(draftKey(c.route, c.programSlug, c.cabin)))
+  return candidates.filter((c) => !staticRouteAliasKeys(c).some((k) => existingKeys.has(k)))
 }
 
 // Rank survivors by how far above baseline they run (cpp/baseline, descending)
@@ -192,6 +225,8 @@ interface RawSample {
   route: string
   programSlug: string
   programId: string
+  destCountry: string
+  destRegion: string
   samples: { cpp: number; miles: number }[]
 }
 
@@ -236,7 +271,16 @@ export async function findSweetSpotCandidates(now: Date = new Date()): Promise<S
 
           const route = `${hub} → ${dest.code}`
           const key = `${route}|${slug}`
-          const entry = byKey.get(key) ?? { route, programSlug: slug, programId: def.id, samples: [] }
+          const entry =
+            byKey.get(key) ??
+            {
+              route,
+              programSlug: slug,
+              programId: def.id,
+              destCountry: dest.country,
+              destRegion: dest.region,
+              samples: [],
+            }
           entry.samples.push({ cpp: o.cpp, miles: o.miles })
           byKey.set(key, entry)
         }
@@ -263,6 +307,8 @@ export async function findSweetSpotCandidates(now: Date = new Date()): Promise<S
       baseline,
       sampleCount: entry.samples.length,
       notes: buildNotes(meanCpp, baseline, entry.samples.length),
+      destCountry: entry.destCountry,
+      destRegion: entry.destRegion,
     })
   }
 
@@ -277,10 +323,14 @@ export async function findSweetSpotCandidates(now: Date = new Date()): Promise<S
 // deterministic `notes` computed above. NEVER auto-approves — every row this
 // creates lands pending_review, same as an owner-typed one. NEVER throws:
 // every function this calls already degrades via withDb/gateway-absent.
+// Returns the created rows (not just a count) so callers — specifically
+// ContentConsole's "Find candidates now" button — can splice them straight
+// into client state instead of needing a full page reload to see them.
 export async function createCandidateDrafts(
   candidates: SweetSpotCandidate[],
-): Promise<{ created: number }> {
+): Promise<{ created: number; drafts: SweetSpotDraft[] }> {
   let created = 0
+  const drafts: SweetSpotDraft[] = []
   for (const c of candidates) {
     const id = await createSweetSpotDraft({
       route: c.route,
@@ -303,6 +353,22 @@ export async function createCandidateDrafts(
       notes: c.notes,
     })
     if (why) await updateSweetSpotDraftWhy(id, why)
+
+    drafts.push({
+      id,
+      seq: 0, // DB-assigned; unknown here — matches NewDraftForm's own optimistic-insert placeholder
+      route: c.route,
+      program: c.program,
+      programSlug: c.programSlug,
+      metal: null,
+      cabin: c.cabin,
+      milesOw: c.milesOw,
+      milesLabel: c.milesLabel,
+      why: why ?? '',
+      confidence: 'med',
+      status: 'pending_review',
+      createdBy: CONTENT_CANDIDATES_CREATED_BY,
+    })
   }
-  return { created }
+  return { created, drafts }
 }

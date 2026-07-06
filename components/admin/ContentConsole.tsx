@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useMemo, useState, type ReactNode } from 'react'
 import type { SweetSpotDraft, DraftStatus } from '@/lib/sweet-spot-drafts'
 import { CONTENT_CANDIDATES_CREATED_BY } from '@/lib/sweet-spot-candidates'
@@ -25,7 +24,6 @@ export default function ContentConsole({
   drafts: SweetSpotDraft[] | null
   programs: { slug: string; name: string }[]
 }) {
-  const router = useRouter()
   const [items, setItems] = useState(drafts ?? [])
   const pending = items.filter((d) => d.status === 'pending_review')
   const approved = items.filter((d) => d.status === 'approved')
@@ -34,6 +32,7 @@ export default function ContentConsole({
   const onCreated = (d: SweetSpotDraft) => setItems((prev) => [d, ...prev])
   const onChanged = (d: SweetSpotDraft) =>
     setItems((prev) => prev.map((x) => (x.id === d.id ? d : x)))
+  const onFound = (found: SweetSpotDraft[]) => setItems((prev) => [...found, ...prev])
 
   return (
     <AdminPageShell>
@@ -50,7 +49,7 @@ export default function ContentConsole({
         ]}
         actions={
           <div className="flex items-center gap-2">
-            <FindCandidatesButton onFound={() => router.refresh()} />
+            <FindCandidatesButton onFound={onFound} />
             {approved.length > 0 ? (
               <Link
                 href="/sweet-spots"
@@ -132,7 +131,11 @@ function WorkflowSteps({ className }: { className?: string }) {
 // assembleSearch for notable Business-cabin redemptions right now instead of
 // waiting for the schedule. Refuses softly (inline error) when the flag/keys
 // aren't configured — same {ok:false} contract as every other action here.
-function FindCandidatesButton({ onFound }: { onFound: () => void }) {
+// Passes the created drafts back up (not just a refresh signal) so the
+// already-mounted ContentConsole can splice them into its own `items` state —
+// matching the onCreated/onChanged pattern the rest of this file uses instead
+// of relying on router.refresh(), which doesn't resync client-side useState.
+function FindCandidatesButton({ onFound }: { onFound: (drafts: SweetSpotDraft[]) => void }) {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
 
@@ -147,7 +150,7 @@ function FindCandidatesButton({ onFound }: { onFound: () => void }) {
       return
     }
     setMsg(`Found ${res.created ?? 0}`)
-    if ((res.created ?? 0) > 0) onFound()
+    if (res.drafts && res.drafts.length > 0) onFound(res.drafts)
   }
 
   return (
