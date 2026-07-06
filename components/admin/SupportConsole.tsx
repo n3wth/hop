@@ -13,6 +13,8 @@ import {
 // The owner-gated support console: inbound support tickets (each with its AI draft,
 // editable before sending) + expert-booking leads. Lists are null when the db read
 // failed — rendered as "unavailable", never as empty. Flat-editorial, internal tool.
+type ListFilter = 'open' | 'closed'
+
 export default function SupportConsole({
   tickets,
   escalations,
@@ -20,6 +22,19 @@ export default function SupportConsole({
   tickets: SupportTicket[] | null
   escalations: Escalation[] | null
 }) {
+  const [ticketFilter, setTicketFilter] = useState<ListFilter>('open')
+  const [escalationFilter, setEscalationFilter] = useState<ListFilter>('open')
+
+  const openTicketCount = tickets?.filter((t) => t.status !== 'closed').length ?? 0
+  const closedTicketCount = tickets ? tickets.length - openTicketCount : 0
+  const visibleTickets =
+    tickets?.filter((t) => (ticketFilter === 'closed') === (t.status === 'closed')) ?? null
+
+  const openEscalationCount = escalations?.filter((e) => e.status !== 'done').length ?? 0
+  const doneEscalationCount = escalations ? escalations.length - openEscalationCount : 0
+  const visibleEscalations =
+    escalations?.filter((e) => (escalationFilter === 'closed') === (e.status === 'done')) ?? null
+
   return (
     <AdminPageShell>
       <AdminPageHeader
@@ -45,34 +60,109 @@ export default function SupportConsole({
       {/* Wide screens: tickets beside booking requests; below lg they stack. */}
       <div className="mt-8 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
         <section className="mt-8">
-          <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">Tickets</h2>
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">Tickets</h2>
+            {tickets !== null && tickets.length > 0 ? (
+              <ListFilterToggle
+                value={ticketFilter}
+                onChange={setTicketFilter}
+                openCount={openTicketCount}
+                closedCount={closedTicketCount}
+                closedLabel="Closed"
+              />
+            ) : null}
+          </div>
           <div className="mt-3 flex flex-col gap-3">
             {tickets === null ? (
               <Empty>Tickets unavailable.</Empty>
             ) : tickets.length === 0 ? (
               <Empty>No support emails yet.</Empty>
+            ) : visibleTickets && visibleTickets.length === 0 ? (
+              <Empty>No {ticketFilter} tickets.</Empty>
             ) : (
-              tickets.map((t) => <TicketCard key={t.id} ticket={t} />)
+              visibleTickets?.map((t) => <TicketCard key={t.id} ticket={t} />)
             )}
           </div>
         </section>
 
         <section className="mt-10 lg:mt-8">
-          <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">
-            Booking requests
-          </h2>
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">
+              Booking requests
+            </h2>
+            {escalations !== null && escalations.length > 0 ? (
+              <ListFilterToggle
+                value={escalationFilter}
+                onChange={setEscalationFilter}
+                openCount={openEscalationCount}
+                closedCount={doneEscalationCount}
+                closedLabel="Done"
+              />
+            ) : null}
+          </div>
           <div className="mt-3 flex flex-col gap-3">
             {escalations === null ? (
               <Empty>Booking requests unavailable.</Empty>
             ) : escalations.length === 0 ? (
               <Empty>No expert-booking requests yet.</Empty>
+            ) : visibleEscalations && visibleEscalations.length === 0 ? (
+              <Empty>No {escalationFilter === 'closed' ? 'done' : 'open'} booking requests.</Empty>
             ) : (
-              escalations.map((e) => <EscalationCard key={e.id} esc={e} />)
+              visibleEscalations?.map((e) => <EscalationCard key={e.id} esc={e} />)
             )}
           </div>
         </section>
       </div>
     </AdminPageShell>
+  )
+}
+
+// "Show only" filter — defaults to open so a growing backlog of closed/done
+// items never buries what still needs the owner's attention.
+function ListFilterToggle({
+  value,
+  onChange,
+  openCount,
+  closedCount,
+  closedLabel,
+}: {
+  value: ListFilter
+  onChange: (next: ListFilter) => void
+  openCount: number
+  closedCount: number
+  closedLabel: string
+}) {
+  return (
+    <div className="flex flex-shrink-0 gap-1 rounded-full border border-border bg-surface p-0.5">
+      <FilterPill active={value === 'open'} onClick={() => onChange('open')}>
+        Open · {openCount}
+      </FilterPill>
+      <FilterPill active={value === 'closed'} onClick={() => onChange('closed')}>
+        {closedLabel} · {closedCount}
+      </FilterPill>
+    </div>
+  )
+}
+
+function FilterPill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full px-2.5 py-1 text-[11.5px] font-semibold transition-colors ${
+        active ? 'bg-brand text-white' : 'text-text3 hover:text-text2'
+      }`}
+    >
+      {children}
+    </button>
   )
 }
 

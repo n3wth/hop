@@ -64,6 +64,48 @@ free step, and it's a gateway to the same spend-match offers, not cash.
 
 ---
 
+## 5. Resend for Startups (extended free tier + email credits) — `drafted`
+
+- **Eligibility**: bootstrapped/pre-seed/seed, no VC referral required, new-to-the-program
+  Resend customer, production use case. Apply at resend.com/startups with use case and
+  expected volume; review takes 2-7 business days.
+- **Value**: extended free-tier sending limits + email credits for higher volume (exact
+  credit amount not published on the program page — confirmed at application/approval time).
+  Covers email API, audience management, webhooks.
+- **Effort**: low — one application form, no card required to apply.
+- **Deadline**: rolling.
+- **Why it fits**: hop already uses Resend for transactional email today (the `$0-20/mo`
+  Resend line in `budget.md`'s infra estimate) — this is a real, existing cost line, not a
+  speculative one, and the best-fitting credit found this run.
+- **Recommendation**: apply now — zero cost, zero commitment, direct offset for a real
+  infra line.
+- **Approval needed**: Oliver to submit via the Resend account hop already uses (this desk
+  doesn't hold the account/API keys).
+
+---
+
+## Considered, not pursued (this run) — AWS / Google Cloud
+
+Researched per the prior run's "candidate for a future run" note. Both have a real,
+no-VC-required entry tier, but neither offsets an existing hop cost line — hop's infra is
+Vercel + Neon + Cloudflare, with zero AWS or GCP usage today, so redeeming either credit
+would mean standing up new cloud spend just to consume free credits, not saving anything.
+Not drafted as applications.
+
+- **AWS Activate Founders** — $1,000 in AWS credits + $350 AWS Developer Support credits,
+  1-year validity. Eligibility: self-funded, <10 employees, <$1M revenue/funding,
+  pre-Series B, no VC/accelerator affiliation, founded <10 years, needs an AWS account on a
+  **paid tier plan** (billing method on file) and a corporate email domain (not gmail —
+  `oliver@newth.ai` is a personal domain, not `hop.flights`, which may also block
+  application). No fit without existing AWS usage.
+- **Google for Startups Cloud Program — Start tier** — $2,000 in Google Cloud credits,
+  12-month validity, usable only on GCP services (BigQuery, Gemini Enterprise, etc.).
+  Eligibility: founded within the last 24 months, working MVP, explicitly framed around
+  startups "with plans to seek venture funding soon" — in tension with hop's bootstrapped
+  stance, and no GCP usage to offset regardless.
+
+---
+
 ## 1. Anthropic Startup Program (Claude API credits) — `drafted`
 
 - **Eligibility**: explicitly open to bootstrapped founders, no VC backing required (per the
@@ -165,6 +207,5 @@ free step, and it's a gateway to the same spend-match offers, not cash.
   pure pay-as-you-go ($3 + 1%/confirmed order). The real Duffel-related owner action is the
   commercial-terms conversation already tracked in the business plan (§7 owner actions), not a
   credit application — not duplicated here.
-- **AWS Activate / Google for Startups** — not researched this run; hop's infra (Vercel + Neon +
-  Cloudflare) doesn't touch AWS/GCP directly today, so the fit is weak. Candidate for a future
-  run if that changes.
+- **AWS Activate / Google for Startups** — researched 2026-07-06, see the dedicated section
+  above; no fit today given zero AWS/GCP usage. Revisit if that changes.
