@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { execFileSync } from 'node:child_process'
 import { checkMigrationSequence } from '../../scripts/check-migration-sequence.mjs'
 
 // Guards task #28 (docs/solutions/2026-07-05-parallel-migration-numbering.md): parallel
@@ -108,5 +109,37 @@ describe('checkMigrationSequence', () => {
     const { ok, errors } = checkMigrationSequence(join(tmpdir(), 'definitely-does-not-exist-xyz'))
     expect(ok).toBe(true)
     expect(errors).toEqual([])
+  })
+
+  // Regression for a bug where the CLI resolved an absolute argv[2] with
+  // `join(process.cwd(), arg)` instead of `path.resolve(arg)`. `path.join` does not treat an
+  // absolute second argument as absolute — it strips the leading slash and folds it under cwd —
+  // so an absolute fixture path silently resolved to a nonexistent directory, hit the
+  // `!existsSync` early-return, and reported a false "OK" on a real collision. This exercises the
+  // actual CLI entry point (`main()`) via a subprocess, since calling `checkMigrationSequence`
+  // directly (as the tests above do) never touches the buggy argv-resolution branch.
+  it('CLI: detects a collision when invoked with an absolute fixture path', () => {
+    const dir = fixture({
+      '0008_smiling_vin_gonzales.sql': '-- original\n',
+      '0008_another_collision.sql': '-- landed independently in a different worktree\n',
+      'meta/_journal.json': JSON.stringify({
+        version: '7',
+        dialect: 'postgresql',
+        entries: [{ idx: 8, version: '7', when: 1, tag: '0008_smiling_vin_gonzales', breakpoints: true }],
+      }),
+    })
+
+    let error: (Error & { status?: number; stdout?: Buffer; stderr?: Buffer }) | undefined
+    try {
+      execFileSync('node', [join(process.cwd(), 'scripts/check-migration-sequence.mjs'), dir], {
+        cwd: tmpdir(),
+      })
+    } catch (err) {
+      error = err as typeof error
+    }
+
+    expect(error).toBeDefined()
+    expect(error?.status).toBe(1)
+    expect(error?.stderr?.toString()).toContain('Duplicate migration sequence "0008"')
   })
 })

@@ -13,7 +13,7 @@
 // `npm run db:check-migrations` (called from `npm run check`).
 
 import { readdirSync, readFileSync, existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 const SQL_NAME_RE = /^(\d{4})_.+\.sql$/
@@ -93,7 +93,7 @@ export function checkMigrationSequence(drizzleDir) {
 }
 
 function main() {
-  const drizzleDir = process.argv[2] ? join(process.cwd(), process.argv[2]) : join(process.cwd(), 'drizzle')
+  const drizzleDir = process.argv[2] ? resolve(process.argv[2]) : join(process.cwd(), 'drizzle')
   const { ok, errors } = checkMigrationSequence(drizzleDir)
   if (!ok) {
     console.error('\n[check-migration-sequence] FAILED — migration sequence collision detected:\n')
