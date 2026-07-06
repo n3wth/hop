@@ -24,7 +24,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/hooks/guard-main-commit.sh\"",
+            "command": "bash -c '[ -f \"$CLAUDE_PROJECT_DIR/scripts/hooks/guard-main-commit.sh\" ] && exec bash \"$CLAUDE_PROJECT_DIR/scripts/hooks/guard-main-commit.sh\" || echo \"guard-main-commit.sh missing from this checkout (likely forked before it was added) - run: git checkout origin/main -- scripts/hooks/\" >&2'",
             "timeout": 10,
             "statusMessage": "Checking branch guard"
           }
