@@ -104,6 +104,11 @@ export type EnvKey =
   // Absent → the Team page still renders fully; each card just shows a quiet
   // "connect GITHUB_TOKEN to see live work" note instead of PR data.
   | 'GITHUB_TOKEN'
+  // Svix-format signing secret (whsec_…) for the Resend email-event webhook
+  // (app/api/webhooks/resend/route.ts). Absent → the route still exists but
+  // logs and no-ops instead of verifying/processing (dev/local has no way to
+  // receive real Resend deliveries anyway).
+  | 'RESEND_WEBHOOK_SECRET'
 
 function read(key: EnvKey): string {
   const value = process.env[key]
@@ -156,6 +161,7 @@ export const env = {
   googleClientId: () => firstEnv('GOOGLE_CLIENT_ID', 'GOOGLE_ID'),
   googleClientSecret: () => firstEnv('GOOGLE_CLIENT_SECRET', 'GOOGLE_SECRET'),
   githubToken: () => read('GITHUB_TOKEN'),
+  resendWebhookSecret: () => read('RESEND_WEBHOOK_SECRET'),
 }
 
 // First non-empty value across alias keys (throws naming the primary key when
