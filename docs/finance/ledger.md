@@ -80,10 +80,15 @@ One 5-line note per run. Figures come only from the repo's own signals (business
   runs only pointed at the email by subject line, never included the raw URL, so this closes
   that gap. Still needs Oliver's manual click; `custom_domain_status` in `README.md` stays
   `blocked` until then.
-- **No-cost opportunity found**: GitHub for Startups — $10K platform credits + up to $40K
-  non-dilutive cash, direct apply, no VC required. hop already runs GitHub Actions CI, so this
-  is a real, existing-usage fit. Added as `drafted` in `opportunities.md`. Sentry for Startups
-  and Linear for Startups were also researched and not pursued (Sentry: no existing usage to
-  offset; Linear: requires a VC/accelerator partner code hop doesn't have).
+- **No-cost opportunity found, then corrected**: this run's first draft added GitHub for
+  Startups as a `drafted` application claiming direct-apply, no VC, plus $40K non-dilutive cash
+  — a PR review (bot) caught that this conflated two different GitHub programs. Verified
+  directly against github.com/enterprise/startups and accelerator.github.com: GitHub for
+  Startups is $10K credits **only** and requires partner (VC/accelerator) affiliation hop
+  doesn't have; the $40K non-dilutive figure belongs to GitHub Accelerator, an unrelated
+  10-week cohort for individual open-source-AI maintainers. Moved to "considered, not pursued"
+  in `opportunities.md` with the corrected facts — not recommending Oliver apply. Sentry for
+  Startups and Linear for Startups were also researched and not pursued (Sentry: no existing
+  usage to offset; Linear: requires a VC/accelerator partner code hop doesn't have).
 - **Unknowns flagged**: same as prior runs — active Pro subscriber count, card-affiliate status,
   outclick/escalation counts (all require live DB/dashboard access this session lacks).

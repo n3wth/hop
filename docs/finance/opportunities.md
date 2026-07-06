@@ -106,30 +106,6 @@ Not drafted as applications.
 
 ---
 
-## 6. GitHub for Startups ($10K platform credits + up to $40K non-dilutive cash) — `drafted`
-
-- **Eligibility**: founded within the last 5 years, less than $1M total funding raised, new to
-  GitHub Enterprise (or not on it in the past 6 months), not a current GitHub Enterprise
-  customer, hasn't previously received GitHub for Startups credits. **Direct application — no
-  VC/accelerator sponsor required** (distinct from the older partner-only track). Apply at
-  github.com/solutions/startups (or github.com/enterprise/startups).
-- **Value**: $10,000 in platform credits (GitHub Enterprise seats, Copilot licenses/premium
-  models, Advanced Security, Actions CI/CD minutes) for 12 months, plus up to $40,000 in
-  non-dilutive cash for qualifying startups — no equity given up. 20 seats of GitHub Enterprise
-  free for year one (50% off year two) is bundled in.
-- **Effort**: low — direct self-serve application, ~10 minutes, no card required to apply.
-- **Deadline**: rolling.
-- **Why it fits**: hop's whole codebase lives on GitHub (`n3wth/hop`) and already runs GitHub
-  Actions CI (`.github/workflows/ci.yml`, `deploy-valuations-worker.yml`) — real, existing usage
-  the credits directly offset (Actions minutes today, Copilot/Advanced Security if adopted).
-  Clears every eligibility bar: hop is weeks old and has raised $0.
-- **Recommendation**: apply now — zero cost, zero commitment, direct offset for CI minutes hop
-  already consumes, plus optional upside (Copilot seats, security scanning) at no extra cost.
-- **Approval needed**: Oliver to submit via the GitHub account/org that owns `n3wth/hop` — this
-  desk doesn't hold org-admin credentials to apply on hop's behalf.
-
----
-
 ## 1. Anthropic Startup Program (Claude API credits) — `drafted`
 
 - **Eligibility**: explicitly open to bootstrapped founders, no VC backing required (per the
@@ -234,11 +210,20 @@ Not drafted as applications.
 - **AWS Activate / Google for Startups** — researched 2026-07-06, see the dedicated section
   above; no fit today given zero AWS/GCP usage. Revisit if that changes.
 - **Sentry for Startups** ($5K credits / 6 months free Teams plan, <2yr old, <$5M raised, no VC
-  required for direct apply) — hop clears eligibility, but runs no error-monitoring tool today
-  (no Sentry SDK/dependency in the repo) — same reasoning as AWS/GCP: adopting Sentry purely to
-  consume the credit would be new spend, not an offset to existing usage. Worth reconsidering as
-  a straight ops decision (production error monitoring is a real gap) independent of the credit;
+  required for direct apply) — hop clears eligibility, but no explicit Sentry integration is
+  configured in app code today — same reasoning as AWS/GCP: adopting Sentry purely to consume
+  the credit would be new spend, not an offset to existing usage. Worth reconsidering as a
+  straight ops decision (production error monitoring is a real gap) independent of the credit;
   not drafted as a credit-hunt application this run.
+- **GitHub for Startups** — researched 2026-07-06, initially mis-scoped in this run's first
+  draft (a review caught it — corrected here). The real program at github.com/enterprise/startups
+  is **$10,000 in platform credits only, and requires affiliation with a GitHub for Startups
+  partner** (a VC/accelerator/incubator) — there is no direct-apply path, and hop is bootstrapped
+  with no such affiliation, so it doesn't qualify (same blocker as Linear, below). The
+  "$40,000 non-dilutive cash" figure in the original draft belonged to a different, unrelated
+  program — **GitHub Accelerator** (accelerator.github.com) — a 10-week cohort for individual
+  maintainers of open-source AI projects, not a company credit program; hop doesn't fit that
+  program's shape either. Not pursued.
 - **Linear for Startups** (up to 6 months free) — hop's finance/strategy desks already use
   Linear, but the program requires a partner code from an affiliated VC/accelerator/incubator
   (Y Combinator, Sequoia, etc.); hop is bootstrapped with no such affiliation, so there's no
