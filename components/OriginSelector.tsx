@@ -85,7 +85,7 @@ export default function OriginSelector() {
         aria-expanded={open}
         aria-label={origin ? `Departure airport: ${origin}. Change` : 'Set your departure airport'}
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center rounded-full border border-border px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:border-text2 hover:bg-sunk ${
+        className={`flex items-center rounded-full border border-current/30 px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:border-text2 hover:bg-sunk ${
           open ? 'border-text2 bg-sunk' : ''
         }`}
       >
