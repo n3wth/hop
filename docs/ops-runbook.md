@@ -144,6 +144,50 @@ sync. Rotate only deliberately; there is no re-encryption path by design.
 the cron bearer; the row's status moves to `ok` (recipe exists) or a truthful
 `failed`/`unsupported`.
 
+## AwardWallet (live balance auto-sync)
+
+Optional auto-sync on top of manual balances (`lib/awardwallet.ts`,
+`lib/accounts.ts`). `getUserBalances()` never calls AwardWallet live — every
+read is a `hop_user_accounts.cached_balances` snapshot, refreshed only by
+connect-time bootstrap, the `/account` "Refresh" button, and the periodic
+cron below. This split (cache read vs. the three write paths) is deliberate:
+a dead AwardWallet link degrades to the last-known-good snapshot with an
+honest staleness note, instead of a live call blocking a page render.
+
+**Engineering-owned, ready to flip:**
+
+1. `AWARDWALLET_API_KEY` + `AWARDWALLET_USER_ID` (business-account
+   credentials) — already required for the manual-ID connect path
+   (`ProgramsManager`'s "Advanced: paste a connected-user ID") to do anything.
+2. `AWARDWALLET_SYNC_CRON_ENABLED=1` — gates `/api/cron/awardwallet-sync`
+   (every 6h, offset from `standing-orders`). **Not required** for balances to
+   populate: bootstrap-on-connect and manual Refresh both call
+   `refreshAwCache` directly, so the cache works before this flag is ever
+   set — flip it once `npm run check`/`build` are green and Refresh has been
+   exercised against a real connected account.
+
+**Turn off:** unset `AWARDWALLET_SYNC_CRON_ENABLED`. The cron answers
+`503 disabled`; bootstrap and manual Refresh keep working (a byte-for-byte
+no-op otherwise).
+
+**Owner-blocked (do not attempt without AwardWallet business-dashboard
+access):**
+
+- `AWARDWALLET_CONNECT_URL` — the hosted "Connect Users" URL for the OAuth-
+  style connect flow (`app/auth/awardwallet/start|callback`). Absent → the
+  primary "Connect AwardWallet" CTA is a dead link; the manual-ID escape
+  hatch still works regardless.
+- The exact callback param name AwardWallet returns the connected-user id
+  under — `app/auth/awardwallet/callback/route.ts` currently tries four
+  plausible names (`userId`/`connectedUserId`/`connectedUser`/`id`).
+  Confirm against the real dashboard before relying on the OAuth path.
+
+**Verify:** connect via the manual-ID field on `/account` → balances and a
+"synced <time>" note appear immediately (bootstrap). Click Refresh → the
+synced time updates. `curl -H "Authorization: Bearer $CRON_SECRET"
+https://hop.flights/api/cron/awardwallet-sync` returns a refreshed/failed
+summary (or `{"ok":false,"disabled":true}` while the flag is off).
+
 ## Self-improve loop / degradation telemetry (ADR 0007)
 
 Deterministic health detection: `recordDegradation()` rows + the daily
@@ -274,7 +318,9 @@ preserved in the comments).
 | `/api/cron/sync-stripe` | daily | `isBillingEnabled()` |
 | `/api/cron/business-digest` | Mondays | `isEmailEnabled()` (`RESEND_API_KEY`) |
 | `/api/cron/health-sentinel` | daily | `isSelfImproveEnabled()` |
+| `/api/cron/balance-autosync` | daily | `isCredentialAutosyncLive()` |
+| `/api/cron/awardwallet-sync` | every 6h (offset from standing-orders) | `isAwardWalletSyncCronLive()` (`AWARDWALLET_SYNC_CRON_ENABLED`) |
 
-All six honor the same `Authorization: Bearer ${CRON_SECRET}` check and record a
-liveness heartbeat (`lib/cron-heartbeat.ts`) even when disabled — "off" is an
-owner choice, not an outage.
+All eight honor the same `Authorization: Bearer ${CRON_SECRET}` check and
+record a liveness heartbeat (`lib/cron-heartbeat.ts`) even when disabled —
+"off" is an owner choice, not an outage.

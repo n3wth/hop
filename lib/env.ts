@@ -280,6 +280,17 @@ export function isStandingOrdersCronLive(): boolean {
   return /^(1|true|yes)$/i.test(process.env.STANDING_ORDERS_CRON_ENABLED ?? '')
 }
 
+// The AwardWallet balance-cache cron (app/api/cron/awardwallet-sync) only
+// re-syncs connected users' cached balances while AWARDWALLET_SYNC_CRON_ENABLED
+// is truthy — flag-only, same shape as isStandingOrdersCronLive (no extra key:
+// AWARDWALLET_API_KEY/AWARDWALLET_USER_ID already gate the underlying client).
+// Off → bootstrap-on-connect and the manual Refresh button still populate the
+// cache; only the periodic re-sync is gated. Flip AWARDWALLET_SYNC_CRON_ENABLED
+// once npm run check/build are green and Refresh has been exercised for real.
+export function isAwardWalletSyncCronLive(): boolean {
+  return /^(1|true|yes)$/i.test(process.env.AWARDWALLET_SYNC_CRON_ENABLED ?? '')
+}
+
 // The live-valuation sync seam is GATED behind an explicit flag AND a configured
 // Worker URL + shared secret. Until BOTH are set, lib/valuation-telemetry.ts
 // no-ops (never POSTs an observation) and lib/valuations-live.ts still resolves

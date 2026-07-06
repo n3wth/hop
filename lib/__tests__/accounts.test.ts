@@ -1,10 +1,14 @@
-// Unit tests for lib/accounts.ts — getUserBalances merge semantics.
+// Unit tests for lib/accounts.ts — getUserBalances merge semantics, plus the
+// AwardWallet balance CACHE (refreshAwCache / getCachedAwBalances /
+// listConnectedAwUsers).
 //
 // getUserBalances() is the SINGLE balance resolver every surface trusts (home,
 // deals, ask, search). It merges manual programs (Neon hop_manual_balances)
-// with an optional AwardWallet live link (hop_user_accounts), de-duped by
-// program code (uppercase). AwardWallet wins for programs it covers; manual
-// fills the rest. Never throws; returns [] when the user has nothing.
+// with the AwardWallet cache (hop_user_accounts.cached_balances) — a plain db
+// read, NEVER a live AwardWallet call (see the refreshAwCache suite below for
+// the only code paths that call AwardWallet live). AwardWallet wins for
+// programs it covers; manual fills the rest. Never throws; returns [] when
+// the user has nothing.
 //
 // These tests lock the merge/de-dupe/precedence/empty/degraded paths.
 
@@ -22,7 +26,8 @@ vi.mock('@/lib/supabase-helpers', () => ({
   withDb: withDbMock,
 }))
 
-// Mock getBalances from awardwallet.ts
+// Mock getBalances from awardwallet.ts — the ONLY live call, used exclusively
+// by refreshAwCache's own tests below. getUserBalances no longer calls this.
 const { getBalancesMock, deriveCodeMock } = vi.hoisted(() => ({
   getBalancesMock: vi.fn(),
   deriveCodeMock: vi.fn(),
@@ -39,7 +44,8 @@ vi.mock('@/lib/programs', () => ({
 }))
 
 // Import the module under test AFTER mocks are set up
-const { getUserBalances } = await import('@/lib/accounts')
+const { getUserBalances, refreshAwCache, getCachedAwBalances, listConnectedAwUsers } =
+  await import('@/lib/accounts')
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -67,17 +73,16 @@ afterEach(() => {
 
 // --- Test Helpers ------------------------------------------------------------
 
-// Configure withDb to return specific data for getManualBalances and getUserAwId calls.
-// The implementation tracks call order to return appropriate values.
+// Configure withDb to return specific data for getManualBalances and the
+// hop_user_accounts cache read (getCachedAwBalances). `awRow` models the
+// user's hop_user_accounts row: null = no row at all (not connected);
+// otherwise its cached_balances/last_synced_at/last_sync_ok.
 function setupDbMocks(opts: {
   manualBalances: Array<{ id: string; program: string; code: string | null; balance: number; kind?: string }>
-  awUserId: string | null
+  awRow: { cachedBalances?: Balance[] | null; syncedAt?: string | null; syncOk?: boolean } | null
 }) {
-  let callIndex = 0
-
   withDbMock.mockImplementation(async <T>(fallback: T, fn: (db: MockDb) => Promise<T>): Promise<T> => {
-    const mockDb = createMockDb(callIndex, opts)
-    callIndex++
+    const mockDb = createMockDb(opts)
     try {
       return await fn(mockDb)
     } catch {
@@ -98,13 +103,10 @@ interface MockQueryBuilder {
   then: (onfulfilled?: (v: unknown) => unknown, onrejected?: (e: unknown) => unknown) => Promise<unknown>
 }
 
-function createMockDb(
-  callIndex: number,
-  opts: {
-    manualBalances: Array<{ id: string; program: string; code: string | null; balance: number; kind?: string }>
-    awUserId: string | null
-  }
-): MockDb {
+function createMockDb(opts: {
+  manualBalances: Array<{ id: string; program: string; code: string | null; balance: number; kind?: string }>
+  awRow: { cachedBalances?: Balance[] | null; syncedAt?: string | null; syncOk?: boolean } | null
+}): MockDb {
   return {
     from: (table: string) => {
       const builder: MockQueryBuilder = {
@@ -112,17 +114,20 @@ function createMockDb(
         eq: () => builder,
         order: () => builder,
         maybeSingle: async () => {
-          // getUserAwId query
           if (table === 'hop_user_accounts') {
+            if (!opts.awRow) return { data: null, error: null }
             return {
-              data: opts.awUserId ? { aw_user_id: opts.awUserId } : null,
+              data: {
+                cached_balances: opts.awRow.cachedBalances ?? null,
+                last_synced_at: opts.awRow.syncedAt ?? null,
+                last_sync_ok: opts.awRow.syncOk ?? false,
+              },
               error: null,
             }
           }
           return { data: null, error: null }
         },
         then: async (onfulfilled) => {
-          // getManualBalances query
           if (table === 'hop_manual_balances') {
             const result = {
               data: opts.manualBalances.map((b) => ({
@@ -133,14 +138,6 @@ function createMockDb(
                 kind: b.kind ?? null,
                 updated_at: new Date().toISOString(),
               })),
-              error: null,
-            }
-            return onfulfilled ? onfulfilled(result) : result
-          }
-          // getUserAwId query (when used with then instead of maybeSingle)
-          if (table === 'hop_user_accounts') {
-            const result = {
-              data: opts.awUserId ? { aw_user_id: opts.awUserId } : null,
               error: null,
             }
             return onfulfilled ? onfulfilled(result) : result
@@ -157,6 +154,8 @@ function awBalance(program: string, balance: number, code: string, status?: stri
   return { program, code, balance, status }
 }
 
+const SYNCED_AT = '2026-07-05T12:00:00.000Z'
+
 // --- Tests -------------------------------------------------------------------
 
 describe('getUserBalances() — merge semantics', () => {
@@ -167,7 +166,7 @@ describe('getUserBalances() — merge semantics', () => {
           { id: '1', program: 'Amex MR', code: 'AX', balance: 50000 },
           { id: '2', program: 'Chase UR', code: 'UR', balance: 30000 },
         ],
-        awUserId: null,
+        awRow: null,
       })
 
       const balances = await getUserBalances('user-1')
@@ -180,7 +179,7 @@ describe('getUserBalances() — merge semantics', () => {
     })
 
     it('returns empty array when user has no manual balances and no AwardWallet', async () => {
-      setupDbMocks({ manualBalances: [], awUserId: null })
+      setupDbMocks({ manualBalances: [], awRow: null })
 
       const balances = await getUserBalances('user-1')
 
@@ -189,15 +188,18 @@ describe('getUserBalances() — merge semantics', () => {
   })
 
   describe('AwardWallet only (no manual balances)', () => {
-    it('returns AwardWallet balances when user has no manual programs', async () => {
-      setupDbMocks({ manualBalances: [], awUserId: 'aw-123' })
-      getBalancesMock.mockResolvedValue({
-        ok: true,
-        data: [
-          awBalance('Delta SkyMiles', 75000, 'DL', 'Gold'),
-          awBalance('United MileagePlus', 45000, 'UA'),
-        ],
-      } as ApiResult<Balance[]>)
+    it('returns cached AwardWallet balances when user has no manual programs', async () => {
+      setupDbMocks({
+        manualBalances: [],
+        awRow: {
+          cachedBalances: [
+            awBalance('Delta SkyMiles', 75000, 'DL', 'Gold'),
+            awBalance('United MileagePlus', 45000, 'UA'),
+          ],
+          syncedAt: SYNCED_AT,
+          syncOk: true,
+        },
+      })
 
       const balances = await getUserBalances('user-1')
 
@@ -214,12 +216,12 @@ describe('getUserBalances() — merge semantics', () => {
     it('AwardWallet takes precedence when both sources have the same program code', async () => {
       setupDbMocks({
         manualBalances: [{ id: '1', program: 'Amex MR', code: 'AX', balance: 50000 }],
-        awUserId: 'aw-123',
+        awRow: {
+          cachedBalances: [awBalance('Amex Membership Rewards', 80000, 'AX', 'Platinum')],
+          syncedAt: SYNCED_AT,
+          syncOk: true,
+        },
       })
-      getBalancesMock.mockResolvedValue({
-        ok: true,
-        data: [awBalance('Amex Membership Rewards', 80000, 'AX', 'Platinum')],
-      } as ApiResult<Balance[]>)
 
       const balances = await getUserBalances('user-1')
 
@@ -236,12 +238,12 @@ describe('getUserBalances() — merge semantics', () => {
           { id: '1', program: 'Amex MR', code: 'AX', balance: 50000 },
           { id: '2', program: 'Bilt Rewards', code: 'BR', balance: 25000 },
         ],
-        awUserId: 'aw-123',
+        awRow: {
+          cachedBalances: [awBalance('Amex Membership Rewards', 80000, 'AX')],
+          syncedAt: SYNCED_AT,
+          syncOk: true,
+        },
       })
-      getBalancesMock.mockResolvedValue({
-        ok: true,
-        data: [awBalance('Amex Membership Rewards', 80000, 'AX')],
-      } as ApiResult<Balance[]>)
 
       const balances = await getUserBalances('user-1')
 
@@ -258,12 +260,12 @@ describe('getUserBalances() — merge semantics', () => {
     it('de-dupes on uppercase code regardless of case in source', async () => {
       setupDbMocks({
         manualBalances: [{ id: '1', program: 'delta skymiles', code: 'dl', balance: 10000 }],
-        awUserId: 'aw-123',
+        awRow: {
+          cachedBalances: [awBalance('Delta SkyMiles', 75000, 'DL')],
+          syncedAt: SYNCED_AT,
+          syncOk: true,
+        },
       })
-      getBalancesMock.mockResolvedValue({
-        ok: true,
-        data: [awBalance('Delta SkyMiles', 75000, 'DL')],
-      } as ApiResult<Balance[]>)
 
       const balances = await getUserBalances('user-1')
 
@@ -275,12 +277,12 @@ describe('getUserBalances() — merge semantics', () => {
     it('treats different codes as separate programs', async () => {
       setupDbMocks({
         manualBalances: [{ id: '1', program: 'Hilton Honors', code: 'HH', balance: 200000 }],
-        awUserId: 'aw-123',
+        awRow: {
+          cachedBalances: [awBalance('Marriott Bonvoy', 150000, 'MR')],
+          syncedAt: SYNCED_AT,
+          syncOk: true,
+        },
       })
-      getBalancesMock.mockResolvedValue({
-        ok: true,
-        data: [awBalance('Marriott Bonvoy', 150000, 'MR')],
-      } as ApiResult<Balance[]>)
 
       const balances = await getUserBalances('user-1')
 
@@ -293,15 +295,15 @@ describe('getUserBalances() — merge semantics', () => {
     it('returns balances sorted by balance descending', async () => {
       setupDbMocks({
         manualBalances: [{ id: '1', program: 'Small Balance', code: 'SB', balance: 1000 }],
-        awUserId: 'aw-123',
+        awRow: {
+          cachedBalances: [
+            awBalance('Medium Balance', 50000, 'MB'),
+            awBalance('Large Balance', 100000, 'LB'),
+          ],
+          syncedAt: SYNCED_AT,
+          syncOk: true,
+        },
       })
-      getBalancesMock.mockResolvedValue({
-        ok: true,
-        data: [
-          awBalance('Medium Balance', 50000, 'MB'),
-          awBalance('Large Balance', 100000, 'LB'),
-        ],
-      } as ApiResult<Balance[]>)
 
       const balances = await getUserBalances('user-1')
 
@@ -312,16 +314,12 @@ describe('getUserBalances() — merge semantics', () => {
     })
   })
 
-  describe('degradation: AwardWallet fails', () => {
-    it('returns manual balances when AwardWallet returns ok:false', async () => {
+  describe('degradation: AwardWallet cache is empty or stale', () => {
+    it('returns manual balances when the cache has never been synced (null cached_balances)', async () => {
       setupDbMocks({
         manualBalances: [{ id: '1', program: 'Amex MR', code: 'AX', balance: 50000 }],
-        awUserId: 'aw-123',
+        awRow: { cachedBalances: null, syncedAt: null, syncOk: false },
       })
-      getBalancesMock.mockResolvedValue({
-        ok: false,
-        reason: 'AwardWallet request timed out',
-      } as ApiResult<Balance[]>)
 
       const balances = await getUserBalances('user-1')
 
@@ -330,12 +328,11 @@ describe('getUserBalances() — merge semantics', () => {
       expect(balances[0].balance).toBe(50000)
     })
 
-    it('returns manual balances when AwardWallet throws', async () => {
+    it('returns manual balances when the last sync failed and left an empty cache', async () => {
       setupDbMocks({
         manualBalances: [{ id: '1', program: 'Chase UR', code: 'UR', balance: 75000 }],
-        awUserId: 'aw-123',
+        awRow: { cachedBalances: [], syncedAt: SYNCED_AT, syncOk: false },
       })
-      getBalancesMock.mockRejectedValue(new Error('Network error'))
 
       const balances = await getUserBalances('user-1')
 
@@ -343,9 +340,8 @@ describe('getUserBalances() — merge semantics', () => {
       expect(balances[0].program).toBe('Chase UR')
     })
 
-    it('returns empty when both sources fail/empty', async () => {
-      setupDbMocks({ manualBalances: [], awUserId: 'aw-123' })
-      getBalancesMock.mockResolvedValue({ ok: false, reason: 'timeout' })
+    it('returns empty when both sources are empty', async () => {
+      setupDbMocks({ manualBalances: [], awRow: { cachedBalances: [], syncedAt: SYNCED_AT, syncOk: false } })
 
       const balances = await getUserBalances('user-1')
 
@@ -363,12 +359,11 @@ describe('getUserBalances() — merge semantics', () => {
       expect(balances).toEqual([])
     })
 
-    it('handles user with awUserId but AwardWallet returns empty data', async () => {
+    it('handles a connected row whose cache is present but empty', async () => {
       setupDbMocks({
         manualBalances: [{ id: '1', program: 'Southwest', code: 'WN', balance: 40000 }],
-        awUserId: 'aw-123',
+        awRow: { cachedBalances: [], syncedAt: SYNCED_AT, syncOk: true },
       })
-      getBalancesMock.mockResolvedValue({ ok: true, data: [] })
 
       const balances = await getUserBalances('user-1')
 
@@ -385,7 +380,7 @@ describe('mergeKey — code derivation and case normalization', () => {
         { id: '1', program: 'Alaska Mileage Plan', code: 'as', balance: 30000 },
         { id: '2', program: 'Alaska Airlines', code: 'AS', balance: 20000 },
       ],
-      awUserId: null,
+      awRow: null,
     })
 
     const balances = await getUserBalances('user-1')
@@ -399,7 +394,7 @@ describe('mergeKey — code derivation and case normalization', () => {
   it('derives code from program name when code is empty', async () => {
     setupDbMocks({
       manualBalances: [{ id: '1', program: 'Some Custom Program', code: null, balance: 10000 }],
-      awUserId: null,
+      awRow: null,
     })
 
     const balances = await getUserBalances('user-1')
@@ -416,13 +411,13 @@ describe('mergeKey — code derivation and case normalization', () => {
     // with the manual entry it duplicates — and AwardWallet still wins.
     setupDbMocks({
       manualBalances: [{ id: '1', program: 'Amex MR', code: 'AX', balance: 50000 }],
-      awUserId: 'aw-123',
+      awRow: {
+        // code is empty → mergeKey derives 'AX' from 'Amex Membership Rewards'
+        cachedBalances: [awBalance('Amex Membership Rewards', 80000, '')],
+        syncedAt: SYNCED_AT,
+        syncOk: true,
+      },
     })
-    getBalancesMock.mockResolvedValue({
-      ok: true,
-      // code is empty → mergeKey derives 'AX' from 'Amex Membership Rewards'
-      data: [awBalance('Amex Membership Rewards', 80000, '')],
-    } as ApiResult<Balance[]>)
 
     const balances = await getUserBalances('user-1')
 
@@ -434,10 +429,13 @@ describe('mergeKey — code derivation and case normalization', () => {
 
 describe('status field preservation', () => {
   it('preserves status from AwardWallet balances', async () => {
-    setupDbMocks({ manualBalances: [], awUserId: 'aw-123' })
-    getBalancesMock.mockResolvedValue({
-      ok: true,
-      data: [awBalance('Delta SkyMiles', 100000, 'DL', 'Diamond Medallion')],
+    setupDbMocks({
+      manualBalances: [],
+      awRow: {
+        cachedBalances: [awBalance('Delta SkyMiles', 100000, 'DL', 'Diamond Medallion')],
+        syncedAt: SYNCED_AT,
+        syncOk: true,
+      },
     })
 
     const balances = await getUserBalances('user-1')
@@ -448,11 +446,182 @@ describe('status field preservation', () => {
   it('preserves kind as status from manual balances', async () => {
     setupDbMocks({
       manualBalances: [{ id: '1', program: 'Hyatt', code: 'HY', balance: 50000, kind: 'Globalist' }],
-      awUserId: null,
+      awRow: null,
     })
 
     const balances = await getUserBalances('user-1')
 
     expect(balances[0].status).toBe('Globalist')
+  })
+})
+
+// --- getCachedAwBalances() ---------------------------------------------------
+
+describe('getCachedAwBalances()', () => {
+  it('returns the empty/unsynced shape when there is no hop_user_accounts row', async () => {
+    setupDbMocks({ manualBalances: [], awRow: null })
+
+    const cached = await getCachedAwBalances('user-1')
+
+    expect(cached).toEqual({ balances: [], syncedAt: null, ok: false })
+  })
+
+  it('returns the empty/unsynced shape for a connected row with a null cache (pre-migration / never synced)', async () => {
+    setupDbMocks({ manualBalances: [], awRow: { cachedBalances: null, syncedAt: null, syncOk: false } })
+
+    const cached = await getCachedAwBalances('user-1')
+
+    expect(cached).toEqual({ balances: [], syncedAt: null, ok: false })
+  })
+
+  it('returns the populated snapshot for a synced row', async () => {
+    setupDbMocks({
+      manualBalances: [],
+      awRow: {
+        cachedBalances: [awBalance('Delta SkyMiles', 75000, 'DL')],
+        syncedAt: SYNCED_AT,
+        syncOk: true,
+      },
+    })
+
+    const cached = await getCachedAwBalances('user-1')
+
+    expect(cached.ok).toBe(true)
+    expect(cached.syncedAt).toBe(SYNCED_AT)
+    expect(cached.balances).toHaveLength(1)
+    expect(cached.balances[0].program).toBe('Delta SkyMiles')
+  })
+
+  it('never throws — degrades to the empty shape on any db failure', async () => {
+    withDbMock.mockImplementation(async <T>(fallback: T) => fallback)
+
+    const cached = await getCachedAwBalances('user-1')
+
+    expect(cached).toEqual({ balances: [], syncedAt: null, ok: false })
+  })
+})
+
+// --- refreshAwCache() ---------------------------------------------------------
+// The ONLY function (besides the cron/bootstrap callers of it) that makes a
+// LIVE AwardWallet call. Drives getBalances directly (mocked) and asserts the
+// exact write payload via a capturing upsert mock.
+
+interface CapturedUpsert {
+  table: string
+  payload: Record<string, unknown> | Record<string, unknown>[]
+  opts?: { onConflict?: string }
+}
+
+function mockUpsertCapture(): { calls: CapturedUpsert[] } {
+  const state = { calls: [] as CapturedUpsert[] }
+  withDbMock.mockImplementation(async <T>(fallback: T, fn: (db: unknown) => Promise<T>): Promise<T> => {
+    const db = {
+      from: (table: string) => ({
+        upsert: (payload: Record<string, unknown>, opts?: { onConflict?: string }) => {
+          state.calls.push({ table, payload, opts })
+          return Promise.resolve({ data: [payload], error: null })
+        },
+      }),
+    }
+    try {
+      return await fn(db)
+    } catch {
+      return fallback
+    }
+  })
+  return state
+}
+
+describe('refreshAwCache()', () => {
+  it('writes cached_balances + last_synced_at + last_sync_ok:true on success', async () => {
+    const capture = mockUpsertCapture()
+    getBalancesMock.mockResolvedValue({
+      ok: true,
+      data: [awBalance('Delta SkyMiles', 75000, 'DL')],
+    } as ApiResult<Balance[]>)
+
+    const ok = await refreshAwCache('user-1', 'aw-123')
+
+    expect(ok).toBe(true)
+    expect(getBalancesMock).toHaveBeenCalledWith('aw-123')
+    expect(capture.calls).toHaveLength(1)
+    const call = capture.calls[0]
+    expect(call.table).toBe('hop_user_accounts')
+    expect(call.opts?.onConflict).toBe('user_id')
+    const payload = call.payload as Record<string, unknown>
+    expect(payload.user_id).toBe('user-1')
+    expect(payload.last_sync_ok).toBe(true)
+    expect(payload.cached_balances).toEqual([awBalance('Delta SkyMiles', 75000, 'DL')])
+    expect(typeof payload.last_synced_at).toBe('string')
+  })
+
+  it('never clobbers a good snapshot on failure — omits cached_balances entirely', async () => {
+    const capture = mockUpsertCapture()
+    getBalancesMock.mockResolvedValue({ ok: false, reason: 'AwardWallet request timed out' })
+
+    const ok = await refreshAwCache('user-1', 'aw-123')
+
+    expect(ok).toBe(false)
+    expect(capture.calls).toHaveLength(1)
+    const payload = capture.calls[0].payload as Record<string, unknown>
+    expect(payload.last_sync_ok).toBe(false)
+    expect('cached_balances' in payload).toBe(false)
+    expect(typeof payload.last_synced_at).toBe('string')
+  })
+
+  it('never throws — a thrown getBalances still stamps a failed sync', async () => {
+    const capture = mockUpsertCapture()
+    getBalancesMock.mockRejectedValue(new Error('network down'))
+
+    const ok = await refreshAwCache('user-1', 'aw-123')
+
+    expect(ok).toBe(false)
+    expect(capture.calls).toHaveLength(1)
+    expect((capture.calls[0].payload as Record<string, unknown>).last_sync_ok).toBe(false)
+  })
+})
+
+// --- listConnectedAwUsers() ---------------------------------------------------
+
+describe('listConnectedAwUsers()', () => {
+  it('filters out rows with a null/blank aw_user_id', async () => {
+    withDbMock.mockImplementation(async <T>(fallback: T, fn: (db: unknown) => Promise<T>): Promise<T> => {
+      const db = {
+        from: () => ({
+          select: () => ({
+            then: (resolve: (v: unknown) => unknown) =>
+              resolve({
+                data: [
+                  { user_id: 'user-1', aw_user_id: 'aw-1' },
+                  { user_id: 'user-2', aw_user_id: null },
+                  { user_id: 'user-3', aw_user_id: '' },
+                  { user_id: 'user-4', aw_user_id: 'aw-4' },
+                ],
+                error: null,
+              }),
+          }),
+        }),
+      }
+      try {
+        return await fn(db)
+      } catch {
+        return fallback
+      }
+    })
+
+    const users = await listConnectedAwUsers()
+
+    expect(users).toEqual([
+      { userId: 'user-1', awUserId: 'aw-1' },
+      { userId: 'user-4', awUserId: 'aw-4' },
+    ])
+  })
+
+  it('returns [] on any db failure — never throws', async () => {
+    withDbMock.mockImplementation(async <T>(fallback: T) => fallback)
+
+    const users = await listConnectedAwUsers()
+
+    expect(users).toEqual([])
   })
 })

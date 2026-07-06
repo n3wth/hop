@@ -59,6 +59,79 @@ export async function clearUserAwId(userId: string): Promise<boolean> {
   })
 }
 
+// --- AwardWallet balance cache ----------------------------------------------
+// getUserBalances() reads THIS cache instead of calling AwardWallet live on
+// every request (home/deals/ask/search/account). refreshAwCache is the only
+// place that makes the live call: at connect-time (bootstrap), on a
+// user-initiated Refresh, and from the periodic cron
+// (app/api/cron/awardwallet-sync). See docs/ops-runbook.md's AwardWallet
+// section for the flip-live steps.
+
+export interface CachedAwBalances {
+  balances: Balance[]
+  syncedAt: string | null
+  ok: boolean
+}
+
+const EMPTY_CACHE: CachedAwBalances = { balances: [], syncedAt: null, ok: false }
+
+// This user's last-synced AwardWallet snapshot. Never live — a pure cache
+// read. Empty/absent (no row, no link, pre-migration null cache) all read
+// identically: no cached balances, fall back to manual-only upstream.
+export async function getCachedAwBalances(userId: string): Promise<CachedAwBalances> {
+  return withDb<CachedAwBalances>(EMPTY_CACHE, async (db) => {
+    const { data, error } = await db
+      .from(TABLE)
+      .select('cached_balances, last_synced_at, last_sync_ok')
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (error || !data) return EMPTY_CACHE
+    const balances = Array.isArray(data.cached_balances) ? (data.cached_balances as Balance[]) : []
+    return {
+      balances,
+      syncedAt: (data.last_synced_at as string | null) ?? null,
+      ok: Boolean(data.last_sync_ok),
+    }
+  })
+}
+
+// Pull a fresh live snapshot from AwardWallet and persist it as this user's
+// cache. Called from bootstrap (connect), the manual Refresh action, and the
+// periodic cron — never from a page render. On failure, the write omits
+// cached_balances entirely so a bad pull can never clobber a good prior
+// snapshot; only last_synced_at/last_sync_ok are stamped, so staleness is
+// still honestly surfaced. Never throws; returns whether the LIVE pull
+// succeeded (not whether the write succeeded).
+export async function refreshAwCache(userId: string, awUserId: string): Promise<boolean> {
+  const res = await getBalances(awUserId).catch(() => ({ ok: false as const, reason: 'request failed' }))
+  const now = new Date().toISOString()
+  await withDb(false, async (db) => {
+    const patch: Record<string, unknown> = {
+      user_id: userId,
+      last_synced_at: now,
+      last_sync_ok: res.ok,
+    }
+    if (res.ok) patch.cached_balances = res.data
+    const { error } = await db.from(TABLE).upsert(patch, { onConflict: 'user_id' })
+    return !error
+  })
+  return res.ok
+}
+
+// Every user with an AwardWallet link, for the periodic cron to iterate. The
+// Postgrest-compat shim has no "is not null" filter, so we read every row and
+// filter in JS rather than risk a filter that silently matches nothing (or
+// everything). Empty on any failure — the cron just processes nobody that tick.
+export async function listConnectedAwUsers(): Promise<Array<{ userId: string; awUserId: string }>> {
+  return withDb<Array<{ userId: string; awUserId: string }>>([], async (db) => {
+    const { data, error } = await db.from(TABLE).select('user_id, aw_user_id')
+    if (error || !data) return []
+    return (data as Array<{ user_id: string; aw_user_id: string | null }>)
+      .filter((r) => typeof r.aw_user_id === 'string' && r.aw_user_id.trim() !== '')
+      .map((r) => ({ userId: r.user_id, awUserId: r.aw_user_id as string }))
+  })
+}
+
 // --- Manual balances (primary path) ----------------------------------------
 
 // This user's hand-entered programs, newest-updated first. Empty on any failure.
@@ -173,21 +246,18 @@ function mergeKey(b: Balance): string {
 }
 
 // The ONE balance resolver every caller uses. Merges the user's manual programs
-// with their AwardWallet link (when connected): AwardWallet is LIVE, so it wins
-// for any program it covers; manual fills the rest. De-duped by program code.
-// Never throws. Returns [] when the user has nothing yet — callers decide whether
-// to fall back to mock fixtures.
+// with their AwardWallet link (when connected): AwardWallet's cached snapshot
+// wins for any program it covers; manual fills the rest. De-duped by program
+// code. Reads the CACHE, never a live AwardWallet call (see refreshAwCache for
+// the only code paths that hit AwardWallet). Never throws. Returns [] when the
+// user has nothing yet — callers decide whether to fall back to mock fixtures.
 export async function getUserBalances(userId: string): Promise<Balance[]> {
-  const [manual, awId] = await Promise.all([
+  const [manual, cached] = await Promise.all([
     getManualBalances(userId),
-    getUserAwId(userId),
+    getCachedAwBalances(userId),
   ])
 
-  let synced: Balance[] = []
-  if (awId) {
-    const res = await getBalances(awId).catch(() => ({ ok: false as const }))
-    if (res.ok) synced = res.data
-  }
+  const synced = cached.balances
 
   // AwardWallet first so it takes precedence; manual fills any gaps.
   const byKey = new Map<string, Balance>()
