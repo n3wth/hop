@@ -58,11 +58,16 @@ export async function createCheckoutSession(args: {
   cancelUrl: string
 }): Promise<CheckoutSessionResult> {
   if (!isBillingEnabled()) return { ok: false, reason: 'unconfigured' }
-  // Yearly is optional config — fall back to monthly when it isn't set up.
+  // Yearly is optional config. hop is annual-only at launch — the UI has no
+  // monthly CTA — so if a caller asks for 'yearly' and no yearly Stripe price
+  // is configured, fail closed instead of silently selling the monthly price
+  // under a yearly label (a customer could be charged monthly for a "$/yr"
+  // promise with no error surfaced anywhere in the chain).
+  if (args.interval === 'yearly' && !hasEnv('STRIPE_PRICE_ID_PRO_YEARLY')) {
+    return { ok: false, reason: 'unconfigured' }
+  }
   const priceId =
-    args.interval === 'yearly' && hasEnv('STRIPE_PRICE_ID_PRO_YEARLY')
-      ? env.stripePriceIdProYearly()
-      : env.stripePriceIdProMonthly()
+    args.interval === 'yearly' ? env.stripePriceIdProYearly() : env.stripePriceIdProMonthly()
   try {
     const { default: Stripe } = await import('stripe')
     const stripe = new Stripe(env.stripeSecretKey())
@@ -80,6 +85,34 @@ export async function createCheckoutSession(args: {
       cancel_url: args.cancelUrl,
     })
     if (!session.url) return { ok: false, reason: 'stripe-error' }
+    return { ok: true, url: session.url }
+  } catch {
+    return { ok: false, reason: 'stripe-error' }
+  }
+}
+
+export type BillingPortalResult =
+  | { ok: true; url: string }
+  | { ok: false; reason: 'unconfigured' | 'stripe-error' }
+
+// Create a Stripe-hosted Billing Portal session — the self-serve "manage
+// subscription" surface (update payment method, cancel). Same money-safety
+// shape as checkout: hop never touches card data, and a cancellation here
+// only takes effect once Stripe's customer.subscription.deleted webhook
+// fires (lib/subscription.ts#recordSubscription) — this function itself
+// writes no tier state.
+export async function createBillingPortalSession(args: {
+  customerId: string
+  returnUrl: string
+}): Promise<BillingPortalResult> {
+  if (!isBillingEnabled()) return { ok: false, reason: 'unconfigured' }
+  try {
+    const { default: Stripe } = await import('stripe')
+    const stripe = new Stripe(env.stripeSecretKey())
+    const session = await stripe.billingPortal.sessions.create({
+      customer: args.customerId,
+      return_url: args.returnUrl,
+    })
     return { ok: true, url: session.url }
   } catch {
     return { ok: false, reason: 'stripe-error' }

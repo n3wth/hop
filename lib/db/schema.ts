@@ -243,7 +243,13 @@ export const mcpUsage = pgTable(
     tool: text('tool').notNull(),
     createdAt: tz('created_at').defaultNow(),
   },
-  (t) => [index('hop_mcp_usage_user_id_created_at_idx').on(t.userId, t.createdAt)],
+  (t) => [
+    index('hop_mcp_usage_user_id_created_at_idx').on(t.userId, t.createdAt),
+    // Backs mcpCallsToday's per-token day-quota count (lib/mcp-usage.ts) —
+    // without this, a stateless-by-user but linked-by-token query scans the
+    // whole table.
+    index('hop_mcp_usage_token_id_created_at_idx').on(t.tokenId, t.createdAt),
+  ],
 )
 
 export const travelHistory = pgTable('hop_travel_history', {

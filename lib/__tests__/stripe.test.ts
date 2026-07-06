@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { createCheckoutSession, verifyStripeEvent } from '@/lib/stripe'
+import { createCheckoutSession, createBillingPortalSession, verifyStripeEvent } from '@/lib/stripe'
 import { isBillingEnabled } from '@/lib/env'
 
 // The Stripe seam is GATED + graceful, like every hop upstream client:
@@ -84,6 +84,28 @@ describe('lib/stripe keyless — resolves unconfigured, never throws', () => {
 
   it('verifyStripeEvent → {ok:false, unconfigured}', async () => {
     const res = await verifyStripeEvent('{}', 't=1,v1=deadbeef')
+    expect(res).toEqual({ ok: false, reason: 'unconfigured' })
+  })
+
+  it('createBillingPortalSession → {ok:false, unconfigured}', async () => {
+    const res = await createBillingPortalSession({
+      customerId: 'cus_123',
+      returnUrl: 'https://hop.flights/account#billing',
+    })
+    expect(res).toEqual({ ok: false, reason: 'unconfigured' })
+  })
+})
+
+describe('createCheckoutSession yearly — fails closed instead of substituting monthly', () => {
+  it('interval "yearly" with no yearly price configured → {ok:false, unconfigured}, never falls back to monthly', async () => {
+    configureFakeBilling() // monthly configured, yearly deliberately absent
+    const res = await createCheckoutSession({
+      userId: 'auth0|u1',
+      email: 'u@example.com',
+      interval: 'yearly',
+      successUrl: 'https://hop.flights/account?upgraded=1#billing',
+      cancelUrl: 'https://hop.flights/account#billing',
+    })
     expect(res).toEqual({ ok: false, reason: 'unconfigured' })
   })
 })
