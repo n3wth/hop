@@ -45,7 +45,8 @@ export default function BillingConsole({ overview, billingEnabled }: Props) {
               />
               <Tile
                 value={overview.activePaidCount === null ? '—' : String(overview.activePaidCount)}
-                label="Active + trialing"
+                label="Paying (in MRR)"
+                sub="recognized price id, unexpired period"
               />
               {STATUS_ORDER.filter((s) => s !== 'active' && s !== 'trialing').map((s) => (
                 <Tile key={s} value={String(overview.statusCounts[s] ?? 0)} label={STATUS_LABEL[s] ?? s} />
