@@ -6,7 +6,7 @@ to book with points, transfer to a partner, or just pay cash.
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.2.9-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Autonomous org](https://img.shields.io/badge/autonomous_org-6-0d6e6e?style=flat-square)](#built-and-run-by-an-ai-native-team)
+[![Autonomous org](https://img.shields.io/badge/autonomous_org-8-0d6e6e?style=flat-square)](#built-and-run-by-an-ai-native-team)
 [![Engine](https://img.shields.io/badge/engine-computed_not_generated-0d6e6e?style=flat-square)](#how-it-works)
 
 ![hop — your personal travel agent. A flat cream-and-teal banner with the hop bunny mark above the headline "Your personal travel agent" and the line "Points or cash — the verdict on every flight."](docs/social-preview.png)
@@ -44,22 +44,24 @@ would do by hand, computed instead of eyeballed. Two rules keep it trustworthy:
 
 hop's day-to-day engineering, growth, and finance work is run largely by a standing team of
 autonomous Claude Code agents — each with a name, an animal avatar, and a real cron schedule
-against this actual repository. It's a genuine operating structure, not a metaphor:
+against this actual repository. This is a genuine operating structure, not a metaphor:
 
 | Function | Who | Runs | Does |
 |---|---|---|---|
-| Engineering autopilot | **Jeffrey** 🦫 | Daily | Picks one unit of work — fix a broken build, rescue a stalled PR, review and merge a clean one, or advance the roadmap — and ships it end to end as a draft PR. |
-| Growth | **Omar** 🦊 | Mon / Wed / Fri | Owns SEO content and MCP directory listings outright, ship-and-self-merge. Drafts anything that needs a human hand on an external account rather than guessing at one. |
-| Head of finance | **Elizabeth** 🦉 | Tuesdays | Has her own inbox, tracks the budget envelope, hunts startup credit programs, and emails a CFO memo — but can't spend a dollar or commit to anything without an emailed yes back. |
-| Weekly retro | **Bob** 🐢 | Mondays | Reviews what shipped, updates the open-work playbook, and writes up any non-obvious bug fix as a permanent [`docs/solutions/`](docs/solutions/) entry so nobody debugs it twice. |
-| Strategy | **Marcus** 🦅 | Sundays | Runs an outside-in market and competitive scan and re-ranks what the rest of the team should work on next. |
+| Engineering autopilot | **Jeffrey** | Daily | Picks one unit of work — fix a broken build, rescue a stalled PR, review and merge a clean one, or advance the roadmap — and ships it end to end as a draft PR. |
+| Growth | **Omar** | Mon / Wed / Fri | Owns SEO content and MCP directory listings outright, ship-and-self-merge. Drafts anything that needs a human hand on an external account rather than guessing at one. |
+| Head of finance | **Elizabeth** | Tuesdays | Has her own inbox, tracks the budget envelope, hunts startup credit programs, and emails a CFO memo — but can't spend a dollar or commit to anything without an emailed yes back. |
+| Weekly retro | **Bob** | Mondays | Reviews what shipped, updates the open-work playbook, and writes up any non-obvious bug fix as a permanent [`docs/solutions/`](docs/solutions/) entry so nobody debugs it twice. |
+| Strategy | **Marcus** | Sundays | Runs an outside-in market and competitive scan and re-ranks what the rest of the team should work on next. |
+| Project manager | **Priya** | Daily | Read-only: cross-checks Linear against actual PR activity and posts one honest status update — never touches code. |
+| Merge sheriff | *(ops function)* | Hourly | Sweeps every open PR: merges what's green and safe, retries what's red, and escalates anything that needs the founder's own review instead of nagging forever. |
 | Board review | *five adversarial personas* | Periodic | Reads the state of the company and produces consensus risks, contested points, a kill list, and double-downs — then checks, next time, whether its own prior amendments actually got executed. |
 
 The self-improvement loop is real, not aspirational: a bug fixed today becomes a
 [`docs/solutions/`](docs/solutions/) entry so the next agent inherits the lesson automatically,
 and each board review is graded in part on whether the last one's amendments actually landed.
 
-None of this replaces judgment where it matters. A human founder still makes every call that
+This doesn't replace judgment where it matters. A human founder still makes every call that
 touches money, identity, or anything irreversible — that's a hard rule for every desk, not a
 suggestion. The agents own everything reversible: code, content, drafts, market scans, and the
 numbers.
@@ -70,8 +72,6 @@ numbers.
   runs on, verbatim
 - [`docs/board/`](docs/board/) — the board's own memos, unedited
 - [hop.flights](https://hop.flights) — the live product
-
----
 
 ## What's under the hood
 
