@@ -66,13 +66,28 @@ export function _resetRateLimitForTest() {
   lastSweep = 0
 }
 
-// Best-effort client IP from common proxy headers (Vercel/Cloud), used to key the
-// limiter per-caller. Falls back to a shared 'unknown' bucket when nothing is
-// present (still caps anonymous abuse per node). Pure + total.
+// Best-effort client IP, used to key the limiter per-caller. Prefers Vercel's
+// platform-computed headers over blindly parsing x-forwarded-for: a client
+// can set x-forwarded-for to anything before it reaches an intermediate
+// proxy, and naively trusting its leading entry would let an attacker rotate
+// fake IPs per-request to dodge the limiter's bucket key. x-vercel-forwarded-
+// for is Vercel's own edge-resolved client IP and stays correct even when
+// another proxy (e.g. hop's Cloudflare workers) sits in front of Vercel;
+// x-real-ip is the next most reliable platform signal (Vercel docs: both are
+// platform-set, unlike a bare x-forwarded-for chain a client can prepend to).
+// Only off-Vercel contexts (local dev, tests, CI) fall through to parsing
+// x-forwarded-for's leading entry — there's no adversary on that path, and a
+// real Vercel request always carries x-vercel-forwarded-for, so that
+// fallback never runs in production. Falls back to a shared 'unknown' bucket
+// when nothing is present (still caps anonymous abuse per node). Pure + total.
 export function clientIp(request: Request): string {
+  const vercelForwarded = request.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim()
+  if (vercelForwarded) return vercelForwarded
+  const realIp = request.headers.get('x-real-ip')?.trim()
+  if (realIp) return realIp
   const first = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
   if (first) return first
-  return request.headers.get('x-real-ip')?.trim() || 'unknown'
+  return 'unknown'
 }
 
 // ── Durable, cross-instance limiting via Upstash (optional) ─────────────────

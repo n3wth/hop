@@ -61,7 +61,10 @@ function tokenIdFromExtra(extra: { authInfo?: AuthInfo }): string | undefined {
 // handlers only see the plain-object IsomorphicHeaders record mcp-handler
 // builds from the real Request (Object.fromEntries(req.headers.entries())),
 // not a Request/Headers instance, so lib/rate-limit's clientIp() (which reads
-// via Headers.get) doesn't apply here — this mirrors its header preference.
+// via Headers.get) doesn't apply here — this mirrors its header preference:
+// Vercel's platform-computed x-vercel-forwarded-for / x-real-ip win over a
+// client-influenceable x-forwarded-for, so an attacker can't rotate the XFF
+// value to dodge the burst bucket (see lib/rate-limit.ts#clientIp).
 // Populated on the streamable-HTTP transport (/api/mcp, WebStandardStreamable-
 // HTTPServerTransport — confirmed in mcp-handler's dist); the legacy SSE
 // transport (/api/sse) doesn't set requestInfo, so anonymous SSE callers fall
@@ -71,7 +74,7 @@ function clientIpFromExtra(extra: {
   requestInfo?: { headers?: Record<string, string | string[] | undefined> }
 }): string {
   const headers = extra.requestInfo?.headers ?? {}
-  const raw = headers['x-forwarded-for'] ?? headers['x-real-ip']
+  const raw = headers['x-vercel-forwarded-for'] ?? headers['x-real-ip'] ?? headers['x-forwarded-for']
   const first = Array.isArray(raw) ? raw[0] : raw?.split(',')[0]
   const ip = first?.trim()
   return ip || 'unknown'
