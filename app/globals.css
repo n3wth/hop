@@ -808,6 +808,18 @@ body {
   }
 }
 
+/* ── Outlined nav pills ───────────────────────────────────────────────────
+   Origin selector, admin shield, and points chip in the top nav: border
+   derived from the pill's own text color (currentColor) at low opacity
+   instead of the flat --color-border hairline token, so the outline reads
+   as intentional against any background — including the ambient-tinted
+   hero and photo cards under the glass nav, not just the plain cream canvas
+   --color-border was tuned for. Text colors are unchanged; the border stays
+   quieter than the label (30% vs. full-strength text). */
+.hop-ink-border {
+  border-color: color-mix(in srgb, currentColor 30%, transparent);
+}
+
 /* ── Glass nav surfaces ───────────────────────────────────────────────────
    Shared translucent-background treatment for the sticky top nav (once
    scrolled) and the fixed bottom tab bar — approved for nav chrome only,
