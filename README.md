@@ -188,6 +188,9 @@ engineering loop — Plan → Work → Review → Compound — is detailed in `C
 - `docs/design/copy-spec.md` — strict UI copy voice
 - `.claude/workflows/README.md` — the saved multi-agent review/plan/audit scripts and their
   manual-fallback equivalents in `.claude/commands/`
+- `docs/team/routines.md` — the standing autonomous agent org (canonical over claude.ai config)
+- `docs/board/` — periodic independent business/execution reviews + adopted amendments
+- `docs/strategy/` — the weekly market/competitive review that sets desk priorities
 
 ## Notes for Contributors
 
