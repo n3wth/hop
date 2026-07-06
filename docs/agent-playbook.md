@@ -66,7 +66,16 @@ it rather than repeating it.
   silent unless something is failing; `hop-watchdog-heartbeat` runs Mondays as a positive
   "still alive" signal; `hop-org-liveness-watchdog` runs Tuesday and Friday and checks that each
   desk produced output within its own cadence window (e.g. the growth desk should show activity
-  every Mon/Wed/Fri). All three alert Oliver on Telegram.
+  every Mon/Wed/Fri). All three alert Oliver on Telegram. **Known gap:** as of 2026-07-05,
+  `hop-org-liveness-watchdog` checks branch *recency* only — a branch existing and being recent
+  does not mean the desk actually shipped (its push could have landed but the PR creation or CI
+  silently failed afterward, and recency alone would still read "alive"). `npm run verify:desk
+  -- <prefix>` (`scripts/verify-desk-run.mjs`) is the deterministic, non-agentic replacement:
+  given a branch prefix it independently confirms via `gh api`/`gh pr checks` that the branch's
+  latest commit has a PR, that PR's head SHA matches the branch HEAD, and that PR is either
+  merged or fully green — exiting non-zero on anything short of that. The watchdog's crontab
+  itself lives on the mini and isn't reachable from this repo; it still needs to be updated to
+  call this script per desk prefix instead of its current recency check.
 - **Kill switch.** Disable the routine at https://claude.ai/code/routines — the single, immediate
   way to stop a desk.
 - **Single-writer per surface.** Each desk owns its own branch prefix (`autopilot/`, `growth/`,
@@ -93,7 +102,20 @@ One task = one worktree off `origin/main` = one branch = one **draft** PR. Never
    (engine invariants, security, style) run in parallel against the diff, confirmed P1s get
    fixed on the same branch, and the PR is marked ready and merged only once CI is green and
    review is clean.
-5. Autonomous sessions additionally follow `docs/autonomy-runbook.md` (queue order, the ADR
+5. **Immediately before merging, update the branch against `main`** —
+   `gh pr update-branch <PR>` (or `git fetch origin main && git merge origin/main`), then wait
+   for the check to re-run green — before `gh pr merge --squash`. This is a hard rule, not a
+   suggestion: `main`'s branch protection does **not** currently require a PR's branch to be
+   up to date with `main` before merging (`required_status_checks.strict` is `false` — verify
+   with `gh api repos/n3wth/hop/branches/main/protection`), so two desks merging within minutes
+   of each other can each show a green check that only proves their *own* branch built cleanly
+   against a `main` that no longer exists by the time they land — a stale-base race, the same
+   failure shape as `docs/solutions/2026-07-05-half-resolved-merge-broke-main.md` but from two
+   independently-green PRs instead of a botched conflict resolution. Updating the branch
+   immediately before merge is the repo-side substitute for GitHub's `strict` setting; several
+   PRs already did this ad hoc the night that incident happened — this makes it a rule instead
+   of tribal knowledge every desk has to rediscover.
+6. Autonomous sessions additionally follow `docs/autonomy-runbook.md` (queue order, the ADR
    0009 tiered auto-merge policy, the hold-for-owner list — migrations, money/identity code,
    `.github/workflows/**`, `vercel.json`, dependency bumps, displayed prices, `eve/`). Anything
    on that hold list waits for the owner regardless of how green the PR is.
@@ -101,9 +123,14 @@ One task = one worktree off `origin/main` = one branch = one **draft** PR. Never
 **Where "never touch main directly" is enforced today, and where it isn't yet:** `main`'s
 branch protection currently requires the `Vercel` status check and blocks force-pushes and
 branch deletion — it does **not** yet require a PR review or block a direct push from someone
-with write access. Treat "PR-only, never direct" as an absolute house rule regardless of what
-GitHub's settings technically allow (see the open thread below; a direct push to `main` has
-already happened once by accident — `docs/solutions/2026-07-05-half-resolved-merge-broke-main.md`).
+with write access, and it does **not** require a PR's branch to be current with `main` before
+merging (§1.5 above is the repo-side stand-in for that gap). Treat "PR-only, never direct" as
+an absolute house rule regardless of what GitHub's settings technically allow (see the open
+thread below; a direct push to `main` has already happened once by accident —
+`docs/solutions/2026-07-05-half-resolved-merge-broke-main.md`). Turning on GitHub's
+`required_status_checks.strict` and a required-review rule would close both gaps at the
+platform level instead of relying on every desk following §1.5 — that's a repo-settings change
+for the owner to make, not something a desk should flip on its own.
 
 Cross-references: `docs/ops-runbook.md` (turning production capabilities on/off — the switches
 this repo actually has, and what each needs before it does anything), `.claude/workflows/README.md`
