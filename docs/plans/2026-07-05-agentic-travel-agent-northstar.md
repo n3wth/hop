@@ -119,6 +119,30 @@ the weekly checkpoints as real and act on misses instead of narrating them:
 Pricing lever the CFO desk should model in week 1: $49/yr recognizes slowly; a $9/mo tier
 changes the MRR math 2.2× per subscriber and gives a cancelable low-commitment entry.
 
+## Revenue levers beyond subscriptions (all documented so no lever is forgotten)
+
+1. **Affiliate outclicks (live today)** — Travelpayouts/Kiwi commission on cash bookings via the
+   first-party redirect ledger. Scales with search traffic with zero conversion friction; the
+   SEO/content flywheel feeds it directly. Owner: growth desk traffic work.
+2. **MCP / API as a product (shipped 2026-07-05)** — tier quotas exist; the B2B lever is "the
+   points engine for AI agents": usage-priced API/MCP access for other travel agents/assistants.
+   Differentiated because every number is computed, not generated. Candidate pivot wedge if
+   consumer conversion stalls (see Wk-4 gate).
+3. **Booking fees (flag exists, off)** — native Duffel checkout can carry a per-booking service
+   fee once HOP_ENABLE_CHECKOUT turns on. High trust requirement; dogfood first (north-star P4).
+4. **Award-booking concierge fee (industry-proven)** — points-consulting services charge
+   $150-200/booking for what hop's agent does computationally. An agent-executed "book it for me"
+   premium at a fraction of that price is a high-ticket lever once P4 lands.
+5. **Card referral commissions (future, compliance-heavy)** — the industry's dominant
+   monetization; requires affiliate approvals and strict advice-integrity rules (never let
+   commissions bias the computed verdict — engine invariant applies to recommendations). Park
+   until traffic exists.
+6. **First-party data/receipts (small, unique)** — aggregated observed cpp stats (the trust page)
+   as licensable/citable data; primarily a distribution asset (press/community citations) rather
+   than direct revenue.
+
+Weekly, the CFO desk reports MRR *plus* lever-by-lever revenue so no lever silently dies.
+
 ## Guardrails that make this safe to build unattended
 
 - Engine invariant reviews stay mandatory on every PR touching a number.
