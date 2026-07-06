@@ -36,6 +36,13 @@
       "when": 1783218235093,
       "tag": "0004_flat_gorgon",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1783279445842,
+      "tag": "0005_purple_captain_stacy",
+      "breakpoints": true
     }
   ]
 }

@@ -43,6 +43,33 @@ export function toNavUser(su: SessionUserLike | null | undefined): NavUser | nul
   }
 }
 
+function capitalize(word: string): string {
+  return word.length ? word.charAt(0).toUpperCase() + word.slice(1) : word
+}
+
+// The member's first name for a greeting ("Where to next, Oliver?"). Takes the
+// real name's first token when one exists — never re-derives from email over
+// a real name — and normalizes its casing, since the stored name isn't
+// guaranteed to be properly cased (e.g. an email/password sign-up with no
+// display name falls back to the raw, lowercase email local part). Only
+// falls back to the email local part, capitalized, when there's no name at
+// all — and an email local part is itself often word.word or word_word
+// (e.g. "john.smith"), so separators are normalized to spaces before taking
+// the first word, the same as a real multi-word name. Feed this the raw
+// session user, NOT `toNavUser`'s output — NavUser already collapses a
+// missing name to the full email, which would wrongly skip the local-part
+// fallback below.
+export function firstName(
+  su: { name?: string | null; email?: string | null } | null | undefined,
+): string | undefined {
+  if (!su) return undefined
+  const name = su.name?.trim()
+  if (name) return capitalize(name.split(/\s+/)[0])
+  const local = su.email?.trim().split('@')[0]?.replace(/[._-]+/g, ' ').trim()
+  const firstWord = local?.split(/\s+/)[0]
+  return firstWord ? capitalize(firstWord) : undefined
+}
+
 // The session lookup alone — no balances, no prefs — for route-level
 // loading.tsx files. Every page already resolves this identically before
 // awaiting its own slower data (balances, live award search, images); reusing
