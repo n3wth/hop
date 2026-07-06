@@ -64,6 +64,13 @@
       "when": 1783314072129,
       "tag": "0008_smiling_vin_gonzales",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783316018533,
+      "tag": "0009_windy_mad_thinker",
+      "breakpoints": true
     }
   ]
 }
