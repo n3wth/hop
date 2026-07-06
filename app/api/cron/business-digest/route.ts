@@ -16,16 +16,12 @@
 
 import { computeBusinessDigest, renderBusinessDigest } from '@/lib/business-digest'
 import { isEmailEnabled, sendOwnerNotification } from '@/lib/email'
-<<<<<<< HEAD
 import { recordHeartbeat } from '@/lib/cron-heartbeat'
 import { isAuthorizedCron } from '@/lib/cron-auth'
-=======
->>>>>>> origin/claude/business-digest
 
 // Counts live per-request data; never cache or statically render.
 export const dynamic = 'force-dynamic'
 
-<<<<<<< HEAD
 export async function GET(request: Request) {
   try {
     if (!isAuthorizedCron(request)) {
@@ -35,24 +31,6 @@ export async function GET(request: Request) {
       // Liveness record (ADR 0007): being unconfigured is an owner choice,
       // not an outage.
       recordHeartbeat('business-digest', false, 'disabled')
-=======
-// Verify the request is from Vercel Cron (or an authorized caller). Vercel
-// sends `Authorization: Bearer ${CRON_SECRET}` when CRON_SECRET is set. When no
-// secret is configured we allow it (so local/manual runs work).
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET
-  if (!secret) return true
-  const auth = request.headers.get('authorization')
-  return auth === `Bearer ${secret}`
-}
-
-export async function GET(request: Request) {
-  try {
-    if (!isAuthorized(request)) {
-      return Response.json({ ok: false, sent: false, reason: 'unauthorized' }, { status: 401 })
-    }
-    if (!isEmailEnabled()) {
->>>>>>> origin/claude/business-digest
       return Response.json(
         { ok: false, sent: false, sections: [], reason: 'email-unconfigured' },
         { status: 503 },
@@ -64,21 +42,15 @@ export async function GET(request: Request) {
     if (!rendered) {
       // Every source degraded — there is nothing true to report, so we send
       // nothing. Still a successful run (200): the cron itself worked.
-<<<<<<< HEAD
       recordHeartbeat('business-digest', true, 'all-sources-degraded')
-=======
->>>>>>> origin/claude/business-digest
       return Response.json({ ok: true, sent: false, sections: [], reason: 'all-sources-degraded' })
     }
 
     const result = await sendOwnerNotification(rendered.subject, rendered.text, rendered.html)
-<<<<<<< HEAD
     // Liveness record (ADR 0007): after the work — ran to completion. No
     // heartbeat on the catch path below, deliberately: a crashing route must
     // go stale so D1 can see it.
     recordHeartbeat('business-digest', true, `sent:${result.ok} sections:${rendered.sections.length}`)
-=======
->>>>>>> origin/claude/business-digest
     return Response.json({
       ok: true,
       sent: result.ok,
