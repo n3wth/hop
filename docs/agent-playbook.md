@@ -6,6 +6,15 @@
 > memory spine, monetization Phase 1) so the same quality is reproducible without the same
 > horsepower. Follow it mechanically; the judgment is already baked in.
 >
+> **The goal every desk is working toward (declared 2026-07-05):** $10k+ MRR within 30 days.
+> The full revenue math and weekly gates (Wk1: payment path proven, Wk2: $250 MRR-equivalent,
+> Wk3: $1k, Wk4: honest read) live in
+> `docs/plans/2026-07-05-agentic-travel-agent-northstar.md` § "The revenue goal" — read that
+> section before picking up growth or finance work, so whatever you ship is aimed at this
+> week's actual gate, not a generic backlog item. `docs/team/routines.md` is the canonical
+> definition of the four scheduled desks (Jeffrey/autopilot, Omar/growth, Bob/retro,
+> Elizabeth/finance) that execute this — read it alongside this file.
+>
 > **If a term below is unfamiliar**, check this list once, then keep reading — the rest of the
 > doc assumes you know these:
 >
@@ -28,6 +37,13 @@
 >   decision that was made once, with its reasoning, so nobody re-litigates it from scratch.
 > - **Flag-gated** — a feature wrapped in an environment-variable check (`HOP_ENABLE_*`) so it
 >   ships in the codebase but does nothing until explicitly turned on in production.
+> - **Routine / desk** — a scheduled cloud Claude Code session (configured at
+>   claude.ai/code/routines, defined canonically in `docs/team/routines.md`) that runs
+>   unattended on a cron. "Desk" is this org's name for one routine's job (e.g. "the growth
+>   desk").
+> - **Self-merge** — a desk marking its own PR ready and merging it, instead of leaving it for
+>   a human or the `pr-merge-pipeline` review workflow. Only ever allowed under the conditions
+>   in §7 below — never assume it's on by default.
 
 ## 1. How work ships here
 
@@ -38,7 +54,7 @@ One task = one worktree off `origin/main` = one branch = one **draft** PR. Never
    fetched `origin/main`, never from whatever a shared checkout happens to have staged (see
    the "Multi-agent hygiene" rule in `CLAUDE.md` — a checkout routinely has unrelated
    in-progress work sitting in it).
-2. Implement the change, verify it (§2 and §6 below), commit, push.
+2. Implement the change, verify it (§3 and §8 below), commit, push.
 3. Open a **draft** PR: `gh pr create --draft --head <branch> --base main`. Draft, not ready —
    this repo's review step runs on drafts before anything is eligible to merge.
 4. The **`pr-merge-pipeline` workflow** (`.claude/workflows/pr-merge-pipeline.js`, manual
@@ -46,22 +62,30 @@ One task = one worktree off `origin/main` = one branch = one **draft** PR. Never
    (engine invariants, security, style) run in parallel against the diff, confirmed P1s get
    fixed on the same branch, and the PR is marked ready and merged only once CI is green and
    review is clean.
-5. Autonomous sessions additionally follow `docs/autonomy-runbook.md` (queue order, the ADR
+5. **The one exception**: a scheduled desk (§7) may mark its own PR ready and merge it directly,
+   skipping the pipeline — but only for owned-channel work, and only when the conditions in §7
+   hold. Everything else — interactive sessions, any desk's PR that doesn't meet those
+   conditions, anything touching the ADR 0009 hold list — goes through step 4.
+6. Autonomous sessions additionally follow `docs/autonomy-runbook.md` (queue order, the ADR
    0009 tiered auto-merge policy, the hold-for-owner list — migrations, money/identity code,
    `.github/workflows/**`, `vercel.json`, dependency bumps, displayed prices, `eve/`). Anything
    on that hold list waits for the owner regardless of how green the PR is.
 
 **Where "never touch main directly" is enforced today, and where it isn't yet:** `main`'s
-branch protection currently requires the `Vercel` status check and blocks force-pushes and
-branch deletion — it does **not** yet require a PR review or block a direct push from someone
-with write access. Treat "PR-only, never direct" as an absolute house rule regardless of what
-GitHub's settings technically allow (see the open thread below; a direct push to `main` has
-already happened once by accident — `docs/solutions/2026-07-05-half-resolved-merge-broke-main.md`).
+branch protection requires the `Vercel` status check and has `enforce_admins: true` (plus
+blocking force-pushes and branch deletion) — it does **not** require a PR review or block a
+direct push from someone with write access, and the `check` status context (lint/typecheck/
+**tests**) isn't part of it at all yet because GitHub Actions billing is broken (see §7 and the
+open thread below). Treat "PR-only, never direct" as an absolute house rule regardless of what
+GitHub's settings technically allow — a direct push to `main` has already happened once by
+accident (`docs/solutions/2026-07-05-half-resolved-merge-broke-main.md`).
 
 Cross-references: `docs/ops-runbook.md` (turning production capabilities on/off — the switches
 this repo actually has, and what each needs before it does anything), `.claude/workflows/README.md`
 (what the saved workflow scripts are, the house patterns behind them, and the plain-prose
-fallback for harnesses without the Workflow tool).
+fallback for harnesses without the Workflow tool), `docs/team/routines.md` (the four scheduled
+desks — canonical prompts, cron schedules, connector policy, and the Hermes watchdog crons that
+watch them).
 
 ## 2. The loop — never skip a lane
 
@@ -106,7 +130,8 @@ fallback for harnesses without the Workflow tool).
   Service-role access bypasses row-level security, so the `user_id` scoping in code IS the
   security boundary. Confirm/dismiss/delete re-scope to the caller's own row.
 - **Money is human-gated.** Nothing books, charges, or spends without an explicit user
-  action; payments never touch the live Duffel key.
+  action; payments never touch the live Duffel key. This is separate from, and never overridden
+  by, the desk autonomy tiers in §7 — money/identity/irreversible work is always founder-only.
 
 ## 4. Design — the canon decides, not your taste
 
@@ -149,7 +174,8 @@ settled once. A taste call made silently will be re-litigated forever.
   (`docs/solutions/2026-07-05-half-resolved-merge-broke-main.md`).
 - **One branch per work stream.** Never stack unrelated commits on a shared PR.
 - **PRs open as draft** (§1) and merge only once `pr-merge-pipeline` (or an equivalent manual
-  review) has marked them ready and CI is green. Squash-merge with the PR number in the title.
+  review, or a desk's own §7 self-merge) has marked them ready and CI is green. Squash-merge
+  with the PR number in the title.
 - **Commits:** verify the branch in the *same* command as the commit (`git branch
   --show-current | grep -qx '<branch>' && git commit ...`) — a shared checkout can silently
   land you back on `main` mid-session. End the message with the
@@ -168,7 +194,62 @@ The full standing list of these multi-agent hygiene rules lives in `CLAUDE.md`'s
 hygiene" bullet — this section mirrors it for the ship-lane context; that's the canonical copy
 if the two ever drift.
 
-## 7. Token & time economy — the codebase is a cost surface
+## 7. Reliability practices — why a month of unattended agents doesn't drift or fail silently
+
+Oliver's stated concern, and the reason this section exists: every autonomous setup he's tried
+before has failed silently — a routine stops producing, and nobody notices until much later.
+The practices below are engineered specifically against that failure mode, not just against bad
+code.
+
+- **One unit of work per run.** Bounds both cost and blast radius — a bad run produces one
+  wrong PR, never a cascade. See each desk's prompt in `docs/team/routines.md`.
+- **Evidence-based done-claims.** "Done" means a commit or PR link, not a sentence (§2, §6).
+  This applies to a desk's own self-report as much as to a human's.
+- **Least-privilege connectors.** The claude.ai platform auto-attaches every account connector
+  to a newly created routine by default — always strip down to the short list each desk
+  actually needs (`docs/team/routines.md`'s per-desk Connectors column). An unused connector is
+  a live credential with no job, sitting there as pure downside.
+- **Autonomy is tiered, not all-or-nothing (policy amended 2026-07-06, full org autonomy toward
+  the $10k MRR goal):**
+  1. **Owned channels** — site content/SEO, the newsletter, MCP directory listings, and product
+     PRs within a desk's normal scope. A desk executes these end to end, including merging its
+     own PR, but **only when both hold**: the `check` CI status context (lint/typecheck/tests)
+     is live and green on the head commit, **and** every changed path is auto-tier per ADR
+     0009's hold list (never migrations, money/identity code, `lib/env.ts` flags, `vercel.json`,
+     `.github/workflows/**`, dependency changes, displayed prices, `eve/` — those always wait
+     for the pipeline or the owner, no exceptions). **This is inert today**: GitHub Actions
+     billing is broken (open thread below), so `check` cannot run, so self-merge cannot
+     legitimately fire — every desk's PR stays a draft for `pr-merge-pipeline` or the owner
+     until that's fixed. Self-merging against `Vercel`-only status (which doesn't run the test
+     suite) would mean merging untested code to production unattended for a month — deliberately
+     not allowed.
+  2. **External accounts** (Reddit, Product Hunt, Hacker News, X) — a desk never holds these
+     credentials. It produces a ready-to-paste asset and names the exact single credential that
+     would unlock autonomous firing for that channel, so the owner can see the specific unlock
+     cost per channel instead of a vague "needs access."
+  3. **Money, identity, and anything irreversible** (spend, points transfers, legal/application
+     submissions, anything committing the business externally) — permanent founder-approval.
+     No tier, and no future amendment to this section, removes this one.
+- **Liveness monitoring watches the watchers.** Three Hermes cron jobs on the Mac mini
+  (`docs/team/routines.md` § "Hermes watchdog" has the exact schedules, the committed scripts
+  under `scripts/hermes/`, and the recreate commands):
+  - `hop-uptime-watchdog` (daily) — site returns 200, silent unless it doesn't.
+  - `hop-watchdog-heartbeat` (weekly) — always sends one line, proving the watchdog itself is
+    alive (the other two are silent-on-success, which gives no signal on their own that they're
+    still running at all).
+  - `hop-org-liveness-watchdog` (twice weekly) — checks each desk actually produced a branch or
+    PR within its cadence window (autopilot ≤2d, growth ≤3d, retro/finance ≤8d), checked
+    against full PR history so a merged-and-deleted branch doesn't false-positive as silence.
+    **Its first run (2026-07-06) found zero output from any of the four desks** despite three
+    being test-fired the night before — see `docs/team/routines.md` § "Live-fire validation"
+    for the open question and the Linear issue tracking it.
+- **Kill switch**: disable the routine at https://claude.ai/code/routines. No code change, no
+  PR, no waiting for a session — the fastest possible stop.
+- **Single-writer per surface.** Each desk owns exactly one branch prefix (`autopilot/`,
+  `growth/`, `retro/`, `finance/`); nothing else writes to it, so a stale or duplicate branch
+  under a prefix is unambiguously that desk's problem, not a merge-order guess.
+
+## 8. Token & time economy — the codebase is a cost surface
 
 Agent work is priced in tokens and wall-clock; the code's shape sets that price.
 
@@ -184,7 +265,7 @@ Agent work is priced in tokens and wall-clock; the code's shape sets that price.
 - **Plans are cheaper than exploration.** If a blueprint exists in `docs/plans/`, trust it and
   read the code it names, in that order.
 
-## 8. What NOT to attempt without a stronger driver or the owner
+## 9. What NOT to attempt without a stronger driver or the owner
 
 - Running migrations or touching production data/env.
 - Editing `.github/workflows/**` unattended — it's on the ADR 0009 hold-for-owner list because
@@ -194,8 +275,10 @@ Agent work is priced in tokens and wall-clock; the code's shape sets that price.
 - Anything under `eve/` scheduling real deliveries, Stripe/webhook code, auth flows.
 - Multi-surface refactors (container systems, scroll models) — take the Linear issue's exact
   scope instead; if the issue is under-specified, comment on it rather than improvising.
+- Self-merging anything outside §7's owned-channel conditions, regardless of how confident the
+  diff looks.
 
-## 9. Open threads
+## 10. Open threads
 
 Things that are known, tracked, and waiting on a specific owner — check here before re-filing
 something that's already known. Mirrored into Linear (team `n3wth`, project
@@ -204,37 +287,48 @@ something that's already known. Mirrored into Linear (team `n3wth`, project
 **[Oliver] — owner-only, needs a human with account/credential access:**
 
 - `AWARDWALLET_CONNECT_URL` onboarding — the hosted "Connect Users" URL from the AwardWallet
-  business dashboard is unset, so the connect CTA stays disabled (`.env.example`).
+  business dashboard is unset, so the connect CTA stays disabled (`.env.example`). (N-341)
 - A PostHog personal API key, so an agent session can read LLM-cost analytics back
-  programmatically instead of the owner checking the dashboard by hand.
+  programmatically instead of the owner checking the dashboard by hand. (N-342)
 - Record the Google OAuth verification demo video required for the Gmail travel-history scope
-  review (`docs/ops-runbook.md` § Gmail travel-history).
-- Save the Google OAuth credentials to Vaultwarden (currently only in Vercel env).
+  review (`docs/ops-runbook.md` § Gmail travel-history). (N-343)
+- Save the Google OAuth credentials to Vaultwarden (currently only in Vercel env). (N-344)
 - After the next valuation-sync tick (13:30 UTC), confirm the worker secret and the Vercel
   mirror actually match — a paired-secret rotation is only confirmed once both sides are
-  checked (`docs/solutions/2026-07-05-paired-secret-rotation.md`).
+  checked (`docs/solutions/2026-07-05-paired-secret-rotation.md`). (N-345)
 - Decide the UX for an expired standing-order watch (currently undecided product call, not a
-  code gap).
+  code gap). (N-346)
 - **GitHub Actions billing is broken** on this account ("recent account payments have failed or
   your spending limit needs to be increased") — this is what's actually blocking the `check` CI
   gate from running on PRs, not a missing workflow file (`.github/workflows/ci.yml` already
   defines a `check` job identical in shape to what a from-scratch CI gate would look like; it's
-  parked on `workflow_dispatch`-only, see `docs/ops-runbook.md` § CI). Fix billing, then
-  `gh workflow run ci.yml --ref main` to confirm a dispatched run goes green, **then** restore
-  the `pull_request`/`push` triggers in both `ci.yml` and `deploy-valuations-worker.yml` (kept
-  in the file's own comments), and only then add `check` to `main`'s required status-check
-  contexts. Doing the required-context step before billing is fixed would make every PR
-  permanently unmergeable — check the order.
-- (Found while writing this doc, not previously tracked) `main`'s branch protection doesn't
-  require a PR review or block a direct push — only the `Vercel` status check plus no
-  force-push/deletion are enforced. "PR-only" is currently a convention backed by tooling
+  parked on `workflow_dispatch`-only, see `docs/ops-runbook.md` § CI). **It is also now the
+  linchpin blocking §7's owned-channel self-merge tier from ever legitimately firing** — fix
+  billing, then `gh workflow run ci.yml --ref main` to confirm a dispatched run goes green,
+  **then** restore the `pull_request`/`push` triggers in both `ci.yml` and
+  `deploy-valuations-worker.yml` (kept in the file's own comments), and only then add `check` to
+  `main`'s required status-check contexts. Doing the required-context step before billing is
+  fixed would make every PR permanently unmergeable — check the order. (N-347)
+- `main`'s branch protection doesn't require a PR review or block a direct push — only the
+  `Vercel` status check plus `enforce_admins: true` and no force-push/deletion are enforced.
+  "PR-only" is currently a convention backed by tooling
   (`scripts/hooks/guard-main-commit.sh` blocks a `git commit` with `HEAD` on `main` locally),
   not a GitHub-enforced rule. Worth tightening before a month of unattended agent sessions.
+  (N-348)
+- Confirm Omar's live claude.ai trigger text matches (or replace) the draft block in
+  `docs/team/routines.md` — that file is marked as the recreate-from-here source of truth
+  everywhere else, but Omar's block is explicitly flagged as an unconfirmed reconstruction, not
+  a copy of the live prompt.
+- Check the routine run logs at claude.ai/code/routines for autopilot/finance/growth's
+  2026-07-05 test-fire runs — the org-liveness watchdog's first check (2026-07-06) found zero
+  output from any of the four desks, and it's not knowable from outside claude.ai whether the
+  runs errored, ran and found nothing, or never fired. (Linear: "Org liveness: verify desks
+  produced output in week 1.")
 
 **[agents] — pick up per the normal queue in `docs/autonomy-runbook.md`:**
 
-- Task #13 — P2 follow-ups from #217 (AwardWallet cache).
+- Task #13 — P2 follow-ups from #217 (AwardWallet cache). (N-349)
 - Enable `HOP_ENABLE_CONTENT_CANDIDATES` once #218 (AI-sourced sweet-spot candidate pipeline)
-  merges.
-- R1.5 — verdict receipts (see `docs/plans/2026-07-04-business-plan.md`).
-- R1.6 — newsletter signup (spec: `docs/plans/2026-07-02-newsletter-signup.md`).
+  merges. (N-350)
+- R1.5 — verdict receipts (see `docs/plans/2026-07-04-business-plan.md`; Linear N-309).
+- R1.6 — newsletter signup (spec: `docs/plans/2026-07-02-newsletter-signup.md`; Linear N-310).
