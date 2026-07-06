@@ -4,7 +4,6 @@ import {
   DESTINATIONS_PER_RUN,
   MAX_NEW_CANDIDATES_PER_RUN,
   NOTABILITY_BASELINE_MULTIPLIER,
-  CONTENT_CANDIDATES_CREATED_BY,
   PROGRAM_ID_TO_SWEET_SPOT_SLUG,
   isNotable,
   draftKey,
@@ -12,10 +11,10 @@ import {
   filterNewCandidates,
   rankAndCapCandidates,
   destinationsForRun,
-  findSweetSpotCandidates,
-  createCandidateDrafts,
+  runSweetSpotCandidatePipeline,
   type SweetSpotCandidate,
 } from '@/lib/sweet-spot-candidates'
+import { CONTENT_CANDIDATES_CREATED_BY } from '@/lib/sweet-spot-constants'
 import { POINTS_THRESHOLD_CPP } from '@/lib/search'
 import { allPrograms, sweetSpots } from '@/lib/sweet-spots'
 import { destinations } from '@/lib/destinations'
@@ -226,7 +225,7 @@ describe('isContentCandidatesEnabled() — the double lock', () => {
   })
 })
 
-describe('findSweetSpotCandidates() — degrade-safe', () => {
+describe('runSweetSpotCandidatePipeline() — degrade-safe', () => {
   const KEYS = ['SEATS_AERO_API_KEY', 'DUFFEL_API_KEY_LIVE'] as const
   const ORIGINAL: Record<string, string | undefined> = {}
 
@@ -243,8 +242,12 @@ describe('findSweetSpotCandidates() — degrade-safe', () => {
     }
   })
 
-  it('resolves to [] with no live pricing keys configured — no network calls, never throws', async () => {
-    await expect(findSweetSpotCandidates(new Date('2026-07-05'))).resolves.toEqual([])
+  it('resolves to created:0 found:0 drafts:[] with no live pricing keys or db configured — no network calls, never throws', async () => {
+    await expect(runSweetSpotCandidatePipeline(new Date('2026-07-05'))).resolves.toEqual({
+      created: 0,
+      found: 0,
+      drafts: [],
+    })
   })
 
   it('mines within the documented origin hub set', () => {
@@ -252,15 +255,11 @@ describe('findSweetSpotCandidates() — degrade-safe', () => {
   })
 })
 
-describe('createCandidateDrafts() — degrade-safe with no db configured', () => {
-  it('resolves without throwing and creates nothing', async () => {
-    await expect(createCandidateDrafts([candidate()])).resolves.toEqual({ created: 0, drafts: [] })
-  })
-
-  it('an empty candidate list resolves immediately with created:0', async () => {
-    await expect(createCandidateDrafts([])).resolves.toEqual({ created: 0, drafts: [] })
-  })
-})
+// Deadline/incremental-persist/early-stop-at-cap behavior is covered in
+// lib/__tests__/sweet-spot-candidates-pipeline.test.ts, which mocks
+// assembleSearch + the sweet-spot-drafts persistence functions to exercise
+// the orchestration deterministically (this file stays mock-free so the
+// degrade-safe test above exercises the REAL upstream/db gating).
 
 describe('CONTENT_CANDIDATES_CREATED_BY — the provenance sentinel', () => {
   it('is not shaped like an owner email (never mistaken for one)', () => {

@@ -1,3 +1,5 @@
+import 'server-only'
+
 // AI-sourced sweet-spot candidate pipeline (docs/plans/2026-07-05-content-
 // candidate-pipeline.md). Mines the SAME trusted engine funnel every search
 // uses (assembleSearch) over a curated hub/destination/date grid, scores the
@@ -17,6 +19,22 @@
 // First cabin — a First scan would silently score business-labeled data).
 // Every auto-sourced row lands `pending_review`, same as an owner-typed one —
 // this module never approves anything itself.
+//
+// TIMEOUT SAFETY: the full hub × destination × date grid is dozens of routes —
+// too slow to mine in full before persisting anything inside one serverless
+// invocation (app/api/cron/sweet-spot-candidates/route.ts sets
+// maxDuration=300). runSweetSpotCandidatePipeline() therefore:
+//   (a) prices one route's SAMPLE_DATE_OFFSETS_DAYS CONCURRENTLY (bounded to
+//       that many in-flight assembleSearch calls per route — never the whole
+//       grid at once, never fully sequential either — see scoreRoute()),
+//   (b) checks a wall-clock deadline before starting each new route so a slow
+//       run returns whatever it found/created instead of being killed
+//       mid-grid, and
+//   (c) persists each notable candidate AS SOON AS it's found, stopping
+//       mining the instant MAX_NEW_CANDIDATES_PER_RUN drafts exist, rather
+//       than scoring the entire grid before creating anything.
+// Tradeoff: candidates are "first found, in hub/destination iteration order"
+// rather than a strict global top-N — inherent to being able to stop early.
 
 import { assembleSearch, POINTS_THRESHOLD_CPP } from '@/lib/search'
 import { canonicalizeProgram } from '@/lib/programs'
@@ -30,6 +48,7 @@ import {
   updateSweetSpotDraftWhy,
   type SweetSpotDraft,
 } from '@/lib/sweet-spot-drafts'
+import { CONTENT_CANDIDATES_CREATED_BY } from '@/lib/sweet-spot-constants'
 import type { SearchParams } from '@/lib/types'
 
 // ── Tunables — named + exported so tests assert on them directly ───────────
@@ -48,10 +67,19 @@ export const ORIGIN_HUBS = ['SFO', 'JFK', 'ORD', 'LAX'] as const
 export const DESTINATIONS_PER_RUN = 8
 
 // Near-future sample dates (days out from "now"), a few spread points to dodge
-// a single day's availability gap rather than one snapshot.
+// a single day's availability gap rather than one snapshot. Also the per-route
+// concurrency bound (see scoreRoute()) — sampled together, never one at a
+// time and never the whole grid at once.
 export const SAMPLE_DATE_OFFSETS_DAYS = [30, 45, 60] as const
 
 const DAY_MS = 24 * 60 * 60 * 1000
+
+// Vercel's ceiling for this route is maxDuration=300s
+// (app/api/cron/sweet-spot-candidates/route.ts). Stop STARTING new routes
+// once this many ms have elapsed since the run began — leaves ~80s headroom
+// under the ceiling for the current route's in-flight searches and draft
+// persistence to finish cleanly rather than being killed mid-request.
+export const MINING_TIME_BUDGET_MS = 220_000
 
 // The single cabin this pipeline mines for. Two different vocabularies:
 // assembleSearch's SearchParams wants the lowercase request enum; the stored
@@ -66,13 +94,9 @@ const CANDIDATE_CABIN: Cabin = 'Business'
 export const NOTABILITY_BASELINE_MULTIPLIER = 1.3
 
 // The sentinel's own MAX_ISSUES_PER_RUN pattern: bound how many new rows can
-// land in one run so the review queue grows reviewably, not in a flood.
+// land in one run so the review queue grows reviewably, not in a flood — and,
+// per the timeout-safety note above, the signal to stop mining early.
 export const MAX_NEW_CANDIDATES_PER_RUN = 3
-
-// Sentinel value for hop_sweet_spot_drafts.created_by on every row this
-// pipeline creates — never an owner email. ContentConsole reads this to badge
-// auto-sourced cards.
-export const CONTENT_CANDIDATES_CREATED_BY = 'auto:content-candidates'
 
 // Program coverage is narrower than the seats.aero universe: createSweetSpotDraft
 // hard-rejects any programSlug outside lib/sweet-spots.ts's static program set
@@ -106,6 +130,14 @@ export interface SweetSpotCandidate {
   // route vocabulary. Never shown to the owner or persisted on the draft.
   destCountry: string
   destRegion: string
+}
+
+export interface PipelineResult {
+  created: number
+  found: number
+  /** The drafts actually persisted this run, in persist order — lets
+   *  ContentConsole splice them into client state without a reload. */
+  drafts: SweetSpotDraft[]
 }
 
 // Notable if the observed cpp clears the engine's own "use points" line AND is
@@ -174,8 +206,10 @@ export function filterNewCandidates(
   return candidates.filter((c) => !staticRouteAliasKeys(c).some((k) => existingKeys.has(k)))
 }
 
-// Rank survivors by how far above baseline they run (cpp/baseline, descending)
-// and cap to MAX_NEW_CANDIDATES_PER_RUN. Pure — does not mutate the input.
+// Rank by how far above baseline a candidate runs (cpp/baseline, descending)
+// and cap. Pure — does not mutate the input. Used both to order the (usually
+// single, occasionally several) qualifying program(s) found on one route
+// before persisting, and as a directly-testable unit.
 export function rankAndCapCandidates(
   candidates: SweetSpotCandidate[],
   max: number = MAX_NEW_CANDIDATES_PER_RUN,
@@ -221,154 +255,201 @@ function buildNotes(meanCpp: number, baselineCpp: number, sampleCount: number): 
   return `Observed ~${meanCpp.toFixed(1)}¢/pt over ${dates} vs ~${baselineCpp.toFixed(1)}¢/pt typical for this program.`
 }
 
-interface RawSample {
-  route: string
-  programSlug: string
+interface RouteProgramSample {
   programId: string
-  destCountry: string
-  destRegion: string
   samples: { cpp: number; miles: number }[]
 }
 
-// Mine assembleSearch over today's hub/destination/date grid and return a
-// ranked, capped, deduped list of notable Business-cabin award candidates.
-// NEVER throws (assembleSearch, listSweetSpotDrafts, and everything else this
-// calls are all documented never-throw); degrades to [] when pricing is
-// unavailable (no keys, upstream down, or nothing notable this run) — the
-// caller (the cron route / the owner action) decides what "no candidates
-// today" means, this function just reports it honestly.
-export async function findSweetSpotCandidates(now: Date = new Date()): Promise<SweetSpotCandidate[]> {
+// Price one hub→destination route across SAMPLE_DATE_OFFSETS_DAYS
+// CONCURRENTLY (bounded to that many in-flight assembleSearch calls — never
+// the whole grid at once, never one at a time either) and bucket the priced
+// Business-cabin awards by mapped program slug.
+async function scoreRoute(
+  hub: string,
+  dest: Destination,
+  now: Date,
+): Promise<Map<string, RouteProgramSample>> {
+  const perProgram = new Map<string, RouteProgramSample>()
+
+  const results = await Promise.all(
+    SAMPLE_DATE_OFFSETS_DAYS.map((offsetDays) => {
+      const depart = isoDatePlusDays(now, offsetDays)
+      const params: SearchParams = { from: hub, to: dest.code, depart, adults: 1, cabin: REQUEST_CABIN }
+      // recordTelemetry:false — this is synthetic scan volume, not a real
+      // user search: it must not feed the live valuation worker's cpp trust
+      // gate (ADR 0005), and a burst of mining calls hitting a rate-limited
+      // upstream must not read as a live-traffic degradation spike to the
+      // health sentinel's D2 detector (lib/health-checks.ts).
+      return assembleSearch(params, [], undefined, { recordTelemetry: false })
+    }),
+  )
+
+  for (const result of results) {
+    for (const o of result.allAwards ?? []) {
+      // seats.aero's cabin fallback (lib/seatsaero.ts#pickCabin) can return an
+      // Economy/Premium-Economy row even when Business was requested, if
+      // Business space wasn't available on that record. Score only rows
+      // actually labeled Business — never infer the requested cabin was what
+      // was served.
+      if (o.cabin !== CANDIDATE_CABIN) continue
+      if (typeof o.cpp !== 'number' || !Number.isFinite(o.cpp) || o.cpp <= 0) continue
+      if (typeof o.miles !== 'number' || !Number.isFinite(o.miles) || o.miles <= 0) continue
+      if (!o.program) continue
+      const def = canonicalizeProgram(o.program)
+      if (!def) continue
+      const slug = PROGRAM_ID_TO_SWEET_SPOT_SLUG[def.id]
+      if (!slug) continue // program has no sweet-spots page — never guess one
+
+      const entry = perProgram.get(slug) ?? { programId: def.id, samples: [] }
+      entry.samples.push({ cpp: o.cpp, miles: o.miles })
+      perProgram.set(slug, entry)
+    }
+  }
+
+  return perProgram
+}
+
+// Pure: one route+program's samples -> a scored candidate, or null when it
+// doesn't clear notability (or the slug map/program table can't resolve it —
+// defensive, should be unreachable given scoreRoute()'s own filtering).
+function toCandidate(
+  route: string,
+  slug: string,
+  entry: RouteProgramSample,
+  destCountry: string,
+  destRegion: string,
+): SweetSpotCandidate | null {
+  const meanCpp = mean(entry.samples.map((s) => s.cpp))
+  const baseline = programValue(entry.programId)
+  if (!isNotable(meanCpp, baseline)) return null
+  const program = sweetSpotsByProgram().find((p) => p.slug === slug)
+  if (!program) return null
+  const milesOw = Math.round(mean(entry.samples.map((s) => s.miles)))
+  return {
+    route,
+    programSlug: slug,
+    program: program.name,
+    cabin: CANDIDATE_CABIN,
+    milesOw,
+    milesLabel: formatMilesLabel(milesOw),
+    cpp: Math.round(meanCpp * 10) / 10,
+    baseline,
+    sampleCount: entry.samples.length,
+    notes: buildNotes(meanCpp, baseline, entry.samples.length),
+    destCountry,
+    destRegion,
+  }
+}
+
+// Persist one candidate as a pending_review draft — the facts via the
+// existing, unchanged createSweetSpotDraft() (createdBy is the sentinel
+// value, never an owner email), then draftSweetSpotWhy() to fill the
+// why-line from the deterministic `notes` computed above. NEVER
+// auto-approves. NEVER throws: every function this calls already degrades
+// via withDb/gateway-absent. Returns the persisted row (for the caller's
+// optimistic UI splice), or null when the draft itself couldn't be created.
+async function persistCandidate(c: SweetSpotCandidate): Promise<SweetSpotDraft | null> {
+  const id = await createSweetSpotDraft({
+    route: c.route,
+    programSlug: c.programSlug,
+    cabin: c.cabin,
+    milesOw: c.milesOw,
+    milesLabel: c.milesLabel,
+    confidence: 'med',
+    createdBy: CONTENT_CANDIDATES_CREATED_BY,
+  })
+  if (!id) return null
+
+  const why = await draftSweetSpotWhy({
+    route: c.route,
+    program: c.program,
+    cabin: c.cabin,
+    milesLabel: c.milesLabel,
+    milesOw: c.milesOw,
+    notes: c.notes,
+  })
+  if (why) await updateSweetSpotDraftWhy(id, why)
+
+  return {
+    id,
+    seq: 0, // DB-assigned; unknown here — matches NewDraftForm's own optimistic-insert placeholder
+    route: c.route,
+    program: c.program,
+    programSlug: c.programSlug,
+    metal: null,
+    cabin: c.cabin,
+    milesOw: c.milesOw,
+    milesLabel: c.milesLabel,
+    why: why ?? '',
+    confidence: 'med',
+    status: 'pending_review',
+    createdBy: CONTENT_CANDIDATES_CREATED_BY,
+  }
+}
+
+// Mine assembleSearch over today's hub/destination/date grid and persist
+// notable Business-cabin candidates AS THEY'RE FOUND, up to
+// MAX_NEW_CANDIDATES_PER_RUN — the single entry point the cron route and the
+// owner's "Find candidates now" action both call. NEVER throws
+// (assembleSearch, listSweetSpotDrafts, and everything else this calls are
+// all documented never-throw).
+//
+// `opts.deadlineAt` (epoch ms, default `now + MINING_TIME_BUDGET_MS`) is
+// checked before starting each new route's searches — past it, mining stops
+// and whatever was found/created so far is returned, rather than risking the
+// invocation being killed mid-grid. Passed explicitly (not just derived from
+// `now`) so a caller/test can inject an already-past deadline deterministically.
+export async function runSweetSpotCandidatePipeline(
+  now: Date = new Date(),
+  opts?: { deadlineAt?: number },
+): Promise<PipelineResult> {
+  const deadlineAt = opts?.deadlineAt ?? now.getTime() + MINING_TIME_BUDGET_MS
   const runDestinations = destinationsForRun(now)
-  const byKey = new Map<string, RawSample>()
 
-  for (const hub of ORIGIN_HUBS) {
+  const existingDrafts = (await listSweetSpotDrafts()) ?? []
+  const existingKeys = buildExistingKeys(existingDrafts)
+
+  let found = 0
+  let created = 0
+  const drafts: SweetSpotDraft[] = []
+
+  routes: for (const hub of ORIGIN_HUBS) {
     for (const dest of runDestinations) {
+      if (created >= MAX_NEW_CANDIDATES_PER_RUN) break routes
+      if (Date.now() >= deadlineAt) break routes // stop STARTING new searches past the budget
       if (dest.code.toUpperCase() === hub.toUpperCase()) continue
-      for (const offsetDays of SAMPLE_DATE_OFFSETS_DAYS) {
-        const depart = isoDatePlusDays(now, offsetDays)
-        const params: SearchParams = { from: hub, to: dest.code, depart, adults: 1, cabin: REQUEST_CABIN }
-        // recordTelemetry:false — this is synthetic scan volume, not a real
-        // user search: it must not feed the live valuation worker's cpp
-        // trust gate (ADR 0005), and a burst of mining calls hitting a
-        // rate-limited upstream must not read as a live-traffic degradation
-        // spike to the health sentinel's D2 detector (lib/health-checks.ts).
-        const result = await assembleSearch(params, [], undefined, { recordTelemetry: false })
 
-        for (const o of result.allAwards ?? []) {
-          // seats.aero's cabin fallback (lib/seatsaero.ts#pickCabin) can
-          // return an Economy/Premium-Economy row even when Business was
-          // requested, if Business space wasn't available on that record.
-          // Score only rows actually labeled Business — never infer the
-          // requested cabin was what was served.
-          if (o.cabin !== CANDIDATE_CABIN) continue
-          if (typeof o.cpp !== 'number' || !Number.isFinite(o.cpp) || o.cpp <= 0) continue
-          if (typeof o.miles !== 'number' || !Number.isFinite(o.miles) || o.miles <= 0) continue
-          if (!o.program) continue
-          const def = canonicalizeProgram(o.program)
-          if (!def) continue
-          const slug = PROGRAM_ID_TO_SWEET_SPOT_SLUG[def.id]
-          if (!slug) continue // program has no sweet-spots page — never guess one
+      const route = `${hub} → ${dest.code}`
+      const perProgram = await scoreRoute(hub, dest, now)
 
-          const route = `${hub} → ${dest.code}`
-          const key = `${route}|${slug}`
-          const entry =
-            byKey.get(key) ??
-            {
-              route,
-              programSlug: slug,
-              programId: def.id,
-              destCountry: dest.country,
-              destRegion: dest.region,
-              samples: [],
-            }
-          entry.samples.push({ cpp: o.cpp, miles: o.miles })
-          byKey.set(key, entry)
+      const routeCandidates: SweetSpotCandidate[] = []
+      for (const [slug, entry] of perProgram) {
+        const candidate = toCandidate(route, slug, entry, dest.country, dest.region)
+        if (candidate) routeCandidates.push(candidate)
+      }
+
+      // A single route can surface more than one qualifying program (e.g. two
+      // partners both clear notability) — rank just THIS route's survivors so
+      // the strongest persists first if the global cap is about to bind.
+      const fresh = rankAndCapCandidates(
+        filterNewCandidates(routeCandidates, existingKeys),
+        routeCandidates.length,
+      )
+
+      for (const candidate of fresh) {
+        found++
+        const draft = await persistCandidate(candidate)
+        if (draft) {
+          created++
+          drafts.push(draft)
+          // Defensive: a route is only ever visited once per run, so this
+          // combo can't recur — but keeps existingKeys honest if that changes.
+          existingKeys.add(draftKey(candidate.route, candidate.programSlug, candidate.cabin))
+          if (created >= MAX_NEW_CANDIDATES_PER_RUN) break routes
         }
       }
     }
   }
 
-  const scored: SweetSpotCandidate[] = []
-  for (const entry of byKey.values()) {
-    const meanCpp = mean(entry.samples.map((s) => s.cpp))
-    const baseline = programValue(entry.programId)
-    if (!isNotable(meanCpp, baseline)) continue
-    const program = sweetSpotsByProgram().find((p) => p.slug === entry.programSlug)
-    if (!program) continue // defensive — the slug map should always resolve
-    const milesOw = Math.round(mean(entry.samples.map((s) => s.miles)))
-    scored.push({
-      route: entry.route,
-      programSlug: entry.programSlug,
-      program: program.name,
-      cabin: CANDIDATE_CABIN,
-      milesOw,
-      milesLabel: formatMilesLabel(milesOw),
-      cpp: Math.round(meanCpp * 10) / 10,
-      baseline,
-      sampleCount: entry.samples.length,
-      notes: buildNotes(meanCpp, baseline, entry.samples.length),
-      destCountry: entry.destCountry,
-      destRegion: entry.destRegion,
-    })
-  }
-
-  const drafts = (await listSweetSpotDrafts()) ?? []
-  const fresh = filterNewCandidates(scored, buildExistingKeys(drafts))
-  return rankAndCapCandidates(fresh)
-}
-
-// Persist candidates as pending_review drafts — the facts via the existing,
-// unchanged createSweetSpotDraft() (createdBy is the sentinel value, never an
-// owner email), then draftSweetSpotWhy() to fill the why-line from the
-// deterministic `notes` computed above. NEVER auto-approves — every row this
-// creates lands pending_review, same as an owner-typed one. NEVER throws:
-// every function this calls already degrades via withDb/gateway-absent.
-// Returns the created rows (not just a count) so callers — specifically
-// ContentConsole's "Find candidates now" button — can splice them straight
-// into client state instead of needing a full page reload to see them.
-export async function createCandidateDrafts(
-  candidates: SweetSpotCandidate[],
-): Promise<{ created: number; drafts: SweetSpotDraft[] }> {
-  let created = 0
-  const drafts: SweetSpotDraft[] = []
-  for (const c of candidates) {
-    const id = await createSweetSpotDraft({
-      route: c.route,
-      programSlug: c.programSlug,
-      cabin: c.cabin,
-      milesOw: c.milesOw,
-      milesLabel: c.milesLabel,
-      confidence: 'med',
-      createdBy: CONTENT_CANDIDATES_CREATED_BY,
-    })
-    if (!id) continue
-    created++
-
-    const why = await draftSweetSpotWhy({
-      route: c.route,
-      program: c.program,
-      cabin: c.cabin,
-      milesLabel: c.milesLabel,
-      milesOw: c.milesOw,
-      notes: c.notes,
-    })
-    if (why) await updateSweetSpotDraftWhy(id, why)
-
-    drafts.push({
-      id,
-      seq: 0, // DB-assigned; unknown here — matches NewDraftForm's own optimistic-insert placeholder
-      route: c.route,
-      program: c.program,
-      programSlug: c.programSlug,
-      metal: null,
-      cabin: c.cabin,
-      milesOw: c.milesOw,
-      milesLabel: c.milesLabel,
-      why: why ?? '',
-      confidence: 'med',
-      status: 'pending_review',
-      createdBy: CONTENT_CANDIDATES_CREATED_BY,
-    })
-  }
-  return { created, drafts }
+  return { created, found, drafts }
 }

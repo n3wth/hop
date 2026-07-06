@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useMemo, useState, type ReactNode } from 'react'
 import type { SweetSpotDraft, DraftStatus } from '@/lib/sweet-spot-drafts'
-import { CONTENT_CANDIDATES_CREATED_BY } from '@/lib/sweet-spot-candidates'
+import { CONTENT_CANDIDATES_CREATED_BY } from '@/lib/sweet-spot-constants'
 import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHeader'
 import {
   createSweetSpotDraftAction,
