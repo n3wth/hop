@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
+import { resetSyncAddress } from '@/app/actions/sync-address'
 import BrandIcon from './BrandIcon'
 import Icon from './Icon'
 
@@ -30,6 +31,19 @@ export default function BalanceSyncPaste({ syncAddress }: { syncAddress: string 
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  // Live address so a reset updates the shown value without a full reload.
+  const [address, setAddress] = useState(syncAddress)
+  const [resetting, startReset] = useTransition()
+
+  function resetAddress() {
+    startReset(async () => {
+      const res = await resetSyncAddress()
+      if (res.ok && res.address) {
+        setAddress(res.address)
+        setCopied(false)
+      }
+    })
+  }
 
   function readPaste() {
     if (text.trim().length < 8) {
@@ -100,9 +114,9 @@ export default function BalanceSyncPaste({ syncAddress }: { syncAddress: string 
   }
 
   async function copyAddress() {
-    if (!syncAddress) return
+    if (!address) return
     try {
-      await navigator.clipboard.writeText(syncAddress)
+      await navigator.clipboard.writeText(address)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
@@ -201,14 +215,14 @@ export default function BalanceSyncPaste({ syncAddress }: { syncAddress: string 
         </p>
       ) : null}
 
-      {syncAddress ? (
+      {address ? (
         <div className="mt-3 border-t border-hair pt-3">
           <p className="text-[12.5px] text-text3">
             Or forward balance emails to your sync address — hop reads those the same way.
           </p>
           <div className="mt-1.5 flex items-center gap-2">
             <code className="min-w-0 flex-1 truncate rounded-[var(--radius-sm)] bg-sunk px-2.5 py-1.5 text-[12px] text-text2">
-              {syncAddress}
+              {address}
             </code>
             <button
               type="button"
@@ -218,6 +232,15 @@ export default function BalanceSyncPaste({ syncAddress }: { syncAddress: string 
               {copied ? 'Copied' : 'Copy'}
             </button>
           </div>
+          <button
+            type="button"
+            onClick={resetAddress}
+            disabled={resetting}
+            className="mt-1.5 text-[12px] font-semibold text-text3 transition-colors hover:text-text2 disabled:opacity-60"
+          >
+            {resetting ? 'Resetting…' : 'Reset address'}
+          </button>
+          <span className="ml-1.5 text-[12px] text-text3">if it&apos;s ever shared or leaked.</span>
         </div>
       ) : null}
     </section>

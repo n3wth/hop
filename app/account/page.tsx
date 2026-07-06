@@ -14,14 +14,18 @@ import {
   hasEnv,
   isBalanceSyncEnabled,
   isBillingEnabled,
+  isCredentialSyncEnabled,
+  isCredentialAutosyncLive,
   isGmailHistoryEnabled,
   isEmailPasswordAuthEnabled,
   isPasskeyEnabled,
   isStandingOrdersCronLive,
   resolveAuthSecret,
 } from '@/lib/env'
-import { makeSyncAddress } from '@/lib/balance-sync'
+import { formatSyncAddress, getOrCreateSyncAlias, makeSyncAddress } from '@/lib/balance-sync'
+import { listCredentials } from '@/lib/credential-vault'
 import BalanceSyncPaste from '@/components/BalanceSyncPaste'
+import ProgramLogins from '@/components/ProgramLogins'
 import { getTravelHistory } from '@/lib/travel-history'
 import { isGmailConnected } from '@/lib/travel-history-sync'
 import AppShell from '@/components/AppShell'
@@ -111,6 +115,20 @@ export default async function AccountPage({
   const cronLive = isStandingOrdersCronLive()
   const billingEnabled = isBillingEnabled()
   const gmailEnabled = isGmailHistoryEnabled()
+  const balanceSyncEnabled = isBalanceSyncEnabled()
+  const credentialSyncEnabled = isCredentialSyncEnabled()
+
+  // Balance-sync surfaces (all flag-gated): the pretty forwarding address is
+  // minted lazily, and credential logins load only when the vault is on.
+  const [syncAlias, programLogins] = await Promise.all([
+    balanceSyncEnabled && u.sub ? getOrCreateSyncAlias(u.sub) : Promise.resolve(null),
+    credentialSyncEnabled && u.sub ? listCredentials(u.sub) : Promise.resolve([]),
+  ])
+  const syncAddress = syncAlias
+    ? formatSyncAddress(syncAlias)
+    : balanceSyncEnabled && u.sub
+      ? makeSyncAddress(u.sub, resolveAuthSecret())
+      : null
 
   // Five independent groups — the AwardWallet live-balances call (a real
   // third-party request, typically the slowest leg) and four Neon-backed
@@ -359,11 +377,18 @@ export default async function AccountPage({
             awReason={awReason}
             awUnconfigured={awUnconfigured}
           />
+          {/* credential auto-sync (flag-gated) — hop signs in and reads your
+              balance on a schedule; honest per-login status. */}
+          {credentialSyncEnabled && u.sub ? (
+            <div className="mt-4">
+              <ProgramLogins logins={programLogins} autosyncLive={isCredentialAutosyncLive()} />
+            </div>
+          ) : null}
           {/* balance sync (flag-gated) — paste a statement / forward balance
               emails; the AwardWallet-independent syncing seam. */}
-          {isBalanceSyncEnabled() && u.sub ? (
+          {balanceSyncEnabled && u.sub ? (
             <div className="mt-4">
-              <BalanceSyncPaste syncAddress={makeSyncAddress(u.sub, resolveAuthSecret())} />
+              <BalanceSyncPaste syncAddress={syncAddress} />
             </div>
           ) : null}
         </section>

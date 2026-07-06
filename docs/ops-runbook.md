@@ -172,6 +172,41 @@ Gmail → OAuth consent (as a test user, if the client is in Testing mode) →
 redirected back with trips parsed → Sync re-reads → Disconnect deletes the row
 and revokes the token upstream.
 
+## Credential auto-sync (hop signs in and reads your balance)
+
+Credential-based rail on top of paste/forward (`docs/plans/2026-07-05-credential-sync.md`):
+the user stores a program login, a daily cron signs in via Cloudflare Browser
+Rendering and reads the balance through the same extraction clamp. **Honest by
+design** — only programs with a verified recipe sync; everything else shows
+`unsupported`, and each login carries a truthful `pending/ok/failed/unsupported`
+status. Paste/forward stay the always-works fallback.
+
+**Turn on the vault (storage only):** generate a key `openssl rand -hex 32`,
+set `HOP_CREDENTIAL_KEY=<that>` and `HOP_ENABLE_CREDENTIAL_SYNC=1` in Vercel.
+Users can now save logins; they sit `pending` until the fetch worker is live.
+
+**Turn on scheduled fetch (worker):**
+
+1. Enable Browser Rendering on the Cloudflare account. Deploy the worker:
+   `cd cloudflare/balance-fetch-worker && npm install`, `openssl rand -hex 32`,
+   `wrangler secret put HOP_BALANCE_FETCH_SECRET`, `npm run deploy`.
+2. In Vercel: `HOP_BALANCE_FETCH_WORKER_URL=<workers.dev URL, no trailing slash>`
+   and `HOP_BALANCE_FETCH_SECRET=<the SAME value>`.
+3. Add verified `RECIPES` entries in the worker per program (empty by default —
+   nothing syncs until a recipe exists and is tested live).
+
+**Turn off:** unset `HOP_ENABLE_CREDENTIAL_SYNC`. The affordance disappears,
+credential actions refuse softly, and `/api/cron/balance-autosync` answers
+`503 disabled`. Stored blobs are unreadable without the key.
+
+**Key rotation:** rotating `HOP_CREDENTIAL_KEY` makes existing blobs
+undecryptable → those logins flip to `failed` ("re-save the login") on next
+sync. Rotate only deliberately; there is no re-encryption path by design.
+
+**Verify:** save a login on `/account`; run `/api/cron/balance-autosync` with
+the cron bearer; the row's status moves to `ok` (recipe exists) or a truthful
+`failed`/`unsupported`.
+
 ## Self-improve loop / degradation telemetry (ADR 0007)
 
 Deterministic health detection: `recordDegradation()` rows + the daily

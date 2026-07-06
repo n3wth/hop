@@ -42,8 +42,10 @@ function htmlToText(html: string): string {
 export default {
   async email(message: ForwardableEmailMessage, env: Env, ctx: ExecutionContext): Promise<void> {
     // Catch-all delivers everything on the zone — only sync addresses relay.
+    // Two forms: pretty (sync-<alias>@) and legacy HMAC (sync+<id>.<sig>@).
     const to = (message.to ?? '').trim()
-    if (!to.toLowerCase().startsWith('sync+')) return
+    const local = to.toLowerCase()
+    if (!local.startsWith('sync-') && !local.startsWith('sync+')) return
 
     if (!env.HOP_BALANCE_INGEST_URL || !env.HOP_BALANCE_INGEST_SECRET) return
 
