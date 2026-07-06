@@ -197,7 +197,7 @@ export default function AgentActivity({
                   <span className="flex-shrink-0 text-right text-[11.5px] text-text3">
                     {t.lastUsedAt ? `used ${fmtDate(t.lastUsedAt)}` : 'never used'}
                     <br />
-                    <span className="text-text3/70">no cap configured yet</span>
+                    <span className="text-text3">no cap configured yet</span>
                   </span>
                 </div>
               ))}
