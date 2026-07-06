@@ -448,7 +448,7 @@ export function isContentCandidatesEnabled(): boolean {
 // before touching anything, and /v/[id] + its OG image 404 before the DB
 // read. Also the seam's emergency brake: flipping this off 404s every
 // already-shared receipt link. Flip HOP_ENABLE_SHARE_RECEIPTS once
-// drizzle/0008 has been applied.
+// drizzle/0010_nervous_clea.sql has been applied.
 export function isShareReceiptsEnabled(): boolean {
   const flag = process.env.HOP_ENABLE_SHARE_RECEIPTS ?? ''
   return /^(1|true|yes)$/i.test(flag.trim())

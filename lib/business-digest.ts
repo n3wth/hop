@@ -65,7 +65,7 @@ export interface BusinessDigest {
   outclicks: OutclickMetric | null
   /** Verdict receipts minted (hop_shared_verdicts), last 7d — the R1.5 spread
    *  measurement ("is anyone sharing?"). null = degraded — expected until the
-   *  drizzle/0008 migration has been applied or the flag is off. */
+   *  drizzle/0010_nervous_clea.sql migration has been applied or the flag is off. */
   receiptsCreated: WeeklyMetric | null
 }
 
