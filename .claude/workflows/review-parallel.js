@@ -201,20 +201,37 @@ const results = await pipeline(
 // lenses land on the same file:line with a DIFFERENT invariant/scenario, that's not a
 // duplicate — it's a contradiction — so it's tracked as a variant instead of silently
 // overwritten by whichever finding happened to have the higher severity.
+//
+// This block is bracketed with `test:extract` markers and kept as one self-contained unit
+// (RANK + mergeFindings) on purpose: workflow scripts run in the Workflow tool's sandbox
+// (plain JS, no import/export beyond `meta`, no module system — see .claude/workflows/README.md
+// "Constraints"), so lib/__tests__/review-parallel-dedup.test.ts cannot `import` this logic.
+// Instead it slices out this exact region by marker and evaluates it directly, so the test
+// always exercises the real shipped code, never a hand-copied duplicate.
+// test:extract-start
 const RANK = { P1: 0, P2: 1, P3: 2 }
-const merged = new Map()
-for (const f of results.filter(Boolean).flat()) {
-  const key = `${f.file}:${f.line}`
-  const prior = merged.get(key)
-  if (!prior) {
-    merged.set(key, { ...f, reviewers: [f.reviewer], variants: [{ invariant: f.invariant, scenario: f.scenario, severity: f.severity, reviewer: f.reviewer }] })
-  } else {
-    const isNewClaim = f.invariant !== prior.variants[0].invariant || f.scenario !== prior.variants[0].scenario
-    if (isNewClaim) prior.variants.push({ invariant: f.invariant, scenario: f.scenario, severity: f.severity, reviewer: f.reviewer })
-    if (RANK[f.severity] < RANK[prior.severity]) prior.severity = f.severity
-    if (!prior.reviewers.includes(f.reviewer)) prior.reviewers.push(f.reviewer)
+function mergeFindings(findings) {
+  const merged = new Map()
+  for (const f of findings) {
+    const key = `${f.file}:${f.line}`
+    const prior = merged.get(key)
+    if (!prior) {
+      merged.set(key, { ...f, reviewers: [f.reviewer], variants: [{ invariant: f.invariant, scenario: f.scenario, severity: f.severity, reviewer: f.reviewer }] })
+    } else {
+      // Compare against every previously-seen variant at this location, not just
+      // variants[0] — otherwise a finding that duplicates variants[1..n] (but happens to
+      // differ from variants[0]) is wrongly treated as new and appended, duplicating it
+      // in the final report.
+      const isNewClaim = !prior.variants.some((v) => v.invariant === f.invariant && v.scenario === f.scenario)
+      if (isNewClaim) prior.variants.push({ invariant: f.invariant, scenario: f.scenario, severity: f.severity, reviewer: f.reviewer })
+      if (RANK[f.severity] < RANK[prior.severity]) prior.severity = f.severity
+      if (!prior.reviewers.includes(f.reviewer)) prior.reviewers.push(f.reviewer)
+    }
   }
+  return merged
 }
+// test:extract-end
+const merged = mergeFindings(results.filter(Boolean).flat())
 
 // Tie-break: a file:line with more than one distinct claim gets one adjudicating pass with
 // fresh evidence instead of the earlier behavior (silently keep the highest-severity claim's

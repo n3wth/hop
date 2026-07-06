@@ -25,6 +25,45 @@ export function pickLatestBranch(branches) {
 }
 
 /**
+ * Merge independently-fetched branch and PR lists into one candidate per branch name,
+ * matched by head ref (see scripts/verify-desk-run.mjs#fetchCandidates for why the PR list
+ * is authoritative: a self-merging desk's PR is created with `--delete-branch`, so after a
+ * healthy merge the branch is gone and the PR is the only surviving record).
+ *
+ * Multiple PRs can share the same head ref — a branch name reused across desk runs, or a
+ * stale closed/merged PR sitting alongside the current open one. When that happens, keep
+ * whichever PR has the HIGHER PR number, not whichever the API returned last and not
+ * whichever has the later `updated_at`: PR number is monotonically increasing and immune to
+ * comment/label/CI activity bumping `updated_at` on a stale PR, so it is the only signal that
+ * can't make a stale PR look like the current one. Picking the wrong PR here is a false
+ * all-clear risk: a stale merged PR silently "verifying" a desk run whose real, current PR
+ * never got checked.
+ * @param {{name: string, sha: string}[]} branches
+ * @param {{number: number, headRef: string, headSha: string, merged: boolean, updatedAt: string}[]} prs
+ * @returns {{name: string, sha: string, committedAt: string|null, pr: {number:number, headSha:string, merged:boolean}|null}[]}
+ */
+export function mergeCandidates(branches, prs) {
+  const byName = new Map()
+  for (const b of branches || []) byName.set(b.name, { name: b.name, sha: b.sha, committedAt: null, pr: null })
+  for (const p of prs || []) {
+    const existing = byName.get(p.headRef)
+    const pr = { number: p.number, headSha: p.headSha, merged: p.merged }
+    if (existing) {
+      // A PR already won this head ref — only replace it with a strictly newer PR number.
+      if (existing.pr && existing.pr.number > pr.number) continue
+      // Branch still exists: keep its independently-fetched sha (from `branches`) so the
+      // PR-vs-branch sha comparison in evaluateDeskRun is a real cross-check, not an echo.
+      existing.pr = pr
+      existing.committedAt = p.updatedAt
+    } else {
+      // Branch already deleted (the normal post-merge state) — the PR is all that's left.
+      byName.set(p.headRef, { name: p.headRef, sha: p.headSha, committedAt: p.updatedAt, pr })
+    }
+  }
+  return [...byName.values()]
+}
+
+/**
  * Decide whether a desk's most recent run is verified, given independently-fetched GitHub state.
  * @param {BranchInfo | null} branch
  * @param {PrInfo | null} pr

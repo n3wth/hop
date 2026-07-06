@@ -18,7 +18,7 @@
 // mini's crontab/watchdog config is not reachable from this repo and must be updated separately.
 
 import { execFileSync } from 'node:child_process'
-import { evaluateDeskRun, pickLatestBranch } from './verify-desk-logic.mjs'
+import { evaluateDeskRun, mergeCandidates, pickLatestBranch } from './verify-desk-logic.mjs'
 
 function parseArgs(argv) {
   const args = { repo: 'n3wth/hop', prefix: null }
@@ -69,27 +69,16 @@ function fetchCandidates(repo, prefix) {
     '.[] | {number, headRef: .head.ref, headSha: .head.sha, merged: (.merged_at != null), updatedAt: .updated_at}',
   ]).filter((p) => p.headRef.startsWith(prefix))
 
-  const byName = new Map()
-  for (const b of branches) byName.set(b.name, { name: b.name, sha: b.sha, committedAt: null, pr: null })
-  for (const p of prs) {
-    const existing = byName.get(p.headRef)
-    const pr = { number: p.number, headSha: p.headSha, merged: p.merged }
-    if (existing) {
-      // Branch still exists: keep its independently-fetched sha (from `branches`) so the
-      // PR-vs-branch sha comparison in evaluateDeskRun is a real cross-check, not an echo.
-      existing.pr = pr
-      existing.committedAt = p.updatedAt
-    } else {
-      // Branch already deleted (the normal post-merge state) — the PR is all that's left.
-      byName.set(p.headRef, { name: p.headRef, sha: p.headSha, committedAt: p.updatedAt, pr })
-    }
-  }
-  for (const candidate of byName.values()) {
+  // Pure merge/selection logic (including which PR wins when several share a head ref)
+  // lives in verify-desk-logic.mjs so it's unit-testable without a GitHub token or network
+  // access — this function only does the I/O.
+  const candidates = mergeCandidates(branches, prs)
+  for (const candidate of candidates) {
     if (candidate.committedAt) continue
     const commit = ghJson(['api', `repos/${repo}/commits/${candidate.sha}`, '-q', '{date: .commit.committer.date}'])
     candidate.committedAt = commit.date
   }
-  return [...byName.values()]
+  return candidates
 }
 
 function fetchChecks(repo, prNumber) {
@@ -117,7 +106,22 @@ function main() {
     process.exit(2)
   }
 
-  execFileSync('gh', ['auth', 'status'], { stdio: 'ignore' })
+  try {
+    execFileSync('gh', ['auth', 'status'], { stdio: 'ignore' })
+  } catch (err) {
+    console.error(
+      JSON.stringify(
+        {
+          ok: false,
+          status: 'gh-auth-failed',
+          reason: `gh is not authenticated (or not installed) — run \`gh auth login\`, or set GH_TOKEN/GITHUB_TOKEN, before invoking this script: ${err.message}`,
+        },
+        null,
+        2,
+      ),
+    )
+    process.exit(1)
+  }
 
   const latest = pickLatestBranch(fetchCandidates(repo, prefix))
   const branch = latest ? { name: latest.name, sha: latest.sha, committedAt: latest.committedAt } : null
