@@ -109,6 +109,20 @@ export type EnvKey =
   // logs and no-ops instead of verifying/processing (dev/local has no way to
   // receive real Resend deliveries anyway).
   | 'RESEND_WEBHOOK_SECRET'
+  // Dedicated HMAC key for lib/newsletter.ts#deriveUnsubscribeToken.
+  // DELIBERATELY separate from BETTER_AUTH_SECRET/AUTH_SECRET: the newsletter
+  // derives each subscriber's unsubscribe-link token as
+  // HMAC-SHA256(secret, email) and stores only its hash, so the app must be
+  // able to reproduce the exact same plaintext for the life of the link — but
+  // the auth secret gets rotated for session-signing reasons that have
+  // nothing to do with the newsletter. Rotate BETTER_AUTH_SECRET alone and
+  // every unsubscribe link already emailed to a real subscriber stops
+  // matching its stored hash — see resolveNewsletterUnsubscribeSecret() below
+  // and docs/ops-runbook.md's "Newsletter unsubscribe secret" section. Absent
+  // → falls back to resolveAuthSecret()'s own chain, so existing/local setups
+  // keep working with no new config, but rotation is then unsafe for the
+  // newsletter until this is set explicitly.
+  | 'NEWSLETTER_UNSUBSCRIBE_SECRET'
 
 function read(key: EnvKey): string {
   const value = process.env[key]
@@ -223,6 +237,22 @@ export function resolveAuthSecret(): string | null {
   return null
 }
 let warnedDerivedSecret = false
+
+// Key for lib/newsletter.ts#deriveUnsubscribeToken's HMAC — decoupled from
+// session-signing on purpose. Resolution: explicit NEWSLETTER_UNSUBSCRIBE_SECRET
+// (the ONLY tier that's actually immune to a BETTER_AUTH_SECRET/AUTH_SECRET
+// rotation) → resolveAuthSecret()'s own chain → a fixed non-secret dev
+// fallback (local/test only — the newsletter feature is gated off by default
+// anyway, see isNewsletterEnabled). Never throws, never null — a caller can
+// always derive a token, but only the first tier survives an auth-secret
+// rotation without breaking outstanding unsubscribe links. See the EnvKey doc
+// comment above and docs/ops-runbook.md's "Newsletter unsubscribe secret"
+// section for the operational guidance.
+export function resolveNewsletterUnsubscribeSecret(): string {
+  const explicit = process.env.NEWSLETTER_UNSUBSCRIBE_SECRET
+  if (explicit && explicit.trim() !== '') return explicit.trim()
+  return resolveAuthSecret() ?? 'hop-newsletter-unsubscribe-dev-fallback'
+}
 
 // Native cash checkout is GATED. It activates only when BOTH the explicit flag
 // is on AND a TEST token is present — otherwise the cash CTA keeps its current

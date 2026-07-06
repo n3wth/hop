@@ -1,9 +1,12 @@
 // GET /api/newsletter-signup/unsubscribe?token=... — the one-click footer link
 // on every digest email. No login required (that's the point of a token link).
 // Deliberately shows the SAME landing page regardless of whether the token
-// matched anything — lib/newsletter.ts#unsubscribeNewsletter is silent about
-// match/no-match so a stale or guessed link can't be used to probe which
-// addresses are subscribed.
+// matched anything — this route ignores unsubscribeNewsletter's return value
+// on purpose, so a stale or guessed link can't be used to probe which
+// addresses are subscribed. unsubscribeNewsletter itself DOES now report the
+// real match/no-match outcome (and logs a warning on a zero-row match) so a
+// genuine mismatch — e.g. a rotated unsubscribe secret — is observable in
+// logs even though the HTTP response never varies.
 //
 // Unauthenticated + state-changing, so it's throttled per-IP before any DB
 // work — same lib/rate-limit.ts#checkRateLimit shape as POST
