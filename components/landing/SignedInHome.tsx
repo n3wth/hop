@@ -127,6 +127,7 @@ export default async function SignedInHome({
           totalPoints={totalPoints}
           pointsWorth={pointsWorth}
           entries={heroEntries}
+          personalized={personalized}
           balances={balances}
         />
 

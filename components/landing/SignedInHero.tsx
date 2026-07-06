@@ -29,6 +29,7 @@ export default function SignedInHero({
   totalPoints,
   pointsWorth,
   entries,
+  personalized,
   balances = [],
 }: {
   first?: string
@@ -38,16 +39,25 @@ export default function SignedInHero({
   pointsWorth: number
   /** Personalized showcase — every number computed server-side. */
   entries: ShowcaseEntry[]
+  /** Whether `entries` was actually confirmed reachable against the member's
+      real per-program balances (lib/ledger-dream#reachableDestinations),
+      versus a generic best-cpp-in-the-world fallback (lib/destinations#topValue)
+      used when they don't clear that bar. Only when true is entries[0] safe to
+      present as an affordability verdict ("enough for X, skipping $Y") —
+      otherwise it's an unrelated pick that may need far more of either
+      currency than the member holds. */
+  personalized: boolean
   /** Real per-program balances (lib/accounts#getUserBalances) — only the
       single-program display name in the low-balance line needs this. */
   balances?: Balance[]
 }) {
   const showcase = entries.length >= 2
-  // The engine's own best-value reachable pick — entries is already sorted by
-  // cpp desc (lib/destinations#affordableWith), so entries[0] IS the best
-  // reachable redemption. Used for the healthy-balance teaser below; the
-  // rotator itself needs >=2 entries but this line only needs one.
-  const bestReach = entries[0]
+  // The best reachable redemption for the healthy-balance teaser below — only
+  // trustworthy when `personalized` confirms entries came from
+  // reachableDestinations(), not the generic topValue() fallback (see the
+  // `personalized` prop doc). The rotator itself needs >=2 entries but this
+  // line only needs one.
+  const bestReach = personalized ? entries[0] : undefined
   const isLowBalance = programs === 1 || totalPoints < LOW_BALANCE_THRESHOLD
 
   return (
@@ -113,10 +123,11 @@ export default function SignedInHero({
               </span>{' '}
               across {programs} programs
               {bestReach ? (
-                // The best reachable redemption straight from the engine
-                // (entries[0], already cpp-ranked) — cashValue is the route's
-                // typical one-way cash (lib/destinations#typicalCashUSD), the
-                // same "cash you skip" figure the Ledger Dream card uses.
+                // Only set when `personalized` confirmed entries[0] against
+                // the member's real balances (see the prop doc above) —
+                // cashValue is the route's typical one-way cash
+                // (lib/destinations#typicalCashUSD), the same "cash you skip"
+                // figure the Ledger Dream card uses.
                 <>
                   {' '}
                   — enough for{' '}
