@@ -40,8 +40,13 @@ import type { Balance } from '@/lib/types'
 // This route reads per-user data and must never be cached or statically rendered.
 export const dynamic = 'force-dynamic'
 
-// Weekly cadence AND the idempotency guard window — see listDueDigestSubscribers.
-const DIGEST_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000
+// Idempotency guard window — see listDueDigestSubscribers. Deliberately
+// shorter than the 7-day cron cadence (vercel.json's "0 13 * * 1"): the guard
+// is stamped with the wall-clock time AFTER a run finishes (markDigestSent),
+// so a window of exactly 7 days would let any nonzero processing latency
+// push the stamp past the next run's cutoff and skip that subscriber,
+// halving their effective cadence to every other week. 6 days leaves slack.
+const DIGEST_INTERVAL_MS = 6 * 24 * 60 * 60 * 1000
 
 // Resolve a subscriber's Better Auth user id by email so an account created
 // AFTER signup still personalizes — a userId captured at signup time would
