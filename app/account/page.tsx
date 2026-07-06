@@ -134,7 +134,9 @@ export default async function AccountPage({
           ])
         : Promise.resolve(['free', 0] as const),
       Promise.all([
-        u.sub ? isGmailConnected(u.sub) : Promise.resolve({ connected: false, email: null }),
+        u.sub
+          ? isGmailConnected(u.sub)
+          : Promise.resolve({ connected: false, email: null, syncFailed: false }),
         u.sub ? getTravelHistory(u.sub) : Promise.resolve(null),
       ]),
       Promise.all([
@@ -405,6 +407,7 @@ export default async function AccountPage({
             enabled={gmailEnabled}
             connected={gmailState.connected}
             email={gmailState.email}
+            syncFailed={gmailState.syncFailed}
             trips={travelHistory?.trips ?? []}
           />
         </section>
