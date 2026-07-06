@@ -4,7 +4,7 @@
 // for the loop these agents run). Read by app/admin/team/page.tsx +
 // lib/admin-team.ts (which layers live GitHub/Linear data on top).
 
-export type AnimalKind = 'beaver' | 'fox' | 'owl' | 'tortoise'
+export type AnimalKind = 'beaver' | 'fox' | 'owl' | 'tortoise' | 'eagle'
 
 export interface TeamMember {
   slug: string
@@ -64,5 +64,15 @@ export const TEAM: TeamMember[] = [
     scheduleHuman: 'Mon · 9am PT',
     branchPrefix: 'retro/',
     reportsVia: 'Playbook/docs PRs',
+  },
+  {
+    slug: 'marcus',
+    name: 'Marcus',
+    role: 'Strategy desk',
+    animal: 'eagle',
+    cron: '0 15 * * 0',
+    scheduleHuman: 'Sun · 8am PT',
+    branchPrefix: 'strategy/',
+    reportsVia: 'Draft PRs + Linear',
   },
 ]
