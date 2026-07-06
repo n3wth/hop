@@ -33,15 +33,16 @@ been updated to match **and** the connection has been tested end-to-end in the s
 
 **The known shared secrets in this app** (check `.env.example` for the current, complete list —
 it changes over time):
-- The pricing-data Worker's shared secret — verify by triggering its scheduled job directly and
-  confirming fresh data lands in the database.
-- The balance-import Worker's shared secret — verify by sending a real test balance through the
-  import path and confirming it lands correctly.
-- The support-inbox Worker's shared secret — this one fails closed (rejects *everything*) if
-  missing or mismatched, making a stale copy a full outage rather than a quiet degradation.
-- The scheduled-job authorization secret every cron route expects — not a second external
-  service, but the same "both sides must agree on one value" shape; a mismatch here blocks the
-  scheduling platform itself from running the job.
+- The pricing-data Worker's shared secret (`HOP_VALUATION_SYNC_SECRET`) — verify by triggering
+  its scheduled job directly and confirming fresh data lands in the database.
+- The balance-import Worker's shared secret (`HOP_BALANCE_INGEST_SECRET`) — verify by sending a
+  real test balance through the import path and confirming it lands correctly.
+- The support-inbox Worker's shared secret (`HOP_SUPPORT_INGEST_SECRET`) — this one fails closed
+  (rejects *everything*) if missing or mismatched, making a stale copy a full outage rather than
+  a quiet degradation.
+- The scheduled-job authorization secret every cron route expects (`CRON_SECRET`) — not a second
+  external service, but the same "both sides must agree on one value" shape; a mismatch here
+  blocks the scheduling platform itself from running the job.
 
 When any of these changes: update the Worker's copy, update the main app's copy to the identical
 value, then actually trigger the real job or route and confirm it succeeds — checking that both
