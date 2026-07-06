@@ -12,8 +12,10 @@ export const metadata: Metadata = {
 
 // Landing page for GET /api/newsletter-signup/unsubscribe's redirect. Always
 // the same copy regardless of whether the token matched a real subscriber —
-// lib/newsletter.ts#unsubscribeNewsletter is deliberately silent about that
-// so a stale link can't be used to probe addresses.
+// the ROUTE deliberately ignores unsubscribeNewsletter's return value so a
+// stale link can't be used to probe addresses (unsubscribeNewsletter itself
+// does report the real match/no-match outcome now, for observability — see
+// its comment in lib/newsletter.ts).
 export default async function NewsletterUnsubscribedPage() {
   const user = await getSessionNavUser()
 

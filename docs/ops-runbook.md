@@ -452,6 +452,42 @@ it in prod: rotating `DATABASE_URL` would silently invalidate every session.
 `vercel env ls production | grep BETTER_AUTH_SECRET` — and no
 `[auth] BETTER_AUTH_SECRET is not set` warning in runtime logs.
 
+## Newsletter unsubscribe secret
+
+The newsletter (`lib/newsletter.ts`) derives each subscriber's unsubscribe-link
+token as `HMAC-SHA256(secret, email)` and stores only its hash — the plaintext
+is recomputed from the email whenever a digest needs to embed it in a link,
+never stored random. That means the secret has to keep producing the exact
+same value for a given email for as long as any previously-sent unsubscribe
+link might still be clicked, which is not a property the session-signing
+secret can promise: `BETTER_AUTH_SECRET`/`AUTH_SECRET` gets rotated for
+reasons that have nothing to do with the newsletter (see "Auth secret" above).
+
+`NEWSLETTER_UNSUBSCRIBE_SECRET` (`lib/env.ts#resolveNewsletterUnsubscribeSecret`)
+decouples the two:
+
+- **Set** → rotating `BETTER_AUTH_SECRET`/`AUTH_SECRET` is safe for the
+  newsletter. Every outstanding unsubscribe link keeps working across the
+  rotation because its HMAC key never changed.
+- **Not set** (the accessor falls back to `resolveAuthSecret()`'s own chain,
+  so nothing breaks today with zero config) → rotating
+  `BETTER_AUTH_SECRET`/`AUTH_SECRET` **will** silently invalidate every
+  unsubscribe link already emailed to a real subscriber. The presented token
+  no longer hashes to what's stored, `unsubscribeNewsletter()` reports a
+  zero-row match and logs a `[newsletter] unsubscribe token matched zero
+  rows…` warning, but the click still lands on the same "you're unsubscribed"
+  confirmation page (by design — see the route's comment) with no user-facing
+  signal that anything went wrong. Watch runtime logs for that warning after
+  any auth-secret rotation if this var isn't set.
+
+**Before this matters in practice:** the newsletter is gated off by default
+(`isNewsletterEnabled()` needs both `HOP_ENABLE_NEWSLETTER` and
+`RESEND_API_KEY`), so as of this writing there are no real subscribers and no
+outstanding links. Set `NEWSLETTER_UNSUBSCRIBE_SECRET` before or shortly after
+turning the newsletter on for real — it costs nothing (`openssl rand -hex 32`)
+and is the difference between "rotate the auth secret whenever" and "rotating
+the auth secret breaks every unsubscribe link that's already out in inboxes."
+
 ## Database backup & bad-migration recovery
 
 Migrations auto-apply during build (`scripts/db-migrate.mjs`, also

@@ -23,10 +23,15 @@
 //     in EVERY send, so the app must be able to reproduce the exact same
 //     plaintext on demand, indefinitely — which a hash-only store can't do
 //     for a random secret. Instead it's DERIVED, not stored-random:
-//     deriveUnsubscribeToken(email) is an HMAC-SHA256 keyed on the app's auth
-//     secret, so it's the same value every time for a given email. Only its
-//     hash is persisted (for the O(1) lookup on the unsubscribe click); the
-//     plaintext is recomputed from the email whenever the digest needs it.
+//     deriveUnsubscribeToken(email) is an HMAC-SHA256 keyed on a DEDICATED
+//     secret (lib/env.ts#resolveNewsletterUnsubscribeSecret — decoupled from
+//     Better Auth's session-signing secret precisely so a routine
+//     BETTER_AUTH_SECRET/AUTH_SECRET rotation can never silently invalidate
+//     every unsubscribe link already emailed to a real subscriber; see that
+//     function's doc comment and docs/ops-runbook.md), so it's the same value
+//     every time for a given email. Only its hash is persisted (for the O(1)
+//     lookup on the unsubscribe click); the plaintext is recomputed from the
+//     email whenever the digest needs it.
 //
 // SQL (run manually — this code does NOT run DDL; the migration lives in
 // drizzle/, generated from lib/db/schema.ts#newsletterSubscribers):
@@ -47,7 +52,7 @@ import { createHmac, randomBytes } from 'node:crypto'
 import { withDb } from '@/lib/supabase-helpers'
 import { normalizeEmail } from '@/lib/escalation'
 import { hashToken } from '@/lib/api-tokens'
-import { resolveAuthSecret } from '@/lib/env'
+import { resolveNewsletterUnsubscribeSecret } from '@/lib/env'
 
 export { normalizeEmail }
 
@@ -70,12 +75,13 @@ function generateToken(): string {
 // unsubscribe_token's plaintext, deterministically DERIVED from the email
 // rather than stored randomly, so it can be reproduced identically every
 // time the weekly digest needs to embed it in a link — see the file-level
-// comment above. Falls back to a fixed (non-secret) key only when the app
-// has no auth secret AND no DATABASE_URL configured (local/test only — the
-// newsletter feature itself is gated off in that case anyway); never throws.
+// comment above. Keyed on lib/env.ts#resolveNewsletterUnsubscribeSecret — a
+// DEDICATED secret, decoupled from Better Auth's session-signing secret, so
+// rotating BETTER_AUTH_SECRET/AUTH_SECRET for unrelated reasons can't
+// silently break every unsubscribe link already emailed to a real subscriber
+// (see that function's doc comment and docs/ops-runbook.md). Never throws.
 export function deriveUnsubscribeToken(email: string): string {
-  const secret = resolveAuthSecret() ?? 'hop-newsletter-unsubscribe-dev-fallback'
-  return createHmac('sha256', secret).update(email).digest('hex')
+  return createHmac('sha256', resolveNewsletterUnsubscribeSecret()).update(email).digest('hex')
 }
 
 interface SubscriberRow {
@@ -157,19 +163,37 @@ export async function confirmNewsletterSubscriber(token: unknown): Promise<boole
   })
 }
 
-// One-click unsubscribe (no login required). Idempotent and deliberately
-// silent about whether the token matched — always returns the same shape so
-// a stale/garbage link can't be used to probe which addresses are subscribed.
-// NEVER throws.
+// One-click unsubscribe (no login required). Idempotent — a second click on
+// an already-unsubscribed row still matches and re-stamps harmlessly. The
+// CALLER (app/api/newsletter-signup/unsubscribe/route.ts) deliberately shows
+// the same landing page regardless of the return value, so a stale/garbage
+// link can't be used to probe which addresses are subscribed — but this
+// function itself now reports the real outcome (checking the affected-row
+// count from the update's RETURNING, not just the absence of a query error)
+// so a genuine zero-row match — e.g. NEWSLETTER_UNSUBSCRIBE_SECRET/the
+// fallback auth secret got rotated after this link was emailed, so the
+// presented token now hashes to something no row has — is at least logged
+// instead of silently reading as success while the subscriber stays
+// subscribed. NEVER throws.
 export async function unsubscribeNewsletter(token: unknown): Promise<boolean> {
   const t = typeof token === 'string' ? token.trim() : ''
   if (!t) return false
   return withDb(false, async (db) => {
-    const { error } = await db
+    const { data, error } = await db
       .from(TABLE)
       .update({ unsubscribed_at: new Date().toISOString() })
       .eq('unsubscribe_token', hashToken(t))
-    return !error
+      .select('id')
+    if (error) return false
+    const matched = Array.isArray(data) ? data.length : 0
+    if (matched === 0) {
+      console.warn(
+        '[newsletter] unsubscribe token matched zero rows — possible stale link or a rotated ' +
+          'unsubscribe secret (see docs/ops-runbook.md, "Newsletter unsubscribe secret")',
+      )
+      return false
+    }
+    return true
   })
 }
 

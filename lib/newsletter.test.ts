@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest'
 
 // Mock the withDb seam so every persistence path (fresh insert vs. dedup
 // no-op, confirm vs. already-confirmed, digest-guard filtering) is testable
@@ -226,8 +226,10 @@ describe('unsubscribeNewsletter', () => {
     expect(mockWithDb).not.toHaveBeenCalled()
   })
 
-  it('stamps unsubscribed_at and returns true regardless of match (silent about validity)', async () => {
-    const update = vi.fn(() => ({ eq: async () => ({ error: null }) }))
+  it('stamps unsubscribed_at and returns true when a row actually matched', async () => {
+    const update = vi.fn(() => ({
+      eq: () => ({ select: () => Promise.resolve({ data: [{ id: 'row-1' }], error: null }) }),
+    }))
     const from = vi.fn(() => ({ update }))
     mockWithDb.mockImplementation(async (_fallback, fn) => (fn as (db: unknown) => Promise<unknown>)({ from }))
 
@@ -240,7 +242,7 @@ describe('unsubscribeNewsletter', () => {
     const update = vi.fn(() => ({
       eq: (_col: string, value: string) => {
         seenEq = value
-        return Promise.resolve({ error: null })
+        return { select: () => Promise.resolve({ data: [{ id: 'row-1' }], error: null }) }
       },
     }))
     const from = vi.fn(() => ({ update }))
@@ -260,7 +262,12 @@ describe('unsubscribeNewsletter', () => {
     const update = vi.fn(() => ({
       eq: (_col: string, value: string) => {
         matched = value === expectedHash
-        return Promise.resolve({ error: null })
+        return {
+          select: () =>
+            Promise.resolve(
+              matched ? { data: [{ id: 'row-1' }], error: null } : { data: [], error: null },
+            ),
+        }
       },
     }))
     const from = vi.fn(() => ({ update }))
@@ -268,6 +275,80 @@ describe('unsubscribeNewsletter', () => {
 
     await expect(unsubscribeNewsletter(plaintext)).resolves.toBe(true)
     expect(matched).toBe(true)
+  })
+
+  // SECURITY/OBSERVABILITY: this is the defense-in-depth fix for the exact
+  // failure mode a secret rotation would cause (see
+  // lib/env.ts#resolveNewsletterUnsubscribeSecret and docs/ops-runbook.md's
+  // "Newsletter unsubscribe secret" section) — the presented token hashes to
+  // something no row has (e.g. because the unsubscribe secret changed since
+  // this link was emailed), so the update matches zero rows. Previously this
+  // returned true (any `!error` read as success); now it must report false
+  // and log a warning so the mismatch is observable instead of silently
+  // "succeeding" while the subscriber stays subscribed.
+  it('returns false and warns when the update matches zero rows (simulated hash mismatch / rotated secret)', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const update = vi.fn(() => ({
+      eq: () => ({ select: () => Promise.resolve({ data: [], error: null }) }),
+    }))
+    const from = vi.fn(() => ({ update }))
+    mockWithDb.mockImplementation(async (_fallback, fn) => (fn as (db: unknown) => Promise<unknown>)({ from }))
+
+    await expect(unsubscribeNewsletter('stale-or-rotated-token')).resolves.toBe(false)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('matched zero rows'))
+    warnSpy.mockRestore()
+  })
+
+  it('returns false on a query error, without warning about a zero-row match', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const update = vi.fn(() => ({
+      eq: () => ({ select: () => Promise.resolve({ data: null, error: new Error('boom') }) }),
+    }))
+    const from = vi.fn(() => ({ update }))
+    mockWithDb.mockImplementation(async (_fallback, fn) => (fn as (db: unknown) => Promise<unknown>)({ from }))
+
+    await expect(unsubscribeNewsletter('any-token')).resolves.toBe(false)
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
+})
+
+describe('deriveUnsubscribeToken secret source (lib/env.ts#resolveNewsletterUnsubscribeSecret)', () => {
+  const ORIGINAL_ENV = { ...process.env }
+
+  beforeEach(() => {
+    process.env = { ...ORIGINAL_ENV }
+  })
+
+  afterAll(() => {
+    process.env = { ...ORIGINAL_ENV }
+  })
+
+  it('uses the dedicated NEWSLETTER_UNSUBSCRIBE_SECRET when set, independent of the auth secret', () => {
+    process.env.BETTER_AUTH_SECRET = 'auth-secret-a'
+    process.env.NEWSLETTER_UNSUBSCRIBE_SECRET = 'dedicated-secret'
+    const withDedicated = deriveUnsubscribeToken('you@example.com')
+
+    // Rotating the auth secret must NOT change the derived token while the
+    // dedicated secret stays fixed — this is the whole point of the decouple.
+    process.env.BETTER_AUTH_SECRET = 'auth-secret-b-after-rotation'
+    const afterAuthRotation = deriveUnsubscribeToken('you@example.com')
+
+    expect(afterAuthRotation).toBe(withDedicated)
+  })
+
+  it('falls back to resolveAuthSecret() when NEWSLETTER_UNSUBSCRIBE_SECRET is unset', () => {
+    delete process.env.NEWSLETTER_UNSUBSCRIBE_SECRET
+    process.env.BETTER_AUTH_SECRET = 'only-the-auth-secret'
+    const beforeRotation = deriveUnsubscribeToken('you@example.com')
+
+    // Without the dedicated secret, rotating the auth secret DOES change the
+    // derived token — this is exactly the rotation-breaks-links risk that
+    // setting NEWSLETTER_UNSUBSCRIBE_SECRET protects against.
+    process.env.BETTER_AUTH_SECRET = 'rotated-auth-secret'
+    const afterRotation = deriveUnsubscribeToken('you@example.com')
+
+    expect(afterRotation).not.toBe(beforeRotation)
   })
 })
 
