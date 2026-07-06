@@ -18,10 +18,13 @@
 // send — addresses that bounced or complained (recorded by the Resend
 // webhook, app/api/webhooks/resend/route.ts) never receive a digest.
 //
-// GATED: only runs when isNewsletterEnabled() (HOP_ENABLE_NEWSLETTER AND
-// RESEND_API_KEY) — 503 disabled otherwise, no DB reads, no sends. Requires
-// the Vercel cron auth header (CRON_SECRET) when set. NEVER throws to the
-// platform: one subscriber's failure can't sink the run.
+// GATED: requires the Vercel cron auth header (CRON_SECRET) when set — checked
+// FIRST, before anything else (same order as every other app/api/cron/* route,
+// e.g. sync-stripe), so an unauthenticated caller can't even learn whether the
+// feature flag is configured. Only once authorized does it check
+// isNewsletterEnabled() (HOP_ENABLE_NEWSLETTER AND RESEND_API_KEY) — 503
+// disabled otherwise, no DB reads, no sends. NEVER throws to the platform:
+// one subscriber's failure can't sink the run.
 
 import { eq } from 'drizzle-orm'
 import { getDb } from '@/lib/db'
@@ -70,12 +73,15 @@ function unsubscribeUrl(token: string): string {
 }
 
 export async function GET(request: Request) {
-  if (!isNewsletterEnabled()) {
-    if (isAuthorizedCron(request)) recordHeartbeat('newsletter-digest', false, 'disabled')
-    return Response.json({ ok: false, disabled: true, reason: 'newsletter is off' }, { status: 503 })
-  }
+  // Auth FIRST, same as every other cron route (e.g. sync-stripe) — an
+  // unauthenticated caller must not be able to learn whether the feature flag
+  // is even configured before proving it's allowed to invoke this route.
   if (!isAuthorizedCron(request)) {
     return Response.json({ ok: false, reason: 'unauthorized' }, { status: 401 })
+  }
+  if (!isNewsletterEnabled()) {
+    recordHeartbeat('newsletter-digest', false, 'disabled')
+    return Response.json({ ok: false, disabled: true, reason: 'newsletter is off' }, { status: 503 })
   }
 
   const startedAt = Date.now()
