@@ -57,6 +57,12 @@ describe('firstName', () => {
     expect(firstName({ email: 'zed@example.com' })).toBe('Zed')
   })
 
+  it('normalizes local-part separators before taking the first word', () => {
+    expect(firstName({ email: 'john.smith@example.com' })).toBe('John')
+    expect(firstName({ email: 'john_smith@example.com' })).toBe('John')
+    expect(firstName({ email: 'john-smith@example.com' })).toBe('John')
+  })
+
   it('is undefined with no name and no email', () => {
     expect(firstName({})).toBeUndefined()
     expect(firstName(null)).toBeUndefined()

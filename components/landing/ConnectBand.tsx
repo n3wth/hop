@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import Icon from '@/components/Icon'
-import { firstName } from '@/lib/nav-user'
 
 // Closing call-to-action — auth-aware. Signed out: connect your points.
 // Signed in: greet + the programs-synced state, point them at search. Flat teal
@@ -9,11 +8,11 @@ export default function ConnectBand({
   user,
   programs,
 }: {
-  user: { name?: string | null; email?: string | null } | null
+  user: { name?: string } | null
   programs: number
 }) {
   const signedIn = !!user
-  const first = firstName(user)
+  const first = user?.name?.trim().split(' ')[0]
 
   return (
     <section

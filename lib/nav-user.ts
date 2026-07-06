@@ -53,17 +53,21 @@ function capitalize(word: string): string {
 // guaranteed to be properly cased (e.g. an email/password sign-up with no
 // display name falls back to the raw, lowercase email local part). Only
 // falls back to the email local part, capitalized, when there's no name at
-// all. Feed this the raw session user, NOT `toNavUser`'s output — NavUser
-// already collapses a missing name to the full email, which would wrongly
-// skip the local-part fallback below.
+// all — and an email local part is itself often word.word or word_word
+// (e.g. "john.smith"), so separators are normalized to spaces before taking
+// the first word, the same as a real multi-word name. Feed this the raw
+// session user, NOT `toNavUser`'s output — NavUser already collapses a
+// missing name to the full email, which would wrongly skip the local-part
+// fallback below.
 export function firstName(
   su: { name?: string | null; email?: string | null } | null | undefined,
 ): string | undefined {
   if (!su) return undefined
   const name = su.name?.trim()
   if (name) return capitalize(name.split(/\s+/)[0])
-  const local = su.email?.trim().split('@')[0]
-  return local ? capitalize(local) : undefined
+  const local = su.email?.trim().split('@')[0]?.replace(/[._-]+/g, ' ').trim()
+  const firstWord = local?.split(/\s+/)[0]
+  return firstWord ? capitalize(firstWord) : undefined
 }
 
 // The session lookup alone — no balances, no prefs — for route-level
