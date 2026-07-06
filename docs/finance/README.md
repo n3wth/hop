@@ -18,6 +18,12 @@ emailed approval first.
   configured on the account). See `agentmail-domain-dns.md` for the full check and the human
   workaround. Still sending as `finance-hop@agentmail.to`; do not re-check until the AgentMail
   tool surface changes or Oliver reports adding `agents.hop.flights` manually.
+  **Separately**, the Cloudflare Email Routing destination-verification for
+  `finance-hop@agentmail.to` (unlocks the `finance@hop.flights` forwarding alias) is still
+  **not verified** — Cloudflare blocks this desk's automated clicks (WebFetch/curl/headless
+  Chromium all hit its bot-detection WAF). Run 4 (2026-07-06) sent the exact verification URL
+  as a plain clickable link directly in the memo email to Oliver (prior runs only pointed at the
+  email by subject line). Re-check next run; stop flagging once Oliver confirms he's clicked it.
 
 ## Files
 

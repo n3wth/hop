@@ -67,3 +67,23 @@ One 5-line note per run. Figures come only from the repo's own signals (business
   existing AWS/GCP usage to offset either credit.
 - **Unknowns flagged**: same as run 2 — active Pro subscriber count, card-affiliate status,
   outclick/escalation counts (all require live DB/dashboard access this session lacks).
+
+## 2026-07-06 (run 4)
+
+- **MRR**: still ~$0 (unchanged; no DB access this session, no new billing signal since run 3).
+- **Known burn**: unchanged, ~$75/mo infra + unmeasured LLM spend. Budget envelope stays
+  approved at ~$125/mo (`budget.md`), no change.
+- **Notable changes**: no new reply from Oliver since the run-2 approval, and no new items were
+  added to `outreach.md` (both queued items remain `sent` from run 3) — nothing to send this
+  run. Surfaced the exact Cloudflare Email Routing verification URL for
+  `finance-hop@agentmail.to` directly in this run's memo email (plain clickable link) — prior
+  runs only pointed at the email by subject line, never included the raw URL, so this closes
+  that gap. Still needs Oliver's manual click; `custom_domain_status` in `README.md` stays
+  `blocked` until then.
+- **No-cost opportunity found**: GitHub for Startups — $10K platform credits + up to $40K
+  non-dilutive cash, direct apply, no VC required. hop already runs GitHub Actions CI, so this
+  is a real, existing-usage fit. Added as `drafted` in `opportunities.md`. Sentry for Startups
+  and Linear for Startups were also researched and not pursued (Sentry: no existing usage to
+  offset; Linear: requires a VC/accelerator partner code hop doesn't have).
+- **Unknowns flagged**: same as prior runs — active Pro subscriber count, card-affiliate status,
+  outclick/escalation counts (all require live DB/dashboard access this session lacks).
