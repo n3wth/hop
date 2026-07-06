@@ -1,10 +1,13 @@
 // Unit tests for lib/travel-history-sync.ts — the persistence/sync layer for
 // the Gmail travel-history seam. Previously untested (only the pure parser and
 // the gated-off read path had coverage). Locks in the staleness-detection fix:
-// a dead/revoked refresh token or a failed Gmail list call must be surfaced as
-// a distinguishable failure (SyncResult) and stamped as `syncFailedAt` inside
-// the existing `trips` jsonb — NOT silently swallowed into "0 trips synced"
-// with the connection still reporting healthy.
+// a dead/revoked refresh token (or an auth-failed Gmail list call) must be
+// surfaced as a distinguishable failure (SyncResult) and stamped as
+// `syncFailedAt` inside the existing `trips` jsonb — NOT silently swallowed
+// into "0 trips synced" with the connection still reporting healthy. A
+// transient, non-auth list failure is reported but deliberately NOT stamped,
+// so it doesn't get conflated with a dead token and force a needless
+// reconnect (see the `fetch-failed` test below).
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
@@ -144,8 +147,8 @@ describe('syncTravelHistory() — failure paths are distinguishable, never silen
     expect(typeof stored.syncFailedAt).toBe('string')
   })
 
-  it('marks sync failed with fetch-failed on a non-auth list error (transient/5xx)', async () => {
-    setupDb({
+  it('reports fetch-failed WITHOUT stamping syncFailedAt on a non-auth list error (transient/5xx)', async () => {
+    const row = setupDb({
       google_refresh_token: 'refresh-1',
       trips: { trips: [], favoriteRegions: [] },
     })
@@ -155,6 +158,10 @@ describe('syncTravelHistory() — failure paths are distinguishable, never silen
     const result = await syncTravelHistory('user-1')
 
     expect(result).toEqual({ ok: false, reason: 'fetch-failed' })
+    // A transient failure must not be indistinguishable from a dead refresh
+    // token in persisted state — otherwise a one-off network blip forces the
+    // /account UI into "Reconnect needed" and hides the normal Sync button.
+    expect(row.trips).toEqual({ trips: [], favoriteRegions: [] })
   })
 
   it('on success, stores fresh trips and clears any prior syncFailedAt', async () => {

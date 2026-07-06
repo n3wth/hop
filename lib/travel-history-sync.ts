@@ -7,12 +7,17 @@
 // PRIVACY: we persist ONLY the parsed PastTrip[] + derived favoriteRegions + the
 // refresh token needed to re-read on demand. We never write raw email bodies.
 //
-// STALENESS: a dead/revoked refresh token (or a failed Gmail list call) used to
-// be indistinguishable from "0 trips found" — the row still read `connected:
-// true` forever with a frozen trip list. We now stamp `syncFailedAt` INSIDE the
-// existing `trips` jsonb payload (`{ trips, favoriteRegions, syncFailedAt }`) on
-// any failed sync — no schema migration needed — and clear it on the next
-// success. isGmailConnected() surfaces it as `syncFailed` for the /account UI.
+// STALENESS: a dead/revoked refresh token used to be indistinguishable from "0
+// trips found" — the row still read `connected: true` forever with a frozen
+// trip list. We now stamp `syncFailedAt` INSIDE the existing `trips` jsonb
+// payload (`{ trips, favoriteRegions, syncFailedAt }`) on an AUTH failure only
+// — no schema migration needed — and clear it on the next success.
+// isGmailConnected() surfaces it as `syncFailed` for the /account UI, which
+// gates the retry affordance to a full Reconnect. A transient fetch failure
+// (network blip, Gmail 5xx) is deliberately NOT stamped here, so it doesn't
+// masquerade as a dead token and force a needless OAuth re-consent — the
+// normal Sync button stays available and the one-shot resync error string
+// (app/actions/accounts.ts) still tells the user it was transient.
 
 import { withDb, type Db } from '@/lib/supabase-helpers'
 import {
@@ -153,7 +158,11 @@ export async function syncTravelHistory(userId: string): Promise<SyncResult> {
 
     const listResult = await listConfirmationMessageIds(accessToken)
     if (!listResult.ok) {
-      await markSyncFailed(db, userId, data.trips)
+      // Only persist the failure (and thus gate the UI into "Reconnect needed")
+      // for a genuine auth failure. A transient network blip or Gmail 5xx here
+      // must not force a full OAuth re-consent — leave the row untouched so the
+      // normal Sync retry stays available.
+      if (listResult.authFailed) await markSyncFailed(db, userId, data.trips)
       return { ok: false, reason: listResult.authFailed ? 'auth-failed' : 'fetch-failed' }
     }
 
