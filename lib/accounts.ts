@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Balance } from '@/lib/types'
 import { deriveCode, getBalances } from '@/lib/awardwallet'
-import { canonicalizeProgram } from '@/lib/programs'
+import { canonicalizeProgram, programById } from '@/lib/programs'
 import { withDb } from '@/lib/supabase-helpers'
 
 // Per-user balance sources persisted in Supabase via the service-role client
@@ -162,6 +162,32 @@ export async function removeManualBalance(userId: string, id: string): Promise<b
       .eq('user_id', userId)
     return !error
   })
+}
+
+// The five transferable bank currencies (R1.4 "add the 5 majors" quick-start) —
+// the highest-reach starting point for a new user, and the same five that head
+// lib/valuations.ts' BASELINE_CPP table. Pulled by canonical id from PROGRAMS
+// (lib/programs.ts) so a future registry edit stays the single source of truth.
+export const QUICK_START_PROGRAM_IDS = ['amex-mr', 'chase-ur', 'citi-typ', 'capital-one', 'bilt']
+
+// Seed the 5 majors as zero-balance rows so a signed-in user can reach a real
+// verdict without knowing an exact balance yet (0 is the engine's existing
+// "don't claim ownership" representation — see
+// docs/plans/2026-07-05-r14-balance-optional-quickstart.md §2).
+// Idempotent: skips any of the 5 the user already holds (by canonical identity)
+// rather than overwriting a real balance. Never throws — each insert already
+// goes through withDb, and a mid-loop failure just leaves `added` short.
+export async function seedQuickStartPrograms(userId: string): Promise<{ added: string[] }> {
+  const added: string[] = []
+  for (const id of QUICK_START_PROGRAM_IDS) {
+    const def = programById(id)
+    if (!def) continue
+    const existing = await findManualByProgram(userId, def.name)
+    if (existing) continue
+    const rowId = await addManualBalance(userId, def.name, 0, def.kind)
+    if (rowId) added.push(id)
+  }
+  return { added }
 }
 
 // --- Unified resolution -----------------------------------------------------
