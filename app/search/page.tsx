@@ -8,6 +8,7 @@ import { getUserBalances } from '@/lib/accounts'
 import { getPrefs } from '@/lib/prefs'
 import { cityForCode } from '@/lib/airports'
 import { destinationImage, photoForCode } from '@/lib/images'
+import { affordableWith, topValue } from '@/lib/destinations'
 import { auth0 } from '@/lib/auth0'
 import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import { isStandingOrdersCronLive } from '@/lib/env'
@@ -22,6 +23,8 @@ import SearchTelemetry from '@/components/SearchTelemetry'
 import PointsPanel from '@/components/PointsPanel'
 import SiteFooter from '@/components/SiteFooter'
 import HeroSearch from '@/components/landing/HeroSearch'
+import DestinationSuggestions from '@/components/DestinationSuggestions'
+import SearchAskChips from '@/components/SearchAskChips'
 
 const DEFAULT_PARAMS: SearchParams = {
   from: 'SFO',
@@ -240,44 +243,86 @@ export default async function Search({
   // No destination named — e.g. the header's "Search" nav link — used to
   // silently run the DEFAULT_PARAMS SFO→LAX verdict and present it as if it
   // were a real result. Land on a plain search-initiation state instead: the
-  // engine only ever runs on a route the visitor actually asked for. This
-  // state doesn't run the engine, so it only needs prefs (home airport
-  // prefill) — NOT the AwardWallet-backed balances call the results branch
-  // needs; pointsTotal is simply omitted (TopNav already renders fine
-  // without it) rather than making this fast path wait on a slow call it
-  // has no use for.
+  // engine (assembleSearch, cash + award-space lookups) never runs here — only
+  // a route the visitor actually asked for triggers it. Prefs + balances ARE
+  // read (in parallel, below) to ground the "worth a look" row in this
+  // visitor's own points: getUserBalances is a cached DB read now (the
+  // AwardWallet cache added alongside #217), not the live per-page call this
+  // fast path used to avoid, so it stays cheap. pointsTotal is still omitted
+  // from AppShell (TopNav renders fine without it) — that prop is for the
+  // header chip, not needed here.
   if (!hasDestination(sp)) {
-    const prefs = su?.sub ? await getPrefs(su.sub) : undefined
+    const [prefs, userBalances] = await Promise.all([
+      su?.sub ? getPrefs(su.sub) : Promise.resolve(undefined),
+      su?.sub ? getUserBalances(su.sub) : Promise.resolve(undefined),
+    ])
     const originSeed = prefs?.homeAirport ?? cookieOrigin
+    // The suggestion cards always need a concrete origin to link from; when
+    // the visitor has no saved airport yet, fall back to the same default the
+    // engine itself uses (DEFAULT_PARAMS.from) rather than leaving the cards
+    // linkless. hasKnownOrigin tracks whether that origin is real vs. guessed,
+    // independently of isPersonalized (points-based) below — the heading's
+    // "from <code>" suffix is gated on THIS, so a guessed fallback airport
+    // never gets attributed to the visitor as their own.
+    const hasKnownOrigin = !!originSeed
+    const cardOrigin = originSeed ?? DEFAULT_PARAMS.from
+    const totalPoints =
+      userBalances && userBalances.length > 0
+        ? userBalances.reduce((s, b) => s + b.balance, 0)
+        : undefined
+    // Only claim "computed from your points" when there are enough real
+    // affordable destinations to fill the row — a lone card next to three
+    // sample ones would misrepresent which figures are real.
+    const affordable = totalPoints ? affordableWith(totalPoints) : []
+    const isPersonalized = affordable.length >= 3
+    const suggestions = (isPersonalized ? affordable : topValue(4)).slice(0, 4)
+    // Sensible near-future dates for the suggestion links — same convention
+    // as /deals (3 weeks out, home a week later).
+    const suggestDepart = isoOffset(21)
+    const suggestReturn = isoOffset(28)
     return (
       <AppShell user={user} homeAirport={originSeed} hideSearch>
-        <div className="mx-auto flex min-h-[70vh] max-w-[var(--container-shell)] flex-col items-center justify-center px-2 py-16 text-center">
-          <span className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand sm:text-[12px]">
-            Points or cash
-          </span>
-          <h1 className="mt-4 text-balance font-display text-[32px] font-semibold leading-[1.05] tracking-[-0.02em] text-text sm:text-[42px]">
-            Where are you flying?
-          </h1>
-          <p className="mt-3 max-w-[46ch] text-[15px] leading-[1.6] text-text2 sm:text-[16px]">
-            Pick a route and hop reads your balances, checks award space, prices the cash fare,
-            and tells you the smarter way to book it.
-          </p>
-          <div className="mt-9 w-full">
-            <HeroSearch
-              initial={{
-                from: originSeed ?? '',
-                to: '',
-                depart: isoOffset(10),
-                ret: isoOffset(13),
-                adults: 1,
-                children: 0,
-                infants: 0,
-                cabin: 'economy',
-                oneWay: false,
-                nonstop: false,
-              }}
-            />
+        <div className="mx-auto max-w-[var(--container-shell)] px-2 pb-16 pt-16">
+          <div className="flex min-h-[46vh] flex-col items-center justify-center text-center">
+            <span className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand sm:text-[12px]">
+              Points or cash
+            </span>
+            <h1 className="mt-4 text-balance font-display text-[32px] font-semibold leading-[1.05] tracking-[-0.02em] text-text sm:text-[42px]">
+              Where are you flying?
+            </h1>
+            <p className="mt-3 max-w-[46ch] text-[15px] leading-[1.6] text-text2 sm:text-[16px]">
+              Pick a route and hop reads your balances, checks award space, prices the cash fare,
+              and tells you the smarter way to book it.
+            </p>
+            <div className="mt-9 w-full">
+              <HeroSearch
+                initial={{
+                  from: originSeed ?? '',
+                  to: '',
+                  depart: isoOffset(10),
+                  ret: isoOffset(13),
+                  adults: 1,
+                  children: 0,
+                  infants: 0,
+                  cabin: 'economy',
+                  oneWay: false,
+                  nonstop: false,
+                }}
+              />
+            </div>
+            <SearchAskChips />
           </div>
+
+          <DestinationSuggestions
+            destinations={suggestions}
+            fromCode={cardOrigin}
+            hasKnownOrigin={hasKnownOrigin}
+            depart={suggestDepart}
+            ret={suggestReturn}
+            isPersonalized={isPersonalized}
+            totalPoints={isPersonalized ? totalPoints : undefined}
+            isSignedIn={!!user}
+          />
         </div>
         <SiteFooter />
       </AppShell>
