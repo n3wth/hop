@@ -17,6 +17,8 @@ import {
   type DraftStatus,
   type SweetSpotDraftInput,
 } from '@/lib/sweet-spot-drafts'
+import { findSweetSpotCandidates, createCandidateDrafts } from '@/lib/sweet-spot-candidates'
+import { isContentCandidatesEnabled } from '@/lib/env'
 
 // Server Actions for the owner-only admin surfaces: the support console
 // (close/reopen a ticket, flip an escalation's status) and the sweet-spot
@@ -134,4 +136,19 @@ export async function setSweetSpotDraftStatusAction(
     revalidatePath('/admin/content')
   }
   return { ok: true }
+}
+
+// "Find candidates now" — the owner-triggered twin of the daily
+// sweet-spot-candidates cron (lib/sweet-spot-candidates.ts), same flag gate.
+// Mines assembleSearch for notable Business-cabin redemptions and drops them
+// into the queue as pending_review; never auto-approves.
+export async function findSweetSpotCandidatesAction(): Promise<Result & { created?: number }> {
+  if (!(await getOwnerSession())) return NOT_AUTHORIZED
+  if (!isContentCandidatesEnabled()) {
+    return { ok: false, error: 'Content candidates are off — set HOP_ENABLE_CONTENT_CANDIDATES to enable' }
+  }
+  const candidates = await findSweetSpotCandidates()
+  const { created } = await createCandidateDrafts(candidates)
+  if (created > 0) revalidatePath('/admin/content')
+  return { ok: true, created }
 }

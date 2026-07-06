@@ -211,6 +211,22 @@ describe('lib/search.ts call site — live-only, after degraded[] is final', () 
     expect(vi.mocked(searchCash)).not.toHaveBeenCalled()
     expect(vi.mocked(searchAwards)).not.toHaveBeenCalled()
   })
+
+  // Regression guard for lib/sweet-spot-candidates.ts: a mining run's upstream
+  // failures (e.g. a rate-limited seats.aero) must not read as a live-traffic
+  // spike to the health sentinel's D2 detector, so opts.recordTelemetry:false
+  // suppresses this block too, not just recordCppObservations.
+  it('opts.recordTelemetry:false suppresses degradation recording on an otherwise-identical failed run', async () => {
+    vi.mocked(searchCash).mockResolvedValue({ ok: false, reason: 'Duffel responded 429' })
+    vi.mocked(searchAwards).mockResolvedValue({ ok: false, reason: 'seats.aero timed out' })
+
+    const result = await assembleSearch(params, [], undefined, { recordTelemetry: false })
+    await flush()
+
+    expect(result.degraded).toEqual(['cash', 'awards'])
+    expect(inserts).toHaveLength(0)
+    expect(vi.mocked(captureServerEvent)).not.toHaveBeenCalled()
+  })
 })
 
 describe('sanitizeReason() — printable, collapsed, clamped, or null', () => {

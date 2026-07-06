@@ -385,3 +385,19 @@ export function isSelfImproveEnabled(): boolean {
   const flag = process.env.HOP_ENABLE_SELF_IMPROVE ?? ''
   return /^(1|true|yes)$/i.test(flag.trim())
 }
+
+// The AI-sourced sweet-spot candidate pipeline
+// (docs/plans/2026-07-05-content-candidate-pipeline.md) is GATED behind an
+// explicit flag AND the two live pricing keys it needs (SEATS_AERO_API_KEY for
+// award space, DUFFEL_API_KEY_LIVE for the cash comparison) — the SAME
+// credentials /search already requires live, so enabling costs no new secret.
+// Deliberately independent of isValuationSyncEnabled()/the Worker: this
+// pipeline mines assembleSearch directly rather than the Worker's aggregated
+// telemetry (see the plan's §2 rejection of the Worker-extension path). Off →
+// the cron answers 503 and the "Find candidates now" owner action refuses
+// softly — the deploy is a byte-for-byte no-op until flipped.
+export function isContentCandidatesEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_CONTENT_CANDIDATES ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && hasEnv('SEATS_AERO_API_KEY') && hasEnv('DUFFEL_API_KEY_LIVE')
+}
