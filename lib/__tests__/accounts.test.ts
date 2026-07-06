@@ -33,13 +33,19 @@ vi.mock('@/lib/awardwallet', () => ({
   deriveCode: deriveCodeMock,
 }))
 
-// Mock canonicalizeProgram - not needed for getUserBalances but imported by accounts.ts
-vi.mock('@/lib/programs', () => ({
-  canonicalizeProgram: vi.fn(),
-}))
+// Mock canonicalizeProgram - not needed for getUserBalances but imported by accounts.ts.
+// Keep programById/PROGRAMS real (via importOriginal) — seedQuickStartPrograms below
+// resolves the 5 quick-start ids through the real registry.
+vi.mock('@/lib/programs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/programs')>()
+  return {
+    ...actual,
+    canonicalizeProgram: vi.fn(),
+  }
+})
 
 // Import the module under test AFTER mocks are set up
-const { getUserBalances } = await import('@/lib/accounts')
+const { getUserBalances, seedQuickStartPrograms } = await import('@/lib/accounts')
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -454,5 +460,115 @@ describe('status field preservation', () => {
     const balances = await getUserBalances('user-1')
 
     expect(balances[0].status).toBe('Globalist')
+  })
+})
+
+// --- seedQuickStartPrograms() (R1.4) ----------------------------------------
+//
+// A separate, simpler in-memory fake of hop_manual_balances — the read-only
+// harness above (setupDbMocks) doesn't model .insert(), which seedQuickStart
+// needs. Each test builds its own store via makeQuickStartDb() and installs it
+// on the shared withDbMock.
+
+interface QuickStartRow {
+  id: string
+  program: string
+  code: string | null
+  balance: number
+  kind?: string | null
+}
+
+// Installs a stateful withDb fake backed by `rows` (mutated in place so tests
+// can assert on it after the call). `failProgram`, if set, makes the insert
+// for that exact program name throw — simulating a mid-loop DB failure that
+// must degrade, not throw, per lib/supabase-helpers withDb's own contract.
+function makeQuickStartDb(initialRows: QuickStartRow[], failProgram?: string): QuickStartRow[] {
+  const rows: QuickStartRow[] = [...initialRows]
+  let nextId = rows.length + 1
+
+  withDbMock.mockImplementation(async <T>(fallback: T, fn: (db: unknown) => Promise<T>): Promise<T> => {
+    const builder = {
+      select: () => builder,
+      eq: () => builder,
+      order: () => builder,
+      insert: (obj: { program: string; code: string | null; balance: number; kind?: string | null }) => ({
+        select: () => ({
+          maybeSingle: async () => {
+            if (obj.program === failProgram) throw new Error('insert failed')
+            const row: QuickStartRow = {
+              id: String(nextId++),
+              program: obj.program,
+              code: obj.code,
+              balance: obj.balance,
+              kind: obj.kind ?? null,
+            }
+            rows.push(row)
+            return { data: { id: row.id }, error: null }
+          },
+        }),
+      }),
+      then: (onfulfilled?: (v: unknown) => unknown) => {
+        const result = { data: rows.map((r) => ({ ...r, updated_at: new Date().toISOString() })), error: null }
+        return Promise.resolve(onfulfilled ? onfulfilled(result) : result)
+      },
+    }
+    const db = { from: () => builder }
+    try {
+      return await fn(db)
+    } catch {
+      return fallback
+    }
+  })
+
+  return rows
+}
+
+describe('seedQuickStartPrograms()', () => {
+  it('empty account → inserts exactly 5 rows, one call per program, all at balance 0', async () => {
+    const rows = makeQuickStartDb([])
+
+    const result = await seedQuickStartPrograms('user-1')
+
+    expect(result.added).toEqual(['amex-mr', 'chase-ur', 'citi-typ', 'capital-one', 'bilt'])
+    expect(rows).toHaveLength(5)
+    expect(rows.every((r) => r.balance === 0)).toBe(true)
+  })
+
+  it('does not touch/overwrite a program the user already holds', async () => {
+    const rows = makeQuickStartDb([
+      { id: '1', program: 'Amex Membership Rewards', code: 'AX', balance: 50000 },
+    ])
+
+    const result = await seedQuickStartPrograms('user-1')
+
+    // Amex was already held — only the other 4 get added.
+    expect(result.added).toEqual(['chase-ur', 'citi-typ', 'capital-one', 'bilt'])
+    expect(rows).toHaveLength(5)
+    const amex = rows.find((r) => r.program === 'Amex Membership Rewards')
+    expect(amex?.balance).toBe(50000) // untouched, never overwritten to 0
+  })
+
+  it('is idempotent — a second call is a no-op for all 5', async () => {
+    const rows = makeQuickStartDb([])
+
+    await seedQuickStartPrograms('user-1')
+    expect(rows).toHaveLength(5)
+
+    const second = await seedQuickStartPrograms('user-1')
+
+    expect(second.added).toEqual([])
+    expect(rows).toHaveLength(5) // no duplicate rows, no balance overwritten
+  })
+
+  it('degrades to whatever subset succeeded when a DB call fails mid-loop, never throws', async () => {
+    const rows = makeQuickStartDb([], 'Citi ThankYou Points')
+
+    const result = await seedQuickStartPrograms('user-1')
+
+    // citi-typ's insert threw; the other 4 still succeeded, and the call
+    // resolved normally instead of rejecting.
+    expect(result.added).toEqual(['amex-mr', 'chase-ur', 'capital-one', 'bilt'])
+    expect(rows).toHaveLength(4)
+    expect(rows.some((r) => r.program === 'Citi ThankYou Points')).toBe(false)
   })
 })

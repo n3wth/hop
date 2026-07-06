@@ -10,6 +10,8 @@ import {
   removeManualBalance,
   findManualByProgram,
   getManualBalances,
+  seedQuickStartPrograms,
+  QUICK_START_PROGRAM_IDS,
 } from '@/lib/accounts'
 import { canonicalizeProgram } from '@/lib/programs'
 import { captureServerEvent } from '@/lib/posthog-server'
@@ -45,7 +47,12 @@ async function requireUser(): Promise<{ userId: string } | { error: string }> {
 }
 
 // Parse a balance from form input: strip commas/spaces, reject negatives/NaN.
+// R1.4: an empty/whitespace-only input is a valid "balance unknown" submission
+// (parses to 0, the engine's existing "don't claim ownership" value) — not an
+// error. A genuinely invalid input (letters, negative, over-max) still errors
+// exactly as before.
 function parseBalance(raw: unknown): number | null {
+  if (typeof raw !== 'number' && String(raw ?? '').trim() === '') return 0
   const n = typeof raw === 'number' ? raw : parseFloat(String(raw ?? '').replace(/[^0-9.]/g, ''))
   if (!Number.isFinite(n) || n < 0 || n > MAX_BALANCE) return null
   return Math.round(n)
@@ -103,6 +110,41 @@ export async function addProgram(
 
   revalidateBalances()
   return { ok: true }
+}
+
+// R1.4 quick-start: seed the 5 transferable bank currencies as zero-balance
+// rows in one tap, so a cold-start user reaches a real (non-"example") verdict
+// without an external lookup. Idempotent — never overwrites a program the user
+// already holds (lib/accounts.ts#seedQuickStartPrograms skips those).
+export async function addQuickStartPrograms(): Promise<Result> {
+  const auth = await requireUser()
+  if ('error' in auth) return { ok: false, error: auth.error }
+
+  const before = await getManualBalances(auth.userId)
+  const { added } = await seedQuickStartPrograms(auth.userId)
+
+  if (added.length === 0) {
+    return { ok: true, note: 'Already had all 5 — nothing new to add.' }
+  }
+
+  // R0.5 funnel event #2 — fires when this was the user's first program row,
+  // same contract as the manual addProgram path.
+  if (before.length === 0) {
+    captureServerEvent('first_program_added', {}, { distinctId: auth.userId })
+  }
+  // Distinct from first_program_added — measures activation via quick-start
+  // specifically, whether or not it was the user's first program.
+  captureServerEvent('quick_start_used', { added_count: added.length }, { distinctId: auth.userId })
+
+  revalidateBalances()
+  const skipped = QUICK_START_PROGRAM_IDS.length - added.length
+  return {
+    ok: true,
+    note:
+      skipped > 0
+        ? `Added ${added.length} — you already had ${skipped}. Fill in real balances below.`
+        : `Added ${added.length} programs. Fill in real balances below.`,
+  }
 }
 
 export async function editProgram(
