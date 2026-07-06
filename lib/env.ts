@@ -99,6 +99,11 @@ export type EnvKey =
   | 'GOOGLE_CLIENT_SECRET'
   | 'GOOGLE_ID'
   | 'GOOGLE_SECRET'
+  // Fine-grained PAT (read-only "Pull requests" scope is enough) for the
+  // admin Team view (lib/admin-team.ts) to list each agent's open PRs.
+  // Absent → the Team page still renders fully; each card just shows a quiet
+  // "connect GITHUB_TOKEN to see live work" note instead of PR data.
+  | 'GITHUB_TOKEN'
 
 function read(key: EnvKey): string {
   const value = process.env[key]
@@ -150,6 +155,7 @@ export const env = {
   databaseUrl: () => read('DATABASE_URL'),
   googleClientId: () => firstEnv('GOOGLE_CLIENT_ID', 'GOOGLE_ID'),
   googleClientSecret: () => firstEnv('GOOGLE_CLIENT_SECRET', 'GOOGLE_SECRET'),
+  githubToken: () => read('GITHUB_TOKEN'),
 }
 
 // First non-empty value across alias keys (throws naming the primary key when

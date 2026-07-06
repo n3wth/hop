@@ -32,6 +32,7 @@ Live state is visible at a glance on `/admin/ops` (owner-only preflight table).
 | Gmail travel-history (`HOP_ENABLE_GMAIL_HISTORY`) | **OFF.** Code + UI are complete but un-provisioned — no `GOOGLE_OAUTH_CLIENT_ID/SECRET` set, and `gmail.readonly` is a Google restricted scope requiring OAuth verification before wide rollout (owner-only testing until then). See the Gmail section below. |
 | `MOCK` | Removed from production env (live upstreams). |
 | GitHub Actions CI | **Disabled** (billing broken — see the CI section below). Required PR check is the Vercel build. |
+| Team view live PRs (`GITHUB_TOKEN`) | **OFF** (unset). `/admin/team` renders fully without it; a read-only PAT ("Pull requests: read") lights up each agent's open-PR list. |
 
 ## Alerts / standing orders
 
