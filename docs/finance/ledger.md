@@ -67,3 +67,24 @@ One 5-line note per run. Figures come only from the repo's own signals (business
   existing AWS/GCP usage to offset either credit.
 - **Unknowns flagged**: same as run 2 — active Pro subscriber count, card-affiliate status,
   outclick/escalation counts (all require live DB/dashboard access this session lacks).
+
+## 2026-07-06 (run 4 — Cloudflare link sent, Sentry opportunity)
+
+- **MRR**: still ~$0 (unchanged; no DB access this session, no new billing signal).
+- **Known burn**: unchanged, ~$75/mo infra + unmeasured LLM spend. Budget stays approved at
+  ~$125/mo — no new reply from Oliver since his run-2 approval, nothing to update.
+- **Outreach queue**: checked `outreach.md` — both items are already `status: sent` (run 3),
+  nothing new queued as `approved-to-send` this run.
+- **Domain/inbox ops**: the Cloudflare Email Routing verification for `finance-hop@agentmail.to`
+  is still unverified. Found that prior runs' memos only *described* the verification email
+  without including the actual link — extracted the full raw URL from the Cloudflare message
+  this run and sent it directly to Oliver as a plain clickable link (see `agentmail-domain-dns.md`
+  and `README.md` for the corrected status). Will stop sending it once Oliver confirms.
+- **New opportunity found**: Sentry for Startups (up to $5K error-monitoring credits, direct
+  apply, no VC required, hop qualifies on age/funding). Unlike prior picks this isn't an
+  existing cost line — hop has no error monitoring today — but it's a real production-reliability
+  gap and the credit makes trying it free for a year. Added as `drafted` in `opportunities.md`.
+  Also researched and rejected GitHub for Startups and Linear for Startups — both gate their
+  credits behind a VC/accelerator partner code hop doesn't have.
+- **Unknowns flagged**: same as prior runs — active Pro subscriber count, card-affiliate status,
+  outclick/escalation counts (all require live DB/dashboard access this session lacks).

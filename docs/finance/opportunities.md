@@ -188,8 +188,48 @@ Not drafted as applications.
 
 ---
 
+## 6. Sentry for Startups (error monitoring credits) — `drafted`
+
+- **Eligibility**: founded within the last 2 years (hop clears easily), raised less than $5M in
+  venture capital (hop: $0 raised, bootstrapped), never previously a paying Sentry customer
+  (true — hop has no Sentry usage today, confirmed via repo grep). **Direct self-serve
+  application at sentry.io/for/startups/apply — no VC/accelerator referral required**, unlike
+  GitHub for Startups and Linear for Startups (both researched this run and rejected below —
+  both gate their startup credits behind a partner code from a VC/accelerator, which hop
+  doesn't have as a bootstrapped, solo-founder company).
+- **Value**: up to $5,000 in credits (12-month validity) covering error monitoring, performance
+  tracing, session replay, logs, and uptime monitoring, plus priority support.
+- **Effort**: low — one application form (organization slug, funding details, use case), 2-3
+  business day review.
+- **Deadline**: rolling, but the "founded in the last 2 years" eligibility window is a real
+  clock — worth applying while hop still qualifies.
+- **Why it fits differently from the others above**: this is **not** an existing cost line hop
+  already pays (unlike Resend/Cloudflare/Anthropic) — hop currently has no error-monitoring tool
+  wired in beyond Vercel's own logs. The case for it is a genuine production-reliability gap,
+  not a pure cost offset: a points-vs-cash verdict engine that silently breaks for a subset of
+  users has no alerting today, and this credit makes trying Sentry free for a year. Flagging the
+  honest tradeoff: taking it means adopting a new tool, not just banking a credit.
+- **Recommendation**: worth applying — zero cost, no card required to apply, and closes a real
+  observability gap while it's free. Lower urgency than the cost-offsetting picks above since
+  it's a new integration, not free money for existing spend.
+- **Approval needed**: Oliver to create a free Sentry account (org slug) and submit the
+  application — this desk doesn't hold external accounts.
+
+---
+
 ## Considered, not pursued this run
 
+- **GitHub for Startups** ($10K in GitHub Enterprise/Copilot/Advanced Security credits) —
+  requires the applicant be "affiliated with a GitHub for Startups partner" (a VC, accelerator,
+  or ecosystem partner) or directly funded through Series B. hop is bootstrapped with no VC/
+  accelerator affiliation — no partner code available, so no self-serve path. Also targets
+  GitHub Enterprise seats/Copilot licenses, not a cost line hop currently pays for (repo uses
+  standard GitHub, no Enterprise plan). Not pursued.
+- **Linear for Startups** (up to 6 months free Linear Basic/Business) — explicitly requires a
+  partner code from a Linear-affiliated VC, accelerator, or incubator (Y Combinator, Sequoia,
+  etc.) to apply at all; there is no direct-apply path for an unaffiliated bootstrapped company.
+  hop uses Linear for project tracking today (real cost line) but has no qualifying partner
+  code. Not pursued — revisit only if hop ever joins an accelerator with a Linear partnership.
 - **PostHog for Startups** ($50K credits, <2 years old, <$5M raised, no VC required) — hop
   clears eligibility and already uses PostHog for product analytics per the ops runbook, but
   usage is almost certainly still inside PostHog's free tier at hop's current traffic, so the
