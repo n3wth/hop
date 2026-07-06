@@ -468,3 +468,18 @@ export function isContentCandidatesEnabled(): boolean {
   const on = /^(1|true|yes)$/i.test(flag.trim())
   return on && hasEnv('SEATS_AERO_API_KEY') && hasEnv('DUFFEL_API_KEY_LIVE')
 }
+
+// Shareable verdict receipts (/v/[id] + OG cards, docs/plans/2026-07-02-viral-
+// differentiation.md) are GATED behind an explicit flag ONLY — the seam needs
+// no external key: the engine re-run uses upstream credentials that are
+// already configured (or MOCK), and Neon persistence degrades gracefully via
+// withDb like every other hop_* table. Off (default) → VerdictRail never
+// renders the share button, shareVerdict() answers {ok:false,'disabled'}
+// before touching anything, and /v/[id] + its OG image 404 before the DB
+// read. Also the seam's emergency brake: flipping this off 404s every
+// already-shared receipt link. Flip HOP_ENABLE_SHARE_RECEIPTS once
+// drizzle/0010_nervous_clea.sql has been applied.
+export function isShareReceiptsEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_SHARE_RECEIPTS ?? ''
+  return /^(1|true|yes)$/i.test(flag.trim())
+}

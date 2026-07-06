@@ -63,6 +63,10 @@ export interface BusinessDigest {
    *  window total across all kinds. null = degraded — expected until
    *  the hop_outclicks migration has been applied. */
   outclicks: OutclickMetric | null
+  /** Verdict receipts minted (hop_shared_verdicts), last 7d — the R1.5 spread
+   *  measurement ("is anyone sharing?"). null = degraded — expected until the
+   *  drizzle/0010_nervous_clea.sql migration has been applied or the flag is off. */
+  receiptsCreated: WeeklyMetric | null
 }
 
 export interface RenderedDigest {
@@ -123,7 +127,11 @@ export function bucketWeeks(
 
 // Tables we count created_at rows from. Kept to the ones the digest reads so a
 // typo can't silently count the wrong table.
-type CountedTable = 'hop_escalations' | 'hop_standing_orders' | 'hop_standing_order_alerts'
+type CountedTable =
+  | 'hop_escalations'
+  | 'hop_standing_orders'
+  | 'hop_standing_order_alerts'
+  | 'hop_shared_verdicts'
 
 // Count rows created in [sinceIso, untilIso). null (not 0) on any failure so a
 // degraded source is distinguishable from a genuinely quiet week.
@@ -290,16 +298,25 @@ async function countActiveSubscriptions(): Promise<number | null> {
 // independent query; a failure in one degrades only that section. NEVER throws.
 export async function computeBusinessDigest(now: Date = new Date()): Promise<BusinessDigest> {
   const w = weekWindow(now)
-  const [activeUsers, escalations, ordersCreated, alertsFired, activeWatches, activeSubscriptions, outclicks] =
-    await Promise.all([
-      activeUsersMetric(w, now),
-      weeklyMetric('hop_escalations', w, now),
-      weeklyMetric('hop_standing_orders', w, now),
-      weeklyMetric('hop_standing_order_alerts', w, now),
-      countActiveWatches(),
-      countActiveSubscriptions(),
-      outclickMetric(w, now),
-    ])
+  const [
+    activeUsers,
+    escalations,
+    ordersCreated,
+    alertsFired,
+    activeWatches,
+    activeSubscriptions,
+    outclicks,
+    receiptsCreated,
+  ] = await Promise.all([
+    activeUsersMetric(w, now),
+    weeklyMetric('hop_escalations', w, now),
+    weeklyMetric('hop_standing_orders', w, now),
+    weeklyMetric('hop_standing_order_alerts', w, now),
+    countActiveWatches(),
+    countActiveSubscriptions(),
+    outclickMetric(w, now),
+    weeklyMetric('hop_shared_verdicts', w, now),
+  ])
   return {
     window: { start: w.start, end: w.end },
     activeUsers,
@@ -309,6 +326,7 @@ export async function computeBusinessDigest(now: Date = new Date()): Promise<Bus
     activeWatches,
     activeSubscriptions,
     outclicks,
+    receiptsCreated,
   }
 }
 
@@ -384,6 +402,13 @@ function buildSections(d: BusinessDigest): Section[] {
       key: 'activeSubscriptions',
       headline: n(d.activeSubscriptions, 'paid subscriber', 'paid subscribers'),
       line: `Paid subscribers: ${d.activeSubscriptions}`,
+    })
+  }
+  if (d.receiptsCreated) {
+    sections.push({
+      key: 'receiptsCreated',
+      headline: n(d.receiptsCreated.count, 'verdict receipt', 'verdict receipts'),
+      line: `Verdict receipts: ${d.receiptsCreated.count}${vsLastWeek(d.receiptsCreated.prev)}`,
     })
   }
   if (d.outclicks) {

@@ -11,7 +11,7 @@ import { destinationImage, photoForCode } from '@/lib/images'
 import { affordableWith, topValue } from '@/lib/destinations'
 import { auth0 } from '@/lib/auth0'
 import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
-import { isStandingOrdersCronLive } from '@/lib/env'
+import { isShareReceiptsEnabled, isStandingOrdersCronLive } from '@/lib/env'
 import { clampTravelDates, DEFAULT_DEPART } from '@/lib/travel-dates'
 import { isoOffset } from '@/lib/dates'
 import { SITE_URL } from '@/lib/seo'
@@ -436,6 +436,7 @@ export default async function Search({
             isSignedIn={!!user}
             nonstop={nonstop}
             watchLive={isStandingOrdersCronLive()}
+            shareEnabled={isShareReceiptsEnabled() && result.degraded.length === 0}
           />
         ) : null}
 
