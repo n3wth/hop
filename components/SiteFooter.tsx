@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import FooterNav from './FooterNav'
+import NewsletterForm from './NewsletterForm'
 import { SITE_NAME } from '@/lib/seo'
 
 // One compact footer, given real editorial weight: a confident wordmark and a
@@ -39,6 +40,7 @@ export default function SiteFooter({ flush = false }: { flush?: boolean }) {
               <br />
               so you always know which one wins.
             </p>
+            <NewsletterForm />
           </div>
 
           <div className="flex-1 lg:flex lg:justify-end">

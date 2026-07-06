@@ -69,6 +69,7 @@ const TABLE_MAP: Record<string, any> = {
   hop_api_tokens: schema.apiTokens,
   hop_travel_history: schema.travelHistory,
   hop_escalations: schema.escalations,
+  hop_newsletter_signups: schema.newsletterSignups,
   hop_sweet_spot_drafts: schema.sweetSpotDrafts,
   hop_valuation_overrides: schema.valuationOverrides,
   hop_customers: schema.hopCustomers,

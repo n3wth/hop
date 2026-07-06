@@ -277,6 +277,21 @@ export const escalations = pgTable('hop_escalations', {
   createdAt: tz('created_at').defaultNow(),
 })
 
+// Newsletter lead capture (roadmap R1.6) — pure email capture, no ESP send yet.
+// `email` is stored lowercased so the unique index dedupes case-insensitively;
+// `userId` is nullable by design (signed-out visitors can join too). See
+// lib/newsletter.ts.
+export const newsletterSignups = pgTable(
+  'hop_newsletter_signups',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: text('user_id'),
+    email: text('email').notNull(),
+    createdAt: tz('created_at').defaultNow(),
+  },
+  (t) => [uniqueIndex('hop_newsletter_signups_email_idx').on(t.email)],
+)
+
 // Owner-drafted sweet-spot entries awaiting review before they join the
 // static seed table (lib/sweet-spots.ts). `seq` is a plain auto-increment used
 // only to derive a stable numeric SweetSpot#id above the static table's small
