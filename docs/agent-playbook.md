@@ -197,6 +197,42 @@ Agent work is priced in tokens and wall-clock; the code's shape sets that price.
 
 ## 9. Open threads
 
+**ADOPTED BOARD AMENDMENTS 2026-07-05 (override prior ordering):** the first board review
+(`docs/board/2026-07-05-board-memo.md`) found billing live ahead of its own plan gates, GTM
+surfaces unshipped while unrelated infra shipped, and no mechanism for the fleet to prefer GTM
+over polish. The board's amendment list is now the priority order for everything below and in
+`docs/autonomy-runbook.md` — work top-down, not by convenience:
+
+1. R1.5 — verdict receipts (`docs/plans/2026-07-04-business-plan.md`).
+2. R1.6 — newsletter signup (`docs/plans/2026-07-02-newsletter-signup.md`).
+3. R2.1 — public `/mcp` page + connector registry submissions.
+4. Content staleness guard: a "verified as of" marker on sweet-spot entries, auto-hidden once
+   past a freshness window.
+5. Split `verdict_viewed` into demo-vs-balance-personalized so activation data stays
+   interpretable.
+6. Add a billing-gate-status line to `docs/ops-runbook.md` cross-referencing business-plan.md
+   §3.1's four gates (met/unmet).
+7. Alert `HOP_OWNER_EMAIL` on any Stripe webhook that fails to write a tier, so a silent
+   paying-and-unentitled customer can't happen unmonitored.
+8. Fold agent-fleet compute cost (~$200/mo) into the B3 unit-economics panel.
+9. Add Duffel look-to-book ratio monitoring to the same panel.
+10. Stand up a weekly "did any stranger use hop this week" report as the lead item on the
+    retro desk, ahead of any shipped-features list.
+11. Draft (don't send) the owner-action pack: seats.aero written-terms request email,
+    affiliate-program applications, community reply drafts. Draft only — see [needs-founder]
+    below.
+
+**FREEZE:** no further admin-UI, nav-polish, or content-pipeline-scaling work for the duration
+of the founder's absence. Exception: the Team view PR already in flight (Task #15) completes;
+after that, freeze applies to it too.
+
+**[needs-founder] — verbatim, no agent substitute:**
+
+- Confirm the configured Stripe keys are TEST mode, or hard-stop live charges and public
+  pricing until business-plan.md §3.1's gates close.
+- Personally send the seats.aero written commercial-terms request — no agent can do this step.
+- Pre-approve the drafted community replies before they go out.
+
 Things that are known, tracked, and waiting on a specific owner — check here before re-filing
 something that's already known. Mirrored into Linear (team `n3wth`, project
 [hop](https://linear.app/newth/project/hop-9365da373b9a)) where noted.
