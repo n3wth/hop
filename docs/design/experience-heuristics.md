@@ -1,7 +1,7 @@
 # Experience heuristics — what makes a hop surface feel designed
 
 Hard rules distilled from live design review of the home hero (2026-07-04,
-PR #185). The flat-editorial system (`CHOSEN-editorial.html`, CLAUDE.md
+PR #185). The flat-editorial system (`CHOSEN-editorial.html`, AGENTS.md
 §Design) says what things look like; this file says how compositions behave.
 Reviewers (`copy-voice-reviewer`, and any UI diff review) should treat a
 violation as a P2 or higher.

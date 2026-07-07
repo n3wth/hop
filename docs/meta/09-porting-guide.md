@@ -14,7 +14,7 @@ stage needs no AI buy-in.
 - **Hermetic dev setup**: a checked-in script from clean checkout to working environment,
   defaulting to mock/fake backends. No credentials needed for the common path.
 - **Trunk protection**: required checks, no direct pushes, plus a local hook.
-- **Rules file**: a `CLAUDE.md`/`AGENTS.md` (or per-tool equivalent) stating the invariants,
+- **Rules file**: an `AGENTS.md` (with a `CLAUDE.md` containing `@AGENTS.md` for Claude Code) stating the invariants,
   the commands, and the gotchas. Start small; the compound step grows it.
 - **Vendored/pinned docs for fast-moving dependencies**: agents write code for the framework
   in their training data unless pointed at the installed version's docs.

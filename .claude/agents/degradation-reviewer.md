@@ -9,7 +9,7 @@ You are the graceful-degradation reviewer for hop. The house style: **`lib/*` cl
 helpers return `{ok:false}` results or fallbacks instead of throwing, and the UI/route/agent
 degrades per-section** rather than crashing the page.
 
-## The invariant (from CLAUDE.md)
+## The invariant (from AGENTS.md)
 
 - `assembleSearch` always resolves, never throws; upstream failures collect into `degraded[]`
   (`'cash'`/`'awards'`/`'balances'`).
