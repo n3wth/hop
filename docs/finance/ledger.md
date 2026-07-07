@@ -67,3 +67,52 @@ One 5-line note per run. Figures come only from the repo's own signals (business
   existing AWS/GCP usage to offset either credit.
 - **Unknowns flagged**: same as run 2 — active Pro subscriber count, card-affiliate status,
   outclick/escalation counts (all require live DB/dashboard access this session lacks).
+
+## 2026-07-06 (run 4 — Sentry opportunity; two duplicate PRs closed unmerged)
+
+- **MRR**: still ~$0 (unchanged; no DB access this session, no new billing signal).
+- **Known burn**: unchanged, ~$75/mo infra + unmeasured LLM spend. Budget stays approved at
+  ~$125/mo — no new reply from Oliver since his run-2 approval, nothing to update.
+- **Outreach queue**: both items already `status: sent` (run 3), nothing new queued.
+- **New opportunity found**: Sentry for Startups (up to $5K error-monitoring credits, direct
+  apply, no VC required, hop qualifies on age/funding) — added as `drafted` in
+  `opportunities.md`. Also researched and rejected GitHub for Startups and Linear for Startups
+  (both gate credits behind a VC/accelerator partner code hop doesn't have) — an initial draft
+  of the GitHub item wrongly attached a "$40K non-dilutive cash" figure from an unrelated
+  program (GitHub Accelerator); caught and corrected via email before it reached this ledger.
+  Cloudflare Email Routing verification is no longer tracked here — resolved 2026-07-06, see
+  `README.md`.
+- **Process note**: run 4 produced two concurrent agent sessions on separate branches
+  (`finance/2026-07-06-run4`, `finance/2026-07-06-run4-github-credits`); both PRs (#255, #256)
+  were closed without merging, so this content never reached `main`. Backfilled here (run 5,
+  2026-07-07) from PR #255's diff so the Sentry finding and the GitHub/Linear rejections aren't
+  lost or re-researched. Single-session-per-run going forward avoids this duplication.
+- **Unknowns flagged**: same as prior runs — active Pro subscriber count, card-affiliate status,
+  outclick/escalation counts (all require live DB/dashboard access this session lacks).
+
+## 2026-07-07 (run 5)
+
+- **MRR**: still ~$0 (unchanged; no DB access this session, no new billing signal since run 4).
+- **Known burn**: unchanged, ~$75/mo infra + unmeasured LLM spend (`DEFAULT_INFRA_COST_MONTHLY_USD`
+  still 75 in `lib/unit-economics.ts`, `llmCostUsd` still unmeasured `null`). Budget stays
+  approved at ~$125/mo, no new reply from Oliver to act on.
+- **Outreach queue**: `outreach.md` re-checked — both prior items (seats.aero, AwardWallet)
+  already `status: sent`, no new `approved-to-send` items this run, nothing sent.
+- **Repo activity since run 4**: newsletter signup + weekly digest (R1.6/R2.3), verdict receipts
+  share pages (R1.5), a token-hashing/rate-limit hardening pass on the newsletter flow, and an
+  agentic-process docs pattern library — no pricing, billing-flag, or cost-constant changes.
+- **New opportunities found**: corrected a prior run's overly-pessimistic rejection of **Vercel
+  for Startups** — a baseline free-Pro tier is self-serve for bootstrapped founders (only the
+  ~$30K upper tier needs VC/accelerator affiliation), and Vercel Pro is a real existing $20/mo
+  cost line, so promoted to `drafted`. Also added **Mercury's Raise + Perks Bundle** (free
+  business banking + a $200K+ partner-credit marketplace) as `drafted`, explicitly flagged as
+  Oliver-only since opening a bank account is identity-bearing. Researched and rejected **Brex**
+  (corporate card requiring ~$50K+ cash reserves and an EIN — a financial-account commitment
+  this desk won't pursue) and **Loops.so** (discount on a tool hop doesn't use; email already
+  runs on Resend).
+- **Process note**: recovered run 4's Sentry-for-Startups finding and GitHub/Linear rejections
+  into `opportunities.md` and backfilled a run-4 ledger entry — that run's two PRs (#255, #256)
+  were closed unmerged and the content never reached `main` (see run-4 note above).
+- **Unknowns flagged**: same as prior runs — active Pro subscriber count, card-affiliate status,
+  outclick/escalation counts, actual company cash reserves (relevant to the Brex eligibility
+  question above) — all require live DB/dashboard/bank access this session lacks.
