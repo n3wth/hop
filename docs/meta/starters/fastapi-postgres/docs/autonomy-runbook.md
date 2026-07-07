@@ -1,9 +1,9 @@
-# Autonomy runbook — TODO(project): <repo name>
+# Autonomy runbook · TODO(project): <repo name>
 
 > Every unattended run reads this file first. Amending it changes agent behavior on the
 > next run; the Amendments section is its changelog. See the pattern library, doc 06.
 
-## The fleet
+## Fleet
 
 | Agent | Role | Trigger |
 |---|---|---|
@@ -39,7 +39,7 @@
 
 ## Merge policy
 
-**Auto-merge: off**  *(the kill switch — flip to `on` only after machine review has a
+**Auto-merge: off**  *(kill switch: flip to `on` only after machine review has a
 track record; flip to `off` in one docs commit to stop all autonomous merging)*
 
 Merge only when ALL hold: CI green on the head commit · zero unresolved review threads and
@@ -52,7 +52,7 @@ here as an amendment before re-enabling.
 
 ## Hard guardrails (violating any is a defect, not initiative)
 
-- Never merge outside the policy above — including when Auto-merge is off.
+- Never merge outside the policy above, including when Auto-merge is off.
 - Never flip feature flags, edit env/secrets, or run migrations against production.
 - Never touch payments/auth/identity beyond the picked item's written spec.
 - Never generate an output-of-record number.
@@ -60,6 +60,6 @@ here as an amendment before re-enabling.
 
 ## Amendments
 
-*(append here — rule, date, one-line reason; newest first)*
+*(append here: rule, date, one-line reason; newest first)*
 
 - YYYY-MM-DD · Initial version.

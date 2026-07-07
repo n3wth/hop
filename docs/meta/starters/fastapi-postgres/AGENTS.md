@@ -1,4 +1,4 @@
-# AGENTS.md — rules for agents working in this repo
+# Rules for agents working in this repo
 
 <!-- Rules file: injected into every agent session. Keep it short; grow it via the
      compound step, prune quarterly. -->

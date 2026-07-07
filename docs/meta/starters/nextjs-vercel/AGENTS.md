@@ -1,4 +1,4 @@
-# AGENTS.md — rules for agents working in this repo
+# Rules for agents working in this repo
 
 <!-- Rules file: injected into every agent session. Keep it short; every line costs
      context tokens on every turn. Grow it via the compound step, prune quarterly. -->

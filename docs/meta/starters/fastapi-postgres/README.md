@@ -1,4 +1,4 @@
-# fastapi-postgres starter — agentic process kit
+# fastapi-postgres starter
 
 Drop-in process files for a Python 3.12 / FastAPI / Postgres project using Alembic
 migrations and GitHub Actions. Implements the pattern library at `../../` (docs 01–09).
@@ -6,7 +6,7 @@ migrations and GitHub Actions. Implements the pattern library at `../../` (docs 
 ## Contents
 
 ```
-AGENTS.md                        rules file — injected into agent sessions
+AGENTS.md                        rules file, injected into agent sessions
 docs/autonomy-runbook.md         rules for unattended runs; kill switch; hold list
 scripts/setup-worktree.sh        fresh-workspace setup, fake-backends by default
 scripts/merge_gate.py            mechanical merge predicate (paths vs. hold list)
@@ -17,10 +17,10 @@ agents/reviewers/*.md            starter reviewer checklists (security, resilien
 ## Assumptions
 
 - `uv` for dependency management (`uv sync`); swap for pip/poetry if that's your setup.
-- One gate command exists — the kit assumes a Makefile target:
+- One gate command exists; the kit assumes a Makefile target:
   `make check` = `ruff check . && mypy . && pytest`. Add it if missing.
 - An `APP_FAKE_BACKENDS=1` env flag swaps Postgres/external services for in-memory fakes or
-  a disposable SQLite/testcontainer. If you don't have one, add it first — it's what lets
+  a disposable SQLite/testcontainer. If you don't have one, add it first: it's what lets
   workspaces run with no credentials, and lets N parallel workspaces avoid racing one
   shared database (Alembic migrations from two branches against one DB is the canonical
   collision).
@@ -35,7 +35,7 @@ agents/reviewers/*.md            starter reviewer checklists (security, resilien
    vars set.
 4. Auto-merge stays `off` in the runbook until machine review has a track record.
 
-## The loop
+## Task loop
 
 ```bash
 git worktree add /tmp/<task> origin/main -b feat/<task>

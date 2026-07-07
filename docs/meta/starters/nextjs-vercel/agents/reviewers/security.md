@@ -4,7 +4,7 @@ Runs on diffs touching: `app/api/**`, `lib/auth*`, `lib/session*`, `middleware.*
 `.env*`, anything reading `process.env`, any client component (`"use client"`).
 
 Findings return as JSON: `{file, line, severity: "P1"|"P2"|"P3", claim, evidence}`.
-Every finding faces a skeptic pass before a human sees it — cite the exact line.
+Every finding faces a skeptic pass before a human sees it; cite the exact line.
 
 ## Checks
 

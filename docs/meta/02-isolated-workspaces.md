@@ -1,8 +1,8 @@
 # 02 — Isolated workspaces
 
-## The pattern
+## Pattern
 
-Every task — human or agent — runs in a fresh workspace branched from trunk, lives as long
+Every task, human or agent, runs in a fresh workspace branched from trunk, lives as long
 as the task, and is deleted after merge. Nothing commits to trunk directly.
 
 ```
@@ -21,7 +21,7 @@ What this buys:
 
 ## Requirements
 
-1. **Workspace creation is cheap** — under a minute from task assigned to agent editing. In
+1. **Workspace creation is cheap**: under a minute from task assigned to agent editing. In
    git: `git worktree add <path> origin/main -b <type>/<branch>` (worktrees share the object
    store, so this is much cheaper than a clone). In a monorepo with a virtual filesystem
    (citc/EdenFS), workspaces are already copy-on-write views and this pattern is native.
@@ -34,8 +34,8 @@ What this buys:
    direct pushes) plus a local pre-commit hook refusing commits on trunk. The hook catches
    agents that never reach the server.
 4. **A dirty-checkout rule.** Long-lived checkouts accumulate unrelated WIP. Before opening a
-   PR, check status; if unrelated work is present, don't commit it alongside your change —
-   create a fresh workspace from trunk, copy in only the files your change touches, and PR
+   PR, check status; if unrelated work is present, don't commit it alongside your change.
+   Create a fresh workspace from trunk, copy in only the files your change touches, and PR
    from there. This prevents the most common multi-agent-repo defect: a PR bundling a
    stranger's half-finished work.
 5. **Explicit refs everywhere.** Branch inference fails inside worktrees and detached
@@ -74,5 +74,5 @@ human- and agent-created workspaces are identical.
 | Cleanup | `git worktree remove` | TTL on ephemeral environments | client garbage collection |
 
 In google3-style environments the VCS layer already solves isolation. The new work is item 2
-(a no-credentials-by-default environment tier for agents) and item 4 — or sidestep item 4
-entirely by making "fresh client per task" the only mode agents get.
+(a no-credentials-by-default environment tier for agents) and item 4. Item 4 can also be
+sidestepped entirely by making "fresh client per task" the only mode agents get.

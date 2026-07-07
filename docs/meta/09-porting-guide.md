@@ -1,4 +1,4 @@
-# 09 — Porting guide: standing this up on any stack
+# 09 — Porting guide
 
 Adopt in stages. Each stage is useful on its own, and each one's telemetry justifies (or
 kills) the next. Skipping ahead — turning on auto-merge before machine review has an
@@ -6,7 +6,7 @@ uphold-rate track record — is how these systems lose organizational trust.
 
 ## Stage 0 — Prerequisites
 
-Without these, agents flail; fix them first. They're also just good engineering, so this
+Fix these first; agents work badly without them. They're also just good engineering, so this
 stage needs no AI buy-in.
 
 - **One-command gate**: a single command runs lint + typecheck + tests, identical locally
@@ -19,7 +19,7 @@ stage needs no AI buy-in.
 - **Vendored/pinned docs for fast-moving dependencies**: agents write code for the framework
   in their training data unless pointed at the installed version's docs.
 
-## Stage 1 — The worktree → PR → preview loop (docs 02, 03)
+## Stage 1 — Worktree → PR → preview loop (docs 02, 03)
 
 - Adopt fresh-workspace-per-task for humans and agents alike.
 - Structure PR bodies: work-item ID, scope statement, test plan.
@@ -51,7 +51,7 @@ classes each have a checklist line.
   with triage-first, guardrails, amendments section.
 - Schedule the builder (e.g. every 6h) and the audit (weekly). Pin scheduled runs to a
   mid-tier model.
-- Define the hold list; start with **docs and tests as the only auto-tier**. Turn on
+- Define the hold list; start with docs and tests as the only auto-tier. Turn on
   auto-merge with the kill-switch line in place and the revert-flip-amend protocol written.
 - Add the class-(a) detectors over signals you already have; file fingerprinted issues.
 - Widen the auto-tier directory by directory, justified by uphold-rate and revert-rate data.
@@ -73,12 +73,12 @@ doubtful, and the run log shows blockers filed rather than guessed at.
 | Detectors (08) | monitoring + bug templates | fingerprinted file-once/auto-resolve/reopen contract |
 | Triage-first (08) | — | scheduler queries open agent CLs with red presubmit before assigning work |
 
-## What kills these systems
+## Failure modes
 
 Observed failure modes, in rough order of frequency:
 
-1. **Skipping the compound step.** Without it the system never gets smarter and the agents
-   plateau at "fast junior".
+1. **Skipping the compound step.** Without it the system never gets smarter and agent output
+   quality plateaus.
 2. **Auto-merge before review credibility.** One bad early merge and the whole program gets
    rolled back; earn the tier widening with data.
 3. **Local gate ≠ CI gate.** Agents learn to push and hope; every red PR costs a triage run.

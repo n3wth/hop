@@ -4,7 +4,7 @@ Trigger: CLs touching `**/api/**`, `**/auth/**`, `**/rpc/**` service definitions
 access layers, or any file reading secrets/config.
 
 Output: findings proto `{file, line, category: SECURITY, severity, claim, evidence}`.
-Every finding faces the skeptic pass — cite the exact line and the violated rule.
+Every finding faces the skeptic pass; cite the exact line and the violated rule.
 
 ## Checks
 
