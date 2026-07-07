@@ -92,7 +92,7 @@ One task = one worktree off `origin/main` = one branch = one **draft** PR. Never
 
 1. `git worktree add /tmp/<name> origin/main -b <branch>` — always branch from a freshly
    fetched `origin/main`, never from whatever a shared checkout happens to have staged (see
-   the "Multi-agent hygiene" rule in `CLAUDE.md` — a checkout routinely has unrelated
+   the "Multi-agent hygiene" rule in `AGENTS.md` — a checkout routinely has unrelated
    in-progress work sitting in it).
 2. Implement the change, verify it (§2 and §6 below), commit, push.
 3. Open a **draft** PR: `gh pr create --draft --head <branch> --base main`. Draft, not ready —
@@ -142,7 +142,7 @@ fallback for harnesses without the Workflow tool).
 **Plan → Work → Review → Compound.** In practice:
 
 1. **Read before you reason.** Open the actual files you'll change, the relevant
-   `docs/plans/*` blueprint, `CLAUDE.md`, and — for anything framework-level — the guide in
+   `docs/plans/*` blueprint, `AGENTS.md`, and — for anything framework-level — the guide in
    `node_modules/next/dist/docs/`. Never work from memory of "how Next works"; this repo is
    Next 16 + React 19 and your training data is wrong somewhere. Grep for a feature before
    proposing to build it — verify against the code, not the roadmap doc
@@ -156,7 +156,7 @@ fallback for harnesses without the Workflow tool).
    the review workflow if available) — or let `pr-merge-pipeline` do it per §1. Fix confirmed
    P1/P2s; log P3s. Never merge on "looks right to me."
 5. **Compound.** If you learned something durable — a rule, a fix pattern, a gotcha — it goes
-   into `docs/solutions/`, `DESIGN-SYSTEM.md`, or `CLAUDE.md` in the *same* PR. Work that
+   into `docs/solutions/`, `DESIGN-SYSTEM.md`, or `AGENTS.md` in the *same* PR. Work that
    doesn't teach the system is half-done. Mark a roadmap item done only with a commit/PR link
    attached, in both directions (don't mark something done without evidence, and don't propose
    building something already shipped).
@@ -238,7 +238,7 @@ settled once. A taste call made silently will be re-litigated forever.
 - **Report honestly.** Failing test → say so with output. Skipped item → say what you saw.
   "Done" means verified with a commit/PR link, not written.
 
-The full standing list of these multi-agent hygiene rules lives in `CLAUDE.md`'s "Multi-agent
+The full standing list of these multi-agent hygiene rules lives in `AGENTS.md`'s "Multi-agent
 hygiene" bullet — this section mirrors it for the ship-lane context; that's the canonical copy
 if the two ever drift.
 

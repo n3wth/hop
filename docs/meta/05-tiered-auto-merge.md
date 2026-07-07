@@ -1,29 +1,29 @@
 # 05 — Tiered autonomous merge
 
-## The problem
+## Problem
 
 With agents producing machine-reviewed PRs on a schedule, a strictly human-gated merge makes
 the human the bottleneck for changes whose whole risk surface is already checked. But "the
-agent decides what's safe" is self-grading. The resolution: a mechanical merge predicate, a
+agent decides what's safe" is self-grading. The resolution is a mechanical merge predicate, a
 path-based hold list, and a kill switch. Risk is tiered by what changed, never by the
 agent's opinion.
 
-## The predicate
+## Merge predicate
 
 An autonomous session may merge a PR (its own or another agent's) only when all four hold:
 
-1. **CI green on the head commit** — the full gate plus the production build. No
+1. **CI green on the head commit**: the full gate plus the production build. No
    skipped-because-red reruns.
-2. **Reviews clear** — zero unresolved review threads; no bot findings left unaddressed.
-3. **Diff within the work item's written scope** — nothing riding along. (This is why PR
+2. **Reviews clear**: zero unresolved review threads; no bot findings left unaddressed.
+3. **Diff within the work item's written scope**: nothing riding along. (This is why PR
    bodies carry a scope statement, doc 03.)
 4. **Every changed path is auto-tier.** A PR that is partially auto-tier is entirely held.
 
 Mechanics: merge method matching repo convention, delete the branch, sync the tracker. Any
 doubt → hold, with a PR comment saying why. The policy states "a held PR is a success, not a
-failure" verbatim — without that sentence agents rationalize their way past edge cases.
+failure" verbatim; without that sentence agents rationalize their way past edge cases.
 
-## The hold list
+## Hold list
 
 Derive yours from: irreversible, security-critical, or self-referential. hop's list:
 
@@ -36,19 +36,19 @@ Derive yours from: irreversible, security-critical, or self-referential. hop's l
 | Dependency manifests / lockfiles | supply chain | third-party deps, vendored code |
 | Displayed prices; frozen subsystems | product integrity; explicit freezes | anything under a change freeze |
 
-The self-referential entry is the one teams forget: the machinery enforcing the policy — CI
-config, the hold list, the runbook's guardrails — is itself always hold-tier. Agents must
+The self-referential entry is the one teams forget: the machinery enforcing the policy (CI
+config, the hold list, the runbook's guardrails) is itself always hold-tier. Agents must
 not be able to merge changes to the gate that judges them.
 
-## The kill switch
+## Kill switch
 
 The runbook (doc 06) carries one line: `Auto-merge: on`. Autonomous runs read the runbook
 before acting, so flipping the line to `off` in a docs-only commit stops all autonomous
-merging on every agent's next run — no trigger or permission changes. Properties to keep in
-a port:
+merging on every agent's next run, with no trigger or permission changes. Properties to keep
+in a port:
 
 - it's a document read at runtime, not a deploy;
-- it's versioned — the flip and the re-enable both leave history with a reason;
+- it's versioned; the flip and the re-enable both leave history with a reason;
 - the incident protocol sits next to it: one bad autonomous merge → revert, flip the switch,
   record the lesson as a runbook amendment before re-enabling.
 
@@ -69,8 +69,8 @@ unattended, and humans review only money/identity/schema/deps.
 - The scope check is an analyzer comparing changed files against the ticket's declared
   surface.
 - Keep the kill switch a config value in a well-known file read by the agent scheduler each
-  run. A reviewed commit as the disable mechanism is a feature — it leaves an audit trail —
-  not a limitation to engineer away.
+  run. A reviewed commit as the disable mechanism leaves an audit trail; treat that as a
+  feature rather than a limitation to engineer away.
 - Two-person-review requirements can coexist: where policy allows, the machine-review +
   skeptic pipeline satisfies the second party for auto-tier paths; elsewhere it falls back
   to human review. Start with docs and tests as the only auto-tier and widen directory by

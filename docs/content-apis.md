@@ -23,7 +23,7 @@ Quick navigation:
 
 ## 1. The bar: hop's house rules *are* the selection criteria
 
-hop's architecture already encodes strong opinions (`CLAUDE.md`). They double as a filter that
+hop's architecture already encodes strong opinions (`AGENTS.md`). They double as a filter that
 eliminates most of the content-API market before we spend a line of code:
 
 | House rule | What it rules out | What it rewards |

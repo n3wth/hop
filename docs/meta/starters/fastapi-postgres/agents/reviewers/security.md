@@ -4,7 +4,7 @@ Runs on diffs touching: `app/api/**`, `app/core/**` (auth/security/session), set
 modules, anything reading env, Dockerfiles/deploy config.
 
 Findings return as JSON: `{file, line, severity: "P1"|"P2"|"P3", claim, evidence}`.
-Every finding faces a skeptic pass before a human sees it — cite the exact line.
+Every finding faces a skeptic pass before a human sees it; cite the exact line.
 
 ## Checks
 

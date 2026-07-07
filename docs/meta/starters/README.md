@@ -1,4 +1,4 @@
-# Starters — drop-in kits for the agentic process
+# Starter kits
 
 Three reference implementations of the pattern library (docs 01–09), packaged as files you
 copy into an existing project. They are process kits, not app scaffolds: each contains the
@@ -15,7 +15,7 @@ and starter reviewer checklists, tuned to the stack's conventions.
 
 1. Copy the starter's contents into your repo root (merge `.github/workflows/` with what you
    have; don't overwrite an existing `AGENTS.md`, fold the sections in).
-2. Fill every `TODO(project)` marker — hold-list paths, tracker name, gate command.
+2. Fill every `TODO(project)` marker: hold-list paths, tracker name, gate command.
 3. Wire branch protection: require the `check` workflow; block direct pushes to the default
    branch.
 4. Run `scripts/setup-worktree.sh` once yourself to confirm the mock-mode path works with no
@@ -26,7 +26,7 @@ and starter reviewer checklists, tuned to the stack's conventions.
 Adopt in the order of the porting guide (doc 09): loop first, machine review second,
 scheduled autonomy and auto-merge last. The runbook ships with `Auto-merge: off`.
 
-## The google3 starter
+## google3 starter
 
 Internal infrastructure isn't reproducible in public files, so `google3/` is an annotated
 example rather than runnable config: what each artifact maps to (dir metadata, presubmit

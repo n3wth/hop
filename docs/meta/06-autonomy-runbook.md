@@ -1,13 +1,13 @@
-# 06 — The autonomy runbook
+# 06 — Autonomy runbook
 
-## The pattern
+## Pattern
 
 Unattended agent runs (cron-triggered builders, scheduled audits, delegated agents) are
-governed by one versioned document they read at the start of every run. The runbook is the
-run's brain: queue rules, run procedure, merge policy, guardrails, and an amendments section.
-Because it's read at runtime, amending it changes agent behavior on the next run without
-touching schedulers, prompts, or permissions — that's also how the loop self-improves and
-how the kill switch works (doc 05).
+governed by one versioned document they read at the start of every run: queue rules, run
+procedure, merge policy, guardrails, and an amendments section. Because it's read at
+runtime, amending it changes agent behavior on the next run without touching schedulers,
+prompts, or permissions. That is also how the loop self-improves and how the kill switch
+works (doc 05).
 
 Scheduler prompts stay minimal ("read the runbook, follow it"); the policy lives in the
 document, where it's reviewable, versioned, and shared by every agent regardless of vendor.
@@ -18,20 +18,20 @@ Sections, from hop's (`docs/autonomy-runbook.md`):
 
 **The fleet.** A table of every agent with a role and trigger: the scheduled builder (picks
 the top queue item, ships one PR per run), the weekly audit, interactive delegated agents
-(vendor tools pointed at well-specced mechanical items), per-PR review bots, and the human —
+(vendor tools pointed at well-specced mechanical items), per-PR review bots, and the human,
 listed as a fleet member with an explicit role (merges the hold list; flags, secrets, legal).
 
 **Queue rules.** Where task order comes from (the external tracker, mirrored from a plan
 document in the repo), and what a run may never pick: human-only items, frozen areas,
 items with unmet blockers or gates, and anything another agent is already working (open PR
-or in-progress ticket — this is the work-item lock). One item per run; if it won't fit one
+or in-progress ticket; this is the work-item lock). One item per run; if it won't fit one
 cohesive PR, ship the first slice and leave a handoff note.
 
 A fallback ordering for when the tracker is unreachable (headless environments may lack the
 connector): fall back to the plan document's phase order, cross-checking open and merged PRs
 so finished work isn't redone. Autonomy can't depend on a SaaS being up.
 
-**Run procedure.** Numbered steps: read the canon files; **triage before building** (prior
+**Run procedure.** Numbered steps: read the canon files; triage before building (prior
 runs' red PRs are this run's first work item — doc 08); implement in house style; verify
 with the standard gate; open one ready-for-review PR titled with the item ID; merge only per
 policy; sync tracker state (or leave a sync note in the PR body for the next connected
@@ -57,9 +57,9 @@ the runbook's changelog and the primary artifact of the compound loop at the pro
 
 ## Design notes
 
-- **One runbook, many vendors.** Any agent that can read the repo follows the same rules —
+- **One runbook, many vendors.** Any agent that can read the repo follows the same rules;
   the runbook is vendor-neutral by being a file rather than a prompt.
-- **"Blocked → stop" beats "blocked → improvise."** An autonomous run that ends early with a
+- **"Blocked → stop" beats "blocked → improvise".** An autonomous run that ends early with a
   filed blocker is a success. Runs that guess produce the expensive failures.
 - **Delegation is for connected sessions only.** Interactive sessions may fan work out to
   other agent products (with the full spec pasted in, since external tools can't read your

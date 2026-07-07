@@ -85,7 +85,7 @@ const draftPrompt = (lens) =>
   [
     `You are in hop's Plan lane. Produce a complete implementation blueprint for: ${task}`,
     `Your lens (commit to it — the panel needs genuinely different plans): ${lens.brief}`,
-    'First read .claude/commands/plan.md and follow its §1 research discipline exactly: CLAUDE.md + AGENTS.md, the engine seam, prior art in docs/plans/, solved problems in docs/solutions/, ADRs in docs/decisions/, and the relevant node_modules/next/dist/docs/ guide if the work is framework-level.',
+    'First read .claude/commands/plan.md and follow its §1 research discipline exactly: AGENTS.md, the engine seam, prior art in docs/plans/, solved problems in docs/solutions/, ADRs in docs/decisions/, and the relevant node_modules/next/dist/docs/ guide if the work is framework-level.',
     'Then write the blueprint with all ten sections from plan.md §2 (title/status, requirements, files-to-touch table, engine hooks, flags & seams, degradation plan, test plan, copy & design notes, risks, review hooks).',
     'Do NOT write any file. Your final message must be ONLY the blueprint markdown, nothing else.',
   ].join('\n\n')

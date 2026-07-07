@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Git-native guard: never commit directly to main — feature branches /
-# worktrees + PRs only (AGENTS.md, CLAUDE.md). The Claude-Code-specific
+# worktrees + PRs only (AGENTS.md). The Claude-Code-specific
 # PreToolUse hook (guard-main-commit.sh) only protects Claude sessions;
 # this one protects EVERY tool that drives git — Cursor, Codex, Devin,
 # humans. Installed by scripts/setup-worktree.sh via core.hooksPath.

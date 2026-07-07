@@ -18,8 +18,8 @@ The output of a task is the diff plus whatever was learned producing it. The loo
    rule (doc 07 lists the targets).
 
 The operational test for step 4: if a rule would have prevented a problem this run hit, amend
-the rule file in the same PR. Skipping this step is why most teams get flat returns from
-agents — every session starts from zero.
+the rule file in the same PR. Teams that skip this step get flat returns from agents, because
+every session starts from zero.
 
 ## Rule 2: agents supply judgment; code computes everything between judgments
 
@@ -29,22 +29,22 @@ LLM fills judgment nodes only. This applies at three levels:
 - **Product**: user-facing numbers (prices, scores, verdicts) come from deterministic library
   code. The agent narrates computed values.
 - **Process**: which reviewers run on a diff, what each sees, how findings dedupe, which
-  severity wins, when a loop terminates — all encoded in a checked-in orchestration script,
-  not re-derived by a model each session (doc 04).
+  severity wins, when a loop terminates. All of it is encoded in a checked-in orchestration
+  script, not re-derived by a model each session (doc 04).
 - **Policy**: whether a PR may auto-merge is a predicate over CI state, review state, and
-  changed paths — never the agent's own risk assessment (doc 05).
+  changed paths, never the agent's own risk assessment (doc 05).
 
 Consequences:
 
 - Agents that feed a pipeline return JSON validated against a schema. Prose is never parsed.
 - Machine findings are verified before a human sees them: a skeptic pass, defaulting to
   "refuted", must uphold each one. Confidently flagging correct code is the characteristic
-  failure of LLM review, and it has to be handled structurally, not by discipline.
+  failure of LLM review; it has to be handled structurally rather than by discipline.
 - The process is model-portable. Checklists and scripts carry the quality; swapping in a
   smaller model changes cost, not shape. When more rigor is needed, add skeptics or raise
   vote thresholds rather than reaching for a bigger model.
 - Skips, caps, truncations, and fallbacks are logged. Silent degradation in the process is
-  a bug, same as in the product.
+  a bug, the same as in the product.
 
 ## Classifying automation
 
@@ -78,6 +78,6 @@ that drift visible in review.
 In a google3-style environment: the orchestration script becomes presubmit/analyzer config;
 schema-forced outputs become protos; the (a)/(b)/(c) classes align with existing
 change-management categories (automated rollouts vs. gated launches vs. two-person
-operations). The compound loop's memory maps to g3doc, design docs, and postmortems — the
+operations). The compound loop's memory maps to g3doc, design docs, and postmortems. The
 missing property is usually agent-legibility: memory has to live where an agent's context
 assembly picks it up automatically (doc 07), not in a doc a human would know to search.
