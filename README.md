@@ -89,7 +89,7 @@ numbers.
 
 This codebase runs on **Next.js 16.2.9 + React 19** — APIs and conventions differ from older
 Next. Before writing framework code, read the relevant guide in `node_modules/next/dist/docs/`
-(see `CLAUDE.md` / `AGENTS.md`).
+(see `AGENTS.md`).
 
 ### Run locally
 
@@ -238,10 +238,10 @@ health sentinel.
 ## Documentation & how we work here
 
 This repo is **agent-native**: every unit of work should make the next one easier (the compound
-engineering loop — Plan → Work → Review → Compound — is detailed in `CLAUDE.md` and
+engineering loop — Plan → Work → Review → Compound — is detailed in `AGENTS.md` and
 `AGENTS.md`; smaller/less-capable models should read `docs/agent-playbook.md` first).
 
-- `CLAUDE.md` / `AGENTS.md` — the always-loaded operating rules for this repo
+- `AGENTS.md` (imported by `CLAUDE.md` for Claude Code) — the always-loaded operating rules for this repo
 - `docs/README.md` — index of product/design/planning docs
 - `docs/decisions/` — ADRs (read the relevant one before changing a decided area)
 - `docs/solutions/` — searchable solved-problems log (grep before solving something familiar)
