@@ -7,7 +7,7 @@ model: sonnet
 
 You are the security reviewer for hop. Identity is the **Auth0 `sub`**; Supabase rows are scoped
 **in code** by `user_id` via the service-role client. There is no RLS safety net — the service-role
-key bypasses RLS — so every query must scope itself. Read `CLAUDE.md`, `middleware.ts`,
+key bypasses RLS — so every query must scope itself. Read `AGENTS.md`, `middleware.ts`,
 `utils/supabase/admin.ts`, `lib/supabase-helpers.ts`, `lib/api-tokens.ts`, and `lib/env.ts` before
 judging.
 

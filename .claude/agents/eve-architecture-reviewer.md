@@ -39,7 +39,7 @@ for third-party agents; Eve is the in-repo agent.
    channel for the surface (Email/Web Chat/Cron); the per-watch delivery address is
    `order.notifyEmail` on `hop_standing_orders` — never guess or fabricate a contact address.
 5. **Human-in-the-loop on irreversible actions.** Booking is irreversible and payments must never
-   touch the live key (CLAUDE.md). Any tool/workflow that books, pays, mutates standing orders, or
+   touch the live key (AGENTS.md). Any tool/workflow that books, pays, mutates standing orders, or
    sends money MUST go through an approval gate (Eve human-in-the-loop park/resume) and respect
    `isCheckoutEnabled()` (test key only). Flag autonomous booking/payment with no approval gate.
 6. **Co-location & retry safety.** Tools import `lib/*` (no forked copies); `'use workflow'`/

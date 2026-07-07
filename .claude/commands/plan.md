@@ -25,7 +25,7 @@ blueprint written to `docs/plans/`. For a narrow, well-trodden change, continue 
 
 Read the actual code and docs that this work touches. At minimum:
 
-- **`CLAUDE.md` and `AGENTS.md`** — the invariants you must preserve.
+- **`AGENTS.md`** — the invariants you must preserve.
 - **The engine seam.** Whatever the feature touches, trace it to the moat:
   `lib/search.ts#assembleSearch` (the single funnel), `lib/cpp.ts` (`cpp = (cash − taxes) ×
   100 / miles`; tiers `≥3.0 green`/`≥1.5 amber`/else muted; `POINTS_THRESHOLD_CPP = 2.5`),

@@ -11,7 +11,7 @@ rule 1) is the write path; this doc describes the surfaces and the promotion lad
 
 | Surface | Contains | Read when |
 |---|---|---|
-| Rules files (`CLAUDE.md`, `AGENTS.md`, per-tool equivalents) | invariants, commands, gotchas, house style | injected into every session automatically |
+| Rules files (`AGENTS.md`, or a `CLAUDE.md` importing it, per-tool equivalents) | invariants, commands, gotchas, house style | injected into every session automatically |
 | Solutions library (`docs/solutions/`) | solved problems, one file each, YAML frontmatter for searchability | grepped before solving anything that looks familiar |
 | ADRs (`docs/decisions/`) | load-bearing decisions with context and consequences | before changing a decided area |
 | Plans (`docs/plans/`) | implementation blueprints; the adopted business/sequencing plan | at task start; plans are the source of truth for scope |
