@@ -34,7 +34,7 @@
 
 ## Run procedure (dev routine)
 
-1. Read `CLAUDE.md`, `AGENTS.md`, this file, and the picked item's spec/prompt.
+1. Read `AGENTS.md`, this file, and the picked item's spec/prompt.
 2. **Triage before building**: open PRs from prior autonomous runs with failing CI or conflicts
    are the work item for this run — fix them first.
 3. Implement in the house style (engine-computed numbers, `withDb` degradation, flag-gated

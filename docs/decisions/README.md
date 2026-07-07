@@ -66,3 +66,5 @@ of these decisions automatically (e.g. `engine-invariant-reviewer` guards ADR 00
 | [0007](0007-self-improvement-loops.md) | Self-improvement loops | Accepted |
 | [0008](0008-docs-canon-in-git-work-state-in-linear.md) | Documentation canon lives in git; Linear owns work state | Accepted |
 | [0009](0009-tiered-autonomous-merge.md) | Tiered autonomous merge | Accepted |
+| [0010](0010-single-rules-file-agents-md.md) | Single rules file: AGENTS.md is canon, CLAUDE.md imports it | Accepted |
+| [0011](0011-platform-stack-rationale.md) | Platform stack: Vercel + Neon + Better Auth + Drizzle + Upstash | Accepted |
