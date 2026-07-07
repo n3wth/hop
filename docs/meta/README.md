@@ -1,7 +1,7 @@
-# Agentic development — a portable pattern library
+# Agentic development patterns
 
 These docs describe how this repo develops itself, written as stack-agnostic patterns so the
-same process can be implemented elsewhere — anywhere from a single git repo to a
+same process can be implemented elsewhere, anywhere from a single git repo to a
 google3-style monorepo. The patterns come from hop's working system (ADRs 0002, 0004,
 0006–0009). Each doc states the pattern, shows hop's concrete instance, and ends with notes
 on porting it to conventional large-company infrastructure.
@@ -14,11 +14,11 @@ reviewer agents dispatched by a checked-in script, findings verified by a skepti
 a human sees them). PRs merge autonomously only when a mechanical predicate passes and no
 changed path is on a hold list; irreversible surfaces (money, auth, schema, secrets, CI
 config, dependencies) always wait for a human. Every run ends by writing what it learned back
-into the repo — docs, rules, reviewer checks — so later runs start from a better baseline.
-The rule underneath all of it: agents fill judgment nodes; checked-in code computes
-everything between them.
+into the repo (docs, rules, reviewer checks) so later runs start from a better baseline.
+Underneath all of it: agents fill judgment nodes; checked-in code computes everything
+between them.
 
-## The documents
+## Contents
 
 | Doc | Covers |
 |---|---|
@@ -26,8 +26,8 @@ everything between them.
 | [02-isolated-workspaces.md](02-isolated-workspaces.md) | One task, one disposable workspace off trunk. Never commit to trunk. |
 | [03-pr-pipeline.md](03-pr-pipeline.md) | One task → one PR, with CI, preview deployment, and machine review attached automatically. |
 | [04-machine-review.md](04-machine-review.md) | Specialized reviewers selected by path rules, schema-typed findings, skeptic verification. |
-| [05-tiered-auto-merge.md](05-tiered-auto-merge.md) | The merge predicate, the path hold list, the kill switch. |
-| [06-autonomy-runbook.md](06-autonomy-runbook.md) | The runbook unattended runs read every time, and how amending it improves the loop. |
+| [05-tiered-auto-merge.md](05-tiered-auto-merge.md) | Merge predicate, path hold list, kill switch. |
+| [06-autonomy-runbook.md](06-autonomy-runbook.md) | One versioned document unattended runs read every time; amending it changes behavior. |
 | [07-compounding-memory.md](07-compounding-memory.md) | Where lessons go: solutions library, ADRs, rules files, logs. |
 | [08-self-healing.md](08-self-healing.md) | Health detection from existing computations; auto-filed work items; triage-before-building. |
 | [09-porting-guide.md](09-porting-guide.md) | Staged adoption path for a new codebase, including a google3 mapping. |

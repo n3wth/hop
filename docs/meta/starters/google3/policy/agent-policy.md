@@ -1,10 +1,10 @@
-# Agent policy — <team> (the runbook)
+# Agent policy for <team> (the runbook)
 
 > Read by the agent scheduler at the start of every unattended run. Amendments change
 > behavior on the next run; no scheduler or permission changes needed. This file is itself
-> `risk_tier: hold` — agents may propose amendments, humans submit them.
+> `risk_tier: hold`: agents may propose amendments, humans submit them.
 
-## The fleet
+## Fleet
 
 | Agent | Role | Trigger |
 |---|---|---|
@@ -56,12 +56,12 @@ here before re-enabling.
 
 - Never submit outside the policy above.
 - Never change launch/experiment configs, flags, secrets, schema, or quota beyond the
-  ticket's written spec — those are human-submitted regardless of tier.
+  ticket's written spec; those are human-submitted regardless of tier.
 - Never generate an output-of-record number; production values come from checked-in code.
 - Blocked or ambiguous → file the blocker and end the run. Do not guess.
 
 ## Amendments
 
-*(append — rule, date, one-line reason; newest first)*
+*(append: rule, date, one-line reason; newest first)*
 
 - YYYY-MM-DD · Initial version.

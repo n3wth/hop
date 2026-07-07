@@ -1,13 +1,13 @@
 # 07 — Compounding memory
 
-## The pattern
+## Pattern
 
 Agents have no memory between sessions. Whatever the system knows has to live in files the
-next agent reads automatically — either because the harness injects them (rules files) or
+next agent reads automatically, either because the harness injects them (rules files) or
 because the run procedure says to search them before solving. The compound step (doc 01,
 rule 1) is the write path; this doc describes the surfaces and the promotion ladder.
 
-## The memory surfaces
+## Memory surfaces
 
 | Surface | Contains | Read when |
 |---|---|---|
@@ -24,7 +24,7 @@ Two distinct read mechanisms, both necessary: rules files are *pushed* into cont
 harness; everything else is *pulled* by procedure ("search before you solve", "read the ADR
 before changing a decided area"). A lesson that lands in neither is lost.
 
-## The promotion ladder
+## Promotion ladder
 
 When a run learns something, it chooses where the lesson goes by how it should fire later:
 
@@ -35,7 +35,7 @@ When a run learns something, it chooses where the lesson goes by how it should f
 3. **ADR** — for decisions with alternatives that were considered and rejected. Fires when
    someone (agent or human) is about to relitigate.
 4. **Reviewer checklist line** — for bug classes. Fires automatically on every future diff
-   that matches. This is usually the highest-value target: the lesson becomes enforcement.
+   that matches. Usually the highest-value target, since the lesson becomes enforcement.
 5. **Orchestration-script rule** — for process failures: a new path gate, a stricter
    skeptic, a changed termination condition. Fires on every future workflow run.
 6. **Runbook amendment** — for autonomous-run process rules. Fires at the start of every
@@ -48,11 +48,11 @@ amendment ships in the same PR as the fix.
 ## Writing conventions
 
 - Solutions entries carry YAML frontmatter (date, tags, symptom) so grep and glob find them
-  by symptom, not just by title. One problem per file, dated filenames.
-- Write for a reader with zero session context — define terms on first use, lead with
+  by symptom as well as title. One problem per file, dated filenames.
+- Write for a reader with zero session context: define terms on first use, lead with
   what/why. The audience is a fresh agent, which is the least-context reader there is.
 - Canon lives in git; work state lives in the tracker (hop's ADR 0008). Don't mirror ticket
-  status into docs or decisions into tickets — each system holds what it's authoritative
+  status into docs or decisions into tickets. Each system holds what it's authoritative
   for, and the PR body carries sync notes across the gap when a connector is missing.
 - Memory surfaces are audited. Doc/code drift (a command that no longer matches its
   workflow, a rules-file claim the code contradicts) is a standing-audit lens (doc 08),
@@ -62,8 +62,8 @@ amendment ships in the same PR as the fix.
 
 The surfaces map to g3doc (rules, ADRs → design docs), a postmortem/lessons corpus
 (solutions library), and analyzer configs (reviewer checklists). The property that's usually
-missing and must be added: **agent-legibility of the read path**. It isn't enough that a
-postmortem exists — the agent's context assembly must inject directory-local rules
+missing and must be added is agent-legibility of the read path. It isn't enough that a
+postmortem exists: the agent's context assembly must inject directory-local rules
 automatically (per-directory rules files picked up by path, the way OWNERS is), and the run
 procedure must mandate a search of the lessons corpus before solving. The write path needs
 an owner too: the compound step should be a checklist item on agent-authored CLs, verified

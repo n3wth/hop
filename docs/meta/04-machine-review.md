@@ -1,11 +1,11 @@
 # 04 — Machine review
 
-## The pattern
+## Pattern
 
 LLM code review works when the orchestration is deterministic and the findings are verified.
 Left to improvise, a session skips a reviewer, merges duplicates inconsistently, or forwards
-a wrong-but-plausible finding. So: reviewer judgment lives in checked-in checklists, and a
-checked-in script computes everything between judgments.
+a wrong-but-plausible finding. Reviewer judgment therefore lives in checked-in checklists,
+and a checked-in script computes everything between judgments.
 
 ```
 captured diff
@@ -70,7 +70,7 @@ Worth copying whatever your workflow engine is (hop: `.claude/workflows/*.js`):
   artifacts describing one process will drift; the standing audit (doc 08) checks them
   against each other.
 
-## The ship pipeline
+## Ship pipeline
 
 Review composes into a merge pipeline (hop: `pr-merge-pipeline`): PR number → reviewers →
 adjudication → skeptics → a fix pass on the PR branch if P1s survive → branch update → CI

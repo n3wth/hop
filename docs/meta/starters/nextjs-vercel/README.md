@@ -1,4 +1,4 @@
-# nextjs-vercel starter — agentic process kit
+# nextjs-vercel starter
 
 Drop-in process files for a Next.js App Router project deployed on Vercel with GitHub
 Actions. Implements the pattern library at `../../` (docs 01–09).
@@ -6,7 +6,7 @@ Actions. Implements the pattern library at `../../` (docs 01–09).
 ## Contents
 
 ```
-AGENTS.md                        rules file — injected into agent sessions
+AGENTS.md                        rules file, injected into agent sessions
 docs/autonomy-runbook.md         rules for unattended runs; kill switch; hold list
 scripts/setup-worktree.sh        fresh-workspace setup, mock-mode by default
 scripts/merge-gate.mjs           mechanical merge predicate (paths vs. hold list)
@@ -20,7 +20,7 @@ agents/reviewers/*.md            starter reviewer checklists (security, resilien
   `"check": "npm run lint && npm run typecheck && npm test"`).
 - Vercel is connected to the repo, so every PR gets a preview deployment automatically.
 - A `MOCK=1` (or similar) env flag swaps external services for fixtures. If you don't have
-  one, add it before pointing agents at the repo — it's what lets workspaces run without
+  one, add it before pointing agents at the repo; it's what lets workspaces run without
   credentials.
 
 ## Setup
@@ -32,7 +32,7 @@ agents/reviewers/*.md            starter reviewer checklists (security, resilien
 4. Auto-merge stays `off` in the runbook until machine review has a track record
    (porting guide, stage 3).
 
-## The loop
+## Task loop
 
 ```bash
 git worktree add /tmp/<task> origin/main -b feat/<task>
