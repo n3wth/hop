@@ -70,6 +70,9 @@ numbers.
 
 - [`docs/team/routines.md`](docs/team/routines.md) — the exact cron schedule and prompt each desk
   runs on, verbatim
+- [`docs/meta/`](docs/meta/README.md) — the whole process written up as stack-agnostic patterns,
+  with drop-in starter kits (Next.js/Vercel, FastAPI/Postgres, and a google3-style sketch) for
+  running it on any codebase
 - [`docs/board/`](docs/board/) — the board's own memos, unedited
 - [hop.flights](https://hop.flights) — the live product
 
@@ -145,6 +148,7 @@ every gated seam checks both a flag and its credentials before turning on.
 - `docs/solutions/` — searchable log of solved problems (grep before you debug something familiar)
 - `docs/plans/` — implementation blueprints
 - `docs/design/` — the design source of truth (flat editorial reference, copy voice spec)
+- `docs/meta/` — the agentic dev process as portable patterns + starter kits for other repos
 - `.claude/agents/` — specialized review subagents; `.claude/workflows/` — saved multi-agent
   orchestration scripts (review, plan panel, standing audit)
 

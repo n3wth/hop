@@ -1,0 +1,31 @@
+# dir-metadata.example — per-directory risk tier (illustrative textproto)
+#
+# The hold list from pattern-library doc 05, expressed as distributed per-directory
+# metadata instead of a central path-regex file. A CL is auto-tier only if EVERY touched
+# directory resolves to `auto`. Resolution walks up the tree like OWNERS; the nearest
+# explicit tier wins; the repo root defaults to `hold` so untagged code is safe by default.
+#
+# Example: //depot/team/frontend/METADATA
+
+agent_policy {
+  risk_tier: AUTO          # docs, tests, UI components — revertable surfaces
+  rules_file: "g3doc/agent-rules.md"   # injected into agent context for CLs touching this dir
+}
+
+# Example: //depot/team/billing/METADATA
+
+agent_policy {
+  risk_tier: HOLD
+  reason: "money movement — human submit regardless of presubmit state"
+}
+
+# Example: //depot/team/schema/METADATA
+
+agent_policy {
+  risk_tier: HOLD
+  reason: "irreversible; expand/contract migrations reviewed by storage owners"
+}
+
+# Keep HOLD on (at minimum): payments, auth/identity, schema/migrations, launch and
+# experiment configs, presubmit/analyzer definitions, the agent-policy file's own
+# directory, dependency/third_party, and anything under an active change freeze.

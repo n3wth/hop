@@ -25,6 +25,10 @@ const eslintConfig = defineConfig([
     // as app code yields wall-to-wall no-undef. See ADR 0006 and
     // docs/solutions/2026-07-01-workflow-scripts-are-a-third-runtime.md.
     ".claude/**",
+    // Starter kits under docs/meta/starters/ are template code for *other*
+    // repos (copied out verbatim), not part of this app — same reasoning as
+    // the .claude/** and eve/** ignores above.
+    "docs/meta/starters/**",
   ]),
   // ── Design-system enforcement ladder (docs/plans/2026-07-02-design-component-system.md) ──
   // One `no-restricted-syntax` entry per canonized recipe. Each lands at 'warn'

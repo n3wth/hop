@@ -31,6 +31,7 @@ everything between them.
 | [07-compounding-memory.md](07-compounding-memory.md) | Where lessons go: solutions library, ADRs, rules files, logs. |
 | [08-self-healing.md](08-self-healing.md) | Health detection from existing computations; auto-filed work items; triage-before-building. |
 | [09-porting-guide.md](09-porting-guide.md) | Staged adoption path for a new codebase, including a google3 mapping. |
+| [starters/](starters/README.md) | Drop-in kits implementing the library: `nextjs-vercel/`, `fastapi-postgres/`, and an illustrative `google3/`. |
 
 ## Provenance
 
