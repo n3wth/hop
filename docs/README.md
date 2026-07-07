@@ -11,6 +11,7 @@ here to find the canonical home for anything; each area below owns its own detai
 | [`plans/2026-07-04-business-plan.md`](plans/2026-07-04-business-plan.md) | **The adopted business plan** — positioning, pricing, gates, execution roadmap + agent pickup protocol (§11). The sequencing source of truth, mirrored to Linear. |
 | [`autonomy-runbook.md`](autonomy-runbook.md) | Rules for autonomous sessions: queue, merge policy (ADR 0009), guardrails, compound step. |
 | [`ops-runbook.md`](ops-runbook.md) | How to turn production capabilities on/off (flags, crons, secrets, billing, checkout). |
+| [`meta/`](meta/README.md) | The agentic development process as portable, stack-agnostic patterns — worktrees, PR pipeline, machine review, tiered auto-merge, runbook, memory, self-healing. |
 
 ## Memory surfaces (the compound-engineering spine)
 

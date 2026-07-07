@@ -1,0 +1,29 @@
+# submit-rule.example — the merge predicate as a submit rule (illustrative)
+#
+# Pattern-library doc 05: a mechanical predicate, never the agent's judgment.
+# Evaluated when the submitter is an agent principal; human submits are unaffected.
+
+rule agent_submit {
+  applies_to: principals_in_group("agent-fleet")
+
+  require {
+    presubmit: PASSED_ON_CURRENT_SNAPSHOT   # no skipped-because-red reruns
+
+    comments: ALL_RESOLVED
+    analyzer_findings: NONE_UPHELD_UNADDRESSED   # skeptic-upheld findings block
+
+    # Scope: changed files within the ticket's declared surface.
+    analyzer("scope-check"): PASSED
+
+    # Path tier: every touched directory resolves to risk_tier AUTO (see dir-metadata).
+    all_touched_dirs: risk_tier == AUTO
+
+    # Kill switch: a reviewed edit to the policy file stops all agent submits.
+    file("//depot/team/policy/agent-policy.md"): contains_line("Auto-merge: on")
+  }
+
+  on_fail {
+    action: HOLD_FOR_HUMAN
+    comment: template("held: ${first_failed_condition}")   # say why, on the CL
+  }
+}

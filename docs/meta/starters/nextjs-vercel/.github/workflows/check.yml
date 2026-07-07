@@ -1,0 +1,20 @@
+# The CI gate. Must equal the local gate (npm run check) plus a production build.
+name: check
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check          # lint + typecheck + tests — same command agents run
+      - run: npm run build          # catches RSC/route/boundary errors tests miss
+        env:
+          MOCK: "1"                 # build against fixtures; no credentials in CI
