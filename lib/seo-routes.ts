@@ -4,7 +4,7 @@ import type { MetadataRoute } from 'next'
 // datasets. The sitemap reads it as lastModified so crawlers see a real refresh
 // without churning on every unrelated deploy. After bumping, the weekly SEO cron
 // (or a manual GET /api/cron/revalidate-seo) invalidates cached pages.
-export const CONTENT_LAST_MODIFIED = '2026-06-30'
+export const CONTENT_LAST_MODIFIED = '2026-07-08'
 
 type ChangeFrequency = NonNullable<MetadataRoute.Sitemap[number]['changeFrequency']>
 
@@ -22,6 +22,7 @@ export const STATIC_SEO_ROUTES: StaticSeoRoute[] = [
   { path: '/deals', changeFrequency: 'daily', priority: 0.8 },
   { path: '/destinations', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/sweet-spots', changeFrequency: 'weekly', priority: 0.7 },
+  { path: '/guides', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/points', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/ask', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/stats', changeFrequency: 'weekly', priority: 0.4 },
@@ -58,6 +59,7 @@ export const FOOTER_SECTIONS: FooterSection[] = [
       { href: '/deals', label: 'Deals' },
       { href: '/destinations', label: 'Destination guides' },
       { href: '/sweet-spots', label: 'Sweet spots' },
+      { href: '/guides', label: 'Program guides' },
       { href: '/ask', label: 'Ask hop' },
     ],
   },
@@ -86,6 +88,7 @@ export const SEO_REVALIDATE_PATHS: string[] = [
   '/deals',
   '/destinations',
   '/sweet-spots',
+  '/guides',
   '/ask',
   '/support',
   '/privacy',
