@@ -11,7 +11,7 @@ import type {
   SearchParams,
   SearchResult,
 } from '@/lib/types'
-import { cpp, tier, rankOptions } from '@/lib/cpp'
+import { cpp, tier, rankOptions, POINTS_THRESHOLD_CPP } from '@/lib/cpp'
 import { applyPrefs, type TravelPrefs } from '@/lib/prefs-model'
 import { transfersTo, effectiveBalanceFor } from '@/lib/transfers'
 import { cashBookingUrl, pointsBookingUrl } from '@/lib/booking'
@@ -25,7 +25,9 @@ import { iataRouteCode, recordDegradation, sanitizeReason } from '@/lib/degradat
 import { captureServerEvent } from '@/lib/posthog-server'
 import { canonicalizeProgram } from '@/lib/programs'
 
-export const POINTS_THRESHOLD_CPP = 2.5
+// Re-exported from lib/cpp.ts, its actual owner — kept here so existing
+// `from '@/lib/search'` call sites don't need to change.
+export { POINTS_THRESHOLD_CPP }
 
 // Seat-occupying travelers: one seat per adult + child; infants ride as lap
 // infants (no seat, no award miles). THE party-size rule — the engine scales

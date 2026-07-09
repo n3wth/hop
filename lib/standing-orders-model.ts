@@ -12,6 +12,10 @@ import type { FlightOption, SearchParams, SearchResult } from '@/lib/types'
 
 // Cabin floor reuses the prefs enum so the parser and engine speak one language.
 import { CABINS, type Cabin } from '@/lib/prefs-model'
+// lib/cpp.ts is pure (types only, no network/DB) — safe to import here without
+// pulling in lib/search.ts's upstream clients, unlike importing POINTS_THRESHOLD_CPP
+// from lib/search directly would.
+import { POINTS_THRESHOLD_CPP } from '@/lib/cpp'
 
 // A persisted watch. `params` is a plain SearchParams (the same contract the
 // search box and /api/search use), so assembleSearch consumes it verbatim — the
@@ -52,7 +56,10 @@ export interface StandingOrderDraft {
 // hop's verdict line. A watch can't ask for less than this — below the
 // POINTS_THRESHOLD it's never a "use points" verdict, so a sub-threshold watch
 // would alert on a verdict hop itself calls pay-cash. We CLAMP up to it.
-export const MIN_CPP_FLOOR = 2.5
+// Sourced from lib/cpp.ts (the same constant lib/search.ts uses for the real
+// verdict) rather than hand-typed, so a re-tune of the line can't silently
+// leave this watch floor pointed at the old value.
+export const MIN_CPP_FLOOR = POINTS_THRESHOLD_CPP
 // A sane ceiling — nobody is waiting for 12 cpp; it would never fire. Clamp so a
 // fat-fingered or model-hallucinated value can't create a dead watch.
 export const MAX_CPP_CEIL = 10

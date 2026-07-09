@@ -1,5 +1,11 @@
 import type { CppTier, FlightOption } from '@/lib/types'
 
+// The "use points" verdict line. The single owner of this number — lib/search.ts
+// re-exports it for existing call sites, and anything else that needs the same
+// threshold (standing-order watches, the concierge) imports it from here, never
+// re-declares it, so a re-tune of the line can't silently fork.
+export const POINTS_THRESHOLD_CPP = 2.5
+
 export function cpp(cashPrice: number, taxes: number, miles: number): number | undefined {
   if (!cashPrice || cashPrice <= 0) return undefined
   if (miles <= 0) return undefined

@@ -164,9 +164,12 @@ function VerdictPill({ verdict, cpp }: { verdict: A2UIEconomics['verdict']; cpp?
 // cash price plainly. Numbers are engine-stamped (econ), never model-authored.
 function SavingsLead({ econ }: { econ: A2UIEconomics }) {
   if (econ.verdict === 'points') {
-    // Cash you skip by flying on points = the cash price (award taxes are
-    // negligible in the dataset, mirroring VerdictRail's saveVsCash framing).
-    const save = Math.round(econ.cashUsd)
+    // Cash you skip by flying on points = cash price minus the taxes/fees the
+    // award still costs — matches lib/search.ts's real saveVsCash
+    // (cheapestCash - pick.taxes). Taxes range up to $120 in the dataset, so
+    // dropping them here would show the same number for "cash price" and
+    // "you save" with no visible reason why.
+    const save = Math.round(econ.cashUsd - econ.taxesUsd)
     return (
       <div className="mt-2.5 flex items-baseline gap-1.5">
         <span className="hop-price text-[30px] leading-[0.95] text-brand">
@@ -220,8 +223,15 @@ function EconFacts({ econ, hasBalances }: { econ?: A2UIEconomics; hasBalances: b
         <Stat label={owns ? 'You pay' : 'Points'} value={points} />
         {econ.cpp != null ? <Stat label="Value" value={`${econ.cpp.toFixed(1)}¢/pt`} /> : null}
         <Stat label="Cash price" value={`$${Math.round(econ.cashUsd).toLocaleString('en-US')}`} />
+        {econ.verdict === 'points' && econ.taxesUsd > 0 ? (
+          <Stat label="Taxes & fees" value={`$${Math.round(econ.taxesUsd).toLocaleString('en-US')}`} />
+        ) : null}
         {econ.verdict === 'points' ? (
-          <Stat label="You save" value={`$${Math.round(econ.cashUsd).toLocaleString('en-US')}`} accent />
+          <Stat
+            label="You save"
+            value={`$${Math.round(econ.cashUsd - econ.taxesUsd).toLocaleString('en-US')}`}
+            accent
+          />
         ) : null}
       </div>
       {/* program path — value framing when signed-out, possession when owned */}
