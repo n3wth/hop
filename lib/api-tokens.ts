@@ -1,12 +1,12 @@
 // Per-user hop API tokens — the linking story for the MCP server ("Add to
-// Claude"). A token maps an opaque bearer string to one Auth0 user (sub) so the
-// MCP tools can load THAT user's real balances via getUserBalances. Tokens are
-// stored HASHED (SHA-256) — the plaintext is shown exactly once at mint time and
-// never persisted, so a leaked row can't be replayed.
+// Claude"). A token maps an opaque bearer string to one Better Auth user.id so
+// the MCP tools can load THAT user's real balances via getUserBalances. Tokens
+// are stored HASHED (SHA-256) — the plaintext is shown exactly once at mint
+// time and never persisted, so a leaked row can't be replayed.
 //
-// Persistence is the service-role Supabase client (server-only), scoped by the
-// Auth0 sub in code — same pattern as the rest of lib/accounts. Every function
-// degrades gracefully and never throws to a route handler.
+// Persistence goes through withDb to Neon (lib/supabase-helpers.ts), scoped by
+// the Better Auth user.id in code — same pattern as the rest of lib/accounts.
+// Every function degrades gracefully and never throws to a route handler.
 
 import { createHash, randomBytes } from 'node:crypto'
 /* eslint-disable @typescript-eslint/no-explicit-any */

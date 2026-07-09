@@ -103,7 +103,8 @@ and never persists to routines.
 ## Owner setup that upgrades the loop (optional, any time)
 
 - Add `LINEAR_API_KEY` + `LINEAR_TEAM_ID` to the Claude Code cloud environment → headless runs
-  get first-class Linear sync (the repo already has the env seam, `lib/env.ts:127`).
+  get first-class Linear sync (the repo already has the env seam,
+  `lib/env.ts#linearApiKey`/`#linearTeamId`).
 - Pause/tune the routines in the claude.ai Routines UI, or ask any session to `update_trigger`.
 
 ## Amendments

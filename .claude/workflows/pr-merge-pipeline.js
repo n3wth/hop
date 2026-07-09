@@ -7,7 +7,7 @@ export const meta = {
     { title: 'Review', detail: '3 parallel reviewers over the PR diff (engine, security, style)' },
     { title: 'Adjudicate', detail: 'only if two lenses disagree about the same file/line — one fresh-evidence pass to resolve it' },
     { title: 'Fix', detail: 'apply P1 fixes on the PR branch, in a dedicated worktree, if any were found' },
-    { title: 'Merge', detail: 'wait for CI, mark ready, squash-merge' },
+    { title: 'Merge', detail: 'wait for CI, mark ready, merge-commit (ADR 0009 — matches repo history, not squash)' },
   ],
 }
 
@@ -165,7 +165,7 @@ phase('Merge')
 // the time they land. Updating the branch and re-waiting on checks immediately before the
 // merge call is the repo-side substitute for that missing platform guarantee.
 const merged = await agent(
-  `Merge hop PR #${PR} once green. cd ${REPO}. Steps: gh pr checks ${PR} --watch (up to 15 min; if no checks configured, verify npm run check passed per PR conversation or run it in a worktree of the head branch). If checks fail, do NOT merge — return the failure verbatim. Then, immediately before merging: gh pr update-branch ${PR} (brings the branch up to date with main; ignore "already up to date" errors), then gh pr checks ${PR} --watch again to confirm the re-run is green (if update-branch changed nothing, this is a fast no-op re-check). Only then: gh pr ready ${PR} (ignore error if already ready), then gh pr merge ${PR} --squash --delete-branch. Return "MERGED <sha>" or the blocking failure.`,
+  `Merge hop PR #${PR} once green. cd ${REPO}. Steps: gh pr checks ${PR} --watch (up to 15 min; if no checks configured, verify npm run check passed per PR conversation or run it in a worktree of the head branch). If checks fail, do NOT merge — return the failure verbatim. Then, immediately before merging: gh pr update-branch ${PR} (brings the branch up to date with main; ignore "already up to date" errors), then gh pr checks ${PR} --watch again to confirm the re-run is green (if update-branch changed nothing, this is a fast no-op re-check). Only then: gh pr ready ${PR} (ignore error if already ready), then gh pr merge ${PR} --merge --delete-branch (merge-commit, per ADR 0009 — matches repo history; NOT --squash). Return "MERGED <sha>" or the blocking failure.`,
   { label: 'merge', phase: 'Merge', model: 'haiku' },
 )
 

@@ -1,10 +1,11 @@
 // Live valuation overrides — per-program cpp aggregates computed by the
 // Cloudflare valuation Worker from hop's own first-party cash-vs-award
-// observations (lib/valuation-telemetry.ts), synced into Supabase so
+// observations (lib/valuation-telemetry.ts), synced into Neon Postgres so
 // lib/valuations-live.ts can merge them over the static lib/valuations.ts
-// baseline. Service-role client, server-only; degrades gracefully via withDb
-// and NEVER throws. Upsert is keyed on program_id, so a resync just replaces
-// the prior snapshot for that program.
+// baseline. Server-only, degrades gracefully via withDb and NEVER throws.
+// Upsert is keyed on program_id, so a resync just replaces the prior snapshot
+// for that program. No RLS — this table is scoped in code, not by a database
+// policy (docs/decisions/0011-platform-stack-rationale.md).
 //
 // SQL (run manually — this code does NOT run DDL):
 //   CREATE TABLE public.hop_valuation_overrides (
@@ -14,8 +15,6 @@
 //     as_of        timestamptz not null,
 //     updated_at   timestamptz default now()
 //   );
-//   ALTER TABLE public.hop_valuation_overrides ENABLE ROW LEVEL SECURITY;
-//   -- service-role bypasses RLS; no anon/auth policy (server-side only).
 
 import { withDb } from '@/lib/supabase-helpers'
 

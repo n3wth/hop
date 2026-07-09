@@ -45,4 +45,5 @@ push. If a finding turns out to be wrong, skip it and say why — do not force a
 `npm run check` passed instead — either from the PR conversation or by running it in a worktree
 of the head branch). If checks fail, **do not merge** — report the failure verbatim and stop.
 Otherwise: `gh pr ready $ARGUMENTS` (ignore an error if it's already ready), then
-`gh pr merge $ARGUMENTS --squash --delete-branch`.
+`gh pr merge $ARGUMENTS --merge --delete-branch` (merge-commit, per ADR 0009 — matches repo
+history; not `--squash`).
