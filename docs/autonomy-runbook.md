@@ -56,12 +56,16 @@
 **Auto-merge: on**  *(kill switch — flip to `off` in one docs commit and every routine stops
 merging on its next run; no trigger changes needed)*
 
-Merge a PR only when ALL hold: CI green (`check` + build on the head commit) · no unresolved
-review threads or unaddressed actionable bot findings · diff entirely within the picked item's
-written scope · **every** changed path outside ADR 0009's hold list (migrations/schema, money +
-identity code, `lib/env.ts` flags/keys, middleware, `vercel.json`, dependency changes, displayed
-prices, `eve/`). A partially-held PR is entirely held. Merge-commit method, delete the branch,
-sync Linear. Doubt → hold with a PR comment saying why; a held PR is a success.
+Merge a PR only when ALL hold: CI green (`check` + build on the head commit) · the wired
+automatic PR-review bot (`charliecreates`/`vercel-agent`) has actually posted, not merely had
+time to — merging within moments of opening the PR or of CI turning green does not satisfy "no
+unresolved review threads," it just means the bot hasn't run yet (docs/autonomy-log.md,
+2026-07-09) · no unresolved review threads or unaddressed actionable bot findings · diff entirely
+within the picked item's written scope · **every** changed path outside ADR 0009's hold list
+(migrations/schema, money + identity code, `lib/env.ts` flags/keys, middleware, `vercel.json`,
+dependency changes, displayed prices, `eve/`). A partially-held PR is entirely held. Merge-commit
+method, delete the branch, sync Linear. Doubt → hold with a PR comment saying why; a held PR is a
+success.
 
 ## Hard guardrails (violating any is a defect, not initiative)
 

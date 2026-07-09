@@ -55,11 +55,16 @@ against this actual repository. This is a genuine operating structure, not a met
 | Strategy | **Marcus** | Sundays | Runs an outside-in market and competitive scan and re-ranks what the rest of the team should work on next. |
 | Project manager | **Priya** | Daily | Read-only: cross-checks Linear against actual PR activity and posts one honest status update — never touches code. |
 | Merge sheriff | *(ops function)* | Hourly | Sweeps every open PR: merges what's green and safe, retries what's red, and escalates anything that needs the founder's own review instead of nagging forever. |
-| Board review | *five adversarial personas* | Periodic | Reads the state of the company and produces consensus risks, contested points, a kill list, and double-downs — then checks, next time, whether its own prior amendments actually got executed. |
+| Board review | *five adversarial personas* | Sundays | Reads the state of the company and produces consensus risks, contested points, a kill list, and double-downs — then checks, next time, whether its own prior amendments actually got executed. |
 
-The self-improvement loop is real, not aspirational: a bug fixed today becomes a
-[`docs/solutions/`](docs/solutions/) entry so the next agent inherits the lesson automatically,
-and each board review is graded in part on whether the last one's amendments actually landed.
+Why this matters more than the novelty: most "AI agent" setups reset every session — the same
+class of bug gets rediscovered, the same PR stalls until a human happens to notice. Here the loop
+closes without one. The merge sheriff runs hourly specifically so a green PR never just sits
+there; the self-improvement loop is real, not aspirational — a bug fixed today becomes a
+[`docs/solutions/`](docs/solutions/) entry so the next agent inherits the lesson automatically
+instead of re-debugging it; and each board review is graded in part on whether the last one's
+amendments actually landed, not just on producing a fresh critique. The volume of shipped work
+compounds session over session instead of resetting.
 
 This doesn't replace judgment where it matters. A human founder still makes every call that
 touches money, identity, or anything irreversible — that's a hard rule for every desk, not a
@@ -231,15 +236,16 @@ flowchart TD
 
 ### Cron jobs
 
-Defined in `vercel.json`, all guarded by `CRON_SECRET`: standing-order sweeps (every 6h), weekly
-SEO revalidation, daily valuation sync, daily Stripe sync, a weekly business digest, and a daily
-health sentinel.
+Ten jobs defined in `vercel.json`, all guarded by `CRON_SECRET`: standing-order sweeps (every 6h),
+AwardWallet balance sync (every 6h), weekly SEO revalidation, daily valuation sync, daily balance
+autosync, daily sweet-spot candidate generation, daily Stripe sync, a weekly newsletter digest, a
+weekly business digest, and a daily health sentinel.
 
 ## Documentation & how we work here
 
 This repo is **agent-native**: every unit of work should make the next one easier (the compound
-engineering loop — Plan → Work → Review → Compound — is detailed in `AGENTS.md` and
-`AGENTS.md`; smaller/less-capable models should read `docs/agent-playbook.md` first).
+engineering loop — Plan → Work → Review → Compound — is detailed in `AGENTS.md`;
+smaller/less-capable models should read `docs/agent-playbook.md` first).
 
 - `AGENTS.md` (imported by `CLAUDE.md` for Claude Code) — the always-loaded operating rules for this repo
 - `docs/README.md` — index of product/design/planning docs
@@ -249,8 +255,7 @@ engineering loop — Plan → Work → Review → Compound — is detailed in `A
 - `.claude/workflows/README.md` — the saved multi-agent review/plan/audit scripts and their
   manual-fallback equivalents in `.claude/commands/`
 - `docs/team/routines.md` — the standing autonomous agent org (canonical over claude.ai config)
-- `docs/board/` — periodic independent business/execution reviews + adopted amendments
-- `docs/strategy/` — the weekly market/competitive review that sets desk priorities
+- `docs/board/` — weekly independent business/execution reviews + adopted amendments
 
 ## Notes for contributors
 

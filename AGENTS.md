@@ -263,7 +263,11 @@ in one round-trip.
   before pushing. Mark roadmap items done only with a commit/PR link; grep for a feature before
   proposing to build it. Byte-compare stray uncommitted files against `origin/main` before
   committing them — they may be stale pre-merge artifacts. Regenerate Drizzle migrations after
-  rebasing; never hand-edit the sequence number.
+  rebasing; never hand-edit the sequence number. When an ADR supersedes a platform/architecture
+  decision, grep `.claude/agents/`, `.claude/commands/`, and `.claude/workflows/` for the old
+  stack's terms and update reviewer instructions in the same PR — stale references send reviewer
+  subagents hunting for files/concepts that no longer exist
+  (`docs/solutions/2026-07-09-stale-claude-agent-instructions-after-platform-migration.md`).
 
 # Design & copy — hold this bar on any UI change
 
