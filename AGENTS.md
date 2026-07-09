@@ -83,7 +83,7 @@ scripts/setup-worktree-auth.sh         # ONLY if you need sign-in (/account, /ad
                                        #   pulls secrets from 1Password "Hop Local Dev",
                                        #   runs db:migrate (needs `op` CLI signed in)
 npm run dev                            # fixtures — no upstream keys needed
-npm run check                          # lint + typecheck + tests — the pre-ship gate
+npm run check                          # migration-sequence check + lint + typecheck + tests — the pre-ship gate
 npx vitest run lib/__tests__/<f>.test.ts   # single test file; -t "name" for one test
 git commit …                           # verify `git branch --show-current` ≠ main first
 git push -u origin <type>/<branch>
@@ -132,7 +132,7 @@ npm run lint           # eslint (next/core-web-vitals + next/typescript), cached
 npm test               # vitest run (one-shot)
 npm run test:watch     # vitest watch
 npm run typecheck      # tsc --noEmit (strict mode)
-npm run check          # lint + typecheck + test — the pre-ship gate (CI runs the same)
+npm run check          # migration-sequence check + lint + typecheck + test — the pre-ship gate (CI runs the same)
 
 # single test file / single test by name (tests live in lib/__tests__/)
 npx vitest run lib/__tests__/cpp.test.ts
@@ -218,7 +218,8 @@ via `npm run db:migrate`. The MCP transport endpoints use Bearer hop tokens, not
 
 hop's engine is exposed as an MCP server ("Add to Claude") via `mcp-handler`. The dynamic
 `[transport]` segment serves both streamable-HTTP (`/api/mcp`) and legacy SSE (`/api/sse`). Tools
-(`price_trip`, `verdict`, `sweet_spots`, `transfer_paths`) call the same `lib/*` engine. Auth is
+(`price_trip`, `verdict`, `sweet_spots`, `transfer_paths`, `compare_programs`,
+`best_card_for_program`) call the same `lib/*` engine. Auth is
 an **optional** Bearer `hop_` token (`lib/api-tokens.ts`): present → resolves to the owner's
 user id and loads their real balances; absent → stateless mode with caller-supplied balances.
 A user's data is only ever reachable via that user's own token.
@@ -234,9 +235,12 @@ for the composer chips are specified in `docs/content-plan.md` §5.
 
 `/` is **auth-aware**: signed-out renders the marketing front door (`components/landing/*`),
 signed-in renders a personalized dashboard (`SignedInHome`). Other surfaces: `/ask` (concierge),
-`/deals`, `/search` (+`/search/loading`), `/book` + `/book/confirmation` (checkout), `/account`
-(program management), `/login`, and legal/support (`/privacy`, `/terms`, `/support`). Server
-components fetch their independent data sources concurrently with `Promise.all` so a page renders
+`/deals`, `/sweet-spots`, `/destinations`, `/points` (value-oriented redemption/inspiration
+surfaces), `/pricing`, `/search` (+`/search/loading`), `/book` + `/book/confirmation` (checkout),
+`/account` (program management), `/admin` (owner-only), `/login`, and legal/support (`/privacy`,
+`/terms`, `/support`) — not an exhaustive list; see README.md's "Key routes" for the curated
+subset and `app/` for the full route tree. Server components fetch their independent data sources
+concurrently with `Promise.all` so a page renders
 in one round-trip.
 
 # Conventions & gotchas
@@ -253,8 +257,13 @@ in one round-trip.
   fabricated balances.
 - **Graceful degradation is the house style** — `lib/*` clients and DB helpers return
   `{ok:false}`/fallbacks instead of throwing, and the UI degrades per-section.
-- **Cron**: `vercel.json` runs `/api/cron/standing-orders` (every 6h), `/api/cron/revalidate-seo`
-  (weekly), and `/api/cron/valuation-sync` (daily); all guarded by `CRON_SECRET`.
+- **Cron**: `vercel.json` runs ten jobs, all guarded by `CRON_SECRET` — `/api/cron/standing-orders`
+  and `/api/cron/awardwallet-sync` (every 6h), `/api/cron/balance-autosync` and
+  `/api/cron/sweet-spot-candidates` (daily), `/api/cron/valuation-sync` and
+  `/api/cron/sync-stripe` (daily), `/api/cron/revalidate-seo` and `/api/cron/newsletter-digest`
+  (weekly), `/api/cron/business-digest` (weekly), and `/api/cron/health-sentinel` (daily). See
+  `vercel.json` for exact schedules — don't restate them here, they drift (see
+  `docs/solutions/2026-07-09-stale-claude-agent-instructions-after-platform-migration.md`).
 - **Ops**: turning any production capability on/off (alerts, valuation sync, self-improve,
   billing, checkout, auth flags) is documented in `docs/ops-runbook.md`; `.env.example`
   enumerates every env var the app reads.

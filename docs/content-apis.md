@@ -183,16 +183,23 @@ The two signature proofs of the approach, in order:
 2. **Computed-number OG cards — next (follow-up PR).** Per-destination and per-program `next/og` cards
    carrying the computed cpp + value tier, in the bunny/value-bar brand language.
 
-**Quick wins (each <1 day, keyless, no new infra):**
-- `lib/fx.ts` → Frankfurter on the existing cron; a "how far your dollar goes" line with the ECB source date.
+**Shipped since this was written:** the "how far your dollar goes" line (Frankfurter/ECB, via
+`lib/place-facts.ts` + `lib/place-info.ts#fxAsOf`, rendered by `components/Essentials.tsx`),
+Wikidata fact chips (currency/language/timezone — same `lib/place-facts.ts` pipeline), and
+Unsplash photo-per-destination with a self-hosted blurhash placeholder (`lib/images.ts` +
+`lib/blurhash.ts`) are all live on `/destinations/[city]` — don't re-propose `lib/fx.ts` or a new
+Wikidata/Unsplash integration; extend the existing ones instead.
+
+**Quick wins still open (each <1 day, keyless, no new infra):**
 - `next/image placeholder="blur"` across destination cards/heroes using a stored blurhash — instant
   perceived-load de-slop *and* a free degradation state.
 - Place + Article(`dateModified`) + FAQPage JSON-LD on `/destinations/[city]` — pure markup, AI-citation payoff.
-- Edge-geo origin default in `middleware.ts` — LHR for a London visitor, not a US default.
+- Edge-geo origin default — LHR for a London visitor, not a US default. There is no `middleware.ts`
+  in this app (`docs/decisions/0011-platform-stack-rationale.md`); do this per-request in the
+  page/route instead (e.g. a header Vercel's edge network sets) rather than reintroducing one.
 - Vendor the Big Mac CSV (CC BY) + CIA Factbook JSON (CC0) to ground country facts with zero runtime dependency.
 
-**Next:** Wikidata fact chips (currency/language/timezone) → Unsplash photo-per-destination (fetch-once,
-self-hosted, computed credit) → Ticketmaster dated-events strip (affiliate-wrapped, short cache).
+**Next:** Ticketmaster dated-events strip (affiliate-wrapped, short cache).
 
 **The architectural shape for all of it** mirrors what hop already does: an **ingest step** writes derived
 values into the destination store; a `lib/*` client returns a discriminated `{ok}` result and never throws;

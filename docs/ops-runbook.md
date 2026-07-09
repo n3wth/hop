@@ -32,6 +32,8 @@ Live state is visible at a glance on `/admin/ops` (owner-only preflight table).
 | Gmail travel-history (`HOP_ENABLE_GMAIL_HISTORY`) | **OFF.** Code + UI are complete but un-provisioned — no `GOOGLE_OAUTH_CLIENT_ID/SECRET` set, and `gmail.readonly` is a Google restricted scope requiring OAuth verification before wide rollout (owner-only testing until then). See the Gmail section below. |
 | `MOCK` | Removed from production env (live upstreams). |
 | GitHub Actions CI | **Disabled** (billing broken — see the CI section below). Required PR check is the Vercel build. |
+| Newsletter digest (`HOP_ENABLE_NEWSLETTER`) | Flag-gated, off by default — needs the flag + `RESEND_API_KEY`; sends real weekly emails to subscribers (`lib/email.ts#sendWeeklyDigestEmail`) once on. Check `/admin/ops` for current state before assuming either way. |
+| Share receipts (`HOP_ENABLE_SHARE_RECEIPTS`) | Flag-gated, off by default. Check `/admin/ops` for current state before assuming either way. |
 | Team view live PRs (`GITHUB_TOKEN`) | **OFF** (unset). `/admin/team` renders fully without it; a read-only PAT ("Pull requests: read") lights up each agent's open-PR list. |
 
 ## Alerts / standing orders
@@ -550,6 +552,7 @@ preserved in the comments).
 | `/api/cron/balance-autosync` | daily | `isCredentialAutosyncLive()` |
 | `/api/cron/sweet-spot-candidates` | daily | `isContentCandidatesEnabled()` |
 | `/api/cron/awardwallet-sync` | every 6h (offset from standing-orders) | `isAwardWalletSyncCronLive()` (`AWARDWALLET_SYNC_CRON_ENABLED`) |
+| `/api/cron/newsletter-digest` | weekly (Mondays) | `isNewsletterEnabled()` (`HOP_ENABLE_NEWSLETTER` + `RESEND_API_KEY`) |
 
 All honor the same `Authorization: Bearer ${CRON_SECRET}` check and record a
 liveness heartbeat (`lib/cron-heartbeat.ts`) even when disabled — "off" is an

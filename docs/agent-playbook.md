@@ -250,7 +250,7 @@ Agent work is priced in tokens and wall-clock; the code's shape sets that price.
 - **Read economically.** Grep for the symbol, read the 40 relevant lines — not the whole
   file. Delegate broad sweeps to a search subagent and keep only the conclusion.
 - **Keep files splittable-small.** The hot files (`components/SearchBar.tsx` ~1100 lines,
-  `app/api/concierge/route.ts` ~830, `components/CheckoutForm.tsx` ~820) cost every agent on
+  `app/api/concierge/route.ts` ~830, `components/checkout/CheckoutForm.tsx` ~836) cost every agent on
   every read and collide in every parallel session. When you touch one, extract the piece you
   touched into its own module if the diff stays reviewable — shrink-as-you-go. Dedicated
   split-refactors happen only as their own scoped issue, never alongside feature work.

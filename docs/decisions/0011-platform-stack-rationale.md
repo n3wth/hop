@@ -41,9 +41,14 @@ The stack, and the reasons each piece won:
   survive across instances. Both `lib/cache.ts` and `lib/rate-limit.ts` degrade to an
   in-memory fallback when unconfigured and never throw, so Upstash is an upgrade, not a
   dependency: local dev and tests need no Redis.
-- **Cloudflare Worker + D1** (valuation aggregation only). The one non-Vercel compute
-  piece, decided in ADR 0005: telemetry ingestion wanted an isolated, always-cheap
-  endpoint with its own storage, deliberately outside the app's blast radius.
+- **Cloudflare Worker + D1** (valuation aggregation). The first non-Vercel compute piece,
+  decided in ADR 0005: telemetry ingestion wanted an isolated, always-cheap endpoint with
+  its own storage, deliberately outside the app's blast radius. Two more Workers
+  (`balance-fetch-worker`, `balance-sync-worker`) were added later for credential-based
+  balance auto-sync (`docs/plans/2026-07-05-credential-sync.md`, documented in
+  `docs/ops-runbook.md` §Credential-based balance sync) — this ADR's stack list is not
+  exhaustive for that category; check `cloudflare/` for the current Worker count rather
+  than treating "one" as still accurate.
 
 The meta-rule that made each swap cheap, and that any future change must keep:
 **every external service sits behind a lazy, gracefully-degrading seam** (`lib/env.ts`

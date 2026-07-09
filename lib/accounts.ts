@@ -4,9 +4,9 @@ import { deriveCode, getBalances } from '@/lib/awardwallet'
 import { canonicalizeProgram, programById } from '@/lib/programs'
 import { withDb } from '@/lib/supabase-helpers'
 
-// Per-user balance sources persisted in Supabase via the service-role client
-// (server-only). Identity is Auth0, so we scope every query by user_id in code.
-// All functions degrade gracefully — never throw to the page.
+// Per-user balance sources persisted via withDb to Neon (lib/supabase-helpers.ts,
+// server-only). Identity is Better Auth's user.id, so we scope every query by
+// user_id in code. All functions degrade gracefully — never throw to the page.
 //
 // Two sources:
 //   - hop_manual_balances: programs the user typed in by hand (PRIMARY path).

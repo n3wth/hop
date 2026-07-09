@@ -1008,7 +1008,7 @@ export function SearchForm({
         >
           {searching ? (
             <>
-              <Icon name="refresh" size={16} className="animate-spin" />
+              <Icon name="refresh" size={16} className="animate-spin motion-reduce:animate-none" />
               Searching...
             </>
           ) : (
@@ -1151,7 +1151,7 @@ export function SearchForm({
         className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-brand text-white transition-colors hover:bg-brand-deep disabled:bg-brand-deep disabled:cursor-not-allowed hop-press"
       >
         {searching ? (
-          <Icon name="refresh" size={20} className="animate-spin" />
+          <Icon name="refresh" size={20} className="animate-spin motion-reduce:animate-none" />
         ) : (
           <Icon name="search" size={20} />
         )}

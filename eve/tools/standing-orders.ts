@@ -27,7 +27,7 @@ export const createWatch = defineTool({
   description:
     'Create a standing order (a watch) from the user\'s plain-English request, e.g. "watch SFO→NRT business above 4cpp departing 2026-03-12". Parses + validates the request (minCpp is floored to hop\'s 2.5 line), then persists it. If no usable route or departure date is found, returns ok:false with a reason — ask the user for the missing piece rather than guessing.',
   inputSchema: z.object({
-    userId: z.string().describe('Auth0 sub of the owner.'),
+    userId: z.string().describe('Better Auth user.id of the owner.'),
     text: z.string().describe("The user's natural-language watch request."),
     homeAirport: z
       .string()
@@ -53,7 +53,7 @@ export const listWatches = defineTool({
   name: 'list_standing_orders',
   description: "List the user's standing orders (watches), newest first.",
   inputSchema: z.object({
-    userId: z.string().describe('Auth0 sub of the owner.'),
+    userId: z.string().describe('Better Auth user.id of the owner.'),
   }),
   async execute({ userId }) {
     return { orders: await listStandingOrders(userId) }
@@ -67,7 +67,7 @@ export const pauseWatch = defineTool({
   description:
     'Pause or resume a standing order the user owns. Pausing keeps the watch but stops the sweep from running (or charging for) it.',
   inputSchema: z.object({
-    userId: z.string().describe('Auth0 sub of the owner.'),
+    userId: z.string().describe('Better Auth user.id of the owner.'),
     id: z.string().describe('The watch id to update.'),
     active: z.boolean().describe('false = pause, true = resume.'),
   }),

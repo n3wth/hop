@@ -1,10 +1,10 @@
 import { withDb } from '@/lib/supabase-helpers'
 import { validatePrefs, type TravelPrefs } from '@/lib/prefs-model'
 
-// User preferences (home airport, travel prefs, …) persisted in Supabase via
-// the service-role client (server-only). Identity is Auth0, so we scope every
-// query by user_id in code. All functions degrade gracefully — never throw to
-// the page.
+// User preferences (home airport, travel prefs, …) persisted via withDb to
+// Neon (lib/supabase-helpers.ts, server-only). Identity is Better Auth's
+// user.id, so we scope every query by user_id in code. All functions degrade
+// gracefully — never throw to the page.
 
 export interface UserPrefs {
   homeAirport?: string
