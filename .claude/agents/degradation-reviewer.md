@@ -28,10 +28,12 @@ degrades per-section** rather than crashing the page.
    `throw`, unguarded `await fetch(...)` / `.json()` without try/catch, and `res.ok` checks that
    are missing. A client must convert failure into `{ok:false, ...}` (or a typed fallback), not
    propagate an exception.
-2. **DB access bypassing withDb.** Grep for direct `createClient`/`.from(` / Supabase calls in
-   `lib/*` and routes that are NOT wrapped in `withDb`. Every read/write through Supabase must go
-   through `withDb` with a sensible fallback (`[]`, `null`, `defaultPrefs`, `{ok:false}`).
-   Check `lib/email.ts`, `lib/standing-order-alerts.ts`, `lib/standing-orders.ts`.
+2. **DB access bypassing withDb.** There is no Supabase client in this codebase — grep for direct
+   `getDb()`/Drizzle queries or raw SQL in `lib/*` and routes that are NOT wrapped in `withDb`.
+   Every read/write must go through `withDb` (the Postgrest-compat shim over Drizzle/Neon,
+   `docs/decisions/0011-platform-stack-rationale.md`) with a sensible fallback (`[]`, `null`,
+   `defaultPrefs`, `{ok:false}`). Check `lib/email.ts`, `lib/standing-order-alerts.ts`,
+   `lib/standing-orders.ts`.
 3. **Routes/server components that can crash.** Read route handlers under `app/api/*` and server
    components. A failed upstream/DB call must degrade a section, not 500 the page. `Promise.all`
    over sources is fine only if each source already self-degrades — flag `Promise.all` over calls
@@ -48,8 +50,8 @@ degrades per-section** rather than crashing the page.
 ## Severity
 
 - **P1**: a `lib/*` client or DB helper can throw to a page/route/agent (unguarded fetch/json,
-  `throw` on the live path, Supabase call outside `withDb` with no try/catch); a cron/agent loop
-  that aborts the whole batch on one item's failure.
+  `throw` on the live path, a direct `getDb()`/Drizzle call outside `withDb` with no try/catch); a
+  cron/agent loop that aborts the whole batch on one item's failure.
 - **P2**: `Promise.all` over rejectable calls; a route that surfaces an upstream failure as a 500
   instead of degrading; missing `degraded[]` propagation so a dead section silently disappears.
 - **P3**: a fallback that's technically safe but loses signal (no `degraded` marker, swallows the

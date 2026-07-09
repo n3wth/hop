@@ -74,7 +74,7 @@ const REVIEWERS = [
     key: 'security-reviewer',
     paths: /^(lib|app|utils|drizzle|scripts)\/|^middleware\.ts$|^\.env/,
     domain:
-      'user_id scoping on every withDb query (service-role bypasses RLS), hop_ tokens hashed not plaintext, lazy env via lib/env.ts, no secrets in logs/responses/client bundles, route/cron authz',
+      'user_id scoping on every withDb query (no RLS safety net — Neon/Drizzle, scoping is enforced entirely in code), hop_ tokens hashed not plaintext, lazy env via lib/env.ts, no secrets in logs/responses/client bundles, route/cron authz',
   },
 ]
 
