@@ -31,11 +31,12 @@ between them.
 | [07-compounding-memory.md](07-compounding-memory.md) | Where lessons go: solutions library, ADRs, rules files, logs. |
 | [08-self-healing.md](08-self-healing.md) | Health detection from existing computations; auto-filed work items; triage-before-building. |
 | [09-porting-guide.md](09-porting-guide.md) | Staged adoption path for a new codebase, including a google3 mapping. |
+| [10-single-source-of-truth.md](10-single-source-of-truth.md) | Facts get restated instead of pointed-to and fork silently; how to tell the difference and catch it when a decision supersedes one. |
 | [starters/](starters/README.md) | Drop-in kits implementing the library: `nextjs-vercel/`, `fastapi-postgres/`, and an illustrative `google3/`. |
 
 ## Provenance
 
 hop is the reference implementation. Decisions: `docs/decisions/` (0002, 0004, 0006, 0007,
-0008, 0009). Operating procedure: `docs/autonomy-runbook.md`. Executable orchestration:
+0008, 0009, 0010, 0011). Operating procedure: `docs/autonomy-runbook.md`. Executable orchestration:
 `.claude/workflows/`. Where these docs and an ADR disagree, the ADR wins for hop; these docs
 are the generalization.

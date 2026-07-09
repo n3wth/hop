@@ -172,13 +172,14 @@ fallback for harnesses without the Workflow tool).
   it never crashes a page.
 - **Flag-gated seams.** Unfinished or costly capability ships **dark** behind `HOP_ENABLE_*`
   (checked lazily via `lib/env.ts` — never `process.env` directly) and no-ops byte-for-byte
-  when off. Migrations are authored `IF NOT EXISTS`, typed in `utils/supabase/admin.ts` AND
-  `lib/db/schema.ts`, and never executed by app code. After a rebase that picks up new
-  migrations, regenerate with `npm run db:generate` — never hand-edit a migration's sequence
-  number (`docs/solutions/2026-07-05-parallel-migration-numbering.md`).
-- **Your data, your token.** Every DB query filters by the signed-in user's id in code.
-  Service-role access bypasses row-level security, so the `user_id` scoping in code IS the
-  security boundary. Confirm/dismiss/delete re-scope to the caller's own row.
+  when off. Migrations are Drizzle-only: authored `IF NOT EXISTS` in `lib/db/schema.ts`, never
+  executed by app code. After a rebase that picks up new migrations, regenerate with
+  `npm run db:generate` — never hand-edit a migration's sequence number
+  (`docs/solutions/2026-07-05-parallel-migration-numbering.md`).
+- **Your data, your token.** Every DB query filters by the signed-in user's id in code — Neon
+  via Drizzle has no RLS to fall back on, so the `user_id` scoping in `withDb` IS the entire
+  security boundary (`docs/decisions/0011-platform-stack-rationale.md`). Confirm/dismiss/delete
+  re-scope to the caller's own row.
 - **Money is human-gated.** Nothing books, charges, or spends without an explicit user
   action; payments never touch the live Duffel key.
 
