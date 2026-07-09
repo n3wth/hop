@@ -40,9 +40,10 @@ AI_GATEWAY_MODEL=<model id>
 
 ### Leave unset in an iteration container
 
-- **Identity + persistence** (`AUTH0_*`, `APP_BASE_URL`, `DATABASE_URL`, `NEXT_PUBLIC_SUPABASE_*`,
-  `SUPABASE_SERVICE_ROLE_KEY`) — OAuth callbacks can't complete against an ephemeral container,
-  and `withDb` returns fallbacks without a DB. Signed-out surfaces render the real front door.
+- **Identity + persistence** (`DATABASE_URL`/`DATABASE_URL_UNPOOLED`, `BETTER_AUTH_SECRET`,
+  `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`) — OAuth callbacks can't complete
+  against an ephemeral container, and `withDb` returns fallbacks without a DB. Signed-out
+  surfaces render the real front door.
 - **Upstream engine sources** (`DUFFEL_API_KEY_LIVE`, `SEATS_AERO_API_KEY`, `AWARDWALLET_*`) —
   burns quota to see what `MOCK=1` already shows; absent keys exercise the `degraded[]` path,
   which is a feature to look at, not a bug to hide.

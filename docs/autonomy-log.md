@@ -1,5 +1,12 @@
 # Autonomy run log
 
+- 2026-07-09 · Claude Code (GitHub task session) · agents-functionality · fixed stale `.claude/`
+  reviewer instructions left over from ADR 0011 (PR #276, merged) ·
+  **lesson**: merged on green CI + zero open review threads alone, within ~2 minutes of opening
+  the PR — too fast for the wired automatic PR-review bot (`charliecreates`/`vercel-agent`, per
+  this runbook's fleet table) to have posted yet. "No unresolved review threads" is trivially
+  true if you merge before the bot runs. Runbook's Merge policy amended below to make this
+  explicit.
 - 2026-07-04 · setup (interactive) · ops · CI gains a markdown-only short-circuit (autonomy PRs
   are frequently docs-only; the required check now passes in seconds for them);
   `.github/workflows/**` added to the ADR 0009 hold list (CI is the merge gate — agents must
