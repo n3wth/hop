@@ -77,3 +77,11 @@ treat "no independent claims that could go stale alone" as a review norm (a CL t
 another system's internals instead of linking its g3doc gets a review comment), and require a
 migration CL's author to grep the old system's name across the wiki/g3doc tree in the same CL —
 the same discipline this repo's `AGENTS.md` now requires for `.claude/` on every superseding ADR.
+
+_Benchmarked against external practice on 2026-07-09._
+
+## Automated detection for code-citing facts
+
+The grep-after-a-migration step in **Fix** is manual and only runs when someone remembers to run it. For the subset of restatements that cite a specific file, function, or line range — exactly the kind the ADR 0011 case study hit ("migrations are typed in `utils/supabase/admin.ts`") — that class of fact can be machine-verified instead of grepped for: [VeriContext](https://github.com/amsminn/vericontext) embeds a SHA-256 hash of the cited code into an invisible HTML-comment token next to the claim, and a `verify workspace` step (pre-commit hook or CI) fails closed the moment the cited file, range, or hash no longer matches — no fuzzy matching, one stale citation fails the whole check. It ships an MCP server so an agent can auto-insert the citation the moment it references code, and a CLI (`npx vericontext verify workspace`) for CI.
+
+This doesn't replace the pointer discipline above — free-standing prose claims ("identity is the Better Auth `user.id`") have no file/line to hash, so they still rely on the one-clause-pointer convention and the grep step. But for facts of the form "X lives in file Y" or "see function Z," a hash-verified citation turns "hope the next grep catches it" into a commit-time gate. If hop adopts this, the natural fit is the reviewer prompts and `docs/cloud-env.md` — the two doc classes in the case study that named specific files/vars — not the ADRs themselves, which are historical and allowed to go stale per this doc's own exception.
