@@ -222,7 +222,7 @@ export default async function PointsBandPage({
                     <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] text-text3">
                       <span>
                         <b className="font-semibold text-text2">{compactMiles(d.typicalAwardMiles)}</b>{' '}
-                        miles one-way
+                        miles one-way{d.cabin ? ` · ${d.cabin}` : ''}
                       </span>
                       <span>
                         vs <b className="font-semibold text-text2">{money(d.typicalCashUSD)}</b> cash

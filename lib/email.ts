@@ -127,7 +127,7 @@ export function renderAlertEmail(alert: StandingOrderAlert): {
     `<p style="margin:0 0 8px;font-size:17px;font-weight:600">${escapeHtml(subject)}</p>`,
     `<p style="margin:0;color:#555">${detail}</p>`,
     cta,
-    `<p style="margin:24px 0 0;color:#888;font-size:13px">You set this watch on hop. Manage it at hop.flights/account.</p>`,
+    `<p style="margin:24px 0 0;color:#767676;font-size:13px">You set this watch on hop. Manage it at hop.flights/account.</p>`,
     `</div>`,
   ].join('')
 
@@ -151,7 +151,7 @@ export function renderVerificationEmail(url: string): { subject: string; text: s
     `<p style="margin:0 0 8px;font-size:17px;font-weight:600">Verify your hop email</p>`,
     `<p style="margin:0 0 16px;color:#555">Confirm this email to finish setting up hop.</p>`,
     `<p style="margin:0"><a href="${escapeAttr(url)}" style="color:#0f6f6a;font-weight:600;text-decoration:underline">Verify email</a></p>`,
-    `<p style="margin:24px 0 0;color:#888;font-size:13px">If you didn’t request this, ignore it.</p>`,
+    `<p style="margin:24px 0 0;color:#767676;font-size:13px">If you didn’t request this, ignore it.</p>`,
     `</div>`,
   ].join('')
   return { subject, text, html }
@@ -171,7 +171,7 @@ export function renderResetPasswordEmail(url: string): { subject: string; text: 
     `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1a1a1a;font-size:15px;line-height:1.5;max-width:480px">`,
     `<p style="margin:0 0 8px;font-size:17px;font-weight:600">Reset your password</p>`,
     `<p style="margin:0"><a href="${escapeAttr(url)}" style="color:#0f6f6a;font-weight:600;text-decoration:underline">Reset password</a></p>`,
-    `<p style="margin:24px 0 0;color:#888;font-size:13px">This link expires in 1 hour. If you didn’t request this, ignore it.</p>`,
+    `<p style="margin:24px 0 0;color:#767676;font-size:13px">This link expires in 1 hour. If you didn’t request this, ignore it.</p>`,
     `</div>`,
   ].join('')
   return { subject, text, html }
@@ -198,7 +198,7 @@ export function renderNewsletterConfirmationEmail(url: string): {
     `<p style="margin:0 0 8px;font-size:17px;font-weight:600">Confirm your hop newsletter signup</p>`,
     `<p style="margin:0 0 16px;color:#555">One click to start getting your wallet’s best redemption, weekly.</p>`,
     `<p style="margin:0"><a href="${escapeAttr(url)}" style="color:#0f6f6a;font-weight:600;text-decoration:underline">Confirm</a></p>`,
-    `<p style="margin:24px 0 0;color:#888;font-size:13px">If you didn’t request this, ignore it — nothing sends until you confirm.</p>`,
+    `<p style="margin:24px 0 0;color:#767676;font-size:13px">If you didn’t request this, ignore it — nothing sends until you confirm.</p>`,
     `</div>`,
   ].join('')
   return { subject, text, html }
@@ -247,7 +247,7 @@ export function renderWeeklyDigestEmail(
   const text = textLines.join('\n')
 
   const pathLine = !dream.saveToward
-    ? `<p style="margin:8px 0 0;color:#888;font-size:13px">${escapeHtml(dream.proof.path)}</p>`
+    ? `<p style="margin:8px 0 0;color:#767676;font-size:13px">${escapeHtml(dream.proof.path)}</p>`
     : ''
   const html = [
     `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1a1a1a;font-size:15px;line-height:1.5;max-width:480px">`,
@@ -255,7 +255,7 @@ export function renderWeeklyDigestEmail(
     `<p style="margin:0;color:#555">${escapeHtml(detail)}</p>`,
     pathLine,
     `<p style="margin:16px 0 0"><a href="${escapeAttr(`${SITE_URL}/ask`)}" style="color:#0f6f6a;font-weight:600;text-decoration:underline">See more</a></p>`,
-    `<p style="margin:24px 0 0;color:#888;font-size:13px">You get this because you subscribed on hop. <a href="${escapeAttr(unsubscribeUrl)}" style="color:#888">Unsubscribe</a>.</p>`,
+    `<p style="margin:24px 0 0;color:#767676;font-size:13px">You get this because you subscribed on hop. <a href="${escapeAttr(unsubscribeUrl)}" style="color:#767676">Unsubscribe</a>.</p>`,
     `</div>`,
   ].join('')
 
