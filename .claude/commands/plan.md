@@ -34,9 +34,11 @@ Read the actual code and docs that this work touches. At minimum:
   `lib/email.ts#sendAlertEmail`, `lib/standing-orders.ts#markAlertDelivered`, `lib/subscription.ts`,
   `lib/travel-history.ts`, `lib/mcp-tools.ts`. List the exact functions you will call.
 - **Existing plans for prior art.** `docs/plans/2026-06-30-eve-agent.md` (the Eve design,
-  5 workflows + 12 blockers), `docs/plans/auth-db-migration.md` (planned Neon+Drizzle migration —
-  remember runtime is **still Supabase**), `docs/plans/2026-06-29-expansion-roadmap.md`.
-  Reuse their decisions; do not contradict them silently.
+  5 workflows + 12 blockers), `docs/decisions/0011-platform-stack-rationale.md` (the completed
+  Neon+Drizzle+Better Auth stack — `docs/plans/auth-db-migration.md` is the historical plan for
+  that migration, now executed; the runtime is Neon/Drizzle, not Supabase),
+  `docs/plans/2026-06-29-expansion-roadmap.md`. Reuse their decisions; do not contradict them
+  silently.
 - **Solved problems.** Skim `docs/solutions/*` — if this problem was solved before, cite it and
   reuse the fix instead of re-deriving it.
 - **Framework ground truth.** If the work is framework-level (route handlers, `middleware`/proxy,
@@ -58,8 +60,8 @@ Pick a date-prefixed slug and write the plan to
    non-goals (what this deliberately does *not* do).
 3. **Files to touch.** A table: `path` · `change` · `new?`. Be specific — exact files, not "the
    search code." Separate `lib/*` (engine/logic) from `app/*`/`components/*` (surface) from
-   `eve/*` (agent) from migrations (`drizzle/*.sql` + `utils/supabase/admin.ts` types +
-   `lib/db/schema.ts`).
+   `eve/*` (agent) from migrations (`drizzle/*.sql` + `lib/db/schema.ts`, regenerated with
+   `npm run db:generate`).
 4. **Engine hooks.** The exact `lib/*` functions this calls and what each returns. Reassert the
    moat: **every economic number (cpp, miles, tier, ranking, verdict, $ saved) is computed by
    `lib/*` and only narrated by an LLM — never invented.** If an LLM is in the loop, say where the
@@ -69,8 +71,8 @@ Pick a date-prefixed slug and write the plan to
    when off**. New env keys go through `lib/env.ts` (lazy accessors), never `process.env` directly.
 6. **Degradation plan.** How each new `lib/*` client / DB call returns `{ok:false}`/a fallback via
    `lib/supabase-helpers.ts#withDb` instead of throwing, and how the surface degrades per-section
-   (`degraded[]`, `DegradedNote`). Persistence is **user_id-scoped in code** (service-role bypasses
-   RLS) — note the scoping for every new query.
+   (`degraded[]`, `DegradedNote`). Persistence is **user_id-scoped in code** (Neon/Drizzle, no RLS
+   safety net) — note the scoping for every new query.
 7. **Test plan.** The vitest cases to add (`lib/**/*.test.ts` or `app/**/*.test.ts`, node env) and
    the exact commands (`npx vitest run <file>`, `npm run typecheck`, `npm run build`). Name the edge
    cases: degraded sources, empty balances, idempotent re-fire, threshold boundaries (cpp exactly
