@@ -59,3 +59,38 @@ analytics. MRR-gate status references `docs/plans/2026-07-05-agentic-travel-agen
 - **This run's action**: shipped 5 of the 8 planned program-guide pages (N-316), the top SEO
   lever per the business plan's §6 GTM sequencing — an owned-channel asset, so it ships directly
   via PR rather than through `docs/marketing/drafts/` (see Linear N-352 for detail).
+
+---
+
+## 2026-07-10
+
+- **Traffic (7d)**: 95 visitors, 125 sessions, 568 pageviews, 22.4% bounce rate, ~5.7 min avg
+  session — visitors up again vs both prior reads (48 on 7/6 → 61 on 7/8 → 95 today, +56% over
+  the last read); bounce rate keeps improving (47% → 28.4% → 22.4%).
+- **Funnel (7d, 7/3–7/10)**: `search_ran` 20, `verdict_viewed` 19 — still resolving essentially
+  every search into a verdict. `signed_up` **0**, `first_program_added` **0** — three consecutive
+  reads all-zero, now against nearly double the traffic of the first read. **`outclick` fired
+  once**, on 7/8 — the first non-zero read on any of the three "did anyone act" events since
+  instrumentation shipped (2026-07-05). One event is not a trend, but it's the first evidence the
+  cash-CTA path works end to end for a real visitor.
+- **What's stuck**: `signed_up`/`first_program_added` are still zero after 3 reads and ~7 days of
+  rising traffic — worth treating as a real signal now, not sampling noise. Checked the verdict
+  page's CTA logic (`components/VerdictRail.tsx`): the primary CTA already reads "Sign in to see
+  if your [miles] win" for a points-favorable, signed-out verdict, and "Book cash" (no sign-in
+  ask at all) for a cash-favorable verdict — so the sign-up prompt only ever appears on a subset
+  of searches. Didn't change this without knowing the cash-vs-points split of the 20 searches;
+  flagging as a hypothesis for next run rather than guessing at a fix blind.
+- **MRR-gate status — Wk1 ("payment path proven, one real stranger pays")**: **not met, still
+  structurally unreachable.** Checked N-320 (seats.aero written commercial terms, owner-only) —
+  still Backlog, unstarted. N-321 (flip `HOP_ENABLE_BILLING`) is sequenced behind it and also
+  unstarted. No code change this run affects this gate — still blocked on the owner action, not
+  build work. This is now the third consecutive read with the same status.
+- **This run's action**: shipped the public `/mcp` page (R2.1's first slice, N-313) — "hop for
+  AI agents," the MCP server's front door (previously reachable only after sign-in, inside
+  `/account`'s token panel). Lists all 6 tools, a copy-paste quickstart for Claude
+  Desktop/Code/Cursor/ChatGPT, and the free/Pro quota split (25 vs 1,000 calls/day), wired into
+  the footer + sitemap mesh. Chose this over pushing further on N-316 (program guides): the data
+  model only supports 5 real transfer-partner guides today (Amex/Chase/Citi/Cap One/Bilt — all
+  already shipped), so hitting "eight" would mean inventing a new guide type for direct-earn
+  airline programs; the MCP page is explicit GTM lever #4 in the business plan §6 and was fully
+  unbuilt as a public surface. PR: see this run's Linear update (N-352) for the link.
