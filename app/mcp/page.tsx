@@ -142,8 +142,10 @@ export default function McpLandingPage() {
           </div>
 
           <p className="mt-4 text-center text-[13px] text-text3">
-            Free tier: <b className="font-semibold text-text2">{MCP_DAILY_LIMITS.free}</b> calls/day
-            with no token. Signed-in Pro: <b className="font-semibold text-text2">{MCP_DAILY_LIMITS.premium.toLocaleString('en-US')}</b>/day.
+            No token: rate-limited per IP to stop abuse, no daily cap tracked. Link a hop token
+            for a durable quota — Free{' '}
+            <b className="font-semibold text-text2">{MCP_DAILY_LIMITS.free}</b> calls/day, Pro{' '}
+            <b className="font-semibold text-text2">{MCP_DAILY_LIMITS.premium.toLocaleString('en-US')}</b>/day.
           </p>
         </section>
 
