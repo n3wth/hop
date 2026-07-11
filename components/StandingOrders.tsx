@@ -335,7 +335,12 @@ function AlertsList({ alerts, unseen }: { alerts: StandingOrderAlert[]; unseen: 
 
 function AlertRow({ alert, first }: { alert: StandingOrderAlert; first: boolean }) {
   const cppText = Number.isFinite(alert.cpp) ? alert.cpp.toFixed(1) : '—'
-  const when = alert.createdAt ? relativeTime(alert.createdAt) : ''
+  // Relative labels depend on Date.now(), which differs between the SSR render and
+  // hydration — so we hold off until mounted (see useClientNow), keeping `when`
+  // empty on the server and first client paint to avoid React #418, then fill it
+  // in and refresh it on a timer.
+  const now = useClientNow()
+  const when = now != null && alert.createdAt ? relativeTime(alert.createdAt, now) : ''
   const program = alert.pick.program || alert.pick.airline || 'redemption'
   return (
     <li
@@ -371,10 +376,24 @@ function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
-function relativeTime(iso: string): string {
+// Client-only clock: null on the server and the first client render (so callers
+// render nothing time-relative during SSR/hydration), then the real time once
+// mounted, refreshed every minute so labels like "5m ago" stay current.
+function useClientNow(intervalMs = 60_000): number | null {
+  const [now, setNow] = useState<number | null>(null)
+  useEffect(() => {
+    const tick = () => setNow(Date.now())
+    tick()
+    const id = window.setInterval(tick, intervalMs)
+    return () => window.clearInterval(id)
+  }, [intervalMs])
+  return now
+}
+
+function relativeTime(iso: string, now: number): string {
   const then = new Date(iso).getTime()
   if (!Number.isFinite(then)) return ''
-  const diff = Date.now() - then
+  const diff = now - then
   const mins = Math.round(diff / 60000)
   if (mins < 1) return 'just now'
   if (mins < 60) return `${mins}m ago`

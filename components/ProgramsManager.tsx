@@ -94,6 +94,9 @@ function formatSyncedAt(iso: string): string {
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    // Pin UTC so SSR (server tz) and hydration (browser tz) render the same
+    // string — a floating tz here trips React #418 on /account.
+    timeZone: 'UTC',
   })
 }
 

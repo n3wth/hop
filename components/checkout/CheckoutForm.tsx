@@ -181,7 +181,9 @@ export default function CheckoutForm({
     if (!activeOffer.expiresAt || expired) return null
     const d = new Date(activeOffer.expiresAt)
     if (isNaN(d.getTime())) return null
-    return `Price held until ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+    // Pin UTC like timeOf/dateOf above — a bare toLocaleTimeString formats in the
+    // server tz on SSR and the browser tz on hydration, which trips React #418.
+    return `Price held until ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })}`
   })()
 
   // Watch the held price: when it lapses, surface the expiry state. Re-checks on
