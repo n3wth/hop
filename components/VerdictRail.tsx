@@ -131,6 +131,22 @@ export default function VerdictRail({
         ? addProgramsHref
         : signInHref
 
+  // Account nudge on the PAY-CASH path. The points path already asks unfinished
+  // visitors to act in its PRIMARY CTA ("Sign in to see if your miles win" /
+  // "Add your programs"), but a pay-cash verdict's primary CTA is just "Book
+  // cash" with no account ask at all — and pay-cash is the large majority of
+  // verdicts, so the sign-up prompt is effectively hidden from most searches.
+  // Surface it as a SECONDARY CTA beside "Book cash" so the honest cash action
+  // still leads. The framing is deliberately NOT "your miles might win here"
+  // (they don't — the cpp is under the bar regardless of balance); it's the
+  // ongoing product value: sign in to track real balances across every search,
+  // or, if already signed in without programs, add them. A fully-onboarded user
+  // (real balances) gets nothing — there's nothing to add and this verdict
+  // wouldn't change.
+  const showAccountNudge = !usingPoints && (!isSignedIn || !hasRealBalances)
+  const accountNudgeHref = isSignedIn ? addProgramsHref : signInHref
+  const accountNudgeLabel = isSignedIn ? 'Add your programs' : 'Track your miles'
+
   // M6 — first ACTION: turn this trip into a calendar event in one tap (Google
   // Calendar template, all-day, no OAuth). Carries route + dates + city + cabin
   // ONLY — never the engine's live cpp/miles/price (those would go stale). null
@@ -292,6 +308,19 @@ export default function VerdictRail({
                   ? 'Add your programs'
                   : `Sign in to see if your ${unit} win`}
           </a>
+          {/* Account nudge — pay-cash path only (the points path's primary CTA
+              already carries the ask). Secondary treatment so "Book cash" still
+              leads. Carries the same returnTo, so a signed-out visitor lands
+              back on this exact search after auth. */}
+          {showAccountNudge ? (
+            <a
+              href={accountNudgeHref}
+              className="inline-flex items-center justify-center gap-[8px] rounded-[14px] border-[1.5px] border-white/25 px-7 py-4 text-[15px] font-semibold text-white transition-colors hover:border-white/50"
+            >
+              <Icon name="wallet" size={16} />
+              {accountNudgeLabel}
+            </a>
+          ) : null}
           {/* Add to calendar — the first hop ACTION. Route + dates only; no economics. */}
           {calUrl ? (
             <a
