@@ -10,10 +10,16 @@ analytics. MRR-gate status references `docs/plans/2026-07-05-agentic-travel-agen
 PostHog project (id 223560) is shared across six hostnames (`hop.flights`, `n3wth.com`,
 `skills.n3wth.com`, `garden.n3wth.com`, `r3.n3wth.com`, `ui.n3wth.com`). An unfiltered
 `query-web-overview`/web-analytics pull mixes all six and overstates hop's visitors/sessions by
-~5x (the other sites contribute many low-engagement uniques). The five funnel events above
-already carry `$host = hop.flights`, so only the traffic pull needs the explicit filter — apply
-`{"key":"$host","value":"hop.flights","operator":"exact","type":"event"}` to it. Reads before
-2026-07-12 were unfiltered; see the per-entry corrections below.
+~5x (the other sites contribute many low-engagement uniques). This applies to the shared
+`$pageview`-based traffic pull — apply
+`{"key":"$host","value":"hop.flights","operator":"exact","type":"event"}` to it. The funnel
+events above don't need it: they are hop-specific event names emitted only by hop's own code, so
+the other five sites never produce them regardless of host. (Note the server-side ones —
+`signed_up`, `first_program_added`, and the server `outclick` shadow — go through
+`captureServerEvent` and carry **no** `$host` at all; only the browser events
+`search_ran`/`verdict_viewed`/`outclick` do. Don't filter funnel events by `$host` — you'd drop
+the server-side rows.) Reads before 2026-07-12 were unfiltered; see the 2026-07-12 correction
+entry at the end.
 
 ---
 
@@ -21,10 +27,6 @@ already carry `$host = hop.flights`, so only the traffic pull needs the explicit
 
 - **Traffic (7d)**: 48 visitors, 68 sessions, 426 pageviews, 47% bounce rate, ~8.8 min avg
   session — real, if small, traffic is reaching the site.
-  - **Correction (2026-07-12)**: these figures were unfiltered (all six shared hostnames), not
-    hop.flights. Re-queried for hop.flights only over the same 7-day window: **~17 visitors, 41
-    sessions** (426 pageviews was already ~all hop). The visitor/session counts above overstate
-    hop by ~3x; the real read is smaller and more engaged (~15 min avg session).
 - **Funnel (7d)**: `search_ran` 15, `verdict_viewed` 15 (8 on 7/4, 7 on 7/5, 0 on 7/6 so far) —
   every search that ran produced a verdict, a good sign the engine resolves reliably. `signed_up`
   **0**, `first_program_added` **0**, `outclick` **0** across all 7 days.
@@ -51,10 +53,6 @@ already carry `$host = hop.flights`, so only the traffic pull needs the explicit
 
 - **Traffic (7d)**: 61 visitors, 88 sessions, 493 pageviews, 28.4% bounce rate, ~7.5 min avg
   session — visitors up ~27% vs the 7/6 read (48→61); bounce rate improved (47%→28.4%).
-  - **Correction (2026-07-12)**: unfiltered (all six shared hostnames). Re-queried for
-    hop.flights only over the same 7-day window (7/1–7/8): **~21 visitors, 49 sessions**. The
-    "up ~27% vs 7/6" claim is an artifact of the unfiltered mix — hop.flights was roughly flat
-    (~17→~21 visitors). Do not read a rising trend into these two reads.
 - **Funnel (7d, 7/1–7/8)**: `search_ran` 18 (8 on 7/4, 7 on 7/5, 2 on 7/6, 1 on 7/7, 0 so far
   7/8), `verdict_viewed` 17 — the engine is still resolving essentially every search into a
   verdict. `signed_up` **0**, `first_program_added` **0**, `outclick` **0** — same all-zero
@@ -84,13 +82,6 @@ already carry `$host = hop.flights`, so only the traffic pull needs the explicit
 - **Traffic (7d)**: 95 visitors, 125 sessions, 568 pageviews, 22.4% bounce rate, ~5.7 min avg
   session — visitors up again vs both prior reads (48 on 7/6 → 61 on 7/8 → 95 today, +56% over
   the last read); bounce rate keeps improving (47% → 28.4% → 22.4%).
-  - **Correction (2026-07-12)**: unfiltered (all six shared hostnames). Re-queried for
-    hop.flights only over the same 7-day window (7/3–7/10): **~24 visitors, 54 sessions** — vs
-    ~113 unfiltered visitors for the same window, i.e. hop is only ~1 in 5. The "48→61→95 rising"
-    trend across the three reads is **fake**: filtered to hop.flights it is flat at ~17→21→24
-    visitors. Growth/strategy calls should use the filtered figures. The funnel events
-    (`search_ran`, `verdict_viewed`, `outclick`, etc.) are unaffected — they already carry
-    `$host = hop.flights`, so the zero-signup pattern and conversion counts stand.
 - **Funnel (7d, 7/3–7/10)**: `search_ran` 20, `verdict_viewed` 19 — still resolving essentially
   every search into a verdict. `signed_up` **0**, `first_program_added` **0** — three consecutive
   reads all-zero, now against nearly double the traffic of the first read. **`outclick` fired
@@ -118,3 +109,36 @@ already carry `$host = hop.flights`, so only the traffic pull needs the explicit
   already shipped), so hitting "eight" would mean inventing a new guide type for direct-earn
   airline programs; the MCP page is explicit GTM lever #4 in the business plan §6 and was fully
   unbuilt as a public surface. PR: see this run's Linear update (N-352) for the link.
+
+---
+
+## 2026-07-12 — correction (traffic reads were unfiltered)
+
+Not a run — an append-only correction. The 7/6, 7/8, and 7/10 **Traffic** lines above were
+pulled from the shared `n3wth` PostHog project **without a `$host` filter**, so they summed all
+six hostnames instead of hop.flights alone (root cause of the leak: this log's header sourced
+traffic "via PostHog's web analytics" with no `$host` clause). The reported **48 → 61 → 95
+"rising" visitor trend is an artifact of the unfiltered mix** — the other sites (chiefly
+`garden.n3wth.com`) add many low-engagement uniques. The originals are left as-logged above;
+corrected hop.flights-only figures below.
+
+Re-queried 2026-07-12 via `query-web-overview` with
+`properties: [{"key":"$host","value":"hop.flights","operator":"exact","type":"event"}]`, same
+7-day windows as each entry (visitor/session counts drift slightly from the originals because the
+exact query hour can't be reproduced; the shape is what matters):
+
+| Entry (7d window) | Logged (unfiltered) | hop.flights only | Unfiltered total, same window |
+| :--- | :--- | :--- | :--- |
+| 7/6 (6/30–7/6) | 48 visitors, 68 sessions | **~17 visitors, 41 sessions** | — |
+| 7/8 (7/1–7/8) | 61 visitors, 88 sessions | **~21 visitors, 49 sessions** | — |
+| 7/10 (7/3–7/10) | 95 visitors, 125 sessions | **~24 visitors, 54 sessions** | ~113 visitors (hop ≈ 1 in 5) |
+
+**hop.flights traffic is flat at ~17 → 21 → 24 visitors, not rising.** Pageviews were already
+near-accurate (hop has fewer but far more engaged visitors — ~13–15 min sessions vs the blended
+~5–9 min above); the distortion is in the visitor/session counts. Growth/strategy calls should
+use the filtered figures.
+
+The **funnel counts and the zero-signup pattern in every entry stand** — `search_ran`,
+`verdict_viewed`, `signed_up`, `first_program_added`, and `outclick` are hop-specific event names
+emitted only by hop's own code (`lib/*`), so the other five sites can't contribute to them
+regardless of host. This correction touches only the traffic reads.
