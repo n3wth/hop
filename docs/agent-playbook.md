@@ -348,13 +348,19 @@ R2.1 (public `/mcp` page + connector registry submissions) still has no code any
 
 ## 10. Open threads
 
-**Priority ranking pointer:** the strategy desk (Marcus) still has **not** published a
-`docs/strategy/<date>-weekly-strategy.md` — `docs/strategy/` doesn't exist in the tree yet. His
-first scheduled run is Sunday 15:00 UTC (`0 15 * * 0`), which hasn't fired as of this retro
-(2026-07-06, a Monday). Per this retro's instructions, the numbered list below is re-derived from
-the board amendments / business plan as the fallback, exactly as it was last retro — check for
-`docs/strategy/` again next week before working top-down here, since Marcus's first file, once it
-lands, becomes the priority order and this list stops being maintained.
+**Priority ranking pointer (updated 2026-07-12):** the strategy desk (Marcus) has now run once —
+`docs/strategy/2026-07-12-weekly-strategy.md` is the current priority order, adopted from the
+2026-07-12 board memo's ranked list (§7) plus that run's own new evidence (a PostHog analytics
+host-filter bug inflating traffic ~5x, `search_ran` going to zero for four straight days, and two
+live competitors — seats.aero's own AI Assistant and Award Travel Finder's MCP endpoint —
+already executing hop's MCP-agent-native wedge). His ranked top 5 for this week: (1) fix the
+PostHog `$host` filter bug [N-371], (2) ship the VerdictRail CTA fix from the 7/10 funnel-log
+hypothesis [N-372], (3) resolve `/pricing`'s stalled state (N-319), (4) submit `/mcp` to 2-3
+directories and treat the seats.aero fallback prototype (N-320) as a tied-priority pair with it,
+(5) explicitly deprioritize further content-pipeline expansion until the staleness guard exists.
+The numbered list below is the prior (2026-07-05 board-derived) ranking — kept for history; work
+from Marcus's latest file going forward, per the ownership rule in "The goal" above. Check for a
+newer `docs/strategy/<date>-weekly-strategy.md` each week before treating this list as current.
 
 **ADOPTED BOARD AMENDMENTS 2026-07-05 (override prior ordering):** the first board review
 (`docs/board/2026-07-05-board-memo.md`) found billing live ahead of its own plan gates, GTM
