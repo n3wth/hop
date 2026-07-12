@@ -94,14 +94,36 @@ function formatSyncedAt(iso: string): string {
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    // Pin UTC so SSR (server tz) and hydration (browser tz) render the same
+    // string — a floating tz here trips React #418 on /account.
+    timeZone: 'UTC',
   })
 }
 
-// A helper function boundary (not an inline expression in the component body)
-// so Date.now() — impure — never runs directly during render.
-function isStaleSync(syncedAt: string | null, syncOk: boolean): boolean {
+// Client-only clock: null on the server and the first client render, then the
+// real time once mounted, refreshed each minute so the stale threshold is
+// re-evaluated as a snapshot ages on screen.
+function useClientNow(intervalMs = 60_000): number | null {
+  const [now, setNow] = useState<number | null>(null)
+  useEffect(() => {
+    const tick = () => setNow(Date.now())
+    tick()
+    const id = window.setInterval(tick, intervalMs)
+    return () => window.clearInterval(id)
+  }, [intervalMs])
+  return now
+}
+
+// Time-based staleness reads the current clock, so it must be deferred to the
+// client: `now` is null during SSR and the first client render (see
+// useClientNow), keeping the stale-message <p> it gates identical on both sides
+// and avoiding a React #418 mismatch when a snapshot ages past the threshold
+// between those two renders. The deterministic cases (never synced / last sync
+// failed) never touch the clock and stay stable through hydration.
+function isStaleSync(syncedAt: string | null, syncOk: boolean, now: number | null): boolean {
   if (syncedAt === null || !syncOk) return true
-  return Date.now() - Date.parse(syncedAt) > STALE_AFTER_MS
+  if (now === null) return false
+  return now - Date.parse(syncedAt) > STALE_AFTER_MS
 }
 
 // --- Manual (primary) -------------------------------------------------------
@@ -488,7 +510,8 @@ function AwardWalletSection({
   const [error, setError] = useState<string | null>(null)
   const confirm = useConfirm()
 
-  const stale = isStaleSync(syncedAt, syncOk)
+  const now = useClientNow()
+  const stale = isStaleSync(syncedAt, syncOk, now)
 
   function disconnect() {
     setError(null)
