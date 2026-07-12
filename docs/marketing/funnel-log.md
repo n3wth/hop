@@ -6,6 +6,21 @@ never invented. Source events: `signed_up`, `first_program_added`, `search_ran`,
 analytics. MRR-gate status references `docs/plans/2026-07-05-agentic-travel-agent-northstar.md`
 ("The revenue goal" section).
 
+**Standing requirement — every traffic query MUST filter `$host = hop.flights`.** The `n3wth`
+PostHog project (id 223560) is shared across six hostnames (`hop.flights`, `n3wth.com`,
+`skills.n3wth.com`, `garden.n3wth.com`, `r3.n3wth.com`, `ui.n3wth.com`). An unfiltered
+`query-web-overview`/web-analytics pull mixes all six and overstates hop's visitors/sessions by
+~5x (the other sites contribute many low-engagement uniques). This applies to the shared
+`$pageview`-based traffic pull — apply
+`{"key":"$host","value":"hop.flights","operator":"exact","type":"event"}` to it. The funnel
+events above don't need it: they are hop-specific event names emitted only by hop's own code, so
+the other five sites never produce them regardless of host. (Note the server-side ones —
+`signed_up`, `first_program_added`, and the server `outclick` shadow — go through
+`captureServerEvent` and carry **no** `$host` at all; only the browser events
+`search_ran`/`verdict_viewed`/`outclick` do. Don't filter funnel events by `$host` — you'd drop
+the server-side rows.) Reads before 2026-07-12 were unfiltered; see the 2026-07-12 correction
+entry at the end.
+
 ---
 
 ## 2026-07-06
@@ -94,3 +109,36 @@ analytics. MRR-gate status references `docs/plans/2026-07-05-agentic-travel-agen
   already shipped), so hitting "eight" would mean inventing a new guide type for direct-earn
   airline programs; the MCP page is explicit GTM lever #4 in the business plan §6 and was fully
   unbuilt as a public surface. PR: see this run's Linear update (N-352) for the link.
+
+---
+
+## 2026-07-12 — correction (traffic reads were unfiltered)
+
+Not a run — an append-only correction. The 7/6, 7/8, and 7/10 **Traffic** lines above were
+pulled from the shared `n3wth` PostHog project **without a `$host` filter**, so they summed all
+six hostnames instead of hop.flights alone (root cause of the leak: this log's header sourced
+traffic "via PostHog's web analytics" with no `$host` clause). The reported **48 → 61 → 95
+"rising" visitor trend is an artifact of the unfiltered mix** — the other sites (chiefly
+`garden.n3wth.com`) add many low-engagement uniques. The originals are left as-logged above;
+corrected hop.flights-only figures below.
+
+Re-queried 2026-07-12 via `query-web-overview` with
+`properties: [{"key":"$host","value":"hop.flights","operator":"exact","type":"event"}]`, same
+7-day windows as each entry (visitor/session counts drift slightly from the originals because the
+exact query hour can't be reproduced; the shape is what matters):
+
+| Entry (7d window) | Logged (unfiltered) | hop.flights only | Unfiltered total, same window |
+| :--- | :--- | :--- | :--- |
+| 7/6 (6/30–7/6) | 48 visitors, 68 sessions | **~17 visitors, 41 sessions** | — |
+| 7/8 (7/1–7/8) | 61 visitors, 88 sessions | **~21 visitors, 49 sessions** | — |
+| 7/10 (7/3–7/10) | 95 visitors, 125 sessions | **~24 visitors, 54 sessions** | ~113 visitors (hop ≈ 1 in 5) |
+
+**hop.flights traffic is flat at ~17 → 21 → 24 visitors, not rising.** Pageviews were already
+near-accurate (hop has fewer but far more engaged visitors — ~13–15 min sessions vs the blended
+~5–9 min above); the distortion is in the visitor/session counts. Growth/strategy calls should
+use the filtered figures.
+
+The **funnel counts and the zero-signup pattern in every entry stand** — `search_ran`,
+`verdict_viewed`, `signed_up`, `first_program_added`, and `outclick` are hop-specific event names
+emitted only by hop's own code (`lib/*`), so the other five sites can't contribute to them
+regardless of host. This correction touches only the traffic reads.
