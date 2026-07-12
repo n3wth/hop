@@ -6,12 +6,25 @@ never invented. Source events: `signed_up`, `first_program_added`, `search_ran`,
 analytics. MRR-gate status references `docs/plans/2026-07-05-agentic-travel-agent-northstar.md`
 ("The revenue goal" section).
 
+**Standing requirement — every traffic query MUST filter `$host = hop.flights`.** The `n3wth`
+PostHog project (id 223560) is shared across six hostnames (`hop.flights`, `n3wth.com`,
+`skills.n3wth.com`, `garden.n3wth.com`, `r3.n3wth.com`, `ui.n3wth.com`). An unfiltered
+`query-web-overview`/web-analytics pull mixes all six and overstates hop's visitors/sessions by
+~5x (the other sites contribute many low-engagement uniques). The five funnel events above
+already carry `$host = hop.flights`, so only the traffic pull needs the explicit filter — apply
+`{"key":"$host","value":"hop.flights","operator":"exact","type":"event"}` to it. Reads before
+2026-07-12 were unfiltered; see the per-entry corrections below.
+
 ---
 
 ## 2026-07-06
 
 - **Traffic (7d)**: 48 visitors, 68 sessions, 426 pageviews, 47% bounce rate, ~8.8 min avg
   session — real, if small, traffic is reaching the site.
+  - **Correction (2026-07-12)**: these figures were unfiltered (all six shared hostnames), not
+    hop.flights. Re-queried for hop.flights only over the same 7-day window: **~17 visitors, 41
+    sessions** (426 pageviews was already ~all hop). The visitor/session counts above overstate
+    hop by ~3x; the real read is smaller and more engaged (~15 min avg session).
 - **Funnel (7d)**: `search_ran` 15, `verdict_viewed` 15 (8 on 7/4, 7 on 7/5, 0 on 7/6 so far) —
   every search that ran produced a verdict, a good sign the engine resolves reliably. `signed_up`
   **0**, `first_program_added` **0**, `outclick` **0** across all 7 days.
@@ -38,6 +51,10 @@ analytics. MRR-gate status references `docs/plans/2026-07-05-agentic-travel-agen
 
 - **Traffic (7d)**: 61 visitors, 88 sessions, 493 pageviews, 28.4% bounce rate, ~7.5 min avg
   session — visitors up ~27% vs the 7/6 read (48→61); bounce rate improved (47%→28.4%).
+  - **Correction (2026-07-12)**: unfiltered (all six shared hostnames). Re-queried for
+    hop.flights only over the same 7-day window (7/1–7/8): **~21 visitors, 49 sessions**. The
+    "up ~27% vs 7/6" claim is an artifact of the unfiltered mix — hop.flights was roughly flat
+    (~17→~21 visitors). Do not read a rising trend into these two reads.
 - **Funnel (7d, 7/1–7/8)**: `search_ran` 18 (8 on 7/4, 7 on 7/5, 2 on 7/6, 1 on 7/7, 0 so far
   7/8), `verdict_viewed` 17 — the engine is still resolving essentially every search into a
   verdict. `signed_up` **0**, `first_program_added` **0**, `outclick` **0** — same all-zero
@@ -67,6 +84,13 @@ analytics. MRR-gate status references `docs/plans/2026-07-05-agentic-travel-agen
 - **Traffic (7d)**: 95 visitors, 125 sessions, 568 pageviews, 22.4% bounce rate, ~5.7 min avg
   session — visitors up again vs both prior reads (48 on 7/6 → 61 on 7/8 → 95 today, +56% over
   the last read); bounce rate keeps improving (47% → 28.4% → 22.4%).
+  - **Correction (2026-07-12)**: unfiltered (all six shared hostnames). Re-queried for
+    hop.flights only over the same 7-day window (7/3–7/10): **~24 visitors, 54 sessions** — vs
+    ~113 unfiltered visitors for the same window, i.e. hop is only ~1 in 5. The "48→61→95 rising"
+    trend across the three reads is **fake**: filtered to hop.flights it is flat at ~17→21→24
+    visitors. Growth/strategy calls should use the filtered figures. The funnel events
+    (`search_ran`, `verdict_viewed`, `outclick`, etc.) are unaffected — they already carry
+    `$host = hop.flights`, so the zero-signup pattern and conversion counts stand.
 - **Funnel (7d, 7/3–7/10)**: `search_ran` 20, `verdict_viewed` 19 — still resolving essentially
   every search into a verdict. `signed_up` **0**, `first_program_added` **0** — three consecutive
   reads all-zero, now against nearly double the traffic of the first read. **`outclick` fired
