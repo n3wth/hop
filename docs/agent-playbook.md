@@ -34,8 +34,26 @@
 **$10k+ MRR by 2026-08-05** (declared 2026-07-05; the "$10k-MRR-within-30-days" target in
 `docs/plans/2026-07-05-agentic-travel-agent-northstar.md`, whose "The revenue goal" section also
 sets the weekly gates — Wk2/Wk4 checkpoints — every desk works against). Where the two disagree
-on priority, the board's amendment list in `docs/board/2026-07-05-board-memo.md` overrides this
-playbook's own §9 ordering.
+on priority, the board's amendment list in the latest `docs/board/<date>-board-memo.md` overrides
+this playbook's own §9 ordering.
+
+**Ownership order, explicit (from 2026-07-12):** the board (`docs/board/`, weekly, Sunday
+13:00 UTC) is the periodic deep, adversarial check; the strategy desk (`docs/strategy/`, Marcus,
+Sunday 15:00 UTC) is the weekly tracker. **When the two conflict, the latest board memo's
+amendment list wins** — the board's job is explicitly to check whether the org followed through
+on prior amendments, so its ranking is the more authoritative, harder-won one. Adopt the latest
+board memo's amendment list as-is; fall back to the strategy desk's ranking only for priority
+questions the current board memo doesn't address, and fall back further to re-deriving from the
+business plan's own sequencing only if neither review exists yet.
+
+**Known scheduling bug (flagged 2026-07-12, not yet fixed):** the board's cron
+(`0 13 * * 0`) fires two hours before the strategy desk's (`0 15 * * 0`) every Sunday
+(`docs/team/routines.md`), so a given week's board review can never see that same week's strategy
+output — only the prior week's (or none, in the strategy desk's first weeks). This is why board
+memos may read the strategy desk as "silent" when it has simply not run yet that day. Worth
+fixing by moving one of the two crons; until then, read a "no `docs/strategy/` file newer than
+last week" finding as an artifact of ordering, not a desk failure, unless multiple weeks pass with
+still nothing.
 
 **Ongoing priority ownership (from 2026-07-06):** the board memo above was a one-time review; the
 strategy desk (Marcus, `docs/team/routines.md`) now owns re-ranking priority on a weekly cadence
