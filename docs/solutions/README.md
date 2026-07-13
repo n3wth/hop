@@ -86,6 +86,7 @@ a documented seam. The guardrail, not just the patch.
 | 2026-07-06 | [A dead OAuth token, a network blip, and an empty inbox all look identical unless you say so](2026-07-06-gmail-auth-failed-vs-fetch-failed.md) | gmail, oauth, refresh-token, degradation |
 | 2026-07-06 | [An expired flight watch must be skipped, not rolled forward](2026-07-06-expired-watch-skip-dont-roll.md) | standing-orders, cron, dedup, fingerprint |
 | 2026-07-06 | [One correct code path querying a table can hide a broken twin](2026-07-06-fails-closed-unknown-column-masked-by-parallel-path.md) | outclicks, withDb, fails-closed, unknown-column |
+| 2026-07-13 | [Formatting or reading the current time in a server-rendered component causes a hydration mismatch](2026-07-13-ssr-client-time-formatting-hydration-mismatch.md) | nextjs, ssr, hydration, react, timezone, date-formatting |
 
 _Note: this index is a partial, manually-kept list — several entries dated before 2026-07-06 are_
 _missing from the table above. `grep -rA4 '^tags:' docs/solutions/*.md` is the reliable full list;_
