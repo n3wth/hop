@@ -142,3 +142,49 @@ The **funnel counts and the zero-signup pattern in every entry stand** — `sear
 `verdict_viewed`, `signed_up`, `first_program_added`, and `outclick` are hop-specific event names
 emitted only by hop's own code (`lib/*`), so the other five sites can't contribute to them
 regardless of host. This correction touches only the traffic reads.
+
+---
+
+## 2026-07-13
+
+- **Traffic (7d, hop.flights-only, `$host` filter applied per the 7/12 correction)**: 21
+  visitors, 88 pageviews, 36 sessions, 36.1% bounce rate, ~4.1 min avg session. In line with the
+  corrected 7/10 read (~24 visitors) — flat, not growing.
+- **Funnel (7d)**: `search_ran` and `verdict_viewed` fired only on 7/6–7/8 (2, 1, 2 respectively;
+  1, 1, 2 verdict_viewed) and have been **zero every day since, 7/9–7/13 (5 straight days)**.
+  `signed_up` and `first_program_added` remain zero across all 8 days logged since instrumentation
+  shipped. `outclick` fired once total, on 7/8.
+- **N-372 follow-up (search_ran zero-day diagnosis)**: checked `components/SearchTelemetry.tsx` —
+  it fires unconditionally on every `/search` render with a resolved `from`/`to` (which
+  `app/search/page.tsx#parseParams` always provides via defaults, even with zero query params), so
+  a code regression that silently drops the event was not found by inspection. Pulled a
+  page-level breakdown for the zero-day window specifically (7/9–7/13): **one visitor did load
+  `/search` (3 pageviews) during that window with zero corresponding `search_ran`** — the one
+  concrete anomaly found this run. At n=1 this doesn't clear the bar for "confirmed bug" (a
+  privacy/tracker-blocking visitor is at least as likely an explanation as a product regression,
+  especially for whatever audience reads r/awardtravel or HN), but it's also not nothing. Logging
+  as: **inconclusive, not closed** — needs a bigger sample before spending build time chasing it
+  further. The CTA-copy portion of N-372 (item 3, "Track your miles" nudge on the pay-cash path)
+  already shipped and merged as PR #286 prior to this run.
+- **N-311 ("R1.7 Design P1s") was stale-backlog and already done**: verified in the code that all
+  three done-criteria — `--color-hero-label`/`--color-hero-eyebrow` contrast tokens, VerdictRail's
+  aria-label, and the TopNav bunny+wordmark lockup — are already implemented (values match the
+  documented 4.6:1/4.8:1 contrast ratios). Marked Done in Linear this run so it stops showing as
+  open backlog for future runs.
+- **This run's action**: shipped a new evergreen SEO page — a cents-per-point / point-valuation
+  methodology explainer (`docs/content-plan.md` §1 flags this as an unbuilt **P1** content type:
+  "builds trust in hop's core number, differentiates hop's *computed* cpp from blogs' static
+  valuations"). Confirmed via grep that no such page existed anywhere in `app/` before this run.
+  Built from `lib/cpp.ts` (formula, tier thresholds) and `lib/valuations.ts`'s `BASELINE_CPP`
+  table only — no invented numbers. See this run's Linear update (N-352) for the PR link and
+  merge status.
+- **MRR-gate status — Wk1 ("payment path proven, one real stranger pays")**: **not met, still
+  structurally unreachable.** N-320 (seats.aero written commercial terms, owner-only) is still
+  Backlog, unstarted, unchanged since the last four reads. This is now the fourth consecutive read
+  with the same status — the gate has been open for 8 days on an owner-only blocker.
+- **The single highest-leverage thing sitting undone**: the two ready-to-paste launch drafts in
+  `docs/marketing/drafts/` (Show HN, r/awardtravel sweet-spot math) have now been sitting
+  unposted for **7 days** (drafted 2026-07-06). Both need only the founder logged into the
+  respective account to paste and submit — no code, no review, ~5 minutes total. Per the
+  north-star doc, this is explicitly "the single highest-leverage human act in this plan." Flagged
+  again in this run's Linear growth-log update.
