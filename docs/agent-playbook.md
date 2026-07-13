@@ -288,129 +288,167 @@ Agent work is priced in tokens and wall-clock; the code's shape sets that price.
 - Multi-surface refactors (container systems, scroll models) — take the Linear issue's exact
   scope instead; if the issue is under-specified, comment on it rather than improvising.
 
-## 9. Done since last retro (2026-06-29 → 2026-07-06, two retro runs today)
+## 9. Done since last retro (2026-07-06 → 2026-07-13)
 
 Evidence rule: a claim below has a merged commit/PR link. Nothing here is taken on trust. The
-previous retro (PR #240, `be2ac9d`) captured everything through PR #238 same-day; this run covers
-the 15 PRs merged after it, same calendar day (`0 16 * * 1` fired once, but the fleet shipped a
-full week's worth of work in the hours around it — see the health-skim note on freeze/cadence).
+previous retro (PR #268, `fb9a1ba`) captured everything through PR #268; this run covers the 19
+PRs merged after it (#270–#288).
 
-- **R1.5 — verdict receipts** — PR #253 (`0e8a041`), merged: `/v/[id]` share pages + OG cards.
-  Was the single highest-priority open item for two retros running; now shipped in code. Whether
-  it's flag-gated or live by default isn't re-verified here — check the PR before assuming
-  production behavior.
-- **R1.6 — newsletter signup + R2.3 (weekly digest)** — PR #251 (`34aef5c`), merged, superseding
-  the earlier draft PR #235 (closed, not merged — its migration-chain fix and footer-capture
-  approach were reimplemented differently in #251). Hardened twice same-day: PR #264
-  (`9a7c4c1`, token hashing + GET-route rate limiting + cron auth ordering) and PR #266
-  (`b732636`, decoupled the unsubscribe token from the rotating auth secret). PR #265
-  (`ed5ed2d`) fixed a stale doc comment left over from the migration renumbering. New:
-  `docs/solutions/2026-07-06-derived-tokens-must-not-key-off-an-unrelated-rotating-secret.md`.
-- **#259 — AwardWallet Refresh throttle fix (#217 P2)** (`fe06044`), merged — this was the
-  still-open "Task #13" item from last retro's list, now closed. New:
-  `docs/solutions/2026-07-06-throttle-must-not-key-off-a-failed-attempt.md`.
-- **#261 — rate-limit spoofable x-forwarded-for fix** (`ea697f7`), merged — closes a real bypass
-  of the newsletter signup rate limiter (and every other route keyed on `clientIp()`) ahead of
-  `HOP_ENABLE_NEWSLETTER` going live. New:
-  `docs/solutions/2026-07-06-spoofable-x-forwarded-for-defeats-rate-limiting.md`.
-- **#260 — mechanical duplicate-migration-sequence detector** (`4c83cf3`), merged: wires
-  `scripts/check-migration-sequence.mjs` into `npm run check` as `db:check-migrations`, plus a
-  same-PR fix for an absolute-path resolution bug in the checker itself. Directly answers the
-  recurring "4 collisions in one week" problem logged in
-  `docs/solutions/2026-07-05-parallel-migration-numbering.md` (updated in the same PR) — this
-  retro's health skim confirms the check runs clean on `main`.
-- **#249 — cuter team avatars + stood up Marcus (strategy desk)** (`f69528e`), merged. Marcus's
-  first scheduled run is Sunday 15:00 UTC (`0 15 * * 0`) — hasn't fired yet as of this retro
-  (`docs/strategy/` doesn't exist yet), see the priority-ranking pointer below.
-- **#257 — finance@ routing resolved, merge-sheriff desk stood up** (`de49ccf`), merged. The
-  merge-sheriff (hourly, ops-only, no avatar) now sweeps every open PR — consistent with this
-  retro finding **zero** open PRs at the time of this run.
-- **#254 — admin Overview page IA reorg** (`efc1586`), merged: split a mixed card, fixed a
-  sparkline inconsistency and the stat grid. UI-only, no behavior change.
-- **#258 — README style fix** (`f516ae9`), merged: stripped emojis and a `---` divider per house
-  style.
-- **#262, #263 — verify-desk tooling fixes** (`aa4d07c`, `f3c8054`), merged: corrected PR
-  selection/finding-dedup false negatives and kept `candidate.sha` in sync with the winning PR.
-  Internal to `scripts/verify-desk-run.mjs`, no product surface affected.
-- **#267 — growth desk's first funnel-log entry** (`4b104d9`), merged: `docs/marketing/funnel-log.md`'s
-  baseline read (48 visitors/7d, 15 `search_ran`/15 `verdict_viewed`, 0 `signed_up`/`first_program_added`/
-  `outclick`) plus two ready-to-paste (unsent) launch drafts. Flags that GitHub Actions CI is
-  still failing repo-wide on a billing issue (Linear N-347, owner-only) as of 2026-07-06.
-- **CRON_JOBS ↔ vercel.json lockstep** — still in sync this run: 10 crons on both sides
-  (`business-digest` and `health-sentinel` were added since last check), matching paths/schedules.
-  The lockstep test (`lib/__tests__/health-checks.test.ts`) still exists and passes.
-- **`npm run check` on `main`** — green at `4b104d9`: `db:check-migrations` OK, lint 0 errors (4
-  pre-existing unused-var warnings), typecheck clean, 109 test files / 1332 tests passing.
-
-**Still open, despite being top of an earlier retro's list — do not mark done without a PR link:**
-R2.1 (public `/mcp` page + connector registry submissions) still has no code anywhere in the tree
-(`app/api/mcp-token` exists for the token flow; no page).
+- **R2.1 — public `/mcp` page** — PR #280 (`9b2add9`), merged: "hop for AI agents" front door
+  listing all 6 MCP tools, copy-paste quickstarts, free/Pro quota split. Was the top item on the
+  board-amendment list for two retros running; **shipped in code**. Directory submissions
+  (PulseMCP/Smithery/mcp.so) are a separate, still-open step — no repo evidence either way this
+  run, so not claimed done here.
+- **N-371 — PostHog traffic reads were inflated ~5x by a shared multi-host project** — PR #285
+  (`41037d0`), merged: added a standing `$host = hop.flights` filter requirement to
+  `docs/marketing/funnel-log.md` and the growth-desk routine prompt, and corrected the three prior
+  entries in place (true 7-day traffic is ~17→21→24 visitors, flat — not the previously-reported
+  48→61→95 "rising" trend). Board/strategy top priority item; done.
+- **N-372 (item 3) — VerdictRail CTA on the pay-cash path** — PR #286 (`7828725`), merged: added a
+  secondary "Track your miles"/"Add your programs" CTA beside "Book cash" on cash-favorable
+  verdicts, since the sign-up ask previously only appeared on points-favorable verdicts (the
+  majority case had none at all). Board/strategy's #2 item; the CTA-copy portion is done. The
+  other half of N-372 — whether `search_ran` actually went to zero for four straight days or that
+  was a sampling artifact — is **still open**: the 7/13 funnel-log entry (`docs/marketing/funnel-log.md`)
+  found one anomalous zero-`search_ran` `/search` pageview but logged the diagnosis "inconclusive,
+  not closed," not confirmed.
+- **feat(seo): point-valuation / cpp methodology explainer page** — PR #288 (`5768e9f`), merged:
+  new `/guides/point-value` page, every number sourced from `lib/cpp.ts`/`lib/valuations.ts`
+  (added named `GREEN_TIER_CPP`/`AMBER_TIER_CPP` constants so the tier boundaries have one home).
+  **Flagged, not just logged**: this shipped net-new SEO content while the board's 2026-07-12 kill
+  list (item #2, carried from 2026-07-05) says no further content-pipeline expansion until a
+  staleness/"verified as of" guard exists — that guard is still unbuilt (grepped for "verified as
+  of" in `lib/`/`app/`, no match). A single evergreen methodology page is a different shape than
+  the scaled `/guides/[program]`/sweet-spot content the freeze targeted, but it is content-pipeline
+  work landing during an explicit freeze on that lever for the second time (after PR #275 below) —
+  see the updated freeze note in Open Threads.
+- **5 transfer-partner program guides** (Amex, Chase, Citi, Cap One, Bilt) — PR #275 (`5226a86`),
+  merged **before** this week's board memo reasserted the content-pipeline freeze; already flagged
+  as a freeze violation in the 2026-07-12 board memo itself, not new information this retro adds.
+- **Standing invariant-audit sweep, two batches** — PR #278 (`284a27c`, 5 P1s: missing cabin
+  labels on two OG/points surfaces, `/ask` concierge computing "you save" without subtracting
+  taxes while the engine's cpp already nets them out, sub-AA email link contrast, a hand-typed
+  `MIN_CPP_FLOOR` drifted from `lib/search.ts`'s `POINTS_THRESHOLD_CPP`) and PR #279 (`1c7ecd0`,
+  46 total findings' P2/P3 batch: stale Auth0/Supabase comments across 7 `eve/tools/*.ts` files
+  plus `lib/api-tokens.ts`/`lib/bookings.ts`/`lib/accounts.ts`/`lib/prefs.ts`, missing
+  `motion-reduce` guards on 3 spin/rotate animations, and `.claude/workflows/pr-merge-pipeline.js`
+  contradicting ADR 0009's merge-commit mechanic). Both merged.
+- **Reviewer subagents updated for the Better Auth + Neon/Drizzle stack** — PR #276 (`8c84be8`)
+  fixed `security-reviewer`/`nextjs16-reviewer`/`degradation-reviewer` still describing the
+  pre-migration Auth0/Supabase-RLS architecture (sending them hunting for files that no longer
+  exist); PR #277 (`89e1691`) captured the lesson in
+  `docs/solutions/2026-07-09-stale-claude-agent-instructions-after-platform-migration.md` and fixed
+  further stale README claims. This is the exact "grep old stack's terms after an ADR supersedes
+  it" rule now in `AGENTS.md`'s multi-agent-hygiene bullet.
+- **eliminate server/client time-formatting hydration mismatches** — PR #282 (`5b7dca6`), merged:
+  fixed React #418 hydration mismatches on `/book` and `/account` from timezone-sensitive
+  `toLocaleTimeString`/`toLocaleString` calls and a `Date.now()` read in the render path. New:
+  `docs/solutions/2026-07-13-ssr-client-time-formatting-hydration-mismatch.md` (written this run —
+  no entry existed for this bug class before).
+- **Docs/meta pattern library** — PR #270 (`d0cd8bd` + `04c20d2`), PR #271 (`960401c`, ADR 0010:
+  AGENTS.md is canon, CLAUDE.md imports it), PR #272 (`29f8304`, ADR 0011: platform stack
+  rationale), PR #274 (`fb0f6aa`, editorial pass) — all merged, portable-pattern and
+  rules-consolidation work, no product-code surface touched.
+- **Board review (weekly)** — PR #283 (`a3a0320`), `docs/board/2026-07-12-board-memo.md`. **Strategy
+  review (weekly, first run)** — PR #284 (`50a24dd`), `docs/strategy/2026-07-12-weekly-strategy.md`.
+  Both merged; see Open Threads for the current ranked priorities these produced.
+- **Growth desk** — PR #281 (`4585f26`, PostHog wizard self-driving setup: 8 signal sources
+  enabled, no app-code changes needed) and PR #287 (`6155c87`, 7/13 funnel-log entry — see the
+  N-372 note above).
+- **Finance desk** — PR #273 (`92ff883`), merged: backfilled two lost findings from a run whose
+  PRs closed unmerged (Sentry-for-Startups, Vercel-for-Startups correction), added Mercury's
+  Raise+Perks bundle as an owner-only decision.
+- **CRON_JOBS ↔ vercel.json lockstep** — still in sync this run: same 10 crons on both sides,
+  matching paths/schedules. The lockstep test (`lib/__tests__/health-checks.test.ts`) still exists
+  and passes.
+- **`npm run check` on `main`** — green at `5768e9f`: `db:check-migrations` OK, lint 0 errors (4
+  pre-existing unused-var warnings, unchanged from last retro), typecheck clean, 110 test files /
+  1338 tests passing.
+- **Zero open PRs** at the time of this run — the merge-sheriff desk (stood up last retro) is
+  keeping the queue clear.
 
 ## 10. Open threads
 
-**Priority ranking pointer (updated 2026-07-12):** the strategy desk (Marcus) has now run once —
-`docs/strategy/2026-07-12-weekly-strategy.md` is the current priority order, adopted from the
-2026-07-12 board memo's ranked list (§7) plus that run's own new evidence (a PostHog analytics
-host-filter bug inflating traffic ~5x, `search_ran` going to zero for four straight days, and two
-live competitors — seats.aero's own AI Assistant and Award Travel Finder's MCP endpoint —
-already executing hop's MCP-agent-native wedge). His ranked top 5 for this week: (1) fix the
-PostHog `$host` filter bug [N-371], (2) ship the VerdictRail CTA fix from the 7/10 funnel-log
-hypothesis [N-372], (3) resolve `/pricing`'s stalled state (N-319), (4) submit `/mcp` to 2-3
-directories and treat the seats.aero fallback prototype (N-320) as a tied-priority pair with it,
-(5) explicitly deprioritize further content-pipeline expansion until the staleness guard exists.
-The numbered list below is the prior (2026-07-05 board-derived) ranking — kept for history; work
-from Marcus's latest file going forward, per the ownership rule in "The goal" above. Check for a
-newer `docs/strategy/<date>-weekly-strategy.md` each week before treating this list as current.
+**Priority ranking pointer (updated 2026-07-13):** no newer strategy-desk run this week —
+`docs/strategy/2026-07-12-weekly-strategy.md` (Marcus's first run) is still the current priority
+order per the ownership rule in "The goal" above. Its own ranked top 5, checked against this
+week's evidence:
 
-**ADOPTED BOARD AMENDMENTS 2026-07-05 (override prior ordering):** the first board review
-(`docs/board/2026-07-05-board-memo.md`) found billing live ahead of its own plan gates, GTM
-surfaces unshipped while unrelated infra shipped, and no mechanism for the fleet to prefer GTM
-over polish. The board's amendment list is still the priority order for everything below and in
-`docs/autonomy-runbook.md` — work top-down, not by convenience. Status this retro:
+1. Fix the PostHog `$host` filter bug [N-371] — **done**, PR #285 (`41037d0`), see §9.
+2. Ship the VerdictRail CTA fix from the 7/10 funnel-log hypothesis [N-372] — **done** for the
+   CTA-copy half, PR #286 (`7828725`). The other half of N-372 — whether `search_ran` really went
+   to zero or that was sampling noise — is **still open**: the 7/13 funnel-log entry found one
+   anomalous zero-`search_ran` `/search` visit but logged it "inconclusive, not closed."
+3. Resolve `/pricing`'s stalled state (N-319) — **not done**: zero commits touched
+   `app/pricing/` this week (`git log fb9a1ba..HEAD -- app/pricing/` is empty).
+4. Submit `/mcp` to 2-3 directories and prototype the seats.aero fallback award-data source
+   (N-320) as a tied pair — **neither done**: no MCP-directory-submission evidence in the repo,
+   and grepping for "fallback" near `seatsaero`/`sweet-spot-candidates` turns up only an unrelated
+   cabin-fallback comment — zero lines implementing an alternate award-data source still.
+5. Explicitly deprioritize further content-pipeline expansion until the staleness guard exists —
+   **violated a second time**: PR #288 shipped a new SEO page (`/guides/point-value`) this week
+   while the staleness guard (item 4 below) remains unbuilt. See the updated freeze note below.
 
-1. ~~R1.5 — verdict receipts~~ **Done** — PR #253, see §9. Drop from this list.
-2. ~~R1.6 — newsletter signup~~ **Done** — PR #251 (+ #264, #266 hardening), see §9. Drop from
-   this list.
-3. R2.1 — public `/mcp` page + connector registry submissions. Not started; now the single
-   highest-priority open item on this list.
-4. Content staleness guard: a "verified as of" marker on sweet-spot entries, auto-hidden once
-   past a freshness window. Not started.
-5. Split `verdict_viewed` into demo-vs-balance-personalized so activation data stays
-   interpretable. Not started.
-6. Add a billing-gate-status line to `docs/ops-runbook.md` cross-referencing business-plan.md
-   §3.1's four gates (met/unmet). Not started.
-7. Alert `HOP_OWNER_EMAIL` on any Stripe webhook that fails to write a tier, so a silent
-   paying-and-unentitled customer can't happen unmonitored. Not started — confirmed by grep,
-   `app/api/webhooks/stripe/route.ts` has no `HOP_OWNER_EMAIL`/alert-email reference yet.
-8. Fold agent-fleet compute cost (~$200/mo) into the B3 unit-economics panel. Not started.
-9. Add Duffel look-to-book ratio monitoring to the same panel. Not started.
-10. Stand up a weekly "did any stranger use hop this week" report as the lead item on the
-    retro desk, ahead of any shipped-features list. **Not started, and not actionable by the
-    retro desk as currently configured**: `docs/team/routines.md`'s canonical Bob (retro) prompt
-    still doesn't mention this requirement, so nothing will pick it up until that prompt is
-    updated to include it. Flagging here rather than improvising it — the retro's own scope is
-    fixed by that prompt, and it should be edited deliberately (with DB/PostHog access to
-    define "stranger" honestly) rather than approximated.
-11. The owner-action pack (seats.aero written-terms request, AwardWallet partner-onboarding
-    request) is no longer just drafted — **both were actually sent** this week. See the escalated
-    finding at the top of [needs-founder] below: they went out with no recorded approval evidence,
-    which is a worse outcome than last retro's warning about the same gap, not a resolution of it.
+Check for a newer `docs/strategy/<date>-weekly-strategy.md` each week before treating this as
+current.
 
-**FREEZE — status this retro: the pattern continued, not just the one prior violation.** The
-freeze ("no further admin-UI, nav-polish, or content-pipeline-scaling work... Exception: the Team
-view PR already in flight (Task #15) completes; after that, freeze applies to it too") was
-already flagged last retro as violated by PR #223 (nav glass treatment) landing right after the
-named exception (PR #230, Team view) completed. Since then, two more admin-UI PRs merged: **#249**
-("cuter team avatars" — cosmetic admin-UI) and **#254** (admin Overview page IA reorg — split a
-card, fixed a sparkline, fixed the stat grid). Neither is harmful work, and #254 arguably improves
-a real inconsistency rather than adding polish for its own sake, but both are squarely admin-UI,
-not GTM, and both shipped while R2.1 (public `/mcp` page — GTM-facing) sat untouched. No code
-action needed (the daily autopilot owns fixes) — but three admin-UI PRs landing across two retro
-cycles after a freeze was declared and then reasserted means the freeze is functioning as
-guidance, not a constraint, since nothing in the scheduling enforces it mechanically. Worth the
-owner deciding whether to formally lift the freeze (GTM is caught up enough that admin polish is
-fine again) or tighten enforcement (e.g. a reviewer check that flags admin-UI-only diffs against
-an explicit allowlist) — the ambiguity itself is the recurring cost, not any single PR.
+**ADOPTED BOARD AMENDMENTS 2026-07-12 (supersedes the 2026-07-05 list below — the doc had gone
+stale, still showing the first board review's ranking after a second one shipped):** the
+2026-07-12 board memo (`docs/board/2026-07-12-board-memo.md` §7) found last week's amendments 2/3
+(this list's old items 1/2) done, but the billing-gate contradiction, the kill-listed `/pricing`
+page, and the content-pipeline freeze all still unresolved or actively violated. Status this
+retro, in the board's own ranked order:
+
+1. Fix the board-review/strategy-desk cron ordering (board fires `0 13 * * 0`, two hours before
+   Marcus's `0 15 * * 0`, every Sunday, so the board can never see that week's strategy output).
+   **Not done** — `docs/team/routines.md` still shows both crons unchanged. **[agents-can-execute]**,
+   but touches another desk's schedule — flagging rather than changing it unilaterally in a docs
+   retro PR.
+2. Resolve `/pricing`'s stalled state (finish it or revert/freeze) — **not done**, see the
+   priority-pointer item 3 above. **[agents-can-execute]**/**[needs-founder]** (the underlying
+   "keep billing on or not" call).
+3. ~~Ship the VerdictRail CTA fix~~ **Done** — PR #286, see §9. Drop from this list.
+4. Content staleness/"verified as of" guard before further program-guide or sweet-spot expansion
+   — **not done, violated a second time**: PR #288 shipped ahead of it (after PR #275 did the
+   same last week). **[agents-can-execute]**.
+5. Submit the shipped `/mcp` page to 2-3 MCP directories — **not verified done this run**, no
+   repo evidence either way. **[agents-can-execute]**.
+6. Prototype one fallback award-data source behind `degraded[]` — **not started**, confirmed zero
+   lines of code. **[agents-can-execute]**.
+7. Add a DB-verified real subscriber count (even if zero) to the next finance ledger entry —
+   **not verified this run** (out of this retro's scope; check `docs/finance/` directly).
+   **[agents-can-execute]**.
+8. Fix GitHub Actions billing so CI stops running `workflow_dispatch`-only — **unresolved**.
+   **[needs-founder]**.
+9. Confirm whether Oliver approved the seats.aero/AwardWallet outreach sends, and whether he
+   wants `HOP_ENABLE_BILLING` flipped off — **unresolved, still escalated** (see [needs-founder]
+   below, carried forward two retros now). **[needs-founder]**.
+10. Decide whether to post the drafted Reddit/HN community replies or explicitly pause that
+    motion — **unresolved**; the 7/13 funnel-log entry re-flagged this as the single
+    highest-leverage founder action, now 7 days stale since drafted. **[needs-founder]**.
+11. Add referrer/source-split data to the funnel log — **not verified this run**.
+    **[agents-can-execute]**.
+12. Add a billing-gate-status line to `docs/ops-runbook.md` cross-referencing business-plan.md
+    §3.1's four gates — **not done**, confirmed by grep (no §3.1 cross-reference exists yet).
+    **[agents-can-execute]**.
+13. Fold agent-fleet compute cost into the B3 unit-economics panel — **not done**, `llmCostUsd`
+    in `lib/unit-economics.ts` is still hardcoded `null` (confirmed by grep).
+    **[agents-can-execute]**.
+
+**FREEZE — status this retro: the content-pipeline half was violated again, not just once.** The
+admin-UI/nav-polish half of the freeze **held this week** (no matching commits since PR #254,
+confirmed by the 2026-07-12 board memo and this retro's own `git log`) — the first genuinely clean
+week on that half since it was declared. The content-pipeline half did not hold: PR #275 (5
+transfer-partner guides) shipped ahead of the staleness guard last week, flagged in the
+2026-07-12 board memo; this week PR #288 (`/guides/point-value`) shipped **again** while that same
+guard is still unbuilt. Neither PR is harmful work on its own — #288 in particular is a single
+evergreen methodology page, a different shape than the scaled per-program/per-destination content
+the freeze specifically targeted — but two content-pipeline PRs landing across two retro cycles
+after the freeze was declared and then reasserted means this half of the freeze, like the
+admin-UI half before it, is functioning as guidance rather than a constraint until something
+mechanical enforces it (e.g. a reviewer check that blocks new `app/guides/**`/`app/sweet-spots/**`
+routes without a staleness-guard reference). No code action taken here (the daily autopilot owns
+fixes) — flagging so the next run doesn't have to re-discover the pattern.
 
 **[needs-founder] — verbatim, no agent substitute:**
 
@@ -488,8 +526,15 @@ something that's already known. Mirrored into Linear (team `n3wth`, project
 
 **[agents] — pick up per the normal queue in `docs/autonomy-runbook.md`:**
 
-- R2.1 — public `/mcp` page + connector registry submissions (see `docs/plans/2026-07-04-business-plan.md`)
-  — now the top of the board-amendment list, since R1.5 and R1.6 above it both shipped this week.
-- Board amendment items #4-#9 above (content staleness guard, `verdict_viewed` split,
-  billing-gate-status line, `HOP_OWNER_EMAIL` Stripe alert, B3 panel additions) — all still
-  open and unclaimed.
+- MCP-directory submissions (PulseMCP, Smithery, mcp.so) for the now-shipped `/mcp` page (R2.1's
+  remaining slice) — board's #5, top of the currently-unclaimed list since the page itself and the
+  VerdictRail CTA fix both shipped this week.
+- Content staleness/"verified as of" guard — board's #4, now overdue twice over (PRs #275 and
+  #288 both shipped ahead of it).
+- Prototype the seats.aero fallback award-data source behind `degraded[]` — board's #6, zero
+  lines of code.
+- `/pricing`'s stalled state — board's #2; the underlying billing-on-or-off call is
+  [needs-founder], but finishing/reverting the page mechanically is not.
+- Board amendment items #7, #11, #12, #13 above (finance-ledger subscriber count, funnel-log
+  referrer/source split, billing-gate-status line in ops-runbook.md, B3 panel's `llmCostUsd`) —
+  all still open and unclaimed.
