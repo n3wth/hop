@@ -1,5 +1,5 @@
 ---
-title: "Formatting a time with the browser's local timezone in a component that also renders on the server causes a hydration mismatch"
+title: "Formatting or reading the current time in a component that also renders on the server causes a hydration mismatch"
 date: 2026-07-13
 tags: [nextjs, ssr, hydration, react, timezone, date-formatting]
 files: [components/checkout/CheckoutForm.tsx, components/ProgramsManager.tsx, components/StandingOrders.tsx]
@@ -7,29 +7,34 @@ status: solved
 ---
 
 **What happened:**
-Three client components called `toLocaleTimeString()` / `toLocaleString()` on a timestamp without
-pinning a timezone: `CheckoutForm`'s `priceHeld` countdown, `ProgramsManager`'s "last synced"
-label, and `StandingOrders`' relative-time labels. Next.js renders a client component's first pass
-on the server (in UTC, since that's the server's runtime timezone) and then "hydrates" it in the
-browser, which reuses whatever DOM the server already sent rather than re-rendering from scratch —
-it only patches in event handlers and diffs for mismatches. Any browser not set to UTC formatted
-the same timestamp differently than the server had, so the text the server sent didn't match what
-the client would have rendered itself. React detects this as a text-content mismatch (its error
-#418) and either warns and overwrites the DOM (a visible flash of the wrong time before the right
-one appears) or, worse, silently keeps the stale server-rendered string in some cases. `StandingOrders`
-had a second version of the same bug one layer up: it called `Date.now()` directly in the render
-path (via `isStaleSync`) to decide whether to show a "stale" message — if the 24-hour threshold was
-crossed between the server's render and the client's first render, the message existed in the DOM
-on only one side.
+Two related but distinct bugs, in the same three files, both surfacing as the same React error.
+First: `CheckoutForm`'s `priceHeld` countdown and `ProgramsManager`'s `formatSyncedAt` ("last
+synced" label) called `toLocaleTimeString()`/`toLocaleString()` on a timestamp without pinning a
+timezone. Next.js renders a client component's first pass on the server (in UTC, since that's the
+server's runtime timezone) and then "hydrates" it in the browser, which reuses whatever DOM the
+server already sent rather than re-rendering from scratch — it only patches in event handlers and
+diffs for mismatches. Any browser not set to UTC formatted the same instant differently than the
+server had, so the text the server sent didn't match what the client would have rendered itself.
+Second, a different root cause with the identical symptom: `ProgramsManager`'s `isStaleSync`
+(called from its `AwardWalletSection` to gate a "stale" message) and `StandingOrders`' `relativeTime`
+helper (used by its `AlertRow` for "5m ago"-style labels) each called `Date.now()` directly during
+render, with no timezone involved at all — the value of "now" itself can differ by the seconds or
+minutes between when the server rendered and when the client hydrated, which is enough to flip a
+staleness threshold or bump a rounded relative-time label. In both cases, React detects the
+resulting text-content mismatch as its error #418 and either warns and overwrites the DOM (a
+visible flash of the wrong value) or, worse, silently keeps the stale server-rendered string.
 
 **Why it matters:**
-This class of bug doesn't show up in typechecking, linting, or `npm run build` — it only appears at
-runtime, in a real browser, in a timezone other than the server's, which is exactly the setup a
-same-timezone developer's local dev loop won't catch. It's also easy to reintroduce: any new
-component that formats a `Date` with locale/timezone-sensitive methods (`toLocaleString`,
-`toLocaleTimeString`, `toLocaleDateString`) or reads `Date.now()`/`new Date()` directly during
-render is vulnerable the same way, regardless of whether the surrounding code "looks like" the
-buggy files.
+Neither variant shows up in typechecking, linting, or `npm run build` — both only appear at
+runtime, in a real browser. The timezone variant needs a browser set to a non-UTC zone, which is
+exactly the setup a same-timezone developer's local dev loop won't catch. The live-clock variant
+is even easier to trigger by accident: it needs no special browser setting at all, just the normal
+handful of milliseconds-to-seconds between the server producing HTML and the client hydrating it —
+which happens on every single page load, so it's really a matter of when the gap crosses a
+rounding/threshold boundary, not if. Both are also easy to reintroduce: any new component that
+formats a `Date` with locale/timezone-sensitive methods (`toLocaleString`, `toLocaleTimeString`,
+`toLocaleDateString`) or reads `Date.now()`/`new Date()` directly during render is vulnerable the
+same way, regardless of whether the surrounding code "looks like" the buggy files.
 
 **The rule going forward:**
 Two independent fixes, both needed:
