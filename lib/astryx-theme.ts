@@ -93,7 +93,11 @@ export const hopTheme = defineTheme({
     '--color-icon-accent': 'var(--color-brand)',
 
     // ---- Borders / tracks --------------------------------------------------
-    '--color-border': 'var(--color-border)',
+    // hop's own token is ALSO named --color-border; referencing it from this
+    // Theme-scoped block would form a CSS custom-property cycle and make the
+    // token invalid inside Astryx components, so the tuned value is copied
+    // verbatim from app/globals.css. Keep the two in sync.
+    '--color-border': '#e2ddd2',
     '--color-border-emphasized': 'var(--color-text3)',
     '--color-skeleton': 'var(--color-sunk)',
     '--color-track': 'var(--color-sunk)',

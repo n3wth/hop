@@ -63,21 +63,21 @@ export default function AccountMenu({ user }: { user: AccountUser }) {
           <div className="mt-[2px] truncate text-[12.5px] text-text3">{user.email}</div>
         ) : null}
       </div>
-      <Link href="/account" role="menuitem" onClick={close} className={itemClass}>
+      <Link href="/account" role="menuitem" tabIndex={-1} onClick={close} className={itemClass}>
         Programs
       </Link>
       {/* Deep links to the power features so they're reachable without
           scrolling the whole /account page (each is an anchor there). */}
-      <Link href="/account#watches" role="menuitem" onClick={close} className={itemClass}>
+      <Link href="/account#watches" role="menuitem" tabIndex={-1} onClick={close} className={itemClass}>
         Standing orders
       </Link>
-      <Link href="/account#whatif" role="menuitem" onClick={close} className={itemClass}>
+      <Link href="/account#whatif" role="menuitem" tabIndex={-1} onClick={close} className={itemClass}>
         What if…
       </Link>
-      <Link href="/account#trips" role="menuitem" onClick={close} className={itemClass}>
+      <Link href="/account#trips" role="menuitem" tabIndex={-1} onClick={close} className={itemClass}>
         Trips
       </Link>
-      <a href="/auth/logout" role="menuitem" className={`border-t border-hair ${itemClass}`}>
+      <a href="/auth/logout" role="menuitem" tabIndex={-1} className={`border-t border-hair ${itemClass}`}>
         Log out
       </a>
     </DropdownMenu>
