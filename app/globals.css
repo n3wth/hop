@@ -1,4 +1,42 @@
+/* Pre-declares the full cascade-layer order BEFORE any layered stylesheet
+   loads a rule into one of these names — CSS resolves a layer's priority
+   from where its name *first* appears anywhere in the document, so this
+   statement (not the imports below) is what actually fixes the order.
+   Tailwind v4's own `@import "tailwindcss"` internally declares
+   theme/base/components/utilities in this same way; naming them here first
+   means Astryx's astryx-base/astryx-theme layers slot in BETWEEN base and
+   components — below hop's own `components`/`utilities` Tailwind classes
+   (so hop's own styling always wins a conflict, matching
+   node_modules/@astryxdesign/core/src/reset.css's own documented "consumer
+   styles always override Astryx" intent) but with astryx-theme still above
+   astryx-base (lib/astryx-theme.ts's overrides win over Astryx's stock
+   defaults). Same technique as newth-garden's src/app/globals.css.
+   Omitting a name here (this took a full round of screenshot debugging to
+   catch: `reset` was missing in an earlier version of this line, which sent
+   Astryx's reset.css to the *end* of the whole order instead of the front —
+   its zero-specificity `:where()` button reset then unconditionally beat
+   this theme's own button background/color overrides, since cross-layer
+   priority ignores specificity entirely) leaves that layer appended to the
+   *end* of the order instead — which, for astryx-base/astryx-theme, would
+   rank them ABOVE hop's own Tailwind utilities, a real regression risk
+   across every existing hop component, not just the new Astryx ones. */
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
+
 @import "tailwindcss";
+/* Astryx primitives (Dialog/Sheet, DropdownMenu, Badge, EmptyState, Toast —
+   see lib/astryx-theme.ts, components/AstryxProviders.tsx). reset.css is a
+   :where()-scoped (zero-specificity) base reset; astryx.css is the
+   precompiled component stylesheet — WITHOUT it, any Astryx design token
+   this app doesn't explicitly override in lib/astryx-theme.ts (radius-full,
+   the spacing scale, etc.) resolves to nothing instead of Astryx's own
+   documented default (confirmed via a throwaway screenshot harness: a
+   button themed with `borderRadius: 'var(--radius-full)'` rendered with
+   SHARP corners, because --radius-full was never declared anywhere without
+   this import — @astryxdesign/core's own defineTheme() docs promise
+   "everything else inherits from the Astryx defaults", which requires this
+   file to be loaded for that promise to hold). */
+@import '@astryxdesign/core/reset.css';
+@import '@astryxdesign/core/astryx.css';
 @import "flag-icons/css/flag-icons.min.css";
 /* Streamdown renders the concierge's streamed markdown — scan its classes so v4
    doesn't purge them. */

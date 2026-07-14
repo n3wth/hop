@@ -9,6 +9,7 @@ import {
   DEFAULT_DESCRIPTION,
   TEAL,
 } from '@/lib/seo'
+import AstryxProviders from '@/components/AstryxProviders'
 import StructuredData from '@/components/StructuredData'
 import ScrollToTop from '@/components/ScrollToTop'
 import PostHogBoot from '@/components/PostHogBoot'
@@ -139,7 +140,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${bricolage.variable} ${fraunces.variable} ${geistMono.variable}`}>
+    <html
+      lang="en"
+      data-theme="light"
+      className={`${bricolage.variable} ${fraunces.variable} ${geistMono.variable}`}
+    >
       <head>
         {/* Body/UI: General Sans (Fontshare — not on Google/next-font). */}
         <link rel="preconnect" href="https://api.fontshare.com" />
@@ -149,9 +154,18 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans">
-        <ScrollToTop />
-        <StructuredData />
-        {children}
+        {/* Astryx primitives (Dialog/Sheet, DropdownMenu, Badge, EmptyState,
+            Toast) render through this theme — see lib/astryx-theme.ts and
+            components/AstryxProviders.tsx (a 'use client' boundary; see that
+            file for why it can't be inlined into this Server Component).
+            Light mode only, matching hop's own colorScheme (see `viewport`
+            above). ToastViewport makes useToast() available anywhere in the
+            tree; components/Toast.tsx re-exports it. */}
+        <AstryxProviders>
+          <ScrollToTop />
+          <StructuredData />
+          {children}
+        </AstryxProviders>
         <Analytics />
         {/* PostHog product analytics (R0.5) — init + pageviews on every page;
             AppShell adds identify() for signed-in sessions. No-ops without
