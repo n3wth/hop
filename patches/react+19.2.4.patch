@@ -1,0 +1,35 @@
+diff --git a/node_modules/react/cjs/react-jsx-dev-runtime.production.js b/node_modules/react/cjs/react-jsx-dev-runtime.production.js
+index 22ad886..acc9ef5 100644
+--- a/node_modules/react/cjs/react-jsx-dev-runtime.production.js
++++ b/node_modules/react/cjs/react-jsx-dev-runtime.production.js
+@@ -10,5 +10,29 @@
+ 
+ "use strict";
+ var REACT_FRAGMENT_TYPE = Symbol.for("react.fragment");
++// hop patch (patches/react+*.patch, applied via patch-package): React's own
++// production jsx-dev-runtime deliberately leaves jsxDEV undefined — the
++// production JSX transform is supposed to emit jsx()/jsxs() calls instead,
++// never jsxDEV(). But @astryxdesign/core 0.1.5's dist was built with the
++// automatic *dev* JSX transform baked in unconditionally (Button.js, Badge.js,
++// Dialog.js, Theme.js, ... all hardcode `import { jsxDEV } from
++// "react/jsx-dev-runtime"`, in prod code too), so on React 19 in production
++// every one of those calls crashes ("(0, jsxDEV) is not a function"),
++// including during `next build`'s static prerendering.
++//
++// next.config.ts's `turbopack.resolveAlias` (the documented fix for this in
++// webpack — see newth-garden's next.config.ts) does not reach Turbopack's SSR
++// compilation graph in Next 16.2.9 in testing here (it reliably aliases the
++// *browser* bundle but the server/prerender bundle keeps resolving this real
++// file and crashing) — only the client half of the app would render Astryx
++// correctly, but every page fails to prerender. Patching this one file so
++// jsxDEV delegates to the real production jsx/jsxs runtime fixes it for
++// every consumer, on both the server and the client, without any bundler
++// config. See docs/solutions/ for the write-up.
++var jsxRuntime = require('./react-jsx-runtime.production.js');
++exports.jsxDEV = function (type, config, maybeKey, isStaticChildren) {
++  return isStaticChildren
++    ? jsxRuntime.jsxs(type, config, maybeKey)
++    : jsxRuntime.jsx(type, config, maybeKey);
++};
+ exports.Fragment = REACT_FRAGMENT_TYPE;
+-exports.jsxDEV = void 0;
