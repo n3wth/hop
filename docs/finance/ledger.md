@@ -116,3 +116,35 @@ One 5-line note per run. Figures come only from the repo's own signals (business
 - **Unknowns flagged**: same as prior runs — active Pro subscriber count, card-affiliate status,
   outclick/escalation counts, actual company cash reserves (relevant to the Brex eligibility
   question above) — all require live DB/dashboard/bank access this session lacks.
+
+## 2026-07-14 (run 6 — course correction: pausing credit hunt, subscriber count still unanswered)
+
+- **MRR**: still ~$0/unknown. Same structural gap as every prior run — this session has no
+  `DATABASE_URL` or Stripe read access, confirmed again this run. This is no longer just a
+  self-reported gap: the 2026-07-12 board memo (`docs/board/2026-07-12-board-memo.md`)
+  independently flagged it as a consensus risk ("finance-desk output is answering the wrong
+  question... the ledger has gone silent for 5 days") and voted it kill-list item 4 + ranked
+  amendment 7. Escalating directly to Oliver this run rather than repeating "unknown" quietly —
+  see the memo sent this run for the concrete ask.
+- **Known burn**: unchanged, ~$75/mo infra (`DEFAULT_INFRA_COST_MONTHLY_USD` still 75 in
+  `lib/unit-economics.ts`), LLM spend still unmeasured (`llmCostUsd` still hardcoded `null`).
+  Budget stays approved at ~$125/mo, no new reply from Oliver on the envelope itself.
+- **Process correction**: Oliver replied to the run-5 memo on 2026-07-08 ("youre sending me the
+  same kinda thing in the end") — direct feedback that these memos have become repetitive. The
+  board's 2026-07-12 review independently reached the same conclusion from a different angle
+  (chasing credits instead of the subscriber-count question). Acting on both this run: **paused
+  the opportunity hunt** (`README.md` step 3, no new items added to `opportunities.md`) and
+  stopped restating the standing drafted-opportunity list in the memo — Oliver already has it in
+  `opportunities.md` and repeating it every week added noise, not information.
+- **Billing/pricing risk (flagged by the board, adjacent to finance)**: `HOP_ENABLE_BILLING` is
+  still ON against an unlicensed seats.aero feed (commercial-terms email sent 2026-07-06, no
+  reply logged 8 days later), and the public `/pricing` page the board voted to kill/freeze on
+  2026-07-05 is still live and now has an inbound link from the new `/mcp` page. Not this desk's
+  call to flip flags or revert pages — flagging because it's a live financial/legal exposure line
+  this desk should track, not silently omit.
+- **Outreach queue**: `outreach.md` re-checked — both prior items (seats.aero, AwardWallet)
+  still `status: sent`, no reply from either, no new `approved-to-send` items this run.
+- **Timeline**: 22 days remain to the founder's own $10k MRR / 2026-08-05 northstar
+  (`docs/plans/2026-07-05-agentic-travel-agent-northstar.md`) — with `signed_up` still reading
+  zero across three funnel-log reads per the board memo, a confirmed subscriber count (even zero)
+  is now the single most useful thing this desk could report and cannot get to on its own.

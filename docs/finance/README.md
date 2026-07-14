@@ -43,7 +43,15 @@ emailed approval first.
 1. Read replies in the inbox since last run; update `budget.md`.
 2. Skim the ledger inputs, append a note to `ledger.md`.
 3. Spend ~20 min searching for 1-2 new credit/discount opportunities; update
-   `opportunities.md` (skip anything already tracked or rejected there).
+   `opportunities.md` (skip anything already tracked or rejected there). **Paused as of
+   2026-07-14** — Oliver's own feedback ("youre sending me the same kinda thing in the end",
+   2026-07-08) and the board's independent 2026-07-12 review (kill-list item 4, ranked amendment
+   7: `docs/board/2026-07-12-board-memo.md`) both flag that this desk has spent real effort
+   chasing free credits while never answering the one question that matters — is there a real
+   paying subscriber. This desk has no DB/Stripe read access to answer that itself (confirmed
+   again 2026-07-14, `DATABASE_URL` unset in every session so far). Skip step 3 until either (a)
+   Oliver reports a real subscriber count (even zero) from `/admin`, or (b) this desk is given
+   read-only DB/Stripe access to check itself — resume the credit hunt only after that.
 4. **Every run**: scan `outreach.md` for items with `status: approved-to-send`, send each
    from this inbox, and update its `status` to `sent` (with a `sent-date`).
 5. Send one consolidated memo to oliver@newth.ai and mirror it to the Linear issue.
