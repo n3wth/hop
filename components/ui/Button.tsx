@@ -41,6 +41,19 @@ const VARIANT_CLASS: Record<Variant, string> = {
 // radius/padding/focus treatment the way the old per-page hand-rolled copies
 // did (error boundaries, login). Renders a Next <Link> when `href` is given,
 // a plain <a> when `native` is also set, otherwise a <button type="button">.
+//
+// Astryx port (2026-07): considered wrapping Astryx's own `Button` here and
+// deliberately skipped it. This component's polymorphism (button / next/link
+// / native <a>, two variants, a `fullWidth` mode with its own distinct
+// vertical rhythm) doesn't map onto Astryx Button's fixed sm/md/lg height
+// scale without per-instance box-model overrides (Astryx's `href`+`as` link
+// mode also doesn't support the `native` real-anchor case). Reaching exact
+// parity would mean overriding height/padding per call site rather than
+// through the theme, which is exactly the kind of fragile, easy-to-drift
+// styling this component exists to prevent — and this is hop's single most
+// widely used interactive primitive, so a visual regression here is the
+// worst place to risk one. Kept hand-rolled; see components/AccountMenu.tsx
+// and components/Sheet.tsx for the Astryx swaps that *did* hold up.
 export default function Button({
   variant = 'primary',
   fullWidth = false,
