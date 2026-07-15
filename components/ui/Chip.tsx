@@ -1,3 +1,4 @@
+import { Badge } from '@astryxdesign/core/Badge'
 import { CppTier } from '@/lib/types';
 
 export const TIER_CLASS: Record<CppTier, string> = {
@@ -24,11 +25,25 @@ interface ChipProps {
   className?: string;
 }
 
+// Thin wrapper over Astryx's Badge — kept for its prop API (tone, not
+// Badge's `variant`), but currently unreferenced anywhere in the app; every
+// call site reads the TIER_* maps above directly instead (see ResultRow.tsx,
+// DealCard.tsx, DestinationSuggestions.tsx, DestinationGuideCard.tsx). Those
+// maps are untouched by the Astryx port — they're plain Tailwind class
+// strings other components compose into their own markup, not tied to this
+// component's render path.
+//
+// `tone` isn't one of Astryx's own Badge variants (brand/neutral vs.
+// Astryx's semantic/categorical vocabulary), so the two tones are painted
+// directly via `style` (inline styles always win over Badge's own token-
+// driven variant colors) rather than adding one-off theme variants for a
+// component nothing currently renders.
 export function Chip({ children, tone = 'neutral', className }: ChipProps) {
-  const toneClass = tone === 'brand' ? 'bg-brand text-white' : 'bg-surface text-text';
+  const style =
+    tone === 'brand'
+      ? { backgroundColor: 'var(--color-brand)', color: '#ffffff' }
+      : { backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium ${toneClass} ${className}`}>
-      {children}
-    </span>
+    <Badge variant="neutral" label={children} style={style} className={className} />
   );
 }

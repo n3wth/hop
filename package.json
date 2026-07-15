@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "postinstall": "patch-package",
     "dev": "next dev",
     "dev:mock": "MOCK=1 next dev",
     "build": "node scripts/db-migrate.mjs && next build",
@@ -20,6 +21,7 @@
   "dependencies": {
     "@ai-sdk/react": "^4.0.5",
     "@anthropic-ai/sdk": "^0.106.0",
+    "@astryxdesign/core": "^0.1.5",
     "@better-auth/passkey": "^1.6.23",
     "@duffel/api": "^4.27.1",
     "@duffel/components": "^3.17.0",
@@ -30,6 +32,7 @@
     "@opentelemetry/sdk-node": "^0.219.0",
     "@phosphor-icons/react": "^2.1.10",
     "@posthog/ai": "^8.2.2",
+    "@stylexjs/stylex": "^0.19.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
     "@vercel/analytics": "^2.0.1",
@@ -59,6 +62,7 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "patch-package": "^8.0.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.9"

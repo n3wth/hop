@@ -12,6 +12,7 @@ import {
 } from '@/app/actions/standing-orders'
 import BrandIcon from './BrandIcon'
 import Icon from './Icon'
+import { useToast } from './Toast'
 
 // Standing Orders — "the verdict that watches". A plain-English watch box, the
 // list of active/paused watches, and the alerts the cron has recorded. Flat,
@@ -194,6 +195,7 @@ function WatchRow({ order, first }: { order: StandingOrder; first: boolean }) {
   const [removing, startRemove] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const confirm = useConfirm()
+  const toast = useToast()
 
   function toggle() {
     setError(null)
@@ -208,8 +210,15 @@ function WatchRow({ order, first }: { order: StandingOrder; first: boolean }) {
     confirm.disarm()
     startRemove(async () => {
       const res = await removeWatch(order.id)
-      if (res.ok) router.refresh()
-      else setError(res.error ?? 'Could not remove')
+      // A confirm-gated delete used to give no positive feedback beyond the
+      // row silently vanishing on refresh — a toast confirms the action
+      // actually landed, since router.refresh() alone is easy to miss.
+      if (res.ok) {
+        toast({ body: `Removed ${route}` })
+        router.refresh()
+      } else {
+        setError(res.error ?? 'Could not remove')
+      }
     })
   }
 
