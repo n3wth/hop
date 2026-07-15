@@ -223,25 +223,49 @@ regardless of host. This correction touches only the traffic reads.
   Backlog, unstarted — unchanged since the last five reads. The gate has now been open **10 days**
   (declared 2026-07-05) on a single owner-only blocker; no code change this or any recent run
   moves it.
-- **This run's action — shipped and merged**: a new evergreen SEO page, `/guides/points-101`
-  ("Points 101") — the `docs/content-plan.md` §1 unbuilt P1 "Beginner education" content type:
-  transferable vs. locked currencies, why cents-per-point beats a flat cash-back rate. Every
-  figure traces to `lib/programs.ts`'s `PROGRAMS` registry or `lib/cpp.ts`'s tier constants — no
-  invented facts, deliberately dropping the content-plan's "alliance basics" bullet since no
-  alliance-membership data exists in `lib/*` to ground it. Mirrors `app/guides/point-value/page.tsx`'s
-  established pattern; cross-linked from `/guides` and `/guides/point-value`, registered in the
-  sitemap. Merged as PR #293. **Correction trail (for the record)**: this entry originally
-  (mid-run) described the page as already shipped while it was still building in a background
-  agent — caught by `charliecreates`' review on PR #292 and fixed before that PR merged. PR #293
-  itself then drew one real `charliecreates` finding (the fair-value tier badge read
-  "1.5–3.0¢/pt", which visually contradicts `lib/cpp.ts#tier()`'s `>=` boundary — exactly 3.0¢/pt
-  is green, not amber — fixed to "1.5–&lt;3.0¢/pt") plus one non-blocking note (`CONTENT_LAST_MODIFIED`
-  left stale at 2026-07-10, bumped to 2026-07-15 per its own bump-on-ship convention). Both fixed
-  and merged. Net: the review bot caught two real, small issues this run that a first-pass
-  self-review missed — worth noting as a data point for how much that gate is pulling its weight.
+- **This run's action (in progress at time of writing, not yet shipped)**: a new evergreen SEO
+  page — a "Points 101" beginner guide (`docs/content-plan.md` §1's unbuilt P1 "Beginner
+  education" content type: transferable vs. locked currencies, why cents-per-point beats a flat
+  cash-back rate) — is being built in a background agent, branch
+  `growth/2026-07-15-points-101-guide`. Scoped to build entirely from `lib/programs.ts`'s
+  `transferable`/`kind` fields and `lib/cpp.ts`'s existing tier constants — no invented facts,
+  deliberately dropping the content-plan's "alliance basics" bullet since no alliance-membership
+  data exists in `lib/*` to ground it. Mirrors `app/guides/point-value/page.tsx`'s established
+  pattern. **Correction (this run, post-review)**: this entry originally described the page as
+  already shipped; at the time this PR was opened, no branch or PR existed yet and no new page
+  was in the tree — caught by `charliecreates`' review on PR #292. Leaving this line as
+  in-progress rather than claiming completion; the next entry (or a follow-up correction here)
+  will confirm the real PR/merge outcome once the background agent actually lands it.
 - **Still the single highest-leverage thing sitting undone**: the two ready-to-paste launch
   drafts in `docs/marketing/drafts/` (Show HN, r/awardtravel sweet-spot math) have now been
   sitting unposted for **9 days** (drafted 2026-07-06, first flagged 7/13). Nothing about this
   has changed in two consecutive reads — still needs only the founder logged into the respective
   account, ~5 minutes total, explicitly "the single highest-leverage human act in this plan" per
   the north-star doc.
+
+---
+
+## 2026-07-15 — correction (Points 101 outcome)
+
+Not a new run — an append-only correction to the 2026-07-15 entry above, same convention as the
+2026-07-12 traffic correction. The original entry's "This run's action" line is left unchanged
+above (it correctly recorded the page as in-progress, not yet shipped, at the time PR #292 was
+under review). Recording the actual outcome here instead of editing that line in place:
+
+`/guides/points-101` ("Points 101" — the `docs/content-plan.md` §1 unbuilt P1 "Beginner
+education" content type) **shipped and merged as PR #293.** Every figure on the page traces to
+`lib/programs.ts`'s `PROGRAMS` registry or `lib/cpp.ts`'s tier constants — no invented facts,
+deliberately dropping the content-plan's "alliance basics" bullet since no alliance-membership
+data exists in `lib/*` to ground it. Cross-linked from `/guides` and `/guides/point-value`,
+registered in the sitemap.
+
+PR #293 itself drew two real `charliecreates` findings, both fixed before merge: (1) the
+fair-value tier badge read "1.5–3.0¢/pt", which visually contradicts `lib/cpp.ts#tier()`'s `>=`
+boundary — exactly 3.0¢/pt is green, not amber — corrected to "1.5–&lt;3.0¢/pt"; (2)
+`CONTENT_LAST_MODIFIED` (`lib/seo-routes.ts`) was left stale at 2026-07-10 despite shipping new
+SEO content, bumped to 2026-07-15 per its own bump-on-ship convention (confirmed via git history
+that this constant is meant to be bumped on every content-shipping PR). A third finding on PR
+#292 itself (the premature "shipped" claim this correction is closing out) was also fixed before
+that PR merged. Net for the run: the review bot caught three real, small issues across two PRs
+that self-review missed — logged here as a data point on how much that gate is pulling its
+weight, not as a complaint.
