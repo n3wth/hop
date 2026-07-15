@@ -33,15 +33,24 @@ was written.
 
 ## House rules when using Spiral in this repo
 
-1. **Numbers stay engine-computed.** Never let Spiral produce, alter, or "round" a cpp value,
+1. **Data boundary — Spiral is an external service.** Anything sent to a Spiral tool leaves
+   the repo and may be shared with Spiral's own third-party AI providers (see
+   [their privacy policy](https://writewithspiral.com/privacy)). Default to sending only
+   text that is public or explicitly approved for publication. Never send secrets,
+   credentials, tokens, customer or PII data, or unreleased financial/strategy material —
+   for board/CFO memo work that means Spiral may polish the *prose framing* of content the
+   owner has already approved for drafting, never raw financials or strategy that hasn't
+   shipped. Any other non-public content requires explicit owner approval **and** redaction
+   before it goes over the wire.
+2. **Numbers stay engine-computed.** Never let Spiral produce, alter, or "round" a cpp value,
    valuation, price, or ranking. Write prose with placeholders, then splice in
    engine-sourced numbers verbatim (same rule the `/ask` concierge lives by).
-2. **UI copy is out of scope.** Buttons, labels, empty states, and verdict strings follow
+3. **UI copy is out of scope.** Buttons, labels, empty states, and verdict strings follow
    `docs/design/copy-spec.md` and go through the copy-voice reviewer — don't route them
    through Spiral.
-3. **Voice check still applies.** Spiral output destined for hop surfaces still gets read
+4. **Voice check still applies.** Spiral output destined for hop surfaces still gets read
    against `docs/design/copy-spec.md` tone (plain, confident, no hype) before it ships.
-4. **Fact-check generated claims.** Spiral drafts prose, not truth — verify any factual claim
+5. **Fact-check generated claims.** Spiral drafts prose, not truth — verify any factual claim
    (transfer partners, program rules, fees) against `lib/` data or a primary source before
    publishing, exactly as the growth desk's existing SEO rules require.
 
