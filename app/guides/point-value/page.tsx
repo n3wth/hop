@@ -294,6 +294,9 @@ export default function PointValuePage() {
         {/* internal-link mesh -> live tool + sibling content */}
         <div className="mx-auto mt-10 flex max-w-[var(--container-sm)] flex-wrap items-center gap-x-5 gap-y-2 text-[14px]">
           <span className="text-text3">Next:</span>
+          <Link href="/guides/points-101" className="font-semibold text-brand hover:text-brand-deep">
+            New to points? Start here
+          </Link>
           <Link href="/search" className="font-semibold text-brand hover:text-brand-deep">
             Try it live — price a real trip
           </Link>
