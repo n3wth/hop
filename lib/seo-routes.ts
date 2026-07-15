@@ -24,6 +24,7 @@ export const STATIC_SEO_ROUTES: StaticSeoRoute[] = [
   { path: '/sweet-spots', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/guides', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/guides/point-value', changeFrequency: 'weekly', priority: 0.6 },
+  { path: '/guides/points-101', changeFrequency: 'weekly', priority: 0.6 },
   { path: '/points', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/ask', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/mcp', changeFrequency: 'monthly', priority: 0.5 },
@@ -69,6 +70,7 @@ export const FOOTER_SECTIONS: FooterSection[] = [
   {
     title: 'Learn',
     links: [
+      { href: '/guides/points-101', label: 'New to points? Start here' },
       { href: '/guides/point-value', label: 'How we value points' },
       { href: '/support', label: 'Support' },
     ],
@@ -93,6 +95,7 @@ export const SEO_REVALIDATE_PATHS: string[] = [
   '/sweet-spots',
   '/guides',
   '/guides/point-value',
+  '/guides/points-101',
   '/ask',
   '/mcp',
   '/support',

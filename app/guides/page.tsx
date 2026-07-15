@@ -88,6 +88,9 @@ export default function ProgramGuidesIndexPage() {
 
         <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[14px]">
           <span className="text-text3">Keep exploring:</span>
+          <Link href="/guides/points-101" className="font-semibold text-brand hover:text-brand-deep">
+            New to points? Start here
+          </Link>
           <Link href="/sweet-spots" className="font-semibold text-brand hover:text-brand-deep">
             Sweet spots by program
           </Link>
