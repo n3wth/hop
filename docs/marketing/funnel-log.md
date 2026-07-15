@@ -242,3 +242,30 @@ regardless of host. This correction touches only the traffic reads.
   has changed in two consecutive reads — still needs only the founder logged into the respective
   account, ~5 minutes total, explicitly "the single highest-leverage human act in this plan" per
   the north-star doc.
+
+---
+
+## 2026-07-15 — correction (Points 101 outcome)
+
+Not a new run — an append-only correction to the 2026-07-15 entry above, same convention as the
+2026-07-12 traffic correction. The original entry's "This run's action" line is left unchanged
+above (it correctly recorded the page as in-progress, not yet shipped, at the time PR #292 was
+under review). Recording the actual outcome here instead of editing that line in place:
+
+`/guides/points-101` ("Points 101" — the `docs/content-plan.md` §1 unbuilt P1 "Beginner
+education" content type) **shipped and merged as PR #293.** Every figure on the page traces to
+`lib/programs.ts`'s `PROGRAMS` registry or `lib/cpp.ts`'s tier constants — no invented facts,
+deliberately dropping the content-plan's "alliance basics" bullet since no alliance-membership
+data exists in `lib/*` to ground it. Cross-linked from `/guides` and `/guides/point-value`,
+registered in the sitemap.
+
+PR #293 itself drew two real `charliecreates` findings, both fixed before merge: (1) the
+fair-value tier badge read "1.5–3.0¢/pt", which visually contradicts `lib/cpp.ts#tier()`'s `>=`
+boundary — exactly 3.0¢/pt is green, not amber — corrected to "1.5–&lt;3.0¢/pt"; (2)
+`CONTENT_LAST_MODIFIED` (`lib/seo-routes.ts`) was left stale at 2026-07-10 despite shipping new
+SEO content, bumped to 2026-07-15 per its own bump-on-ship convention (confirmed via git history
+that this constant is meant to be bumped on every content-shipping PR). A third finding on PR
+#292 itself (the premature "shipped" claim this correction is closing out) was also fixed before
+that PR merged. Net for the run: the review bot caught three real, small issues across two PRs
+that self-review missed — logged here as a data point on how much that gate is pulling its
+weight, not as a complaint.
