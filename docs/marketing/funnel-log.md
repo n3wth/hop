@@ -188,3 +188,57 @@ regardless of host. This correction touches only the traffic reads.
   respective account to paste and submit — no code, no review, ~5 minutes total. Per the
   north-star doc, this is explicitly "the single highest-leverage human act in this plan." Flagged
   again in this run's Linear growth-log update.
+
+---
+
+## 2026-07-15
+
+- **Traffic (7d, hop.flights-only, `$host` filter applied)**: 13 visitors, 116 pageviews, 22
+  sessions, 40.9% bounce rate, ~5.8 min avg session. Visitors are down vs the 7/13 read (21) but
+  this window (7/8–7/15) also fully rolls off the 7/4–7/5 launch-week spike that inflated earlier
+  reads — pageviews are actually up (88→116) on fewer sessions, consistent with a smaller number
+  of more-engaged visitors rather than a real traffic drop. Still a small-sample read; don't
+  over-index either direction.
+- **Funnel (7d + 14d for sample size)**: `search_ran`/`verdict_viewed` were zero 7/9–7/13 (5
+  straight days, as flagged 7/13), then **both jumped to 5 on 7/14** — the first double-digit-free
+  but real activity in five days — before returning to zero on 7/15 so far. `outclick` fired
+  **3 times on 7/14** (previously fired once total, on 7/8) — the largest single-day count since
+  instrumentation shipped. `signed_up` and `first_program_added` remain **zero across all 10 days
+  logged since 2026-07-05** — now a 5th consecutive read with no account-creation or
+  program-linking event at all, across ~135 total pageviews and ~24 verdict views in that window.
+- **New this run — sized the N-372 CTA-subset hypothesis (7/10 entry's open question)**: broke
+  down `verdict_viewed` by its `verdict` property (`use-points` vs `pay-cash`) over the last 14
+  days. Result: **20 of 24 verdicts (83%) were `pay-cash`**; only 4 were `use-points`, and 3 of
+  those 4 landed on 7/14 (the one day with above-zero activity). Concretely: 7/4–7/8 was 18
+  pay-cash vs. 1 use-points (~95% cash-favorable). Per `components/VerdictRail.tsx`'s current
+  logic (confirmed by the 7/10 entry), the sign-in nudge only renders on a points-favorable
+  verdict — so across the sampled window, roughly **4 in 5 real searches never saw an
+  account-creation prompt at all**, independent of anything about the value of the prompt itself.
+  This is a real, sample-sized confirmation of the hypothesis, not just a plausible story — posted
+  as a comment on N-372 (still In Progress; item 3 of that issue already shipped via PR #286, but
+  items 1–2 were open) so the next session building the fix has the actual split instead of an
+  untested guess.
+- **MRR-gate status — Wk1 ("payment path proven, one real stranger pays")**: **not met, still
+  structurally unreachable.** N-320 (seats.aero written commercial terms, owner-only) is still
+  Backlog, unstarted — unchanged since the last five reads. The gate has now been open **10 days**
+  (declared 2026-07-05) on a single owner-only blocker; no code change this or any recent run
+  moves it.
+- **This run's action (in progress at time of writing, not yet shipped)**: a new evergreen SEO
+  page — a "Points 101" beginner guide (`docs/content-plan.md` §1's unbuilt P1 "Beginner
+  education" content type: transferable vs. locked currencies, why cents-per-point beats a flat
+  cash-back rate) — is being built in a background agent, branch
+  `growth/2026-07-15-points-101-guide`. Scoped to build entirely from `lib/programs.ts`'s
+  `transferable`/`kind` fields and `lib/cpp.ts`'s existing tier constants — no invented facts,
+  deliberately dropping the content-plan's "alliance basics" bullet since no alliance-membership
+  data exists in `lib/*` to ground it. Mirrors `app/guides/point-value/page.tsx`'s established
+  pattern. **Correction (this run, post-review)**: this entry originally described the page as
+  already shipped; at the time this PR was opened, no branch or PR existed yet and no new page
+  was in the tree — caught by `charliecreates`' review on PR #292. Leaving this line as
+  in-progress rather than claiming completion; the next entry (or a follow-up correction here)
+  will confirm the real PR/merge outcome once the background agent actually lands it.
+- **Still the single highest-leverage thing sitting undone**: the two ready-to-paste launch
+  drafts in `docs/marketing/drafts/` (Show HN, r/awardtravel sweet-spot math) have now been
+  sitting unposted for **9 days** (drafted 2026-07-06, first flagged 7/13). Nothing about this
+  has changed in two consecutive reads — still needs only the founder logged into the respective
+  account, ~5 minutes total, explicitly "the single highest-leverage human act in this plan" per
+  the north-star doc.
