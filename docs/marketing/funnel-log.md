@@ -223,14 +223,19 @@ regardless of host. This correction touches only the traffic reads.
   Backlog, unstarted — unchanged since the last five reads. The gate has now been open **10 days**
   (declared 2026-07-05) on a single owner-only blocker; no code change this or any recent run
   moves it.
-- **This run's action**: shipped a new evergreen SEO page — a "Points 101" beginner guide
-  (`docs/content-plan.md` §1's unbuilt P1 "Beginner education" content type: transferable vs.
-  locked currencies, why cents-per-point beats a flat cash-back rate). Built entirely from
-  `lib/programs.ts`'s `transferable`/`kind` fields and `lib/cpp.ts`'s existing tier constants —
-  no invented facts, deliberately scoped down from the content-plan's "alliance basics" bullet
-  since no alliance-membership data exists in `lib/*` to ground it (dropped rather than
-  fabricated). Mirrors `app/guides/point-value/page.tsx`'s established pattern. See this run's
-  Linear update (N-352) for the PR link and merge status.
+- **This run's action (in progress at time of writing, not yet shipped)**: a new evergreen SEO
+  page — a "Points 101" beginner guide (`docs/content-plan.md` §1's unbuilt P1 "Beginner
+  education" content type: transferable vs. locked currencies, why cents-per-point beats a flat
+  cash-back rate) — is being built in a background agent, branch
+  `growth/2026-07-15-points-101-guide`. Scoped to build entirely from `lib/programs.ts`'s
+  `transferable`/`kind` fields and `lib/cpp.ts`'s existing tier constants — no invented facts,
+  deliberately dropping the content-plan's "alliance basics" bullet since no alliance-membership
+  data exists in `lib/*` to ground it. Mirrors `app/guides/point-value/page.tsx`'s established
+  pattern. **Correction (this run, post-review)**: this entry originally described the page as
+  already shipped; at the time this PR was opened, no branch or PR existed yet and no new page
+  was in the tree — caught by `charliecreates`' review on PR #292. Leaving this line as
+  in-progress rather than claiming completion; the next entry (or a follow-up correction here)
+  will confirm the real PR/merge outcome once the background agent actually lands it.
 - **Still the single highest-leverage thing sitting undone**: the two ready-to-paste launch
   drafts in `docs/marketing/drafts/` (Show HN, r/awardtravel sweet-spot math) have now been
   sitting unposted for **9 days** (drafted 2026-07-06, first flagged 7/13). Nothing about this
