@@ -86,6 +86,9 @@ numbers.
 ### Stack
 
 - Next.js 16.2.9 (App Router) + React 19, TypeScript (strict), Tailwind CSS v4
+- `@astryxdesign/core` (Astryx, Meta's design system) for interactive primitives — dialogs,
+  menus, badges, toasts, empty states — themed to hop's flat cream-and-teal palette via
+  `lib/astryx-theme.ts` (keep it in sync with `app/globals.css`)
 - Neon Postgres + Drizzle ORM (`lib/db/`), Better Auth for identity (`lib/auth.ts`)
 - `ai` SDK + `@anthropic-ai/sdk` for the `/ask` concierge; `mcp-handler` for the MCP server
 - Duffel (cash fares), seats.aero (award space), AwardWallet (live balances), Resend (email),
@@ -254,6 +257,9 @@ smaller/less-capable models should read `docs/agent-playbook.md` first).
 - `docs/design/copy-spec.md` — strict UI copy voice
 - `.claude/workflows/README.md` — the saved multi-agent review/plan/audit scripts and their
   manual-fallback equivalents in `.claude/commands/`
+- `.claude/skills/` — repo skills, e.g. `spiral-writing` for drafting/humanizing long-form
+  prose with [Spiral](https://writewithspiral.com)'s MCP server (growth articles, digests,
+  memos — never UI copy or engine numbers)
 - `docs/team/routines.md` — the standing autonomous agent org (canonical over claude.ai config)
 - `docs/board/` — weekly independent business/execution reviews + adopted amendments
 
