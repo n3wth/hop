@@ -4,7 +4,7 @@ import type { MetadataRoute } from 'next'
 // datasets. The sitemap reads it as lastModified so crawlers see a real refresh
 // without churning on every unrelated deploy. After bumping, the weekly SEO cron
 // (or a manual GET /api/cron/revalidate-seo) invalidates cached pages.
-export const CONTENT_LAST_MODIFIED = '2026-07-10'
+export const CONTENT_LAST_MODIFIED = '2026-07-15'
 
 type ChangeFrequency = NonNullable<MetadataRoute.Sitemap[number]['changeFrequency']>
 

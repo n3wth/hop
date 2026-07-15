@@ -176,7 +176,7 @@ export default function Points101Page() {
                 borderColor: 'var(--color-gold-soft)',
               }}
             >
-              {AMBER_TIER_CPP.toFixed(1)}–{GREEN_TIER_CPP.toFixed(1)}¢/pt — fair value
+              {AMBER_TIER_CPP.toFixed(1)}–&lt;{GREEN_TIER_CPP.toFixed(1)}¢/pt — fair value
             </span>
             <span
               className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[13px] font-semibold"
