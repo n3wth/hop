@@ -269,3 +269,58 @@ that this constant is meant to be bumped on every content-shipping PR). A third 
 that PR merged. Net for the run: the review bot caught three real, small issues across two PRs
 that self-review missed — logged here as a data point on how much that gate is pulling its
 weight, not as a complaint.
+
+---
+
+## 2026-07-17
+
+- **Traffic (7d, hop.flights-only, `$host` filter applied)**: 14 visitors, 113 pageviews, 23
+  sessions, 39.1% bounce rate, ~4.7 min avg session. Flat vs the 7/15 read (13 visitors, 116
+  pageviews) within noise — still a single-digit-visitors-per-day site.
+- **Funnel (7d)**: `search_ran`/`verdict_viewed` were 0/0 on 7/10–7/13, jumped to 5/5 on 7/14 (as
+  already noted 7/15), dropped back to 1/1 on 7/15, then **0/0 on both 7/16 and 7/17 (partial)**.
+  `outclick` fired twice on 7/14, zero since. **`signed_up` and `first_program_added` remain zero
+  across all 12 days logged since 2026-07-05** — now a 6th consecutive read with no
+  account-creation or program-linking event at all.
+- **N-372 (VerdictRail CTA fix) closed out this run**: verified against the current
+  `components/VerdictRail.tsx` that all three "done means" items are complete — (1) the
+  cash-vs-points split was sized in the 7/15 entry (83% pay-cash), (2) the four-zero-day scare
+  from 7/9–7/12 is not an instrumentation regression: `search_ran`/`verdict_viewed` fired
+  correctly the moment a real visitor showed up (7/14), so the zero days are a traffic-volume
+  artifact, not a broken event pipe, (3) `showAccountNudge` (line 146) already renders a secondary
+  "Track your miles" / "Add your programs" CTA on every pay-cash verdict where the visitor isn't
+  both signed in and fully onboarded, per PR #286. Marked N-372 Done in Linear this run. Net
+  read: the CTA fix shipped and works as designed, and it *still* hasn't produced a single
+  `signed_up` in the three days since — at 14 visitors/week, a conversion-copy fix has nothing to
+  convert. The bottleneck is traffic, not the funnel.
+- **MRR-gate status — Wk1 ("payment path proven, one real stranger pays")**: **not met, still
+  structurally unreachable.** N-320 (seats.aero written commercial terms, owner-only) is still
+  Backlog, unstarted — unchanged since the last six reads. The gate has now been open **12 days**
+  (declared 2026-07-05) on a single owner-only blocker.
+- **This run's action**: audited the P0/P1 content-plan checklist (`docs/content-plan.md` §1)
+  against what's actually shipped — cpp-methodology explainer, Points 101, and all 5 transferable-
+  currency guides (`/guides/[program]`) are live; sweet-spots (16) and destination pages are
+  built. The content backlog for a cold-traffic funnel is largely exhausted at this traffic level;
+  shipping a 6th evergreen page has diminishing marginal return with 14 visitors/week reaching
+  the site at all. Redirected this run's owned-channel effort to a distribution channel that's
+  been named-but-never-executed in two prior documents (`docs/board/2026-07-12-board-memo.md`,
+  `docs/agent-playbook.md`): submitting the already-shipped `/mcp` page
+  (`app/mcp/page.tsx`, live since R2.1) to MCP discovery directories. Researched the three named
+  in those docs — **Smithery** requires `smithery login` (an authenticated CLI publish flow, no
+  public unauthenticated submission path found); **PulseMCP**'s public submission page currently
+  reads "no longer accepting new use case submissions" (unclear if that's the servers directory or
+  a different intake — could not confirm a working public path); **mcp.so**'s submit page
+  (`mcp.so/submit?type=server`) returned HTTP 403 to an unauthenticated fetch, and its documented
+  fallback is a GitHub issue on `mcp.so`'s own repo, which is a different repository than
+  `n3wth/hop` (out of this session's GitHub scope). None of the three have a submission path this
+  session could complete unattended without either external-account login or GitHub access to a
+  repo outside `n3wth/hop`. Wrote ready-to-paste submission copy for all three to
+  `docs/marketing/drafts/2026-07-17-mcp-directory-submissions.md` instead, same treatment as the
+  HN/Reddit drafts — the founder (or a future session with Smithery/mcp.so-scoped GitHub access)
+  can paste directly.
+- **Still the single highest-leverage thing sitting undone**: the two ready-to-paste launch
+  drafts in `docs/marketing/drafts/` (Show HN, r/awardtravel sweet-spot math) have now been
+  sitting unposted for **11 days** (drafted 2026-07-06, first flagged 7/13, flagged every read
+  since). At 14 visitors/week from organic/direct only, this is now the dominant explanation for
+  why the funnel has near-zero volume to convert — no amount of on-site copy work fixes a traffic
+  problem. Needs only the founder logged into the respective account, ~5 minutes total.
