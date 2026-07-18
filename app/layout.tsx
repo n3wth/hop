@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next'
-import Script from 'next/script'
 import { Bricolage_Grotesque, Fraunces, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import {
@@ -171,19 +170,6 @@ export default function RootLayout({
             AppShell adds identify() for signed-in sessions. No-ops without
             NEXT_PUBLIC_POSTHOG_KEY. */}
         <PostHogBoot />
-        {/* Travelpayouts auto-attribution tag (project/trs 545389, marker
-            745576). Decorates clicks on links that point DIRECTLY at partner
-            domains. It cannot see through the same-origin /api/go/kiwi ledger
-            redirect, so the cash CTAs do NOT rely on it — lib/booking.ts
-            #cashBookingUrl bakes attribution into the redirect destination
-            (tp.media). The tag stays for any other partner links on the page.
-            lazyOnload keeps it entirely off the critical path. No hop data is
-            sent; it only decorates outbound partner navigations. Production-only:
-            the tag 403s on non-whitelisted origins (localhost), spamming the
-            console — and dev clicks shouldn't attribute anyway. */}
-        {process.env.NODE_ENV === 'production' && (
-          <Script src="https://emrldtp.com/NTQ1Mzg5.js?t=545389" strategy="lazyOnload" />
-        )}
       </body>
     </html>
   )
