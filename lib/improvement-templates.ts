@@ -161,5 +161,27 @@ export function renderFinding(d: Detection): { title: string; body: string } {
         ]),
       }
     }
+    case 'dead-watches': {
+      const { count, staleAfterDays } = d.data
+      return {
+        title: `Active watches have zero alerts in ${staleAfterDays} days (${count} counted)`,
+        body: joinBody([
+          [
+            'What was observed',
+            `- There are ${count} active, unalerted watches in the system that are at least ${staleAfterDays} days old (WATCH_DEAD_DAYS). They have fired zero alerts in their entire window.`,
+          ].join('\n'),
+          [
+            'Where to look',
+            '- lib/standing-orders.ts (active watches query)',
+            '- lib/health-checks.ts (WATCH_DEAD_DAYS constant)',
+          ].join('\n'),
+          [
+            'Acceptance',
+            '- These watches are either modified, cancelled, or fire an alert, bringing the count of old dead watches back to 0; the finding auto-resolves on the next sentinel run.',
+          ].join('\n'),
+          FOOTER,
+        ]),
+      }
+    }
   }
 }

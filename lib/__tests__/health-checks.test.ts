@@ -33,6 +33,7 @@ const EMPTY: HealthCheckInputs = {
   flags: null,
   datasets: null,
   valuations: null,
+  deadWatches: null,
 }
 
 function reportOf(overrides: Partial<HealthCheckInputs>, detector: DetectorId) {
@@ -350,10 +351,32 @@ describe('D5 valuation drift', () => {
   })
 })
 
+describe('D6 dead watches', () => {
+  it('zero dead watches → healthy', () => {
+    const r = reportOf({ deadWatches: 0 }, 'dead-watches')
+    expect(r.findings).toHaveLength(0)
+    expect(r.clearedSubjects).toContain('all')
+  })
+
+  it('positive count → finding', () => {
+    const r = reportOf({ deadWatches: 5 }, 'dead-watches')
+    expect(r.findings).toHaveLength(1)
+    expect(r.findings[0].fingerprint).toBe('dead-watches:all')
+    expect(r.findings[0].title).toContain('5 counted')
+    expect(r.findings[0].body).toContain('5 active, unalerted watches')
+    expect(r.findings[0].severity).toBe('p3')
+  })
+
+  it('null deadWatches input → unknown', () => {
+    const r = reportOf({ deadWatches: null }, 'dead-watches')
+    expect(r.status).toBe('unknown')
+  })
+})
+
 describe('all-null inputs — the fully degraded run', () => {
   it('every detector reports unknown; nothing files, nothing resolves', () => {
     const reports = runHealthChecks(EMPTY, NOW)
-    expect(reports).toHaveLength(5)
+    expect(reports).toHaveLength(6)
     for (const r of reports) {
       expect(r.status).toBe('unknown')
       expect(r.findings).toHaveLength(0)

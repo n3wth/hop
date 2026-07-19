@@ -19,6 +19,7 @@ function fullDigest(): BusinessDigest {
     activeSubscriptions: 1,
     outclicks: { count: 4, prev: 2, total: 4 },
     receiptsCreated: { count: 6, prev: 4 },
+    system: null,
   }
 }
 
@@ -149,6 +150,31 @@ describe('renderBusinessDigest', () => {
     expect(r.subject).toContain('1 active watch ·')
     expect(r.subject).toContain('1 card outclick')
     expect(r.subject).not.toContain('1 card outclicks')
+  })
+
+  it('renders system section correctly when present', () => {
+    const d = fullDigest()
+    d.system = {
+      openFindings: [
+        { title: 'valuation-sync cron has not completed in 52h', identifier: 'HOP-12' },
+        { title: 'alaska live cpp 2.9 vs baseline 1.8 (61 samples)', identifier: null },
+      ],
+      counts: { resolved: 1, filed: 2 },
+      degradations: { cash: 11, awards: 3, balances: 0 },
+      sentinelLastRunAt: '2026-07-02T06:00:00.000Z',
+    }
+    const r = renderBusinessDigest(d, new Date('2026-07-02T12:00:00.000Z'))!
+    expect(r.text).toContain('System:')
+    expect(r.text).toContain('Needs attention: valuation-sync cron has not completed in 52h (HOP-12) · alaska live cpp 2.9 vs baseline 1.8 (61 samples)')
+    expect(r.text).toContain('Resolved since last week: 1 · Filed: 2')
+    expect(r.text).toContain('Degraded fetches, 7d: 14 (cash 11, awards 3)')
+    expect(r.text).toContain('Sentinel last ran 6h ago.')
+
+    expect(r.html).toContain('System')
+    expect(r.html).toContain('Needs attention: valuation-sync cron has not completed in 52h (HOP-12) · alaska live cpp 2.9 vs baseline 1.8 (61 samples)')
+    expect(r.html).toContain('Resolved since last week: 1 · Filed: 2')
+    expect(r.html).toContain('Degraded fetches, 7d: 14 (cash 11, awards 3)')
+    expect(r.html).toContain('Sentinel last ran 6h ago.')
   })
 })
 

@@ -164,6 +164,7 @@ export type FindingKind =
   | 'flag-drift'
   | 'dataset-stale'
   | 'valuation-drift'
+  | 'dead-watches'
 
 export type FindingSeverity = 'p1' | 'p3'
 
@@ -202,6 +203,11 @@ export type Detection =
         thresholdShare: number
       }
     }
+  | {
+      kind: 'dead-watches'
+      subject: string
+      data: { count: number; staleAfterDays: number }
+    }
 
 export interface HealthFinding {
   kind: FindingKind
@@ -219,6 +225,7 @@ export type DetectorId =
   | 'flag-drift'
   | 'dataset-stale'
   | 'valuation-drift'
+  | 'dead-watches'
 
 export interface DetectorReport {
   detector: DetectorId
@@ -244,6 +251,8 @@ export interface HealthCheckInputs {
     baseline: Record<string, number>
     overrides: Array<{ programId: string; cpp: number; sampleSize: number }>
   } | null
+  /** D6 — Total active watches older than WATCH_DEAD_DAYS with zero alerts. */
+  deadWatches: number | null
 }
 
 export function fingerprintOf(kind: FindingKind, subject: string): string {
@@ -443,6 +452,25 @@ function checkValuationDrift(valuations: HealthCheckInputs['valuations']): Detec
   return report('valuation-drift', 'valuation-drift', findings, cleared)
 }
 
+// ── D6: dead watches ────────────────────────────────────────────────────────
+function checkDeadWatches(deadWatches: HealthCheckInputs['deadWatches']): DetectorReport {
+  if (deadWatches === null) return unknownReport('dead-watches', 'dead-watches')
+  const findings: HealthFinding[] = []
+  const cleared: string[] = []
+  if (deadWatches > 0) {
+    findings.push(
+      toFinding({
+        kind: 'dead-watches',
+        subject: 'all',
+        data: { count: deadWatches, staleAfterDays: WATCH_DEAD_DAYS },
+      }),
+    )
+  } else {
+    cleared.push('all')
+  }
+  return report('dead-watches', 'dead-watches', findings, cleared)
+}
+
 // Run every detector over pre-gathered inputs. Pure and total: never throws,
 // one report per detector, degraded inputs surface as status 'unknown'.
 export function runHealthChecks(inputs: HealthCheckInputs, now: Date): DetectorReport[] {
@@ -452,5 +480,6 @@ export function runHealthChecks(inputs: HealthCheckInputs, now: Date): DetectorR
     checkFlagDrift(inputs.flags),
     checkDatasetStaleness(inputs.datasets, now),
     checkValuationDrift(inputs.valuations),
+    checkDeadWatches(inputs.deadWatches),
   ]
 }

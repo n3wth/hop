@@ -42,6 +42,18 @@ export interface OutclickMetric extends WeeklyMetric {
   total: number | null
 }
 
+export interface SystemFindingInfo {
+  title: string
+  identifier: string | null
+}
+
+export interface SystemDigest {
+  openFindings: SystemFindingInfo[] | null
+  counts: { resolved: number; filed: number } | null
+  degradations: Record<string, number> | null
+  sentinelLastRunAt: string | null
+}
+
 export interface BusinessDigest {
   /** ISO datetimes bounding the 7-day window [start, end). */
   window: { start: string; end: string }
@@ -67,6 +79,9 @@ export interface BusinessDigest {
    *  measurement ("is anyone sharing?"). null = degraded — expected until the
    *  drizzle/0010_nervous_clea.sql migration has been applied or the flag is off. */
   receiptsCreated: WeeklyMetric | null
+  /** System section (PR 2 of self-improvement loop) — four independent
+   *  null-degrading queries. null = degraded entirely. */
+  system?: SystemDigest | null
 }
 
 export interface RenderedDigest {
@@ -294,6 +309,85 @@ async function countActiveSubscriptions(): Promise<number | null> {
   })
 }
 
+// System section queries (four independent null-degrading queries).
+async function computeSystemDigest(
+  w: { start: string; end: string },
+): Promise<SystemDigest | null> {
+  const [openFindings, counts, degradations, sentinelLastRunAt] = await Promise.all([
+    // 1. Open findings
+    withDb<SystemFindingInfo[] | null>(null, async (db) => {
+      const { data, error } = await db
+        .from('hop_improvement_findings')
+        .select('title, linear_identifier')
+        .eq('status', 'open')
+        .order('first_seen_at', { ascending: true })
+      if (error || !data) return null
+      return (data as Array<{ title: string; linear_identifier: string | null }>).map((r) => ({
+        title: r.title,
+        identifier: r.linear_identifier,
+      }))
+    }),
+
+    // 2. Resolved/Filed since last week
+    withDb<{ resolved: number; filed: number } | null>(null, async (db) => {
+      const [resResult, filResult] = await Promise.all([
+        db
+          .from('hop_improvement_findings')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'resolved')
+          .gte('resolved_at', w.start)
+          .lt('resolved_at', w.end),
+        db
+          .from('hop_improvement_findings')
+          .select('id', { count: 'exact', head: true })
+          .gte('filed_at', w.start)
+          .lt('filed_at', w.end),
+      ])
+      if (
+        resResult.error ||
+        filResult.error ||
+        typeof resResult.count !== 'number' ||
+        typeof filResult.count !== 'number'
+      ) {
+        return null
+      }
+      return { resolved: resResult.count, filed: filResult.count }
+    }),
+
+    // 3. 7d degradation counts per source
+    withDb<Record<string, number> | null>(null, async (db) => {
+      const { data, error } = await db
+        .from('hop_degradation_events')
+        .select('source')
+        .gte('created_at', w.start)
+        .lt('created_at', w.end)
+      if (error || !data) return null
+      const counts: Record<string, number> = {}
+      for (const r of data as Array<{ source: string }>) {
+        counts[r.source] = (counts[r.source] ?? 0) + 1
+      }
+      return counts
+    }),
+
+    // 4. Sentinel last run age
+    withDb<string | null>(null, async (db) => {
+      const { data, error } = await db
+        .from('hop_cron_heartbeats')
+        .select('last_run_at')
+        .eq('job', 'health-sentinel')
+        .maybeSingle()
+      if (error || !data) return null
+      return (data as { last_run_at: string }).last_run_at
+    }),
+  ])
+
+  if (openFindings === null && counts === null && degradations === null && sentinelLastRunAt === null) {
+    return null
+  }
+
+  return { openFindings, counts, degradations, sentinelLastRunAt }
+}
+
 // Compute the week's digest from hop's own tables. Every section is an
 // independent query; a failure in one degrades only that section. NEVER throws.
 export async function computeBusinessDigest(now: Date = new Date()): Promise<BusinessDigest> {
@@ -307,6 +401,7 @@ export async function computeBusinessDigest(now: Date = new Date()): Promise<Bus
     activeSubscriptions,
     outclicks,
     receiptsCreated,
+    system,
   ] = await Promise.all([
     activeUsersMetric(w, now),
     weeklyMetric('hop_escalations', w, now),
@@ -316,6 +411,7 @@ export async function computeBusinessDigest(now: Date = new Date()): Promise<Bus
     countActiveSubscriptions(),
     outclickMetric(w, now),
     weeklyMetric('hop_shared_verdicts', w, now),
+    computeSystemDigest(w),
   ])
   return {
     window: { start: w.start, end: w.end },
@@ -327,6 +423,7 @@ export async function computeBusinessDigest(now: Date = new Date()): Promise<Bus
     activeSubscriptions,
     outclicks,
     receiptsCreated,
+    system,
   }
 }
 
@@ -437,13 +534,70 @@ function escapeHtml(s: string): string {
 // Render the digest email. PURE — formats only what the resolver counted; a
 // degraded (null) section is simply omitted. Returns null when EVERY source
 // degraded (there is nothing true to say, so we say nothing).
-export function renderBusinessDigest(d: BusinessDigest): RenderedDigest | null {
+export function renderBusinessDigest(d: BusinessDigest, now: Date = new Date()): RenderedDigest | null {
   const sections = buildSections(d)
   if (sections.length === 0) return null
 
   const range = fmtWindow(d.window)
   const summary = sections.map((s) => s.headline).join(' · ')
   const subject = `hop this week: ${summary}`
+
+  const systemLines: string[] = []
+  const systemHtmlLines: string[] = []
+  if (d.system) {
+    const s = d.system
+    if (s.openFindings && s.openFindings.length > 0) {
+      const items = s.openFindings
+        .map((f) => {
+          const num = f.identifier ? ` (${f.identifier})` : ''
+          return `${f.title}${num}`
+        })
+        .join(' · ')
+      systemLines.push(`Needs attention: ${items}`)
+      systemHtmlLines.push(`Needs attention: ${items}`)
+    }
+
+    if (s.counts) {
+      const line = `Resolved since last week: ${s.counts.resolved} · Filed: ${s.counts.filed}`
+      systemLines.push(line)
+      systemHtmlLines.push(line)
+    }
+
+    if (s.degradations) {
+      const total = Object.values(s.degradations).reduce((a, b) => a + b, 0)
+      const detail = Object.entries(s.degradations)
+        .filter((entry) => entry[1] > 0)
+        .map(([source, count]) => `${source} ${count}`)
+        .join(', ')
+      const detailSuffix = detail ? ` (${detail})` : ''
+      const line = `Degraded fetches, 7d: ${total}${detailSuffix}`
+      systemLines.push(line)
+      systemHtmlLines.push(line)
+    }
+
+    if (s.sentinelLastRunAt) {
+      const t = Date.parse(s.sentinelLastRunAt)
+      if (Number.isFinite(t)) {
+        const ageHours = Math.round((now.getTime() - t) / (60 * 60 * 1000))
+        const line = `Sentinel last ran ${ageHours}h ago.`
+        systemLines.push(line)
+        systemHtmlLines.push(line)
+      }
+    }
+  }
+
+  const systemBlockText =
+    systemLines.length > 0 ? ['', 'System:', ...systemLines.map((l) => `  ${l}`)] : []
+
+  const systemBlockHtml =
+    systemHtmlLines.length > 0
+      ? [
+          `<p style="margin:20px 0 4px;font-size:16px;font-weight:600">System</p>`,
+          `<ul style="margin:0;padding-left:18px;color:#1a1a1a">`,
+          ...systemHtmlLines.map((l) => `<li style="margin:0 0 4px">${escapeHtml(l)}</li>`),
+          `</ul>`,
+        ]
+      : []
 
   // Plain text — canonical body. Summary line, then one line per section.
   const text = [
@@ -452,6 +606,7 @@ export function renderBusinessDigest(d: BusinessDigest): RenderedDigest | null {
     summary,
     '',
     ...sections.map((s) => s.line),
+    ...systemBlockText,
     '',
     'Counted from hop’s own tables. Sections with a degraded source are omitted.',
   ].join('\n')
@@ -464,6 +619,7 @@ export function renderBusinessDigest(d: BusinessDigest): RenderedDigest | null {
     `<ul style="margin:0;padding-left:18px;color:#1a1a1a">`,
     ...sections.map((s) => `<li style="margin:0 0 4px">${escapeHtml(s.line)}</li>`),
     `</ul>`,
+    ...systemBlockHtml,
     `<p style="margin:24px 0 0;color:#888;font-size:13px">Counted from hop&#39;s own tables. Sections with a degraded source are omitted.</p>`,
     `</div>`,
   ].join('')
