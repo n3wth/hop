@@ -377,28 +377,32 @@ PRs merged after it (#270–#288).
 
 ## 10. Open threads
 
-**Priority ranking pointer (updated 2026-07-13):** no newer strategy-desk run this week —
-`docs/strategy/2026-07-12-weekly-strategy.md` (Marcus's first run) is still the current priority
-order per the ownership rule in "The goal" above. Its own ranked top 5, checked against this
-week's evidence:
+**Priority ranking pointer (updated 2026-07-19):** the current priority order is the board's own
+ranked amendment list in `docs/board/2026-07-19-board-memo.md` §7 (15 items) — this week's board
+memo is dated *today*, not a week stale like prior weeks, so per the ownership rule in "The goal"
+above it wins outright rather than being checked against the strategy desk's own ranking.
+`docs/strategy/2026-07-19-weekly-strategy.md` (this week's run) reviewed it against a fresh
+PostHog pull and market scan and found no evidence to reorder it — it adopted the board's list
+as-is, adding two refinements (sharper evidence for the MCP-directory-submission item and the
+fallback-award-source item) and one new watch item (whether `signed_up`/`first_program_added` —
+zero for 12 days — repeat after the first-ever nonzero read on 2026-07-18). Top 5, restated for
+convenience — see the board memo §7 for the full 15 and the strategy doc for this week's
+refinements:
 
-1. Fix the PostHog `$host` filter bug [N-371] — **done**, PR #285 (`41037d0`), see §9.
-2. Ship the VerdictRail CTA fix from the 7/10 funnel-log hypothesis [N-372] — **done** for the
-   CTA-copy half, PR #286 (`7828725`). The other half of N-372 — whether `search_ran` really went
-   to zero or that was sampling noise — is **still open**: the 7/13 funnel-log entry found one
-   anomalous zero-`search_ran` `/search` visit but logged it "inconclusive, not closed."
-3. Resolve `/pricing`'s stalled state (N-319) — **not done**: zero commits touched
-   `app/pricing/` this week (`git log fb9a1ba..HEAD -- app/pricing/` is empty).
-4. Submit `/mcp` to 2-3 directories and prototype the seats.aero fallback award-data source
-   (N-320) as a tied pair — **neither done**: no MCP-directory-submission evidence in the repo,
-   and grepping for "fallback" near `seatsaero`/`sweet-spot-candidates` turns up only an unrelated
-   cabin-fallback comment — zero lines implementing an alternate award-data source still.
-5. Explicitly deprioritize further content-pipeline expansion until the staleness guard exists —
-   **violated a second time**: PR #288 shipped a new SEO page (`/guides/point-value`) this week
-   while the staleness guard (item 4 below) remains unbuilt. See the updated freeze note below.
+1. Gate `app/pricing/page.tsx`'s `metadata` export via `generateMetadata()` behind
+   `isBillingEnabled()` — it currently advertises $49/yr unconditionally. **[agents-can-execute]**
+2. Resolve N-319 (`/pricing`) fully this week — finish or revert/freeze; the billing-on-or-off
+   call itself is **[needs-founder]**, the finish-or-revert mechanics are **[agents-can-execute]**.
+3. Start the fallback award-data-source prototype — zero code, now split into its own
+   agent-executable Linear issue (see this week's strategy doc) so it stops inheriting N-320's
+   owner-assigned Backlog status. **[agents-can-execute]**
+4. Build the content staleness/"verified as of" guard before any further content ships — violated
+   twice (PRs #275, #288); now its own Linear issue. **[agents-can-execute]**
+5. No further `/mcp` polish until at least one MCP-directory submission lands. **[agents-can-execute]**
 
-Check for a newer `docs/strategy/<date>-weekly-strategy.md` each week before treating this as
-current.
+Check for a newer `docs/strategy/<date>-weekly-strategy.md` and `docs/board/<date>-board-memo.md`
+each week before treating this as current — whichever is dated later in a given week wins per the
+ownership rule.
 
 **ADOPTED BOARD AMENDMENTS 2026-07-12 (supersedes the 2026-07-05 list below — the doc had gone
 stale, still showing the first board review's ranking after a second one shipped):** the
