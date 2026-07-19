@@ -46,14 +46,22 @@ board memo's amendment list as-is; fall back to the strategy desk's ranking only
 questions the current board memo doesn't address, and fall back further to re-deriving from the
 business plan's own sequencing only if neither review exists yet.
 
-**Known scheduling bug (flagged 2026-07-12, not yet fixed):** the board's cron
-(`0 13 * * 0`) fires two hours before the strategy desk's (`0 15 * * 0`) every Sunday
-(`docs/team/routines.md`), so a given week's board review can never see that same week's strategy
-output — only the prior week's (or none, in the strategy desk's first weeks). This is why board
-memos may read the strategy desk as "silent" when it has simply not run yet that day. Worth
-fixing by moving one of the two crons; until then, read a "no `docs/strategy/` file newer than
-last week" finding as an artifact of ordering, not a desk failure, unless multiple weeks pass with
-still nothing.
+**Known scheduling bug (flagged 2026-07-12, still not fixed as of 2026-07-19 — 2nd week
+running):** the board's cron (`0 13 * * 0`) fires two hours before the strategy desk's
+(`0 15 * * 0`) every Sunday (`docs/team/routines.md`), so a given week's board review can never
+see that same week's strategy output — only the prior week's (or none, in the strategy desk's
+first weeks). This is why board memos may read the strategy desk as "silent" when it has simply
+not run yet that day. Worth fixing by moving one of the two crons; until then, read a "no
+`docs/strategy/` file newer than last week" finding as an artifact of ordering, not a desk
+failure, unless multiple weeks pass with still nothing. Fixing this cron ordering is itself
+`[agents-can-execute]` — see the latest board memo's ranked amendment list.
+
+**Ownership order reaffirmed (2026-07-19):** the board memo dated 2026-07-19
+(`docs/board/2026-07-19-board-memo.md`) independently re-confirmed the ownership order above —
+its own ranked amendment list (§7) is this week's authoritative priority order, and it found the
+org executing on roughly 1 of 13 of the prior week's board amendments, so treat "the board's list
+is the harder-won, more authoritative one" as load-bearing, not aspirational: a desk that finds
+its own prior-week asks unmet should escalate rather than silently re-derive a fresh ranking.
 
 **Ongoing priority ownership (from 2026-07-06):** the board memo above was a one-time review; the
 strategy desk (Marcus, `docs/team/routines.md`) now owns re-ranking priority on a weekly cadence
