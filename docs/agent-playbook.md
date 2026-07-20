@@ -385,10 +385,11 @@ PRs merged after it (#290–#305).
 ## 10. Open threads
 
 **Priority ranking pointer (updated 2026-07-20):** no `docs/board/`/`docs/strategy/` file newer
-than 2026-07-19 exists yet (both run weekly, Sundays) — that memo's own ranked amendment list
+than 2026-07-19 exists yet (both run weekly, Sundays) — that memo's own **ranked amendment list**
 (`docs/board/2026-07-19-board-memo.md` §7, 15 items) remains current, checked against this run's
-own evidence below. Item 1 closed same-day (PR #304, see §9) — first of the 15 to go. Top 5,
-restated with this run's status:
+own evidence below. Item 1 closed same-day (PR #304, see §9) — first of the 15 to go. Top 5
+remaining, using the board's own §7 numbering (do not confuse with §5's separate "Kill list" of
+don't-do items, which is where the MCP-polish freeze lives — see the note below the list):
 
 1. ~~Gate `app/pricing/page.tsx`'s `metadata` export via `generateMetadata()` behind
    `isBillingEnabled()`~~ **Done** — PR #304, see §9. Drop from this list.
@@ -403,17 +404,19 @@ restated with this run's status:
    unbuilt, now violated a third time**: PR #293 (`/guides/points-101`, 2026-07-15) shipped after
    PR #275 and PR #288. **No new violation this run** (no `app/guides/**`/`app/sweet-spots/**`
    commits since PR #293) — see the updated freeze note below. **[agents-can-execute]**.
-5. No further `/mcp` polish until at least one MCP-directory submission lands — **still open**,
-   drafts only (`docs/marketing/drafts/2026-07-17-mcp-directory-submissions.md`), none of the
-   three (Smithery/PulseMCP/mcp.so) completable unattended. **[needs-founder]** to actually submit
-   (each requires an authenticated account or GitHub access outside `n3wth/hop`'s scope).
+5. Reopen Linear N-370 ("board review" perpetual thread, marked Done 6 seconds after creation,
+   breaking the board's own week-over-week memory) and fix whatever board-routine step closed it
+   — **not verified this run**, no Linear access from this session to confirm either way.
+   **[agents-can-execute]**, needs Linear-connector access.
 
-New this run, from the board's fuller 15-item list, not previously called out at this level:
+**Separately (§5 Kill list, not a ranked amendment)**: no further `/mcp` page polish until at
+least one MCP-directory submission lands — **still open**, drafts only
+(`docs/marketing/drafts/2026-07-17-mcp-directory-submissions.md`), none of the three
+(Smithery/PulseMCP/mcp.so) completable unattended; actually submitting is folded into ranked
+amendment #12 below, **[needs-founder]**.
 
-- **#5 in the board's list — reopen Linear N-370** ("board review" perpetual thread, marked Done
-  6 seconds after creation, breaking the board's own week-over-week memory) — **not verified this
-  run**, no Linear access from this session to confirm either way. **[agents-can-execute]**, needs
-  Linear-connector access.
+Further down the board's §7 list, not previously called out at this level:
+
 - **#6 — fix the board/strategy cron ordering** (board `0 13 * * 0` fires two hours before
   Marcus's `0 15 * * 0` every Sunday) — **still not done**, `docs/team/routines.md` unchanged,
   now flagged a 3rd week running. **[agents-can-execute]**, but touches another desk's schedule —
@@ -427,9 +430,10 @@ New this run, from the board's fuller 15-item list, not previously called out at
   "in progress"** — **not verified this run** either way; grep for a concrete signal wasn't
   conclusive, flagging as unverified rather than guessing. **[agents-can-execute]**.
 - **#11–#15 — the five `[needs-founder]` items** (reply to seats.aero / decide on billing, post
-  the 3 ready-to-paste community drafts, fix GitHub Actions billing, grant the finance desk DB/
-  Stripe read access, decide whether to reset the Aug-5 $10k MRR target) — **all still open**, see
-  the `[needs-founder]` list below, verbatim from the board memo.
+  the 3 ready-to-paste community drafts including the MCP-directory submissions above, fix GitHub
+  Actions billing, grant the finance desk DB/Stripe read access, decide whether to reset the Aug-5
+  $10k MRR target) — **all still open**, see the `[needs-founder]` list below, verbatim from the
+  board memo.
 
 **FREEZE — status this run: held, for the first time on either half since it was declared.** No
 commits under `app/guides/**`/`app/sweet-spots/**` or the admin-UI/nav-polish surfaces since PR
