@@ -23,6 +23,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
+          token: ${{ secrets.HOP_BOT_TOKEN }}
 
       - name: Setup Node
         uses: actions/setup-node@39376e3e73fc7a1d668824e5b6723a03284cd150 # v4.1.0
@@ -116,7 +117,15 @@ jobs:
           # Force push to origin
           git push origin bot/data-refresh --force
           
-          # Create pull request using GitHub CLI
+          # Create pull request using GitHub CLI, ignoring only if it already exists
           gh pr create --head bot/data-refresh --base main \
             --title "chore(data): monthly place facts and climate normals refresh" \
-            --body "Monthly auto-refresh of Wikidata facts, Open-Meteo climate normals, and Frankfurter FX rates. This PR is created automatically by the Data Refresh Loop (L3)." || echo "PR already exists"
+            --body "Monthly auto-refresh of Wikidata facts, Open-Meteo climate normals, and Frankfurter FX rates. This PR is created automatically by the Data Refresh Loop (L3)." > pr_output.log 2>&1 || {
+              cat pr_output.log
+              if grep -qi "already exists" pr_output.log; then
+                echo "PR already exists"
+              else
+                echo "Error: gh pr create failed"
+                exit 1
+              fi
+            }
