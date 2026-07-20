@@ -163,4 +163,5 @@ out += `}\n\nexport const FX: FxSnapshot = {
   rates: ${fmt(fx.rates)},
   agoRates: ${fmt(fx.agoRates)},
 }\n`
+out += `\nexport const GENERATED_AT = ${JSON.stringify(new Date().toISOString())}\n`
 process.stdout.write(out)

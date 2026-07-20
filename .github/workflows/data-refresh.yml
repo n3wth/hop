@@ -1,0 +1,122 @@
+name: Data Refresh Loop (L3)
+
+on:
+  schedule:
+    - cron: '0 9 1 * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run: print changes without creating a branch/PR'
+        type: boolean
+        required: true
+        default: true
+
+concurrency:
+  group: data-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@39376e3e73fc7a1d668824e5b6723a03284cd150 # v4.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Regenerate place facts
+        run: node scripts/gen-place-facts.mjs > lib/place-facts.ts
+
+      - name: Regenerate climate normals
+        run: node scripts/gen-climate-normals.mjs > lib/climate-normals.ts
+
+      - name: Bump CONTENT_LAST_MODIFIED in lib/seo-routes.ts
+        run: |
+          python3 -c "
+          import re
+          from datetime import datetime
+
+          path = 'lib/seo-routes.ts'
+          content = open(path).read()
+          today = datetime.now().strftime('%Y-%m-%d')
+
+          matches = re.findall(r\"export const CONTENT_LAST_MODIFIED = '(\d{4}-\d{2}-\d{2})'\", content)
+          if len(matches) != 1:
+              print(f'Error: Found {len(matches)} matches of CONTENT_LAST_MODIFIED, expected exactly 1.')
+              exit(1)
+
+          new_content = re.sub(
+              r\"export const CONTENT_LAST_MODIFIED = '\d{4}-\d{2}-\d{2}'\",
+              f\"export const CONTENT_LAST_MODIFIED = '{today}'\",
+              content
+          )
+
+          new_matches = re.findall(f\"export const CONTENT_LAST_MODIFIED = '{today}'\", new_content)
+          if len(new_matches) != 1:
+              print('Error: After replacement, found != 1 matches of the new CONTENT_LAST_MODIFIED.')
+              exit(1)
+
+          open(path, 'w').write(new_content)
+          print(f'Successfully bumped CONTENT_LAST_MODIFIED in {path} to {today}')
+          "
+
+      - name: Hard path guard
+        run: |
+          CHANGED_FILES=$(git diff --name-only)
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          BAD_FILES=0
+          for f in $CHANGED_FILES; do
+            if [ "$f" != "lib/place-facts.ts" ] && [ "$f" != "lib/climate-normals.ts" ] && [ "$f" != "lib/seo-routes.ts" ]; then
+              echo "ERROR: Disallowed file changed: $f"
+              BAD_FILES=$((BAD_FILES + 1))
+            fi
+          done
+
+          if [ "$BAD_FILES" -gt 0 ]; then
+            echo "Hard path guard failed. Aborting."
+            exit 1
+          fi
+          echo "Hard path guard passed."
+
+      - name: Validate changes (npm run check)
+        run: npm run check
+
+      - name: Dry Run reporting
+        if: ${{ github.event.inputs.dry_run == 'true' || (github.event.inputs.dry_run == '' && github.event_name == 'workflow_dispatch') }}
+        run: |
+          echo "=== DRY RUN COMPLETED ==="
+          git diff
+          echo "No branch or PR created."
+
+      - name: Commit and push changes
+        if: ${{ github.event.inputs.dry_run == 'false' || github.event_name == 'schedule' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.HOP_BOT_TOKEN }}
+        run: |
+          git config --global user.name "hop-bot"
+          git config --global user.email "bot@hop.flights"
+          
+          # Create and switch to bot/data-refresh branch
+          git checkout -b bot/data-refresh
+          
+          git add lib/place-facts.ts lib/climate-normals.ts lib/seo-routes.ts
+          git commit -m "chore(data): monthly place facts and climate normals refresh"
+          
+          # Force push to origin
+          git push origin bot/data-refresh --force
+          
+          # Create pull request using GitHub CLI
+          gh pr create --head bot/data-refresh --base main \
+            --title "chore(data): monthly place facts and climate normals refresh" \
+            --body "Monthly auto-refresh of Wikidata facts, Open-Meteo climate normals, and Frankfurter FX rates. This PR is created automatically by the Data Refresh Loop (L3)." || echo "PR already exists"
