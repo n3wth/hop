@@ -9,11 +9,16 @@ import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import { pageMeta } from '@/lib/seo'
 
-export const metadata = pageMeta({
-  title: 'Pricing',
-  description: `hop's verdict is free, always. Pro adds unlimited alerts and a bigger agent quota for $${PRO_PRICE_YEARLY_USD}/yr — early price, grandfathered for life.`,
-  path: '/pricing',
-})
+// Billing is flag-gated (isBillingEnabled()) — the page body already branches on it
+// (BillingSection vs. the "not live yet" note). Metadata must branch the same way:
+// a static `export const metadata` would advertise $PRO_PRICE_YEARLY_USD/yr in the
+// <head>/social preview even while billing is off, regardless of what the body renders.
+export async function generateMetadata() {
+  const description = isBillingEnabled()
+    ? `hop's verdict is free, always. Pro adds unlimited alerts and a bigger agent quota for $${PRO_PRICE_YEARLY_USD}/yr — early price, grandfathered for life.`
+    : "hop's verdict is free, always. A paid plan isn't live yet."
+  return pageMeta({ title: 'Pricing', description, path: '/pricing' })
+}
 
 const BILLING_ERROR_COPY: Record<string, string> = {
   bot: 'That didn’t look like a real request — try again from the page.',
