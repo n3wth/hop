@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import Icon from '@/components/Icon'
+import Card from '@/components/ui/Card'
+import Eyebrow from '@/components/ui/Eyebrow'
 import HeroSearch from '@/components/landing/HeroSearch'
 import DestinationGrid from '@/components/landing/DestinationGrid'
 import SignedInHero from '@/components/landing/SignedInHero'
@@ -153,9 +155,9 @@ export default async function SignedInHome({
       <section>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-col gap-2">
-            <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
+            <Eyebrow className="text-brand text-[12px]">
               Trips your balances can get you to
-            </span>
+            </Eyebrow>
             {/* No max-width/text-balance on the heading itself: a cap sized in ch
                 is relative to THIS block's (small) font-size, not the much larger
                 heading font, so it was clipping a one-line headline to two. Only
@@ -210,10 +212,10 @@ export default async function SignedInHome({
           for members who already know the exact route they want. */}
       <section className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px] lg:gap-12">
         {/* Run a real search */}
-        <div className="flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-6 sm:p-8 lg:rounded-[var(--radius-hero)]">
-          <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
+        <Card surface="paper" radius="lg" className="flex flex-col p-6 sm:p-8 lg:rounded-[var(--radius-hero)]">
+          <Eyebrow className="text-brand text-[12px]">
             Already know the route?
-          </span>
+          </Eyebrow>
           <h2 className="mt-2 text-balance font-display text-[24px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[28px]">
             Run a search. Get the verdict.
           </h2>
@@ -224,7 +226,7 @@ export default async function SignedInHome({
           <div className="mt-6">
             <HeroSearch initial={seed} align="start" />
           </div>
-        </div>
+        </Card>
 
         {/* Back to the agent — a lighter nudge, not a competing concierge card. */}
         <aside
@@ -255,7 +257,7 @@ export default async function SignedInHome({
       </section>
 
       {/* ── MANAGE PROGRAMS ──────────────────────────────────────────────── */}
-      <section className="flex flex-col items-start gap-5 rounded-[var(--radius-lg)] border border-border bg-paper p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8 lg:rounded-[var(--radius-hero)]">
+      <Card as="section" surface="paper" radius="lg" className="flex flex-col items-start gap-5 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8 lg:rounded-[var(--radius-hero)]">
         <div className="flex items-center gap-4">
           <span className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-full bg-brand-light text-brand">
             <Icon name="loyalty" size={24} weight="fill" />
@@ -280,7 +282,7 @@ export default async function SignedInHome({
             {programs > 0 ? 'Manage programs' : 'Add a program'}
           </Link>
         </div>
-      </section>
+      </Card>
     </div>
   )
 }

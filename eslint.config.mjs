@@ -55,6 +55,18 @@ const eslintConfig = defineConfig([
           message:
             "Hand-rolled tracking value — use the letter-spacing tokens: tracking-[var(--track-eyebrow)] (0.12em), tracking-[var(--track-label)] (0.06em), or tracking-[var(--track-tag)] (0.1em). See docs/design/DESIGN-SYSTEM.md.",
         },
+        {
+          // PR 4 (Card): hand-rolled card recipe, e.g. border-border bg-surface, rounded-[12px], etc.
+          selector: String.raw`Literal[value=/border border-border bg-(paper|surface|sunk)/]`,
+          message:
+            "Hand-rolled card recipe — use the <Card> primitive instead to keep styling consistent and responsive. See docs/design/DESIGN-SYSTEM.md.",
+        },
+        {
+          // PR 4 (Eyebrow): hand-rolled uppercase labels with tracking
+          selector: String.raw`Literal[value=/tracking-\[var\(--track-eyebrow\)\].*uppercase/], Literal[value=/uppercase.*tracking-\[var\(--track-eyebrow\)\]/]`,
+          message:
+            "Hand-rolled eyebrow style — use the <Eyebrow> primitive instead of hand-rolling the uppercase and tracking styles. See docs/design/DESIGN-SYSTEM.md.",
+        }
       ],
     },
   },
