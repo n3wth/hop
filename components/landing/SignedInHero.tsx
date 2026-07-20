@@ -4,6 +4,7 @@ import HeroAmbience from '@/components/landing/HeroAmbience'
 import ShowcaseRotator, { type ShowcaseEntry } from '@/components/landing/ShowcaseRotator'
 import { WALLET_VALUE_CAVEAT } from '@/lib/valuations'
 import type { Balance } from '@/lib/types'
+import { formatUSD, formatPoints } from '@/lib/format'
 
 // Below this total (or with only a single program held), hop can't yet see
 // "the whole hand" — one card's balance rarely clears a real award on its
@@ -11,10 +12,6 @@ import type { Balance } from '@/lib/types'
 // quoting a redemption teaser. Matches the affordableWith() floor most
 // short-haul economy awards need (lib/destinations).
 const LOW_BALANCE_THRESHOLD = 25_000
-
-function money(n: number): string {
-  return `$${Math.round(n).toLocaleString('en-US')}`
-}
 
 // The signed-in front door — the SAME split-hero language as the signed-out
 // page (confident display type left, one composed showcase right, the blurred
@@ -98,7 +95,7 @@ export default function SignedInHero({
               style={{ ['--hop-delay' as string]: '140ms' }}
             >
               <span className="hop-price font-semibold text-text">
-                {totalPoints.toLocaleString('en-US')}
+                {formatPoints(totalPoints)}
               </span>{' '}
               {programs === 1 ? (
                 <>{balances[0]?.program ?? 'points'} points</>
@@ -119,7 +116,7 @@ export default function SignedInHero({
               style={{ ['--hop-delay' as string]: '140ms' }}
             >
               <span className="hop-price font-semibold text-text">
-                {totalPoints.toLocaleString('en-US')}
+                {formatPoints(totalPoints)}
               </span>{' '}
               across {programs} programs
               {bestReach ? (
@@ -143,7 +140,7 @@ export default function SignedInHero({
                     // it's the cash outlay the points redemption avoids.
                     <>
                       {', skipping '}
-                      <span className="font-semibold text-text">{money(bestReach.cashValue)}</span>
+                      <span className="font-semibold text-text">{formatUSD(bestReach.cashValue)}</span>
                       {' in cash'}
                     </>
                   ) : null}
@@ -153,7 +150,7 @@ export default function SignedInHero({
                   {' '}
                   — worth ~
                   <span className="font-semibold text-text">
-                    ${pointsWorth.toLocaleString('en-US')}
+                    {formatUSD(pointsWorth)}
                   </span>{' '}
                   at typical value
                 </span>
