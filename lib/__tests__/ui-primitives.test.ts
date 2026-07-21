@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import React from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import Card from '../../components/ui/Card'
 import Eyebrow from '../../components/ui/Eyebrow'
 import Stat from '../../components/ui/Stat'
+import Field, { Input, Textarea, Select } from '../../components/ui/Field'
 
 describe('Card primitive', () => {
   it('renders default surface and radius', () => {
@@ -97,3 +99,59 @@ describe('Stat primitive', () => {
     expect(centerEl.props.className).toContain('text-center')
   })
 })
+
+describe('Field, Input, Textarea, and Select primitives', () => {
+  it('renders Input with standard and invalid classes', () => {
+    const inputHtml = renderToStaticMarkup(React.createElement(Input, { placeholder: 'Test Input' }))
+    expect(inputHtml).toContain('bg-paper')
+    expect(inputHtml).toContain('rounded-[10px]')
+    expect(inputHtml).toContain('border-border')
+    expect(inputHtml).toContain('placeholder="Test Input"')
+
+    const invalidHtml = renderToStaticMarkup(React.createElement(Input, { placeholder: 'Test Input', invalid: true }))
+    expect(invalidHtml).toContain('border-weak')
+  })
+
+  it('renders Textarea with standard and invalid classes', () => {
+    const textareaHtml = renderToStaticMarkup(React.createElement(Textarea, { placeholder: 'Test Textarea' }))
+    expect(textareaHtml).toContain('bg-paper')
+    expect(textareaHtml).toContain('rounded-[10px]')
+    expect(textareaHtml).toContain('border-border')
+    expect(textareaHtml).toContain('placeholder="Test Textarea"')
+
+    const invalidHtml = renderToStaticMarkup(React.createElement(Textarea, { placeholder: 'Test Textarea', invalid: true }))
+    expect(invalidHtml).toContain('border-weak')
+  })
+
+  it('renders Select with options list', () => {
+    const selectHtml = renderToStaticMarkup(React.createElement(Select, {
+      options: [['opt1', 'Label 1'], ['opt2', 'Label 2']]
+    }))
+    expect(selectHtml).toContain('relative')
+    expect(selectHtml).toContain('<select')
+    expect(selectHtml).toContain('border-border')
+    expect(selectHtml).toContain('appearance-none')
+    expect(selectHtml).toContain('value="opt1"')
+    expect(selectHtml).toContain('Label 1')
+  })
+
+  it('renders Field and wires child id, htmlFor, and error attributes', () => {
+    const fieldHtml = renderToStaticMarkup(React.createElement(
+      Field,
+      {
+        label: 'Email Address',
+        error: 'Invalid email',
+        id: 'email-id',
+      },
+      React.createElement(Input, { placeholder: 'Email' })
+    ))
+
+    expect(fieldHtml).toContain('for="email-id"')
+    expect(fieldHtml).toContain('Email Address')
+    expect(fieldHtml).toContain('id="email-id"')
+    expect(fieldHtml).toContain('aria-describedby="email-id-error"')
+    expect(fieldHtml).toContain('role="alert"')
+    expect(fieldHtml).toContain('Invalid email')
+  })
+})
+
