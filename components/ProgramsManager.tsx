@@ -16,6 +16,7 @@ import {
 import BrandIcon from './BrandIcon'
 import ProgramPicker from './ProgramPicker'
 import Icon from './Icon'
+import { Input } from '@/components/ui/Field'
 
 // "Your programs" — manual-first balance management on /account.
 //
@@ -252,7 +253,7 @@ function ProgramRow({ program, first }: { program: ManualBalance; first: boolean
       <li className={`px-5 py-4 sm:px-6 ${first ? '' : 'border-t border-border'}`}>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <ProgramPicker value={name} onChange={setName} onEnterEmpty={save} disabled={saving} />
-          <input
+          <Input
             value={balance}
             onChange={(e) => setBalance(e.target.value.replace(/[^0-9,]/g, ''))}
             onKeyDown={(e) => {
@@ -263,7 +264,7 @@ function ProgramRow({ program, first }: { program: ManualBalance; first: boolean
             }}
             inputMode="numeric"
             aria-label="Balance"
-            className="w-full rounded-[10px] border border-border bg-paper px-3 py-2 text-[14px] font-semibold tabular-nums text-text outline-none transition-colors focus:border-brand sm:w-[140px]"
+            className="sm:w-[140px]"
           />
           <div className="flex items-center gap-1.5">
             <button
@@ -434,7 +435,7 @@ function AddProgramForm({ hasRows }: { hasRows: boolean }) {
           error={!!error}
           disabled={pending}
         />
-        <input
+        <Input
           value={balance}
           onChange={(e) => {
             setBalance(e.target.value.replace(/[^0-9,]/g, ''))
@@ -452,7 +453,7 @@ function AddProgramForm({ hasRows }: { hasRows: boolean }) {
           placeholder="Balance (optional)"
           aria-label="Balance (optional)"
           autoComplete="off"
-          className="w-full rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[14px] font-semibold tabular-nums text-text outline-none transition-colors focus:border-brand sm:w-[140px]"
+          className="sm:w-[140px]"
         />
         <button
           type="button"
@@ -675,7 +676,7 @@ function AdvancedIdEntry() {
 
   return (
     <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
-      <input
+      <Input
         value={value}
         onChange={(e) => {
           setValue(e.target.value)
@@ -684,7 +685,7 @@ function AdvancedIdEntry() {
         placeholder="AwardWallet connected-user ID"
         aria-label="AwardWallet connected-user ID"
         autoComplete="off"
-        className="flex-1 rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[13.5px] font-semibold text-text outline-none transition-colors focus:border-brand"
+        className="flex-1"
       />
       <button
         type="button"
