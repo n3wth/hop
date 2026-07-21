@@ -5,6 +5,52 @@ import Card from '../../components/ui/Card'
 import Eyebrow from '../../components/ui/Eyebrow'
 import Stat from '../../components/ui/Stat'
 import Field, { Input, Textarea, Select } from '../../components/ui/Field'
+import Button from '../../components/ui/Button'
+
+describe('Button primitive', () => {
+  it('renders primary, secondary, ghost, and ink variants', () => {
+    const primaryHtml = renderToStaticMarkup(React.createElement(Button, { variant: 'primary' }, 'Click'))
+    expect(primaryHtml).toContain('bg-brand')
+    expect(primaryHtml).toContain('text-white')
+
+    const secondaryHtml = renderToStaticMarkup(React.createElement(Button, { variant: 'secondary' }, 'Click'))
+    expect(secondaryHtml).toContain('border-border')
+    expect(secondaryHtml).toContain('bg-paper')
+
+    const ghostHtml = renderToStaticMarkup(React.createElement(Button, { variant: 'ghost' }, 'Click'))
+    expect(ghostHtml).toContain('bg-transparent')
+    expect(ghostHtml).toContain('hover:bg-surface')
+
+    const inkHtml = renderToStaticMarkup(React.createElement(Button, { variant: 'ink' }, 'Click'))
+    expect(inkHtml).toContain('border-[1.5px]')
+    expect(inkHtml).toContain('border-text')
+  })
+
+  it('supports sizes sm, md, lg and fullWidth', () => {
+    const smHtml = renderToStaticMarkup(React.createElement(Button, { size: 'sm' }, 'Click'))
+    expect(smHtml).toContain('px-3')
+
+    const lgHtml = renderToStaticMarkup(React.createElement(Button, { size: 'lg' }, 'Click'))
+    expect(lgHtml).toContain('px-6')
+
+    const fullHtml = renderToStaticMarkup(React.createElement(Button, { fullWidth: true }, 'Click'))
+    expect(fullHtml).toContain('w-full')
+  })
+
+  it('supports onDark theme', () => {
+    const darkHtml = renderToStaticMarkup(React.createElement(Button, { variant: 'primary', onDark: true }, 'Click'))
+    expect(darkHtml).toContain('bg-white')
+    expect(darkHtml).toContain('text-brand')
+  })
+
+  it('renders a button element by default and an anchor when href is given', () => {
+    const btnHtml = renderToStaticMarkup(React.createElement(Button, {}, 'Click'))
+    expect(btnHtml).toContain('<button type="button"')
+
+    const anchorHtml = renderToStaticMarkup(React.createElement(Button, { href: 'https://example.com', native: true }, 'Link'))
+    expect(anchorHtml).toContain('<a href="https://example.com"')
+  })
+})
 
 describe('Card primitive', () => {
   it('renders default surface and radius', () => {

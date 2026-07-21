@@ -12,6 +12,7 @@ import { startPaymentSession, placeOrder, refreshOffer } from '@/app/actions/che
 import Icon from '@/components/Icon'
 import BrandIcon from '@/components/BrandIcon'
 import FarePolicyCard from '@/components/checkout/FarePolicyCard'
+import Button from '@/components/ui/Button'
 
 // Native cash checkout — itinerary summary, passenger details, the Duffel hosted
 // card form, and the pay action. Flat, on-brand. The card form runs in a
@@ -411,14 +412,14 @@ export default function CheckoutForm({
           >
             <Icon name="schedule" size={16} className="flex-shrink-0 text-text2" />
             <span className="flex-1">The held price lapsed. Refresh to get the latest fare.</span>
-            <button
-              type="button"
+            <Button
+              variant="ink"
+              size="sm"
               onClick={refreshExpiredOffer}
               disabled={refreshing}
-              className="rounded-[9px] border-[1.5px] border-text px-3 py-1.5 text-[12.5px] font-semibold text-text transition-colors hover:bg-text hover:text-white disabled:opacity-60"
             >
               {refreshing ? 'Refreshing…' : 'Refresh price'}
-            </button>
+            </Button>
           </div>
         ) : null}
 

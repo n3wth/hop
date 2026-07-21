@@ -13,6 +13,7 @@ import SiteFooter from '@/components/SiteFooter'
 import Icon, { type IconName } from '@/components/Icon'
 import CheckoutForm from '@/components/checkout/CheckoutForm'
 import FareCheckSkeleton from '@/components/checkout/FareCheckSkeleton'
+import Button from '@/components/ui/Button'
 
 // Private, transactional page — keep it out of the index. (template adds "· hop".)
 export const metadata: Metadata = {
@@ -188,15 +189,17 @@ function Notice({
           </div>
           <p className="mt-1.5 max-w-[54ch] text-[14px] leading-[1.55] text-text2">{body}</p>
           {cta ? (
-            <a
-              href={cta.href}
-              {...(/^https?:/.test(cta.href)
-                ? { target: '_blank', rel: 'noopener noreferrer' }
-                : {})}
-              className="mt-5 inline-flex items-center gap-2 rounded-[11px] border-[1.5px] border-text bg-transparent px-4 py-[9px] text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
-            >
-              {cta.label}
-            </a>
+            <div className="mt-5">
+              <Button
+                variant="ink"
+                href={cta.href}
+                {...(/^https?:/.test(cta.href)
+                  ? { native: true, target: '_blank', rel: 'noopener noreferrer' }
+                  : {})}
+              >
+                {cta.label}
+              </Button>
+            </div>
           ) : null}
         </div>
       </div>
