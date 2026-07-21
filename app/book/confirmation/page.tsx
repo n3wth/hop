@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { toNavUser } from '@/lib/nav-user'
 import { auth0 } from '@/lib/auth0'
 import { getOrder } from '@/lib/duffel-orders'
@@ -13,6 +12,7 @@ import Icon from '@/components/Icon'
 import CountUp from '@/components/CountUp'
 import FarePolicyCard from '@/components/checkout/FarePolicyCard'
 import ConfirmationSkeleton from '@/components/checkout/ConfirmationSkeleton'
+import Button from '@/components/ui/Button'
 
 // Private, per-user confirmation — keep it out of the index. (template adds "· hop".)
 export const metadata: Metadata = {
@@ -77,12 +77,11 @@ async function OrderGate({ sub, orderId }: { sub: string; orderId?: string }) {
             If you just booked, your confirmation is on the way by email. You can also find this
             trip on your account page.
           </p>
-          <Link
-            href="/account"
-            className="mt-4 inline-flex items-center gap-2 rounded-[11px] border-[1.5px] border-text px-4 py-[9px] text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
-          >
-            Go to account
-          </Link>
+          <div className="mt-4">
+            <Button variant="ink" href="/account">
+              Go to account
+            </Button>
+          </div>
         </div>
       </div>
     )
@@ -215,18 +214,12 @@ function Confirmed({
       <FarePolicyCard policy={order.farePolicy} airline={order.airline} className="mt-4" />
 
       <div className="mt-6 flex flex-wrap gap-3">
-        <Link
-          href="/account#trips"
-          className="inline-flex items-center gap-2 rounded-[12px] bg-brand px-5 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep"
-        >
+        <Button variant="primary" href="/account#trips">
           View my trips
-        </Link>
-        <Link
-          href="/search"
-          className="inline-flex items-center gap-2 rounded-[12px] border-[1.5px] border-text px-5 py-3 text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
-        >
+        </Button>
+        <Button variant="ink" href="/search">
           Book another flight
-        </Link>
+        </Button>
       </div>
     </>
   )
