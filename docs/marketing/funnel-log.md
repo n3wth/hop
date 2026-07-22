@@ -6,6 +6,16 @@ never invented. Source events: `signed_up`, `first_program_added`, `search_ran`,
 analytics. MRR-gate status references `docs/plans/2026-07-05-agentic-travel-agent-northstar.md`
 ("The revenue goal" section).
 
+**Standing requirement — check `$virt_traffic_type` before calling any funnel event a real
+conversion.** Added 2026-07-22 after this log almost mis-reported a false positive (see that
+entry): PostHog's own `filterTestAccounts: true` does **not** exclude events PostHog's traffic
+classifier labels `Automation` (its bot/scripted-traffic category, distinct from `Bot`/`AI Agent`)
+— a `signed_up` or `first_program_added` event can pass `filterTestAccounts` and still be
+non-human. Before reporting any nonzero read on `signed_up`, `first_program_added`, or `outclick`
+as a real conversion, break it down by `$virt_traffic_type` (event property) and only count
+`Regular`. This is in addition to, not instead of, the `$host` filter below (traffic vs. funnel
+events need different corrections; see the 2026-07-12 entry).
+
 **Standing requirement — every traffic query MUST filter `$host = hop.flights`.** The `n3wth`
 PostHog project (id 223560) is shared across six hostnames (`hop.flights`, `n3wth.com`,
 `skills.n3wth.com`, `garden.n3wth.com`, `r3.n3wth.com`, `ui.n3wth.com`). An unfiltered
@@ -373,3 +383,55 @@ weight, not as a complaint.
   The 2026-07-19 board review reached the same conclusion independently via three separate lenses
   (growth operator, CFO, travel-industry) and asked explicitly: "will you post them this week, or
   should the fleet stop re-flagging this and mark community seeding paused?"
+
+---
+
+## 2026-07-22
+
+- **Traffic (7d, `$host=hop.flights` filtered)**: 9 visitors, 46 pageviews, 15 sessions, 40% bounce
+  rate, ~5.2 min avg session. Visitors flat vs. the 7/20 read (also 9); pageviews down (125→46) on
+  a shorter/different 7-day window. Still a single-digit-visitors-per-day site — no change in
+  shape from the last four reads.
+- **Funnel (7d)**: `search_ran`/`verdict_viewed` 12/12 across the week (1/1 on 7/15, 0/0 on
+  7/16–7/17, 7/7 on 7/18, 0/0 on 7/19, 1/1 on 7/20, 2/2 on 7/21, 1/1 partial 7/22) — every search
+  still produces a verdict.
+- **Investigated and downgraded — the apparent first-ever `signed_up`**: this window's raw pull
+  showed `signed_up` **1** and `first_program_added` **1** on 7/18, which would have been the
+  first non-zero read on either event since instrumentation shipped 2026-07-05 (a streak the 7/06
+  through 7/20 entries all called out as zero, 8 consecutive reads). Before reporting it as the
+  breakthrough it would have been, traced it: referrer breakdown shows 13 pageviews from
+  `accounts.google.com` that same day (a completed Google OAuth redirect, not something a naive
+  bot fakes) alongside 10 `$direct` — but breaking the `signed_up` event down by
+  `$virt_traffic_type` (PostHog's traffic classifier) returns **100% `Automation`**, not `Regular`,
+  and this survives `filterTestAccounts: true` (which does not catch this category — see the new
+  standing requirement added to this log's header this run). The same day's `search_ran` spike (7
+  events, the largest single-day count since 7/14) is **100% `Regular`** by contrast — so 7/18 had
+  real human search activity, but the one signup-shaped event traces to scripted/automated traffic
+  completing a real OAuth flow, not a confirmed human. Logging as **inconclusive, downgraded from
+  "first real signup" to "unexplained automation-flagged signup"** — could be a false-positive bot
+  classification on a genuine early user, or could be an agent/QA session (internal or external)
+  exercising the real login flow; this session has no way to distinguish the two from PostHog data
+  alone. `signed_up`/`first_program_added` remain **zero for confirmed-`Regular` traffic across all
+  17 days logged since 2026-07-05.** `outclick` fired zero times this window (last fired 7/14).
+- **MRR-gate status — Wk1 ("payment path proven, one real stranger pays")**: **not met.** N-320
+  (seats.aero written commercial terms, owner-only) is still Backlog, `startedAt: null` — unchanged
+  since the last eight reads. The gate has now been open **17 days** (declared 2026-07-05) on the
+  same single owner-only blocker; even the automation-flagged 7/18 signup above wouldn't have moved
+  this gate, since billing is still off — no code change this run affects it either.
+- **This run's action**: per the 2026-07-19 board kill list (item 2), further `/guides/[program]`,
+  sweet-spot, or methodology-page content stays frozen until N-387's staleness guard exists — not
+  attempted this run. N-386 (fallback award-data source) remains a real, sizeable engine build
+  outside this desk's owned-channel scope (content/SEO/MCP listings/external-account drafts), same
+  read as the 7/20 entry. With no in-scope content or payment/upgrade UX bug available this run
+  (the `/pricing` metadata gate shipped 7/20 in PR #304; no new defect found today), this run's
+  concrete output is the automation-traffic finding above plus the new standing `$virt_traffic_type`
+  check added to this log's header — closes board amendment #9 ("add referrer/source-split data
+  before drawing further conclusions from traffic reads") by making that check a standing
+  requirement rather than a one-off. No PR beyond this log entry.
+- **Still the single highest-leverage thing sitting undone**: the three ready-to-paste drafts in
+  `docs/marketing/drafts/` (Show HN, r/awardtravel, MCP-directory submissions) have now been
+  sitting unposted for **16 days** (oldest two, drafted 2026-07-06; flagged every read since
+  7/13 — 7th consecutive flag). New this run: worth also asking the founder to check whether the
+  7/18 automation-flagged signup/first-program-add was his own testing or something else — cheap
+  to confirm with DB or PostHog person-profile access this session doesn't have, and it would
+  resolve real ambiguity in this log rather than leaving it open indefinitely.
