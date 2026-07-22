@@ -795,7 +795,7 @@ function Input({
       min={min}
       max={max}
       onChange={(e) => onChange(e.target.value)}
-      className={`rounded-[11px] border-[1.5px] bg-paper px-3 py-[10px] text-[14.5px] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand ${
+      className={`no-inner-ring rounded-[11px] border-[1.5px] bg-paper px-3 py-[10px] text-[14.5px] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand ${
         invalid ? 'border-weak' : 'border-border'
       }`}
     />
@@ -821,7 +821,7 @@ function Select({
         ref={selectRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full cursor-pointer appearance-none rounded-[11px] border-[1.5px] border-border bg-paper px-3 py-[10px] pr-9 text-[14.5px] text-text outline-none transition-colors focus:border-brand"
+        className="no-inner-ring w-full cursor-pointer appearance-none rounded-[11px] border-[1.5px] border-border bg-paper px-3 py-[10px] pr-9 text-[14.5px] text-text outline-none transition-colors focus:border-brand"
       >
         {options.map(([v, label]) => (
           <option key={v} value={v}>

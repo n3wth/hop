@@ -175,7 +175,7 @@ function AddLoginForm({ hasRows }: { hasRows: boolean }) {
             aria-label="Program username"
             autoComplete="off"
             disabled={pending}
-            className="w-full rounded-[var(--radius-sm)] border border-border bg-paper px-3.5 py-2.5 text-[14px] font-semibold text-text outline-none transition-colors focus:border-brand disabled:opacity-60"
+            className="no-inner-ring w-full rounded-[var(--radius-sm)] border border-border bg-paper px-3.5 py-2.5 text-[14px] font-semibold text-text outline-none transition-colors focus:border-brand disabled:opacity-60"
           />
           <input
             value={password}
@@ -194,7 +194,7 @@ function AddLoginForm({ hasRows }: { hasRows: boolean }) {
             aria-label="Program password"
             autoComplete="off"
             disabled={pending}
-            className="w-full rounded-[var(--radius-sm)] border border-border bg-paper px-3.5 py-2.5 text-[14px] font-semibold text-text outline-none transition-colors focus:border-brand disabled:opacity-60"
+            className="no-inner-ring w-full rounded-[var(--radius-sm)] border border-border bg-paper px-3.5 py-2.5 text-[14px] font-semibold text-text outline-none transition-colors focus:border-brand disabled:opacity-60"
           />
         </div>
         <div className="flex items-center gap-2">

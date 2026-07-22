@@ -59,6 +59,13 @@ const eslintConfig = defineConfig([
           message:
             "Hand-rolled ink button style — use the <Button variant=\"ink\"> primitive instead. See docs/design/DESIGN-SYSTEM.md.",
         },
+        {
+          // PR 8 (Focus ring): outline-none without no-inner-ring.
+          // Never suppress global focus ring without marking container focus via no-inner-ring.
+          selector: String.raw`Literal[value=/^(?!.*no-inner-ring).*\boutline-none\b/]`,
+          message:
+            "outline-none without no-inner-ring suppresses the global focus ring. Pair with no-inner-ring class or use <Input>/<Field> primitives. See docs/design/DESIGN-SYSTEM.md.",
+        },
       ],
     },
   },

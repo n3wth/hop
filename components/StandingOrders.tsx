@@ -129,7 +129,7 @@ function WatchComposer() {
               maxLength={400}
               placeholder="watch SFO to Tokyo business 2026-03-25, ping me above 2.5 cpp using points I hold"
               aria-label="Describe a watch"
-              className="min-h-[64px] w-full resize-y rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[14px] leading-[1.5] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand"
+              className="no-inner-ring min-h-[64px] w-full resize-y rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[14px] leading-[1.5] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand"
             />
             <button
               type="button"
