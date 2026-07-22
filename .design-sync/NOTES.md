@@ -1,5 +1,47 @@
 # hop design-sync notes
 
+See also: `docs/decisions/0012-claude-design-component-library-sync.md` (why this exists, what's
+in/out of scope) and `docs/solutions/2026-07-22-sync-nextjs-app-components-to-claude-design.md`
+(the reusable technical pattern — synth-entry scoping, the `next/link`/`process.env` shims,
+finding the real compiled CSS, `guidelinesGlob` scoping).
+
+## Re-syncing (one command)
+
+Whenever a scoped component or a design token changes and should show up in Claude Design:
+
+```bash
+# 1. Re-stage the converter scripts (instant; a stale .ds-sync/ runs an old converter)
+SKILLDIR=<design-sync skill base dir>  # find via the design-sync skill, or reuse .ds-sync/ if already staged
+mkdir -p .ds-sync && cp -r "$SKILLDIR"/package-build.mjs "$SKILLDIR"/package-validate.mjs \
+  "$SKILLDIR"/package-capture.mjs "$SKILLDIR"/resync.mjs "$SKILLDIR"/lib "$SKILLDIR"/storybook .ds-sync/
+(cd .ds-sync && npm i esbuild ts-morph @types/react playwright >/dev/null)
+
+# 2. If hop's Tailwind classes/tokens/fonts changed, refresh the compiled CSS + fonts copy first:
+npm run build
+CSS1=$(grep -l 'color-brand' .next/static/chunks/*.css)   # the larger, utilities+tokens chunk
+CSS2=$(grep -l '@font-face' .next/static/chunks/*.css)    # the smaller, font-face chunk
+{ echo "@import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap');"; \
+  echo ":root{--font-bricolage:'Bricolage Grotesque';--font-geist-mono:'Geist Mono';}"; \
+  cat "$CSS1"; } > .design-sync/.cache/compiled.css
+mkdir -p .design-sync/.cache/fonts-src/chunks .design-sync/.cache/fonts-src/media
+cp "$CSS2" .design-sync/.cache/fonts-src/chunks/fonts.css
+grep -oE '\.\./media/[A-Za-z0-9._-]+\.woff2' .design-sync/.cache/fonts-src/chunks/fonts.css \
+  | sed 's#\.\./media/##' | sort -u | while read -r f; do cp ".next/static/media/$f" ".design-sync/.cache/fonts-src/media/$f"; done
+
+# 3. Fetch the project's current verification anchor, then run the driver
+#    (projectId is in .design-sync/config.json)
+# DesignSync(get_file, path: "_ds_sync.json") -> save to .design-sync/.cache/remote-sync.json
+node .ds-sync/resync.mjs --config .design-sync/config.json --node-modules ./node_modules \
+  --entry ./components/index.ts --out ./ds-bundle --remote .design-sync/.cache/remote-sync.json
+```
+
+Add the new/changed component to `.design-sync/ds-src/` (a stub re-exporting the real file) +
+`componentSrcMap` first if it's a net-new component — see "Scope" below and the docs/solutions
+entry for why that staging folder (not `componentSrcMap: null`) is the actual scoping knob.
+The driver prints a verdict JSON; grade any `pendingGrade` cells from
+`ds-bundle/_screenshots/review/*.png` into `.design-sync/.cache/review/<Name>.grade.json`, then
+upload per the base `/design-sync` skill's atomic-path §5 (this project is no longer empty).
+
 ## Scope
 
 First-time sync, deliberately scoped to hop's **presentational, prop-driven** primitives —
