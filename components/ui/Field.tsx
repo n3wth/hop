@@ -82,7 +82,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           onChangeValue?.(e.target.value)
         }}
         {...props}
-        className={`w-full rounded-[10px] border bg-paper px-3.5 py-2.5 text-[14px] font-semibold tabular-nums text-text outline-none transition-colors placeholder:text-text3 focus:border-brand ${
+        className={`no-inner-ring w-full rounded-[10px] border bg-paper px-3.5 py-2.5 text-[14px] font-semibold tabular-nums text-text outline-none transition-colors placeholder:text-text3 focus:border-brand ${
           invalid ? 'border-weak' : 'border-border'
         } ${className ?? ''}`}
       />
@@ -106,7 +106,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           onChangeValue?.(e.target.value)
         }}
         {...props}
-        className={`w-full rounded-[10px] border bg-paper px-3.5 py-2.5 text-[14px] font-semibold text-text outline-none transition-colors placeholder:text-text3 focus:border-brand ${
+        className={`no-inner-ring w-full rounded-[10px] border bg-paper px-3.5 py-2.5 text-[14px] font-semibold text-text outline-none transition-colors placeholder:text-text3 focus:border-brand ${
           invalid ? 'border-weak' : 'border-border'
         } ${className ?? ''}`}
       />
@@ -132,7 +132,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             onChangeValue?.(e.target.value)
           }}
           {...props}
-          className={`w-full cursor-pointer appearance-none rounded-[10px] border bg-paper px-3.5 py-2.5 pr-9 text-[14px] font-semibold text-text outline-none transition-colors focus:border-brand ${
+          className={`no-inner-ring w-full cursor-pointer appearance-none rounded-[10px] border bg-paper px-3.5 py-2.5 pr-9 text-[14px] font-semibold text-text outline-none transition-colors focus:border-brand ${
             invalid ? 'border-weak' : 'border-border'
           } ${className ?? ''}`}
         >

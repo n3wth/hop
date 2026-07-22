@@ -389,7 +389,7 @@ export default function McpAccess({ initialTokens }: Props) {
           onChange={(e) => setMintName(e.target.value)}
           placeholder="Token name (e.g. Laptop)"
           maxLength={60}
-          className="min-w-0 flex-1 rounded-[12px] border border-border bg-sunk px-3.5 py-2.5 text-[13.5px] text-text placeholder:text-text3 focus:border-brand focus:outline-none"
+          className="no-inner-ring min-w-0 flex-1 rounded-[12px] border border-border bg-sunk px-3.5 py-2.5 text-[13.5px] text-text placeholder:text-text3 focus:border-brand focus:outline-none"
         />
         <button
           type="button"
@@ -423,7 +423,7 @@ export default function McpAccess({ initialTokens }: Props) {
                           setEditName('')
                         }
                       }}
-                      className="min-w-0 flex-1 rounded-[10px] border border-border bg-sunk px-3 py-1.5 text-[13.5px] text-text focus:border-brand focus:outline-none"
+                      className="no-inner-ring min-w-0 flex-1 rounded-[10px] border border-border bg-sunk px-3 py-1.5 text-[13.5px] text-text focus:border-brand focus:outline-none"
                     />
                     <button
                       type="button"

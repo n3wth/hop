@@ -277,7 +277,7 @@ function AddStatusForm({
           placeholder="Tier (e.g. Gold)"
           aria-label="Tier"
           autoComplete="off"
-          className="w-full rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[14px] font-semibold text-text outline-none transition-colors focus:border-brand sm:w-[150px]"
+          className="no-inner-ring w-full rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[14px] font-semibold text-text outline-none transition-colors focus:border-brand sm:w-[150px]"
         />
         <button
           type="button"

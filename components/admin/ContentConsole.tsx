@@ -186,7 +186,7 @@ const CONFIDENCE_LABEL: Record<(typeof CONFIDENCES)[number], string> = {
 }
 
 const INPUT_CLS =
-  'w-full rounded-[var(--radius-sm)] border border-border bg-paper px-3 py-2 text-[13.5px] text-text placeholder:text-text3 focus:border-brand focus:outline-none'
+  'no-inner-ring w-full rounded-[var(--radius-sm)] border border-border bg-paper px-3 py-2 text-[13.5px] text-text placeholder:text-text3 focus:border-brand focus:outline-none'
 
 function NewDraftForm({
   programs,
