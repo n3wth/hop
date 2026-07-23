@@ -16,7 +16,7 @@ export const dynamic = 'force-static'
 export const metadata = pageMeta({
   title: 'hop for AI agents (MCP)',
   description:
-    "Give Claude, Cursor, or any MCP client hop's points-vs-cash verdict engine: computed cpp, transfer paths, and sweet spots — never LLM-generated numbers.",
+    "Give Cursor, VS Code, or any MCP client hop's points-vs-cash verdict engine: computed cpp, transfer paths, and sweet spots — never LLM-generated numbers.",
   path: '/mcp',
 })
 
@@ -61,7 +61,7 @@ const TOOLS: Tool[] = [
   },
 ]
 
-const CLAUDE_DESKTOP_CONFIG = `{
+const MCP_CONFIG_JSON = `{
   "mcpServers": {
     "hop": {
       "url": "${MCP_URL}",
@@ -69,8 +69,6 @@ const CLAUDE_DESKTOP_CONFIG = `{
     }
   }
 }`
-
-const CLAUDE_CODE_CMD = `claude mcp add --transport http hop ${MCP_URL} \\\n  --header "Authorization: Bearer <your-hop-token>"`
 
 function ConfigBlock({ label, body }: { label: string; body: string }) {
   return (
@@ -133,11 +131,10 @@ export default function McpLandingPage() {
               .
             </p>
 
-            <ConfigBlock label="claude_desktop_config.json" body={CLAUDE_DESKTOP_CONFIG} />
-            <ConfigBlock label="terminal (Claude Code)" body={CLAUDE_CODE_CMD} />
+            <ConfigBlock label="mcp_config.json" body={MCP_CONFIG_JSON} />
             <p className="mt-3 text-[12px] leading-[1.5] text-text2">
-              Cursor: paste the same JSON into <code className="font-mono">~/.cursor/mcp.json</code>.
-              ChatGPT: add a custom connector with the URL above and a Bearer token.
+              Cursor / VS Code / any MCP client: add the server URL above with an Authorization header
+              (or pass balances directly in tool calls without a token).
             </p>
           </div>
 
