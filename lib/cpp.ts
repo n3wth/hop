@@ -11,6 +11,8 @@ export const POINTS_THRESHOLD_CPP = 2.5
 // numbers instead of hand-typing them — never a second source of truth.
 export const GREEN_TIER_CPP = 3.0
 export const AMBER_TIER_CPP = 1.5
+export const TIER_GREEN_CPP = GREEN_TIER_CPP
+export const TIER_AMBER_CPP = AMBER_TIER_CPP
 
 export function cpp(cashPrice: number, taxes: number, miles: number): number | undefined {
   if (!cashPrice || cashPrice <= 0) return undefined

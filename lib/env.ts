@@ -376,6 +376,16 @@ export function isConversationMemoryEnabled(): boolean {
   return on && Boolean(process.env.AI_GATEWAY_API_KEY?.trim())
 }
 
+// AI Customer Support Agent behind /support is GATED behind an explicit flag
+// AND the AI Gateway key it needs to stream replies. Off by default: /support
+// renders byte-identical static FAQ, and the route returns a calm 200 text line.
+// Flip HOP_ENABLE_SUPPORT_AGENT and provide AI_GATEWAY_API_KEY to enable.
+export function isSupportAgentEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_SUPPORT_AGENT ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && Boolean(process.env.AI_GATEWAY_API_KEY?.trim())
+}
+
 // Inferred-facts ("hop noticed …") is GATED behind an explicit flag AND the AI
 // Gateway key it needs to infer. Off by default: no inference runs, the glass box
 // shows no "noticed" rows, and even flipped on the read/write no-op gracefully
