@@ -33,10 +33,10 @@ export const SUPPORT_KB: KbEntry[] = [
     anchor: 'booking',
   },
   {
-    slug: 'claude-mcp',
-    title: 'Using hop from Claude (MCP)',
-    body: `hop's engine is available as an MCP server. Mint a token on your account page to connect it to Claude or any MCP client. With a token, tools can read your saved balances; without a token, tools run statelessly with user-supplied balances.`,
-    anchor: 'claude-mcp',
+    slug: 'mcp',
+    title: 'Using hop from an AI assistant (MCP)',
+    body: `hop's engine is available as an MCP server. Mint a token on your account page to connect it to your AI assistant or any MCP client. With a token, tools can read your saved balances; without a token, tools run statelessly with user-supplied balances.`,
+    anchor: 'mcp',
   },
   {
     slug: 'account-privacy',
