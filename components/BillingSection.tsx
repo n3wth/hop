@@ -1,3 +1,4 @@
+import Card from '@/components/ui/Card'
 import Link from 'next/link'
 import { isBillingEnabled } from '@/lib/env'
 import { ALERT_LIMITS, MCP_DAILY_LIMITS, type Tier } from '@/lib/subscription'
@@ -30,7 +31,7 @@ export function BillingSection({ isSignedIn, tier = 'free', activeCount = 0 }: B
 
   return (
     <div className="grid gap-5 sm:grid-cols-2">
-      <div className="rounded-[var(--radius)] border border-border bg-surface p-6">
+      <Card surface="surface" className="p-6">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-display text-[18px] font-semibold text-text">Free</h2>
           {isSignedIn && !isPro ? (
@@ -50,7 +51,7 @@ export function BillingSection({ isSignedIn, tier = 'free', activeCount = 0 }: B
           </li>
           <li>{MCP_DAILY_LIMITS.free} MCP calls/day</li>
         </ul>
-      </div>
+      </Card>
 
       <div className="rounded-[var(--radius)] border border-brand bg-brand-tint p-6">
         <div className="flex items-center justify-between gap-3">
