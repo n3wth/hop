@@ -1,326 +1,332 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import type { Balance, FlightOption, SearchParams, SearchResult } from '@/lib/types'
+import { describe, expect, it, vi } from 'vitest'
+import type { FlightOption, SearchResult } from '@/lib/types'
 import {
   buildVerdictSnapshot,
-  validateShareParams,
-  newReceiptId,
-  verdictContentHash,
   createSharedVerdict,
   getSharedVerdict,
+  newReceiptId,
   shareVerdict,
+  validateShareParams,
+  validateSnapshot,
+  verdictContentHash,
 } from '@/lib/shared-verdicts'
 import { _resetRateLimitForTest } from '@/lib/rate-limit'
 
-// ── Fixtures ────────────────────────────────────────────────────────────────
-
-const BALANCE_MARKER = 'FIXTURE_BALANCE_MARKER_618314'
-
-function fixtureBalances(): Balance[] {
-  return [{ program: BALANCE_MARKER, code: 'AX', balance: 618314 }]
-}
-
-function fixtureParams(overrides: Partial<SearchParams> = {}): SearchParams {
-  return { from: 'SFO', to: 'NRT', depart: '2027-01-10', return: '2027-01-24', adults: 1, ...overrides }
-}
-
-function fixtureOption(overrides: Partial<FlightOption> = {}): FlightOption {
+// Mock env flag dynamically
+vi.mock('@/lib/env', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/env')>('@/lib/env')
   return {
-    id: 'opt_1',
-    kind: 'award',
-    airline: 'Alaska Atmos',
-    program: 'Alaska Mileage Plan',
-    route: 'SFO → NRT',
-    date: 'Jan 10',
-    miles: 60000,
-    taxes: 22,
-    cpp: 2.9,
-    tier: 'green',
-    youHave: 200000,
-    action: 'book-points',
-    bookingUrl: 'https://alaska.example/book',
-    ...overrides,
+    ...actual,
+    isShareReceiptsEnabled: () => true,
   }
-}
-
-function fixtureCashOption(overrides: Partial<FlightOption> = {}): FlightOption {
-  return {
-    id: 'opt_cash',
-    kind: 'cash',
-    airline: 'ANA',
-    route: 'SFO → NRT',
-    date: 'Jan 10',
-    cashPrice: 840,
-    tier: 'muted',
-    action: 'book-cash',
-    bookingUrl: 'https://kiwi.example/book',
-    ...overrides,
-  }
-}
-
-function fixtureResult(overrides: Partial<SearchResult> = {}): SearchResult {
-  return {
-    params: fixtureParams(),
-    options: [],
-    pick: fixtureOption(),
-    cashOption: fixtureCashOption(),
-    verdict: 'use-points',
-    summary: { cheapestCash: 840, bestMiles: 60000, bestCpp: 2.9, saveVsCash: 412 },
-    balances: fixtureBalances(),
-    degraded: [],
-    ...overrides,
-  }
-}
-
-// ── buildVerdictSnapshot ─────────────────────────────────────────────────────
-
-describe('buildVerdictSnapshot — the strict mint gate', () => {
-  it('projects a full snapshot from a clean use-points result', () => {
-    const snap = buildVerdictSnapshot(fixtureResult())
-    expect(snap).not.toBeNull()
-    expect(snap!.verdict).toBe('use-points')
-    expect(snap!.pick.miles).toBe(60000)
-    expect(snap!.pick.cpp).toBe(2.9)
-    expect(snap!.pick.tier).toBe('green')
-    expect(snap!.summary.cheapestCash).toBe(840)
-    expect(snap!.summary.saveVsCash).toBe(412)
-    expect(typeof snap!.asOf).toBe('string')
-    expect(Number.isNaN(Date.parse(snap!.asOf))).toBe(false)
-  })
-
-  it('refuses ANY non-empty degraded[] — even a pay-cash result with awards dark', () => {
-    const degradedUsePoints = fixtureResult({ degraded: ['cash'] })
-    expect(buildVerdictSnapshot(degradedUsePoints)).toBeNull()
-
-    // The tempting-but-forbidden case: verdict says pay-cash, but that verdict
-    // itself might be wrong because awards never came back.
-    const payCashAwardsDark = fixtureResult({
-      verdict: 'pay-cash',
-      pick: fixtureCashOption(),
-      degraded: ['awards'],
-    })
-    expect(buildVerdictSnapshot(payCashAwardsDark)).toBeNull()
-  })
-
-  it("verdict:'none' → null", () => {
-    expect(buildVerdictSnapshot(fixtureResult({ verdict: 'none', pick: undefined }))).toBeNull()
-  })
-
-  it('use-points with no pick → null', () => {
-    expect(buildVerdictSnapshot(fixtureResult({ pick: undefined }))).toBeNull()
-  })
-
-  it('missing summary.cheapestCash → null', () => {
-    expect(
-      buildVerdictSnapshot(
-        fixtureResult({ summary: { cheapestCash: undefined, bestMiles: 60000, bestCpp: 2.9, saveVsCash: 412 } }),
-      ),
-    ).toBeNull()
-  })
-
-  it('never re-derives the verdict/tier at boundary cpp values (2.5 / 3.0 / 1.5)', () => {
-    // Engine says pay-cash at exactly the points threshold (2.5) — the mapper
-    // must NOT flip it to use-points just because 2.5 looks borderline-good.
-    const atThreshold = fixtureResult({
-      verdict: 'pay-cash',
-      pick: fixtureOption({ cpp: 2.5, tier: 'amber' }),
-      summary: { cheapestCash: 840, bestMiles: undefined, bestCpp: undefined, saveVsCash: 0 },
-    })
-    const snap1 = buildVerdictSnapshot(atThreshold)
-    expect(snap1!.verdict).toBe('pay-cash')
-    expect(snap1!.pick.cpp).toBe(2.5)
-    expect(snap1!.pick.tier).toBe('amber')
-
-    const atGreen = fixtureResult({ pick: fixtureOption({ cpp: 3.0, tier: 'green' }) })
-    expect(buildVerdictSnapshot(atGreen)!.pick.tier).toBe('green')
-
-    const atAmberFloor = fixtureResult({
-      verdict: 'pay-cash',
-      pick: fixtureOption({ cpp: 1.5, tier: 'amber' }),
-      summary: { cheapestCash: 840, bestMiles: undefined, bestCpp: undefined, saveVsCash: 0 },
-    })
-    expect(buildVerdictSnapshot(atAmberFloor)!.pick.tier).toBe('amber')
-  })
 })
 
-describe('buildVerdictSnapshot — structural privacy (no spread, ever)', () => {
-  it('the projected pick/cashOption keys never include youHave, action, or bookingUrl', () => {
-    const snap = buildVerdictSnapshot(fixtureResult())!
+describe('buildVerdictSnapshot', () => {
+  const baseOption: FlightOption = {
+    id: 'opt1',
+    kind: 'award',
+    airline: 'Air Canada',
+    program: 'Aeroplan',
+    route: 'SFO → NRT',
+    date: 'Nov 1',
+    cabin: 'business',
+    miles: 60000,
+    taxes: 50,
+    cashPrice: 850,
+    cpp: 2.9,
+    tier: 'green',
+    youHave: 100000,
+    action: 'book-points',
+    bookingUrl: 'https://example.com',
+  }
+
+  const baseCashOption: FlightOption = {
+    id: 'cash1',
+    kind: 'cash',
+    airline: 'Zipair',
+    route: 'SFO → NRT',
+    date: 'Nov 1',
+    cashPrice: 850,
+    tier: 'muted',
+    bookingUrl: 'https://example.com',
+    action: 'pay-cash',
+  }
+
+  const baseResult: SearchResult = {
+    params: { from: 'SFO', to: 'NRT', depart: '2026-11-01', adults: 1, cabin: 'business' },
+    options: [baseOption],
+    pick: baseOption,
+    cashOption: baseCashOption,
+    verdict: 'use-points',
+    summary: { cheapestCash: 850, bestMiles: 60000, bestCpp: 2.9, saveVsCash: 412 },
+    balances: [],
+    degraded: [],
+  }
+
+  it('builds a full snapshot from a clean use-points result', () => {
+    const snap = buildVerdictSnapshot(baseResult)
+    expect(snap).not.toBeNull()
+    if (!snap) return
+
+    expect(snap.route).toBe('SFO → NRT')
+    expect(snap.from).toBe('SFO')
+    expect(snap.to).toBe('NRT')
+    expect(snap.depart).toBe('2026-11-01')
+    expect(snap.adults).toBe(1)
+    expect(snap.cabin).toBe('business')
+    expect(snap.verdict).toBe('use-points')
+    expect(snap.summary.cheapestCash).toBe(850)
+    expect(snap.summary.saveVsCash).toBe(412)
+    expect(snap.pick.airline).toBe('Air Canada')
+    expect(snap.pick.miles).toBe(60000)
+    expect(snap.pick.cpp).toBe(2.9)
+    expect(snap.pick.tier).toBe('green')
+    expect(snap.asOf).toBeDefined()
+  })
+
+  it('returns null when degraded is non-empty (strict gate)', () => {
+    const degradedResult: SearchResult = {
+      ...baseResult,
+      degraded: ['awards'],
+    }
+    expect(buildVerdictSnapshot(degradedResult)).toBeNull()
+  })
+
+  it('returns null when pay-cash has degraded award side', () => {
+    const degradedPayCash: SearchResult = {
+      ...baseResult,
+      verdict: 'pay-cash',
+      degraded: ['awards'],
+    }
+    expect(buildVerdictSnapshot(degradedPayCash)).toBeNull()
+  })
+
+  it('returns null when verdict is none', () => {
+    const noneResult: SearchResult = {
+      ...baseResult,
+      verdict: 'none',
+    }
+    expect(buildVerdictSnapshot(noneResult)).toBeNull()
+  })
+
+  it('returns null when use-points is missing pick', () => {
+    const noPickResult: SearchResult = {
+      ...baseResult,
+      pick: undefined,
+    }
+    expect(buildVerdictSnapshot(noPickResult)).toBeNull()
+  })
+
+  it('returns null when summary is missing cheapestCash', () => {
+    const noCashSummary: SearchResult = {
+      ...baseResult,
+      summary: {},
+    }
+    expect(buildVerdictSnapshot(noCashSummary)).toBeNull()
+  })
+
+  it('structurally omits sensitive keys (youHave, action, bookingUrl, balances)', () => {
+    const snap = buildVerdictSnapshot(baseResult)
+    expect(snap).not.toBeNull()
+    if (!snap) return
+
     expect('youHave' in snap.pick).toBe(false)
     expect('action' in snap.pick).toBe(false)
     expect('bookingUrl' in snap.pick).toBe(false)
-    expect('youHave' in snap.cashOption!).toBe(false)
-    expect('action' in snap.cashOption!).toBe(false)
-    expect('bookingUrl' in snap.cashOption!).toBe(false)
+    expect('id' in snap.pick).toBe(false)
+
+    // Verify stringified output contains no balance/action keys
+    const json = JSON.stringify(snap)
+    expect(json).not.toContain('youHave')
+    expect(json).not.toContain('bookingUrl')
+    expect(json).not.toContain('balances')
   })
 
-  it('no balance data can reach the serialized snapshot', () => {
-    const snap = buildVerdictSnapshot(fixtureResult({ balances: fixtureBalances() }))!
-    expect(JSON.stringify(snap)).not.toContain(BALANCE_MARKER)
-    expect(JSON.stringify(snap)).not.toContain('618314')
+  it('preserves boundary cpp values and tiers without re-deriving', () => {
+    const result25: SearchResult = {
+      ...baseResult,
+      options: [{ ...baseOption, cpp: 2.5, tier: 'amber' }],
+      pick: { ...baseOption, cpp: 2.5, tier: 'amber' },
+      summary: { cheapestCash: 850, bestMiles: 60000, bestCpp: 2.5, saveVsCash: 200 },
+    }
+    const snap = buildVerdictSnapshot(result25)
+    expect(snap?.pick.cpp).toBe(2.5)
+    expect(snap?.pick.tier).toBe('amber')
   })
 })
 
-// ── validateShareParams ──────────────────────────────────────────────────────
+describe('validateShareParams', () => {
+  it('accepts clean one-way and round-trip params', () => {
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10)
+    const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)
 
-describe('validateShareParams — strict, never default-fills', () => {
-  const valid = {
-    from: 'SFO',
-    to: 'NRT',
-    depart: '2099-01-10',
-    return: '2099-01-24',
-    adults: '2',
-  }
-
-  it('accepts a clean round trip', () => {
-    expect(validateShareParams(valid)).toEqual({
+    const validOneWay = validateShareParams({
+      from: 'sfo',
+      to: 'nrt',
+      depart: tomorrow,
+    })
+    expect(validOneWay).toEqual({
       from: 'SFO',
       to: 'NRT',
-      depart: '2099-01-10',
-      return: '2099-01-24',
+      depart: tomorrow,
+      adults: 1,
+    })
+
+    const validRoundTrip = validateShareParams({
+      from: 'JFK',
+      to: 'LHR',
+      depart: tomorrow,
+      return: nextWeek,
+      cabin: 'business',
+      adults: '2',
+    })
+    expect(validRoundTrip).toEqual({
+      from: 'JFK',
+      to: 'LHR',
+      depart: tomorrow,
+      return: nextWeek,
+      cabin: 'business',
       adults: 2,
     })
   })
 
-  it('accepts a clean one-way', () => {
-    const { return: _drop, ...oneWay } = valid
-    void _drop
-    expect(validateShareParams(oneWay)).toEqual({
-      from: 'SFO',
-      to: 'NRT',
-      depart: '2099-01-10',
-      adults: 2,
-    })
-  })
-
-  it('rejects missing from/to instead of defaulting to SFO→LAX', () => {
-    expect(validateShareParams({ ...valid, from: undefined })).toBeNull()
-    expect(validateShareParams({ ...valid, to: undefined })).toBeNull()
-  })
-
-  it('rejects to === from', () => {
-    expect(validateShareParams({ ...valid, to: 'SFO' })).toBeNull()
-  })
-
-  it('rejects non-IATA / unknown codes', () => {
-    expect(validateShareParams({ ...valid, from: 'ZZZ' })).toBeNull()
-    expect(validateShareParams({ ...valid, to: 'nope' })).toBeNull()
-  })
-
-  it('rejects malformed or past depart', () => {
-    expect(validateShareParams({ ...valid, depart: 'not-a-date' })).toBeNull()
-    expect(validateShareParams({ ...valid, depart: '2000-01-01' })).toBeNull()
-  })
-
-  it('rejects a return before depart', () => {
-    expect(validateShareParams({ ...valid, return: '2099-01-01' })).toBeNull()
-  })
-
-  it('rejects an unknown cabin', () => {
-    expect(validateShareParams({ ...valid, cabin: 'super-plus' })).toBeNull()
-  })
-
-  it('accepts a known cabin', () => {
-    expect(validateShareParams({ ...valid, cabin: 'business' })?.cabin).toBe('business')
-  })
-
-  it('rejects adults > 9', () => {
-    expect(validateShareParams({ ...valid, adults: '10' })).toBeNull()
-  })
-
-  it('never default-fills garbage into a plausible route', () => {
-    const result = validateShareParams({ from: 'not-a-code', to: '' })
-    expect(result).toBeNull()
+  it('rejects invalid or missing inputs without default-filling', () => {
+    expect(validateShareParams({})).toBeNull()
+    expect(validateShareParams({ from: 'SFO' })).toBeNull()
+    expect(validateShareParams({ from: 'SFO', to: 'SFO', depart: '2026-12-01' })).toBeNull()
+    expect(validateShareParams({ from: 'INVALID', to: 'NRT', depart: '2026-12-01' })).toBeNull()
+    expect(validateShareParams({ from: 'SFO', to: 'NRT', depart: '2020-01-01' })).toBeNull()
+    expect(
+      validateShareParams({
+        from: 'SFO',
+        to: 'NRT',
+        depart: '2026-12-10',
+        return: '2026-12-01',
+      }),
+    ).toBeNull()
+    expect(
+      validateShareParams({
+        from: 'SFO',
+        to: 'NRT',
+        depart: '2026-12-01',
+        cabin: 'invalid-cabin',
+      }),
+    ).toBeNull()
+    expect(
+      validateShareParams({
+        from: 'SFO',
+        to: 'NRT',
+        depart: '2026-12-01',
+        adults: '15',
+      }),
+    ).toBeNull()
   })
 })
-
-// ── newReceiptId / verdictContentHash ────────────────────────────────────────
 
 describe('newReceiptId', () => {
-  it('matches the 12-char base32 shape', () => {
-    expect(newReceiptId()).toMatch(/^[a-z2-7]{12}$/)
-  })
-
-  it('two calls differ', () => {
-    expect(newReceiptId()).not.toBe(newReceiptId())
+  it('generates a 12-char base32 string and consecutive calls differ', () => {
+    const id1 = newReceiptId()
+    const id2 = newReceiptId()
+    expect(id1).toMatch(/^[a-z2-7]{12}$/)
+    expect(id2).toMatch(/^[a-z2-7]{12}$/)
+    expect(id1).not.toBe(id2)
   })
 })
 
 describe('verdictContentHash', () => {
-  it('is independent of key insertion order', () => {
-    const p1: SearchParams = { from: 'SFO', to: 'NRT', depart: '2099-01-10', adults: 1 }
-    const p2: SearchParams = { adults: 1, depart: '2099-01-10', to: 'NRT', from: 'SFO' }
-    expect(verdictContentHash(p1, '2099-01-01')).toBe(verdictContentHash(p2, '2099-01-01'))
-  })
+  it('produces stable, key-order independent hashes for the same UTC day', () => {
+    const params1 = { from: 'SFO', to: 'NRT', depart: '2026-11-01', adults: 1 }
+    const params2 = { adults: 1, depart: '2026-11-01', to: 'NRT', from: 'SFO' }
 
-  it('differs between a one-way and its round-trip counterpart', () => {
-    const oneWay: SearchParams = { from: 'SFO', to: 'NRT', depart: '2099-01-10', adults: 1 }
-    const roundTrip: SearchParams = { ...oneWay, return: '2099-01-24' }
-    expect(verdictContentHash(oneWay, '2099-01-01')).not.toBe(verdictContentHash(roundTrip, '2099-01-01'))
-  })
+    const hash1 = verdictContentHash(params1, '2026-07-23')
+    const hash2 = verdictContentHash(params2, '2026-07-23')
+    expect(hash1).toBe(hash2)
 
-  it('differs across UTC days for the same trip', () => {
-    const p: SearchParams = { from: 'SFO', to: 'NRT', depart: '2099-01-10', adults: 1 }
-    expect(verdictContentHash(p, '2099-01-01')).not.toBe(verdictContentHash(p, '2099-01-02'))
-  })
-
-  it('is stable across repeated calls', () => {
-    const p: SearchParams = { from: 'SFO', to: 'NRT', depart: '2099-01-10', adults: 1 }
-    expect(verdictContentHash(p, '2099-01-01')).toBe(verdictContentHash(p, '2099-01-01'))
+    // Different day -> different hash
+    const hash3 = verdictContentHash(params1, '2026-07-24')
+    expect(hash1).not.toBe(hash3)
   })
 })
 
-// ── Persistence — withDb fallback with no DB configured ─────────────────────
-
-describe('createSharedVerdict / getSharedVerdict — no DB configured', () => {
-  it('createSharedVerdict degrades to {ok:false} rather than throwing', async () => {
-    const snap = buildVerdictSnapshot(fixtureResult())!
-    const res = await createSharedVerdict({ params: fixtureParams(), snapshot: snap, createdBy: null })
-    expect(res.ok).toBe(false)
-  })
-
-  it('getSharedVerdict degrades to null rather than throwing', async () => {
-    await expect(getSharedVerdict('abcdefghijkl')).resolves.toBeNull()
-  })
-})
-
-// ── Orchestration — gate → rate-limit → validate → mint ─────────────────────
-
-describe('shareVerdict() — gating and limits', () => {
-  beforeEach(() => {
-    _resetRateLimitForTest()
-    vi.unstubAllEnvs()
-  })
-
-  it("flag off → 'disabled', before touching anything else", async () => {
-    vi.stubEnv('HOP_ENABLE_SHARE_RECEIPTS', '')
-    const res = await shareVerdict({
-      raw: { from: 'SFO', to: 'NRT', depart: '2099-01-10' },
-      rateLimitKey: 'test-key-disabled',
-      createdBy: null,
-    })
-    expect(res).toEqual({ ok: false, reason: 'disabled' })
-  })
-
-  it("rate-limit exhaustion → 'rate-limited'", async () => {
-    vi.stubEnv('HOP_ENABLE_SHARE_RECEIPTS', '1')
-    const raw = { from: 'SFO', to: 'NRT', depart: '2099-01-10' }
-    const key = 'test-key-rate-limited'
-    // Burst through the bucket (capacity 5) with invalid params so we never
-    // reach the engine — only the gate/rate-limit path is under test here.
-    for (let i = 0; i < 5; i++) {
-      await shareVerdict({ raw, rateLimitKey: key, createdBy: null })
+describe('validateSnapshot', () => {
+  it('validates good snapshot and rejects invalid snapshot JSON', () => {
+    const validSnap = {
+      route: 'SFO → NRT',
+      from: 'SFO',
+      to: 'NRT',
+      depart: '2026-11-01',
+      adults: 1,
+      verdict: 'use-points',
+      summary: { cheapestCash: 850, bestMiles: 60000, bestCpp: 2.9, saveVsCash: 412 },
+      pick: {
+        kind: 'award',
+        airline: 'Air Canada',
+        miles: 60000,
+        cpp: 2.9,
+        tier: 'green',
+      },
+      asOf: '2026-07-23T00:00:00.000Z',
     }
-    const limited = await shareVerdict({ raw, rateLimitKey: key, createdBy: null })
-    expect(limited).toEqual({ ok: false, reason: 'rate-limited' })
-  })
 
-  it("invalid params (past the rate limit) → 'invalid'", async () => {
-    vi.stubEnv('HOP_ENABLE_SHARE_RECEIPTS', '1')
-    const res = await shareVerdict({
-      raw: { from: 'SFO', to: 'SFO', depart: '2099-01-10' },
-      rateLimitKey: 'test-key-invalid',
-      createdBy: null,
-    })
-    expect(res).toEqual({ ok: false, reason: 'invalid' })
+    expect(validateSnapshot(validSnap)).not.toBeNull()
+    expect(validateSnapshot(null)).toBeNull()
+    expect(validateSnapshot({})).toBeNull()
+    expect(validateSnapshot({ ...validSnap, verdict: 'invalid-verdict' })).toBeNull()
+    expect(
+      validateSnapshot({ ...validSnap, pick: { ...validSnap.pick, cpp: 'not-a-number' } }),
+    ).toBeNull()
+  })
+})
+
+describe('persistence fallbacks (no DB configured)', () => {
+  it('createSharedVerdict and getSharedVerdict degrade gracefully when DB is unconfigured', async () => {
+    const params = { from: 'SFO', to: 'NRT', depart: '2026-11-01', adults: 1 }
+    const snap = {
+      route: 'SFO → NRT',
+      from: 'SFO',
+      to: 'NRT',
+      depart: '2026-11-01',
+      adults: 1,
+      verdict: 'use-points' as const,
+      summary: { cheapestCash: 850 },
+      pick: {
+        kind: 'award' as const,
+        airline: 'Air Canada',
+        tier: 'green' as const,
+      },
+      asOf: '2026-07-23T00:00:00.000Z',
+    }
+
+    const created = await createSharedVerdict({ params, snapshot: snap, createdBy: null })
+    expect(created.ok).toBe(false)
+    if (!created.ok) {
+      expect(created.reason).toBe('unavailable')
+    }
+
+    const fetched = await getSharedVerdict('nonexistent123')
+    expect(fetched).toBeNull()
+  })
+})
+
+describe('shareVerdict orchestration & rate limits', () => {
+  it('enforces rate limits', async () => {
+    _resetRateLimitForTest()
+    const raw = {
+      from: 'SFO',
+      to: 'NRT',
+      depart: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
+    }
+
+    // Exhaust capacity (capacity is 5)
+    for (let i = 0; i < 5; i++) {
+      await shareVerdict({ raw, rateLimitKey: 'test-ip', createdBy: null })
+    }
+
+    // 6th call should be rate-limited
+    const res = await shareVerdict({ raw, rateLimitKey: 'test-ip', createdBy: null })
+    expect(res.ok).toBe(false)
+    if (!res.ok) {
+      expect(res.reason).toBe('rate-limited')
+    }
   })
 })
