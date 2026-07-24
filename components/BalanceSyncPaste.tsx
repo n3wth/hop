@@ -191,7 +191,7 @@ export default function BalanceSyncPaste({ syncAddress }: { syncAddress: string 
             rows={4}
             placeholder="Paste here — e.g. “Your MileagePlus balance: 45,230 miles”"
             aria-label="Statement text"
-            className="w-full resize-y rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[13.5px] leading-[1.5] text-text outline-none transition-colors focus:border-brand"
+            className="no-inner-ring w-full resize-y rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[13.5px] leading-[1.5] text-text outline-none transition-colors focus:border-brand"
           />
           <button
             type="button"

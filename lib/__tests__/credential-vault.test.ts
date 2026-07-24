@@ -40,7 +40,7 @@ describe('credential vault crypto', () => {
     const blob = encryptCredential('u', 'p')!
     const [iv, tag, ct] = blob.split('.')
     // Flip a character in the ciphertext.
-    const tampered = `${iv}.${tag}.${ct.slice(0, -1)}${ct.endsWith('A') ? 'B' : 'A'}`
+    const tampered = `${iv}.${tag}.${ct.startsWith('A') ? 'B' : 'A'}${ct.slice(1)}`
     expect(decryptCredential(tampered)).toBeNull()
   })
 

@@ -21,7 +21,7 @@ const SECTIONS: { id: string; label: string }[] = [
   { id: 'points-balances', label: 'Points & balances' },
   { id: 'the-verdict', label: 'How the verdict works' },
   { id: 'booking', label: 'Booking, changes & cancellations' },
-  { id: 'claude-mcp', label: 'Using hop from Claude' },
+  { id: 'mcp', label: 'Using hop from an AI assistant' },
   { id: 'account-privacy', label: 'Account & privacy' },
   { id: 'contact', label: 'Contact' },
 ]
@@ -217,24 +217,25 @@ export default async function SupportPage() {
           price.
         </p>
 
-        <h2 id="claude-mcp" className="scroll-mt-24">
-          Using hop from Claude
+        <h2 id="mcp" className="scroll-mt-24">
+          Using hop from an AI assistant
         </h2>
 
-        <h3>What is &ldquo;Use hop from Claude&rdquo;?</h3>
+        <h3>What is &ldquo;Use hop from your AI assistant&rdquo;?</h3>
         <p>
           hop&rsquo;s engine is available as an <strong>MCP server</strong>, so you can call it from
-          Claude or any MCP client and get the same deterministic answers you&rsquo;d get on the
+          any MCP-capable client and get the same deterministic answers you&rsquo;d get on the
           site — pricing a trip, the full verdict, sweet-spot redemptions, and transfer paths.
         </p>
 
         <h3>How do I connect it?</h3>
         <p>
           On your <Link href="/account">account</Link>, open{' '}
-          <strong>Use hop from Claude (MCP)</strong> and mint a token. Add it to your MCP client and
-          your assistant can run hop on your behalf. A token is tied to <em>your</em> account: when
-          it&rsquo;s present, the tools see your real balances and tell you what you can afford. Treat
-          the token like a password — anyone with it can read your balances through hop.
+          <strong>Use hop from your AI assistant (MCP)</strong> and mint a token. Add it to your MCP
+          client and your assistant can run hop on your behalf. A token is tied to <em>your</em>{' '}
+          account: when it&rsquo;s present, the tools see your real balances and tell you what you
+          can afford. Treat the token like a password — anyone with it can read your balances
+          through hop.
         </p>
 
         <h3>Can I use it without a token?</h3>

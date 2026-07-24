@@ -1,5 +1,6 @@
 import type { SearchResult } from '@/lib/types'
 import { cityForCode } from '@/lib/airports'
+import Stat from './ui/Stat'
 
 export interface RouteBarProps {
   result: SearchResult
@@ -11,19 +12,6 @@ export interface RouteBarProps {
       confirms the filter actually applied (otherwise the only feedback is an
       absence: no connecting itineraries in the results below). */
   nonstop?: boolean
-}
-
-// A right-aligned stat: bold value over a small caption, so the summary carries
-// real weight against the route codes instead of one thin run-on line.
-function Stat({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="flex flex-col items-end leading-none">
-      <span className="hop-num text-[18px] font-semibold text-text">
-        {value}
-      </span>
-      <span className="mt-[5px] text-[11px] uppercase tracking-[var(--track-label)] text-text3">{label}</span>
-    </div>
-  )
 }
 
 // Editorial route line — desktop (lg+) only: origin/dest codes joined by a

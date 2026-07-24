@@ -575,11 +575,10 @@ export default async function AccountPage({
             <summary className="flex cursor-pointer list-none items-center gap-2.5 px-5 py-4 transition-colors hover:bg-sunk [&::-webkit-details-marker]:hidden">
               <div className="min-w-0 flex-1">
                 <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
-                  Use hop from Claude (MCP)
+                  Use hop from your AI assistant (MCP)
                 </h2>
                 <p className="mt-1 text-[13.5px] text-text2">
-                  Mint a token to call hop&apos;s points-vs-cash engine from Claude or any
-                  MCP client.
+                  Mint a token to call hop&apos;s points-vs-cash engine from any MCP client.
                 </p>
               </div>
               <Icon

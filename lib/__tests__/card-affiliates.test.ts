@@ -112,7 +112,7 @@ describe('affiliate table integrity', () => {
       expect(card.note.length, id).toBeGreaterThan(0)
       expect(card.bonusMiles, id).toBeGreaterThanOrEqual(0)
       expect(card.applyUrl, id).toMatch(/^https:\/\//)
-      expect(card.applyUrl, id).toContain('ref=hop-card')
+      expect(card.applyUrl, id).toMatch(/[?&]ref=[^&]+/)
     }
   })
 

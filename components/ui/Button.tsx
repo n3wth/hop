@@ -1,10 +1,13 @@
 import Link from 'next/link'
 import type { ComponentProps } from 'react'
 
-type Variant = 'primary' | 'secondary'
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'ink'
+export type ButtonSize = 'sm' | 'md' | 'lg'
 
 interface CommonProps {
-  variant?: Variant
+  variant?: ButtonVariant
+  size?: ButtonSize
+  onDark?: boolean
   /** Block-level, full-width CTA (e.g. an auth screen's stacked actions). */
   fullWidth?: boolean
   className?: string
@@ -26,43 +29,47 @@ type NativeAnchorVariant = CommonProps &
     native: true
   }
 
-type ButtonVariant = CommonProps &
+type ButtonBaseVariant = CommonProps &
   Omit<ComponentProps<'button'>, 'className'> & { href?: undefined; native?: undefined }
 
-export type ButtonProps = LinkVariant | NativeAnchorVariant | ButtonVariant
+export type ButtonProps = LinkVariant | NativeAnchorVariant | ButtonBaseVariant
 
-const VARIANT_CLASS: Record<Variant, string> = {
+export const VARIANT_CLASS: Record<ButtonVariant, string> = {
   primary: 'bg-brand text-white hover:bg-brand-deep',
   secondary: 'border border-border bg-paper text-text hover:border-brand hover:text-brand',
+  ghost: 'bg-transparent text-text hover:bg-surface',
+  ink: 'border-[1.5px] border-text bg-transparent text-text hover:bg-text hover:text-white',
 }
 
-// Shared primary/secondary CTA per docs/design/DESIGN-SYSTEM.md's documented
+export const ONDARK_VARIANT_CLASS: Record<ButtonVariant, string> = {
+  primary: 'bg-white text-brand hover:bg-brand-surface',
+  secondary: 'border border-white/30 text-white hover:bg-white/10',
+  ghost: 'bg-transparent text-white hover:bg-white/10',
+  ink: 'border-[1.5px] border-white bg-transparent text-white hover:bg-white hover:text-text',
+}
+
+export const SIZE_CLASS: Record<ButtonSize, string> = {
+  sm: 'px-3 py-1.5 text-[12.5px]',
+  md: 'px-5 py-3 text-[14px]',
+  lg: 'px-6 py-3.5 text-[15px]',
+}
+
+// Shared CTA primitive per docs/design/DESIGN-SYSTEM.md's documented
 // button patterns — one source of truth so call sites can't drift on
-// radius/padding/focus treatment the way the old per-page hand-rolled copies
-// did (error boundaries, login). Renders a Next <Link> when `href` is given,
+// radius/padding/focus treatment. Renders a Next <Link> when `href` is given,
 // a plain <a> when `native` is also set, otherwise a <button type="button">.
-//
-// Astryx port (2026-07): considered wrapping Astryx's own `Button` here and
-// deliberately skipped it. This component's polymorphism (button / next/link
-// / native <a>, two variants, a `fullWidth` mode with its own distinct
-// vertical rhythm) doesn't map onto Astryx Button's fixed sm/md/lg height
-// scale without per-instance box-model overrides (Astryx's `href`+`as` link
-// mode also doesn't support the `native` real-anchor case). Reaching exact
-// parity would mean overriding height/padding per call site rather than
-// through the theme, which is exactly the kind of fragile, easy-to-drift
-// styling this component exists to prevent — and this is hop's single most
-// widely used interactive primitive, so a visual regression here is the
-// worst place to risk one. Kept hand-rolled; see components/AccountMenu.tsx
-// and components/Sheet.tsx for the Astryx swaps that *did* hold up.
 export default function Button({
   variant = 'primary',
+  size = 'md',
+  onDark = false,
   fullWidth = false,
   className = '',
   children,
   ...rest
 }: ButtonProps) {
-  const padding = fullWidth ? 'w-full py-3.5' : variant === 'primary' ? 'px-6 py-3' : 'px-5 py-3'
-  const classes = `inline-flex items-center justify-center gap-2 rounded-[var(--radius)] text-[14.5px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-60 ${padding} ${VARIANT_CLASS[variant]} ${className}`
+  const variantStyles = onDark ? ONDARK_VARIANT_CLASS[variant] : VARIANT_CLASS[variant]
+  const sizeStyles = fullWidth ? 'w-full py-3.5 text-[14px]' : SIZE_CLASS[size]
+  const classes = `inline-flex items-center justify-center gap-2 rounded-[var(--radius)] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-60 ${sizeStyles} ${variantStyles} ${className}`
 
   if (rest.href != null) {
     if (rest.native) {
