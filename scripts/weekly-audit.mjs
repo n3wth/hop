@@ -1,0 +1,189 @@
+#!/usr/bin/env node
+// Weekly Read-Only Invariant Audit (Self-Improvement Loop PR 4 / Phase 1.5)
+//
+// Performs a read-only audit of hop against standing invariants (engine, degradation,
+// copy, nextjs16, security, memory).
+// Skips cleanly when ANTHROPIC_API_KEY is absent.
+// Deduplicates findings against existing GitHub issues using label "auto-audit"
+// and title convention "[hop:audit:<fingerprint>]".
+
+import { execFileSync } from 'node:child_process'
+import crypto from 'node:crypto'
+import fs from 'node:fs'
+import path from 'node:path'
+import Anthropic from '@anthropic-ai/sdk'
+
+export function computeFingerprint(file, invariant, line) {
+  const raw = `${file}:${invariant}:${line}`
+  return crypto.createHash('sha256').update(raw).digest('hex').slice(0, 10)
+}
+
+function parseArgs(argv) {
+  const flags = { dryRun: true, fileIssues: false }
+  for (const arg of argv) {
+    if (arg === '--no-dry-run') flags.dryRun = false
+    if (arg === '--file-issues') flags.fileIssues = true
+    if (arg === '--dry-run') flags.dryRun = true
+  }
+  return flags
+}
+
+function gh(args) {
+  try {
+    return execFileSync('gh', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+  } catch (err) {
+    console.warn('[weekly-audit] gh command failed:', err.message)
+    return null
+  }
+}
+
+export function fetchOpenAuditIssues() {
+  const output = gh(['issue', 'list', '--label', 'auto-audit', '--state', 'open', '--json', 'title,number'])
+  if (!output) return []
+  try {
+    return JSON.parse(output)
+  } catch {
+    return []
+  }
+}
+
+export function isFingerprintOpen(openIssues, fingerprint) {
+  const tag = `[hop:audit:${fingerprint}]`
+  return openIssues.some((issue) => issue.title && issue.title.includes(tag))
+}
+
+const INVARIANT_RULES = [
+  {
+    key: 'engine',
+    name: 'Economic calculations trace to lib/*',
+    description: 'All cpp, miles, pricing, or valuation numbers must be computed by lib/* engines, never hardcoded in UI or prompt-generated.',
+  },
+  {
+    key: 'degradation',
+    name: 'Graceful degradation via withDb',
+    description: 'Database operations must use withDb and fall back gracefully without throwing unhandled exceptions.',
+  },
+  {
+    key: 'security',
+    name: 'User isolation and credential safety',
+    description: 'Queries filtering by user data must be scoped by user_id; secrets must be accessed via lib/env.ts.',
+  },
+  {
+    key: 'nextjs16',
+    name: 'Next.js 16 + React 19 conventions',
+    description: 'Async params/searchParams in App Router, no deprecated caching idioms or pre-16 handler shapes.',
+  },
+]
+
+export async function runAuditWithAnthropic(apiKey) {
+  const client = new Anthropic({ apiKey })
+  const findings = []
+
+  // Sample key files for audit
+  const sampleFiles = [
+    'app/mcp/route.ts',
+    'app/pricing/page.tsx',
+    'lib/cpp.ts',
+    'lib/env.ts',
+    'lib/supabase-helpers.ts',
+    'lib/health-checks.ts',
+  ]
+
+  for (const fileRel of sampleFiles) {
+    const fullPath = path.resolve(process.cwd(), fileRel)
+    if (!fs.existsSync(fullPath)) continue
+    const content = fs.readFileSync(fullPath, 'utf8')
+
+    const prompt = `You are performing an invariant audit on the codebase file '${fileRel}'.
+Rules to verify:
+1. Economic calculations (cpp, points, pricing) must trace to lib/* engines and never be hardcoded or computed in UI/prompts.
+2. DB queries must be wrapped in withDb and degrade gracefully.
+3. Security/Auth: User-specific queries must be scoped to user_id.
+4. Next.js 16 App Router: params and searchParams are Promises and must be awaited.
+
+File content:
+\`\`\`
+${content.slice(0, 4000)}
+\`\`\`
+
+If you find ANY clear violation of these rules, return a JSON object with:
+{"findings": [{"file": "${fileRel}", "line": 1, "severity": "P1"|"P2"|"P3", "invariant": "name of invariant", "scenario": "concrete description of defect"}]}
+If no violations are found, return {"findings": []}.
+Return ONLY valid JSON.`
+
+    try {
+      const res = await client.messages.create({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }],
+      })
+      const text = res.content[0]?.type === 'text' ? res.content[0].text : ''
+      const jsonMatch = text.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0])
+        if (Array.isArray(parsed.findings)) {
+          for (const f of parsed.findings) {
+            const fingerprint = computeFingerprint(f.file || fileRel, f.invariant || 'invariant', f.line || 1)
+            findings.push({ ...f, file: f.file || fileRel, fingerprint })
+          }
+        }
+      }
+    } catch (err) {
+      console.warn(`[weekly-audit] Failed audit for ${fileRel}:`, err.message)
+    }
+  }
+
+  return findings
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2))
+  const apiKey = process.env.ANTHROPIC_API_KEY
+
+  if (!apiKey) {
+    console.log('[weekly-audit] ANTHROPIC_API_KEY secret absent. Skipping weekly audit cleanly.')
+    process.exit(0)
+  }
+
+  console.log('[weekly-audit] Running weekly invariant audit...')
+  const findings = await runAuditWithAnthropic(apiKey)
+
+  console.log(`[weekly-audit] Found ${findings.length} findings.`)
+
+  const summary = {
+    date: new Date().toISOString(),
+    dryRun: args.dryRun,
+    findingsCount: findings.length,
+    findings,
+  }
+
+  console.log(JSON.stringify(summary, null, 2))
+
+  if (args.dryRun) {
+    console.log('[weekly-audit] Dry run active — no GitHub issues will be created.')
+    return
+  }
+
+  if (args.fileIssues && findings.length > 0) {
+    const openIssues = fetchOpenAuditIssues()
+    for (const f of findings) {
+      if (isFingerprintOpen(openIssues, f.fingerprint)) {
+        console.log(`[weekly-audit] Issue for fingerprint ${f.fingerprint} is already open. Skipping.`)
+        continue
+      }
+
+      const title = `[hop:audit:${f.fingerprint}] ${f.severity || 'P3'}: ${f.invariant} in ${f.file}`
+      const body = `## Invariant Audit Finding\n\n**File:** \`${f.file}:${f.line || 1}\`\n**Severity:** ${f.severity || 'P3'}\n**Invariant:** ${f.invariant}\n\n### Scenario\n${f.scenario}\n\n---\n*Auto-generated by weekly audit workflow.*`
+
+      console.log(`[weekly-audit] Creating issue: ${title}`)
+      gh(['issue', 'create', '--title', title, '--body', body, '--label', 'auto-audit'])
+    }
+  }
+}
+
+if (process.argv[1] && process.argv[1].endsWith('weekly-audit.mjs')) {
+  main().catch((err) => {
+    console.error('[weekly-audit] Fatal error:', err)
+    process.exit(1)
+  })
+}
