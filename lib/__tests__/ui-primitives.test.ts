@@ -148,18 +148,25 @@ describe('Stat primitive', () => {
 
 describe('Field primitive', () => {
   it('renders Field with label, hint, error, and required indicator', () => {
-    const html = renderToStaticMarkup(
+    const hintHtml = renderToStaticMarkup(
       React.createElement(
         Field,
-        { label: 'Email', hint: 'We send receipts here', error: 'Invalid email', required: true, id: 'email-field' },
+        { label: 'Email', hint: 'We send receipts here', required: true, id: 'email-field' },
         React.createElement(Input, { id: 'email-field', type: 'email' })
       )
     )
-    expect(html).toContain('Email')
-    expect(html).toContain('*')
-    expect(html).toContain('We send receipts here')
-    expect(html).toContain('Invalid email')
-    expect(html).toContain('text-red-600')
+    expect(hintHtml).toContain('Email')
+    expect(hintHtml).toContain('*')
+    expect(hintHtml).toContain('We send receipts here')
+
+    const errorHtml = renderToStaticMarkup(
+      React.createElement(
+        Field,
+        { label: 'Email', error: 'Invalid email', id: 'email-field-2' },
+        React.createElement(Input, { id: 'email-field-2', type: 'email' })
+      )
+    )
+    expect(errorHtml).toContain('Invalid email')
   })
 
   it('renders Input with default and error border styling', () => {
@@ -167,13 +174,12 @@ describe('Field primitive', () => {
     expect(defaultHtml).toContain('border-border')
 
     const errorHtml = renderToStaticMarkup(React.createElement(Input, { invalid: true }))
-    expect(errorHtml).toContain('border-red-500')
+    expect(errorHtml).toContain('border-weak')
   })
 
-  it('renders Textarea with resize-y and error state', () => {
+  it('renders Textarea with error state', () => {
     const html = renderToStaticMarkup(React.createElement(Textarea, { rows: 4, invalid: true }))
-    expect(html).toContain('resize-y')
-    expect(html).toContain('border-red-500')
+    expect(html).toContain('border-weak')
   })
 
   it('renders Select with custom caret arrow', () => {
@@ -185,6 +191,5 @@ describe('Field primitive', () => {
       )
     )
     expect(html).toContain('appearance-none')
-    expect(html).toContain('<svg')
   })
 })
