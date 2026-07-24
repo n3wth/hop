@@ -37,6 +37,17 @@ function gh(args) {
   }
 }
 
+export function checkIssuesEnabled() {
+  const output = gh(['repo', 'view', '--json', 'hasIssuesEnabled'])
+  if (!output) return false
+  try {
+    const data = JSON.parse(output)
+    return Boolean(data.hasIssuesEnabled)
+  } catch {
+    return false
+  }
+}
+
 export function fetchOpenAuditIssues() {
   const output = gh(['issue', 'list', '--label', 'auto-audit', '--state', 'open', '--limit', '100', '--json', 'title,number'])
   if (!output) return []
@@ -75,6 +86,29 @@ export const INVARIANT_RULES = [
   },
 ]
 
+export function sanitizeFilePath(filePath) {
+  if (typeof filePath !== 'string') return ''
+  const cleaned = filePath.trim().replace(/\\/g, '/')
+  if (!/^[a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+$/.test(cleaned)) return ''
+  if (cleaned.includes('..')) return ''
+  return cleaned.slice(0, 150)
+}
+
+export function sanitizeTitleText(str) {
+  if (typeof str !== 'string') return ''
+  return str.replace(/[\r\n\t\`]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100)
+}
+
+export function sanitizeMarkdownBody(str) {
+  if (typeof str !== 'string') return ''
+  return str
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 2000)
+}
+
 function sanitizeSeverity(sev) {
   if (typeof sev === 'string' && ['P1', 'P2', 'P3'].includes(sev.toUpperCase())) {
     return sev.toUpperCase()
@@ -84,12 +118,7 @@ function sanitizeSeverity(sev) {
 
 function sanitizeLine(line) {
   const parsed = parseInt(line, 10)
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : 1
-}
-
-function sanitizeText(str) {
-  if (typeof str !== 'string') return ''
-  return str.replace(/[\r\n]+/g, ' ').trim().slice(0, 500)
+  return Number.isInteger(parsed) && parsed > 0 && parsed <= 10000 ? parsed : 1
 }
 
 export async function runAuditWithAnthropic(apiKey) {
@@ -105,6 +134,8 @@ export async function runAuditWithAnthropic(apiKey) {
     'lib/supabase-helpers.ts',
     'lib/health-checks.ts',
   ]
+
+  const model = process.env.ANTHROPIC_MODEL || 'claude-3-7-sonnet-20250219'
 
   for (const fileRel of sampleFiles) {
     const fullPath = path.resolve(process.cwd(), fileRel)
@@ -130,7 +161,7 @@ Return ONLY valid JSON.`
 
     try {
       const res = await client.messages.create({
-        model: 'claude-3-5-sonnet-latest',
+        model,
         max_tokens: 1000,
         messages: [{ role: 'user', content: prompt }],
       })
@@ -140,11 +171,11 @@ Return ONLY valid JSON.`
         const parsed = JSON.parse(jsonMatch[0])
         if (Array.isArray(parsed.findings)) {
           for (const rawF of parsed.findings) {
-            const file = sanitizeText(rawF.file) || fileRel
+            const file = sanitizeFilePath(rawF.file) || fileRel
             const line = sanitizeLine(rawF.line)
             const severity = sanitizeSeverity(rawF.severity)
-            const invariant = sanitizeText(rawF.invariant) || 'invariant'
-            const scenario = sanitizeText(rawF.scenario) || 'Unspecified scenario'
+            const invariant = sanitizeTitleText(rawF.invariant) || 'invariant'
+            const scenario = sanitizeMarkdownBody(rawF.scenario) || 'Unspecified scenario'
 
             const fingerprint = computeFingerprint(file, invariant, line)
             findings.push({ file, line, severity, invariant, scenario, fingerprint })
@@ -188,6 +219,11 @@ async function main() {
   }
 
   if (args.fileIssues && findings.length > 0) {
+    if (!checkIssuesEnabled()) {
+      console.warn('[weekly-audit] GitHub Issues are disabled or unreachable for this repository. Cannot file issues.')
+      return
+    }
+
     const openIssues = fetchOpenAuditIssues()
     const filedInRun = new Set()
 
@@ -206,7 +242,7 @@ async function main() {
         filedInRun.add(f.fingerprint)
         openIssues.push({ title, number: -1 })
       } else {
-        console.warn(`[weekly-audit] Issue creation failed or issues disabled for fingerprint ${f.fingerprint}`)
+        console.warn(`[weekly-audit] Issue creation failed for fingerprint ${f.fingerprint}`)
       }
     }
   }
