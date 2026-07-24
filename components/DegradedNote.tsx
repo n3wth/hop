@@ -36,7 +36,7 @@ export default function DegradedNote({ degraded }: DegradedNoteProps) {
   return (
     <Card
       surface="sunk"
-      radius="md"
+      radius="sm"
       role="status"
       className="mt-[18px] flex items-start gap-[10px] px-[16px] py-[11px] text-[14px] leading-[1.45] text-text2"
     >

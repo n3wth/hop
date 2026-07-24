@@ -73,7 +73,7 @@ const MCP_CONFIG_JSON = `{
 
 function ConfigBlock({ label, body }: { label: string; body: string }) {
   return (
-    <Card surface="sunk" radius="md" className="mt-3 px-4 py-3">
+    <Card surface="sunk" radius="sm" className="mt-3 px-4 py-3">
       <div className="text-[11px] font-semibold uppercase tracking-[var(--track-label)] text-text2">
         {label}
       </div>

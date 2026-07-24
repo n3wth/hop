@@ -48,7 +48,7 @@ export default function CardAffiliateCTA({ program, unit = 'miles' }: CardAffili
         </span>
 
         <div className="min-w-0 flex-1">
-          <Eyebrow onDark className="mb-1 text-[10px]">
+          <Eyebrow as="div" onDark className="mb-1 text-[10px]">
             Sponsored
           </Eyebrow>
           {/* Outbound clicks route through the first-party redirect (logged,
