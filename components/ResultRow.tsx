@@ -6,6 +6,7 @@ import { TIER_CLASS } from '@/components/ui/TierChip'
 import { track } from '@/lib/posthog-client'
 import Icon from './Icon'
 import BrandIcon from './BrandIcon'
+import Button from './ui/Button'
 
 export interface ResultRowProps {
   option: FlightOption
@@ -307,19 +308,22 @@ const ResultRow = memo(function ResultRow({ option, rank, maxCpp, index = 0, ope
             {/* booking CTA — cash bookings emit the client-side outclick
                 funnel event (the /api/go/kiwi redirect records the server
                 shadow either way). */}
-            <a
-              href={option.bookingUrl}
-              onClick={(e) => {
-                e.stopPropagation()
-                if (option.kind === 'cash') {
-                  track('outclick', { kind: 'cash', target: option.route })
-                }
-              }}
-              className="mt-[16px] flex w-full items-center justify-center gap-[6px] rounded-[11px] border-[1.5px] border-text bg-transparent px-3 py-[11px] text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
-            >
-              {actionLabel(option)}
-              <Icon name="swap_horiz" size={16} className={option.kind === 'transfer' ? '' : 'hidden'} />
-            </a>
+            <div className="mt-[16px]">
+              <Button
+                variant="ink"
+                fullWidth
+                href={option.bookingUrl}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (option.kind === 'cash') {
+                    track('outclick', { kind: 'cash', target: option.route })
+                  }
+                }}
+              >
+                {actionLabel(option)}
+                <Icon name="swap_horiz" size={16} className={option.kind === 'transfer' ? '' : 'hidden'} />
+              </Button>
+            </div>
           </div>
         </div>
       </div>

@@ -143,7 +143,7 @@ export default function Counterfactual({
           onChange={(e) => setText(e.target.value)}
           placeholder="What if I had 50k more Chase UR?"
           aria-label="Describe a different points portfolio"
-          className="min-w-0 flex-1 rounded-[12px] border border-border bg-paper px-4 py-2.5 text-[14px] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand"
+          className="no-inner-ring min-w-0 flex-1 rounded-[12px] border border-border bg-paper px-4 py-2.5 text-[14px] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand"
         />
         <button
           type="submit"

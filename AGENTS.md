@@ -283,6 +283,7 @@ in one round-trip.
 - **Flat editorial** design: **no shadows, gradients, or glows.** Depth comes from a subtle
   paper-grain background, type, color, and composition. Canonical reference:
   `docs/design/CHOSEN-editorial.html`.
+- **Primitives index**: New UI composes `components/ui/*` — a hand-rolled button, chip, card, field, or stat recipe in a diff is a defect; index in `docs/design/DESIGN-SYSTEM.md`.
 - **Experience heuristics** (`docs/design/experience-heuristics.md`) govern composition:
   imagery is structural (in-flow grid), never absolutely-positioned ornament; no element ever
   covers text; motion is content changing (slow cross-fades), never idle decoration; verify

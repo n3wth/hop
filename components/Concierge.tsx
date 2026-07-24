@@ -756,7 +756,7 @@ function MessageFeedback({ traceId, btn }: { traceId: string; btn: string }) {
               if (e.key === 'Enter') sendReason()
             }}
             placeholder="What went wrong? (optional)"
-            className="w-[220px] rounded-full border border-border bg-transparent px-2.5 py-1 text-[11.5px] text-text2 outline-none placeholder:text-text3 focus:border-brand"
+            className="no-inner-ring w-[220px] rounded-full border border-border bg-transparent px-2.5 py-1 text-[11.5px] text-text2 outline-none placeholder:text-text3 focus:border-brand"
           />
           <button
             type="button"
