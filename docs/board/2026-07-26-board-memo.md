@@ -4,8 +4,9 @@
 
 A new, structural failure this week sits on top of the two already-open founder blockers, and it
 reframes how to read everything else: **the merge pipeline itself is stuck.** The last commit to
-land on `main` was PR #317, merged 2026-07-23T10:48 UTC. Every one of the 13 PRs opened since
-(#318–#332) is still open. Multiple lenses independently pulled the same evidence: PR #318 (a new
+land on `main` was PR #317, merged 2026-07-23T10:48 UTC. Fifteen PRs were opened in the range since
+(#318–#332); two (#322, #326) were closed unmerged, leaving 13 currently open — every one of those
+13 is stuck. Multiple lenses independently pulled the same evidence: PR #318 (a new
 AI Customer Support Agent surface) has shown `Vercel: pending` since 2026-07-26T00:43 UTC with zero
 update; PR #324 (`/pricing`'s FAQ/JSON-LD — the mechanical half of last week's #2 amendment) has
 been `pending` since 2026-07-24T15:11 UTC, 45+ hours; PR #325 (the growth desk's own 2026-07-24
