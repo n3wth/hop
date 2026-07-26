@@ -63,6 +63,17 @@ org executing on roughly 1 of 13 of the prior week's board amendments, so treat 
 is the harder-won, more authoritative one" as load-bearing, not aspirational: a desk that finds
 its own prior-week asks unmet should escalate rather than silently re-derive a fresh ranking.
 
+**Ownership order reaffirmed again (2026-07-26), with a new caveat:** the board memo dated
+2026-07-26 (`docs/board/2026-07-26-board-memo.md`) again re-confirms the board's ranked amendment
+list (§7) as this week's authoritative priority order over the strategy desk's own ranking when
+the two conflict — no change to the rule itself. The caveat: that review found the merge pipeline
+itself stuck (last successful merge to `main` was PR #317, 2026-07-23; 13 PRs accumulated behind a
+frozen `Vercel` required-status-check with zero merges in the 3 days since), which means the
+board's own #1-ranked item this week is "unstick the pipe," not a product/content amendment — any
+desk picking up this playbook's priority order should check whether that's still true before
+assuming a later-ranked item is actually reachable. If a future board memo confirms the pipeline is
+healthy again, that caveat lapses; don't carry it forward past the memo that raised it.
+
 **Ongoing priority ownership (from 2026-07-06):** the board memo above was a one-time review; the
 strategy desk (Marcus, `docs/team/routines.md`) now owns re-ranking priority on a weekly cadence
 via `docs/strategy/<date>-weekly-strategy.md`. Once Marcus has run at least once, his latest file
