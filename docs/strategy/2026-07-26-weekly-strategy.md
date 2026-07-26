@@ -54,13 +54,15 @@ not re-derive a competing ranking.
   days logged since 2026-07-05.** The one nonzero pair (7/18) is unchanged from last week's read
   and still traces to `Automation`-classified traffic per the existing downgrade — not a new data
   point, just confirmed still-only-known-signal-is-not-real.
-- **N-320 (seats.aero) is now 21 days silent, and this run's market scan adds a concrete, sourced
-  reason to stop treating this as "pending a reply."** Seats.aero's developer documentation (see
-  §(c)) confirms their commercial-API policy is unchanged and strict: the Pro API tier hop
-  presumably runs on is capped at 1,000 calls/day for **personal/non-commercial use only**;
-  commercial/production use requires a separate written approval hop's 7/6 email asked for and
-  never received. This isn't ambiguity or a slow support queue — it's a company with a published
-  policy that hop's paid product is currently out of compliance with, for the 21st day running.
+- **N-320 (seats.aero) is now 21 days silent, and this run's market scan sharpens the licensing
+  risk this desk and the board have both already flagged — it does not newly prove hop is out of
+  compliance.** Seats.aero's public developer documentation (see §(c)) states their policy plainly:
+  a Pro API tier capped at 1,000 calls/day for personal/non-commercial use, and a separate written
+  approval required for commercial/production use — exactly the approval hop's 7/6 email requested
+  and has had no logged reply to in 21 days. This repo has no evidence of which tier/plan hop's own
+  integration actually runs on or at what volume, so the honest framing is: a real, unresolved
+  missing-approval blocker on a feed the paid product depends on, not a confirmed compliance
+  verdict — the underlying risk is the same either way and doesn't need overstatement to matter.
 - **The finance desk's silence is now 12 days (last entry 2026-07-14)**, confirmed unchanged by
   this run — no new ledger entry to check against.
 
@@ -91,12 +93,15 @@ last week's read:
   unrelated compliance reason (see the board memo's §1 finding on commit `309de77`). Worth
   tracking, not yet worth reacting to.
 - **Seats.aero — no AI-assistant news since June, but a concrete confirmation on the commercial-
-  terms question that directly bears on N-320**: developer docs confirm the Pro API tier is capped
-  at 1,000 calls/day for personal/non-commercial use only, and commercial/production use requires
-  a written approval process — exactly what hop's unanswered 7/6 email asked for. Separately,
-  Frequentmiler (7/20) reports seats.aero shipping a Chrome extension, a redesigned search UI, and
-  cardholder-specific pricing for Pro members through early August — continued product investment
-  from the vendor hop is dependent on and unlicensed with.
+  terms question that directly bears on N-320**: their own developer docs state the Pro API tier
+  is capped at 1,000 calls/day for personal/non-commercial use only, with a separate written
+  approval required for commercial/production use — exactly what hop's unanswered 7/6 email asked
+  for. This confirms the *policy* is unambiguous, not that hop's own integration is confirmed
+  in breach of it (no repo evidence here on which tier/volume hop actually runs) — but it does
+  mean "waiting for a reply" is no longer a reasonable default; the policy already answers the
+  question hop asked. Separately, Frequentmiler (7/20) reports seats.aero shipping a Chrome
+  extension, a redesigned search UI, and cardholder-specific pricing for Pro members through early
+  August — continued product investment from the vendor hop's award-data feed depends on.
 - **Award Travel Finder — flat, not growing.** Its GitHub plugin still shows only 2 stars/0 forks,
   last pushed 4/27; it functions more as a daily content/newsletter operation than a growth
   story. No update to last week's "closest same-shape competitor" read, just evidence it isn't
@@ -133,9 +138,9 @@ rather than contradicts it. Restated for reference, with this run's confirmation
    Confirmed still open, still the right call given 13 PRs are already backed up behind a dead
    check.
 4. **Start the fallback award-data-source prototype.** Confirmed still zero code, now sharper:
-   this run's market scan confirms seats.aero's commercial policy is unchanged and strict (§(c)) —
-   the single-vendor dependency this item mitigates is not just theoretical risk, it's active
-   non-compliance with a published policy, 21 days running.
+   this run's market scan confirms seats.aero's own published policy leaves no ambiguity about
+   what written approval it requires (§(c)) — the single-vendor dependency this item mitigates is
+   a real, unresolved missing-approval blocker, 21 days running, not just theoretical risk.
 5. **Verify whether `HOP_ENABLE_VALUATION_SYNC` and the Cloudflare worker are actually live.**
    Confirmed by this run's market read as the more urgent framing than any competitor's move this
    week: if the observed-cpp differentiator is inert while four competitors converge on hop's
@@ -181,8 +186,10 @@ this queue next should re-check PR status before assuming any of #2–#5 above a
 > afternoon — the frozen Vercel check the board found this morning is still stuck, unchanged; (2)
 > this week's market scan found a new MCP-native direct clone of hop's cpp+balances+MCP wedge
 > (`gondola-ai/gondola-mcp`, created 7/19, very early/6 stars) alongside confirmation that
-> seats.aero's commercial-API policy is unchanged and strict — hop's unlicensed use is now 21 days
-> into active non-compliance, not just an unanswered email. Traffic kept declining this week (9
+> seats.aero's own published docs require written approval for commercial use, unambiguously —
+> the 21-day-unanswered email is a real, unresolved missing-approval blocker on that basis, not
+> just a slow support queue (repo has no evidence on hop's actual tier/volume, so stopping short
+> of calling it a confirmed compliance breach). Traffic kept declining this week (9
 > visitors but bounce rate 40%→61.5%, and the first-ever 4-consecutive-zero-activity-day stretch,
 > 7/23–7/26). Top priority remains unchanged from the board's list: unstick the merge pipe, then
 > the fallback award-data-source prototype, then decide on `HOP_ENABLE_VALUATION_SYNC`'s actual
