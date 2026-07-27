@@ -1,5 +1,9 @@
 # Autonomy run log
 
+- 2026-07-27 · Charlie · admin cron health semantics · opened replacement PR
+  https://github.com/n3wth/hop/pull/346 so an unavailable heartbeat read renders one explicit
+  unknown state while successful empty reads still render `never run` rows · **lesson**: preserve
+  `null` as unavailable at the presentation boundary when sibling telemetry can load independently.
 - 2026-07-09 · Claude Code (GitHub task session) · agents-functionality · fixed stale `.claude/`
   reviewer instructions left over from ADR 0011 (PR #276, merged) ·
   **lesson**: merged on green CI + zero open review threads alone, within ~2 minutes of opening
