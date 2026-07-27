@@ -1,5 +1,12 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { clampTravelDates, DEFAULT_DEPART, isValidISO, todayISO } from '@/lib/travel-dates'
+import {
+  clampTravelDates,
+  DEFAULT_DEPART,
+  isValidISO,
+  resolveRelativeDate,
+  resolveTravelDateIntent,
+  todayISO,
+} from '@/lib/travel-dates'
 
 afterEach(() => {
   vi.useRealTimers()
@@ -65,5 +72,40 @@ describe('clampTravelDates', () => {
       depart: '2027-01-15',
       return: '2027-01-20',
     })
+  })
+})
+
+describe('relative travel-date intent', () => {
+  it('resolves whole-day offsets from a supplied base', () => {
+    expect(resolveRelativeDate('21', '2026-07-27')).toBe('2026-08-17')
+    expect(resolveRelativeDate('28', '2026-07-27')).toBe('2026-08-24')
+  })
+
+  it('uses calendar-safe UTC arithmetic across a year rollover', () => {
+    expect(resolveRelativeDate('21', '2026-12-20')).toBe('2027-01-10')
+  })
+
+  it('rejects malformed, out-of-range, and invalid-base input without throwing', () => {
+    for (const raw of ['', '-1', '+1', '1.5', '01', '366', 'days']) {
+      expect(resolveRelativeDate(raw, '2026-07-27')).toBeUndefined()
+    }
+    expect(resolveRelativeDate('365', '2026-07-27')).toBe('2027-07-27')
+    expect(resolveRelativeDate('1', '2026-02-30')).toBeUndefined()
+  })
+
+  it('gives exact dates precedence while filling omitted values from offsets', () => {
+    expect(
+      resolveTravelDateIntent('2026-09-01', '2026-09-08', '21', '28', '2026-07-27'),
+    ).toEqual({ depart: '2026-09-01', return: '2026-09-08' })
+    expect(resolveTravelDateIntent(undefined, undefined, '21', '28', '2026-07-27')).toEqual({
+      depart: '2026-08-17',
+      return: '2026-08-24',
+    })
+  })
+
+  it('preserves the existing return-before-depart clamp semantics', () => {
+    setToday('2026-07-27')
+    const intent = resolveTravelDateIntent(undefined, undefined, '28', '21', '2026-07-27')
+    expect(clampTravelDates(intent.depart, intent.return)).toEqual({ depart: '2026-08-24' })
   })
 })
