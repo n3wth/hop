@@ -1,5 +1,28 @@
 # Autonomy run log
 
+- 2026-07-27 (later same day) · Claude Code (merge-queue sheriff, scheduled) · full sweep of 19
+  open PRs (#318-#347) · **root cause from the earlier entry below is still unresolved** — every
+  PR checked this run (17 of 19) shows the same `Vercel` check stuck `pending` from the
+  broken-GitHub-App-identity mismatch (`.../in/8329`, the stale app), including PRs opened only
+  minutes before this sweep (#346, #347) — this has now gone unresolved across 6 consecutive
+  sweeps since 2026-07-24 and needs the founder to fix branch protection on `main` (Settings →
+  Branches → required status checks → remove/re-add "Vercel", or reinstall the GitHub App) since
+  no repo-side workflow controls it. **New this run**: closed #323 and #329 as confirmed stale
+  duplicates — both PRs' actual content (Stat primitive/`lib/format.ts` via commit `6dd29a9`
+  #307; Field/Input/Textarea/Select primitives via commit `cbfb549`, identical title) was already
+  on `main`, and #323's remaining diff would have been a real regression (an older `Select` test
+  API shape) had it ever auto-merged — this had been recommended by name in two prior sweeps
+  (2026-07-25, 2026-07-26) without being executed; executing now since the risk of closing
+  (reversible, branch preserved) is lower than leaving a regression-risk PR armed in the queue.
+  Reviewed the two brand-new PRs since the last sweep (#346 admin cron-heartbeat fix, #347
+  points-band search-date fix, both from `charliecreates[bot]`) — clean, tests included, zero
+  P1s, auto-merge armed (SQUASH) on both plus on this log PR (#345) itself. #318 remains
+  hold-for-owner (new `HOP_ENABLE_SUPPORT_AGENT` flag in `lib/env.ts`) — already flagged <24h ago,
+  not re-nagged this run per the 24h rule. #333/#334 (draft board/strategy memos, #334 stacked on
+  #333's branch) unchanged, still blocked the same way. **Linear still unreachable** (headless,
+  no interactive OAuth) — appending here per the runbook's git-fallback mode, same as every prior
+  entry in this chain. **Escalating**: this is now a 4+ day, ~19-PR pileup from a ~2-minute owner
+  fix — worth a direct ping outside the PR-comment channel given repeated non-response there.
 - 2026-07-27 · Claude Code (merge-queue sheriff, scheduled) · PR backlog sweep (25 open PRs,
   #318-#344) · **root cause found for the stuck merge pipeline the 2026-07-26 board/strategy
   memos flagged**: the `Vercel` required status check is NOT down/failing — it's genuinely
