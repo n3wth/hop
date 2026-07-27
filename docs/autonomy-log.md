@@ -1,5 +1,19 @@
 # Autonomy run log
 
+- 2026-07-27 (third sweep same day) · Claude Code (merge-queue sheriff, scheduled) · re-swept
+  all 18 currently-open PRs (#318-#348; #323/#329/#335-#342/#344 confirmed gone — closed by the
+  prior sweep) · **no change from the previous two entries below**: spot-checked `mergeable_state`
+  across the oldest (#318, #319), newest (#345-#348), and both drafts (#333, #334) — every
+  non-draft PR is still `blocked` (or `unstable` for #334) on the same wedged `Vercel` check first
+  diagnosed two sweeps ago; #333/#334 are still draft, unchanged. Zero new PRs since #348. Took no
+  merge/fix/comment actions this run — re-commenting on #318/#348 (already flagged <24h ago) or
+  re-diagnosing an already-root-caused, needs-founder external stall would only add noise, and a
+  live merge attempt would fail the same way it did in the prior sweep. **Linear still
+  unreachable** this session too — the MCP connector needs interactive re-authorization
+  (`claude mcp`/`/mcp`), which a headless scheduled run cannot perform; falling back to this log
+  again per the runbook. **This is now the 7th consecutive sweep (since 2026-07-24) reporting the
+  identical unresolved blocker** — pushed a direct notification to the founder this run given the
+  repeated non-response in the PR-comment channel, per the prior entry's own recommendation.
 - 2026-07-27 (later same day) · Claude Code (merge-queue sheriff, scheduled) · full sweep of 19
   open PRs (#318-#347) · **root cause from the earlier entry below is still unresolved** — every
   PR checked this run (17 of 19) shows the same `Vercel` check stuck `pending` from the
