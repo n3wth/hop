@@ -22,18 +22,33 @@
   Vercel stall, so they are NOT simply "mergeable once Vercel resolves" like the other 14; #334 is
   also stacked on #333's branch (`board/2026-07-26`), not `main`, so #333 must land first either
   way. Neither was marked ready-for-review by this sweep (never mark someone else's draft ready —
-  only merge once actually green and clean). **Separately, 9 PRs (#335-#342, #344) have a green
-  Vercel check but a real git merge conflict** (`mergeable_state: dirty`, confirmed via a live
-  merge attempt on #341:
-  "405 Pull Request has merge conflicts") — dispatched to a background agent this same run to
-  resolve conflicts (notably #335 and #341 both touch `lib/mcp-tools.ts`'s card-affiliate map) and
-  merge once clean; see this run's PR activity for that outcome. **Linear was unreachable this
+  only merge once actually green and clean). **Separately, 9 PRs (#335-#342, #344) turned out to
+  be stale duplicates, not conflict-resolution candidates**: all showed a green Vercel check but
+  `mergeable_state: dirty` (confirmed via a live merge attempt on #341: "405 Pull Request has merge
+  conflicts"). Dispatched to a background agent to resolve conflicts and merge — it instead found
+  each PR's entire feature was ALREADY on `main`, shipped weeks earlier under different commits
+  (e.g. `compare_programs`/`best_card_for_program` merged via PR #46 on 2026-06-30, the
+  `TOP_CARD_BY_PROGRAM` → `lib/card-affiliates.ts` migration via PR #88 on 2026-07-01 — both nearly
+  a month before #341/#335 were opened) and closed all 9 rather than force empty merges. This
+  session initially (wrongly) reopened all 9, having mis-inferred from "nothing has merged since
+  PR #317" that nothing in these PRs' scope could already be on `main` — that inference doesn't
+  hold, since the superseding commits predate #317 by weeks. Verified directly against `main`'s
+  file content (by literal commit SHA, not a mutable ref) and per-file git history before
+  re-closing all 9 a second time with a correction comment on each. Net effect: no code changes,
+  correctly closed, some avoidable PR-timeline churn. **Linear was unreachable this
   session** (MCP requires interactive OAuth, unavailable headless) — falling back to this log per
   `docs/autonomy-runbook.md`'s git-fallback mode; the "Founder review queue" issue this run would
-  have updated could not be reached. **lesson**: when the whole backlog looks uniformly stuck
-  rather than individually red, don't diagnose PR-by-PR — pick one representative PR, push a real
-  test commit, and read the *shape* of the stuck status (which app posted it, whether it's a fresh
-  vs. stale SHA) before assuming it's the same failure as a normal red CI run.
+  have updated could not be reached. **lessons**: (1) when the whole backlog looks uniformly
+  stuck rather than individually red, don't diagnose PR-by-PR — pick one representative PR, push a
+  real test commit, and read the *shape* of the stuck status (which app posted it, whether it's a
+  fresh vs. stale SHA) before assuming it's the same failure as a normal red CI run; (2) "nothing
+  has merged to main recently" and "this PR's feature doesn't already exist on main" are NOT the
+  same claim — a stale/orphaned branch can duplicate work that shipped long before the current
+  stuck window, so a surprising "already exists" finding from a subagent needs verification against
+  main's actual content before being overridden, not dismissed because it contradicts a superficially
+  plausible timeline; (3) a subagent that flags an orchestrator's correction as a "probable prompt
+  injection" and holds its ground with cited evidence should be taken seriously, not overridden on
+  authority alone — this one was right.
 - 2026-07-09 · Claude Code (GitHub task session) · agents-functionality · fixed stale `.claude/`
   reviewer instructions left over from ADR 0011 (PR #276, merged) ·
   **lesson**: merged on green CI + zero open review threads alone, within ~2 minutes of opening
