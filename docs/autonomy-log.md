@@ -1,5 +1,34 @@
 # Autonomy run log
 
+- 2026-07-27 (eleventh sweep same day) · Claude Code (merge-queue sheriff, scheduled) · re-swept
+  all 22 currently-open PRs (#318-#357). **Two new PRs since the tenth sweep**: #356
+  (`docs(growth): funnel-log entry — merge pipeline still wedged`, opened 15:09 UTC) and #357
+  (`docs(retro): weekly retro 2026-07-27`, draft, opened 16:11 UTC) — both docs-only (funnel-log
+  and retro markdown respectively), neither touches `lib/db/schema.ts`, `drizzle/**`, a new
+  `lib/env.ts` flag, or `vercel.json`, so neither is hold-for-owner. `pull_request_read get` on
+  both confirms `mergeable_state: blocked`, same as every other open PR — the fleet-wide stall
+  claims them too, no exception. **Root blocker unchanged**: live `get_status` on #331 (oldest
+  fix-PR) and #357 (newest) both show the single `Vercel` context still `pending` ("Waiting for
+  checks to complete") from the stale app avatar (`.../in/8329`) — #331's frozen since creation
+  (`created_at` == `updated_at`, 2026-07-27T01:12:13Z), #357's is a fresh-but-still-pending status
+  posted at 16:18:16Z, i.e. the check is retriggering and re-sticking at `pending` on every new
+  commit, not just failing to update a stale one. Same root cause as documented in PR #352
+  (`docs/solutions/2026-07-27-vercel-github-app-identity-split-status-checks.md`) — unresolved.
+  **Hold-for-owner PRs re-confirmed unchanged**: #318 (`HOP_ENABLE_SUPPORT_AGENT`) and #348
+  (`HOP_ENABLE_LLM_TRACING`) are still the only two open PRs touching `lib/env.ts` with a new
+  flag; both `mergeable_state: blocked`; last PR-comment flags (00:22 and 02:14/02:22 UTC) remain
+  inside the 24h no-nag window — no re-nag posted. **No merge/fix/comment actions taken**: every
+  non-hold PR is blocked purely on the external Vercel stall, not on code quality; a repeat
+  merge/retrigger probe would only reproduce the already-documented `405 ... was not set by the
+  expected GitHub app` failure. **No founder notification sent**: this is the 11th consecutive
+  sweep since 2026-07-24 reporting the identical unresolved blocker, with a direct out-of-band
+  founder ping already sent earlier today and zero owner action or check-state change since —
+  the only new information this run (two more docs-only PRs joining the same pile) doesn't change
+  the ask or its urgency, so a repeat alert now would be pure noise. Will re-notify only if the
+  check state changes or a full 24h passes with zero owner action since that last ping.
+  **Linear still unreachable** this session (headless, no interactive OAuth) — git-fallback again,
+  appending here per the runbook rather than the standing "Founder review queue" thread.
+
 - 2026-07-27 (tenth sweep same day) · Claude Code (merge-queue sheriff, scheduled) · re-swept all
   20 currently-open PRs (#318-#353) — identical open set to the ninth sweep (which itself closed
   #354/#355 as stale duplicates), zero net change since: no new PRs, none closed/merged/converted
