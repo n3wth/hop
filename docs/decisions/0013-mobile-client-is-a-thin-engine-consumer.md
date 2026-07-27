@@ -33,17 +33,24 @@ stateless mode with caller-supplied balances).
 
 ## Decision
 
-**Any mobile client is a thin consumer of hop's engine. It displays engine-produced numbers and
-computes none of its own — no cpp formula, no tier thresholds, no ranking, no `$`-saved arithmetic
-in client code. This holds regardless of target language.** This extends ADR 0002 across the
-process boundary.
+**Any mobile client is a thin consumer of hop's engine. It must never independently reimplement or
+divergently derive an economic value — no second cpp formula, no re-declared tier thresholds, no
+own ranking, no hand-rolled `$`-saved arithmetic in client code. This holds regardless of target
+language.** This extends ADR 0002 across the process boundary.
+
+The invariant is about *provenance*, not about which CPU runs the code: executing the **one
+canonical shared engine** (`lib/*`) is exactly right, even when an Expo bundle runs `lib/cpp.ts` /
+`lib/valuations.ts` on-device — that is still the single source of truth, not a client
+reimplementation. What is prohibited is a *parallel* implementation or a derived figure that could
+drift from the engine.
 
 Numbers reach the client in exactly two sanctioned ways, in this order of preference:
 
-1. **Import the pure-TS engine directly** where it has no DOM/server dependency (available only to
-   an Expo/React Native client — reuse `lib/*`, never fork it).
+1. **Import and execute the canonical pure-TS engine directly** where it has no DOM/server
+   dependency (available only to an Expo/React Native client — reuse `lib/*` verbatim, never fork
+   or reimplement it). Running this shared code on-device is a sanctioned path, not a violation.
 2. **Call the existing API** (`/api/mcp` tools, authed with a `hop_` token). Available to any
-   client; the *only* number source for a native Swift/Kotlin client.
+   client; the *only* number source for a native Swift/Kotlin client, which cannot import `lib/*`.
 
 We adopt **Expo/React Native as the default target**, because it is the only option that can reuse
 `lib/*` directly, covers iOS + Android from one codebase, and inherits every engine improvement for
@@ -77,8 +84,11 @@ Additional structural rules for any client:
   imported engine function or an engine-wrapping API call — the same property ADR 0002 gives Eve and
   the concierge.
 - **Enforcement:** the `engine-invariant-reviewer` already guards "no LLM/derived numbers"; its
-  scope extends to client code — arithmetic on economic values in a mobile client, or a re-declared
-  threshold/formula, is a P1. A green review does not exempt a client from this ADR.
+  scope extends to client code. The P1 line is a *reimplementation or divergent derivation* of an
+  economic value in a client — a second cpp/tier/ranking formula, a re-declared threshold, or
+  hand-rolled `$`-saved math. **Importing and executing the canonical `lib/*` engine in an Expo
+  client is explicitly NOT a violation** — it is the sanctioned path. A green review does not exempt
+  a client from this ADR.
 - **Follow-ups:** stand up the Expo scaffold in a build-excluded dir; document the exact
   request/response shapes of the `/api/mcp` tools so a client models its types on real engine output
   rather than guessing; decide later, on its own merits, whether a native Swift client is worth the
