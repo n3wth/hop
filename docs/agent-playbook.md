@@ -63,6 +63,14 @@ org executing on roughly 1 of 13 of the prior week's board amendments, so treat 
 is the harder-won, more authoritative one" as load-bearing, not aspirational: a desk that finds
 its own prior-week asks unmet should escalate rather than silently re-derive a fresh ranking.
 
+**Ownership order reaffirmed again (2026-07-26):** the board memo dated 2026-07-26
+(`docs/board/2026-07-26-board-memo.md`, open/unmerged — PR #333) and the strategy desk's
+2026-07-26 review (`docs/strategy/2026-07-26-weekly-strategy.md`, open/unmerged — PR #334, which
+explicitly adopts the board's list as-is per this same ownership rule) agree: the board's ranked
+amendment list is current. This retro adopts that list in §10 below. Read both from their open
+PRs, not `main` — neither has merged yet, because both are queued behind the merge-pipeline stall
+§10 describes.
+
 **Ongoing priority ownership (from 2026-07-06):** the board memo above was a one-time review; the
 strategy desk (Marcus, `docs/team/routines.md`) now owns re-ranking priority on a weekly cadence
 via `docs/strategy/<date>-weekly-strategy.md`. Once Marcus has run at least once, his latest file
@@ -296,11 +304,50 @@ Agent work is priced in tokens and wall-clock; the code's shape sets that price.
 - Multi-surface refactors (container systems, scroll models) — take the Linear issue's exact
   scope instead; if the issue is under-specified, comment on it rather than improvising.
 
-## 9. Done since last retro (2026-07-13 → 2026-07-20)
+## 9. Done since last retro (2026-07-20 → 2026-07-27)
 
 Evidence rule: a claim below has a merged commit/PR link. Nothing here is taken on trust. The
-previous retro (PR #289, `ffafd20`) captured everything through PR #288; this run covers the 16
-PRs merged after it (#290–#305).
+previous retro (PR #306, `b6026ea`) captured everything through PR #305. **Only 10 PRs merged
+after it before the pipeline stalled dead: #307–#317.** PR #317 (`57c886d`, 2026-07-23T10:48 UTC)
+is the last commit on `main` as of this run — every PR opened since (#318 onward, 25+ and still
+growing as of PR #356 today) is stuck behind a frozen required status check. That stall, not any
+single shipped feature, is this retro's dominant finding — see §10.
+
+- **Design system PR 5 — Stat primitive + format utilities** — PR #307 (`6dd29a9`), merged.
+  Solutions entry: `docs/solutions/2026-07-20-format-utilities-and-stat-primitive.md`.
+- **Design system PR 6 — Field/Input/Textarea/Select primitives** — PR #308 (`cbfb549`), merged.
+  Solutions entry via PR #309 (`2239f8b`):
+  `docs/solutions/2026-07-21-base64url-padding-tampering-and-field-accessibility.md` (also
+  captures an unrelated base64url padding tampering-test lesson found during the same review).
+- **Design system PR 7 — Button variants, enforcement flips, primitives index docs** — PR #310
+  (`74f3296`), merged. Feature/enforcement work, not a bug fix — no solutions entry warranted.
+- **Design system PR 8 — outline-none focus-ring accessibility audit + ESLint rule** — PR #311
+  (`aa4012c`), merged. Solutions entry:
+  `docs/solutions/2026-07-21-outline-none-focus-ring-audit-and-eslint-enforcement.md`.
+- **claude.ai/design sync** — PR #314 (`2431d47` + `fe386f4`), merged: hop's component library
+  synced to claude.ai/design, recorded as **ADR 0010** plus a solutions entry
+  (`docs/solutions/2026-07-22-sync-nextjs-app-components-to-claude-design.md`).
+- **Competitor-branding removal** — PR #315 (`309de77`/`cebafa9`), merged: genericized the MCP
+  landing page's copy/config snippets and removed named-competitor (Claude/ChatGPT) branding from
+  public surfaces. **The commit message states the actual reason**: Oliver can't publicly
+  name/promote non-Gemini LLM products while at Google. Solutions entry via PR #316 (`4c08557`):
+  `docs/solutions/2026-07-23-genericize-competitor-branding-across-public-surfaces.md`. This is a
+  materially new structural fact for the MCP-distribution bet, and the 2026-07-26 board memo
+  flags it as an unresolved contested strategy point (§4 there) — not this retro's call to settle.
+- **Shareable verdict receipts** — PR #317 (`57c886d`), merged — **the last PR to land on `main`**.
+  Solutions entry (`19b5878`):
+  `docs/solutions/2026-07-23-snapshot-at-share-time-social-verdict-receipts.md`.
+- **`npm run check` on `main`** — still green at `57c886d`: `db:check-migrations` OK (standalone,
+  runs first), lint 0 errors (263 warnings — same hand-rolled Card/Eyebrow migration reminders as
+  last retro, informational), typecheck clean, 113 test files / 1356 tests passing. Same
+  documented false-alarm `[check-migration-sequence] FAILED` line mid-`npm test` as last retro —
+  reconfirmed it's the checker's own self-test error path, not a real collision.
+- **Cron lockstep** — still in sync: all 10 `vercel.json` crons (`standing-orders`,
+  `revalidate-seo`, `valuation-sync`, `sync-stripe`, `business-digest`, `health-sentinel`,
+  `balance-autosync`, `sweet-spot-candidates`, `awardwallet-sync`, `newsletter-digest`) have a
+  matching path/schedule entry in `lib/health-checks.ts#CRON_JOBS`. No drift, no gap.
+- No merged PR since last retro fixed a non-obvious bug without an accompanying `docs/solutions/`
+  entry — every bug-shaped merge above already captured its lesson in the same or a paired PR.
 
 - **Board ranked amendment #1 — `/pricing`'s `<head>` advertised `$49/yr` unconditionally** — PR
   #304 (`ac45604`), merged same morning it was flagged: `app/pricing/page.tsx`'s static `metadata`
@@ -384,104 +431,133 @@ PRs merged after it (#290–#305).
 
 ## 10. Open threads
 
-**Priority ranking pointer (updated 2026-07-20):** no `docs/board/`/`docs/strategy/` file newer
-than 2026-07-19 exists yet (both run weekly, Sundays) — that memo's own **ranked amendment list**
-(`docs/board/2026-07-19-board-memo.md` §7, 15 items) remains current, checked against this run's
-own evidence below. Item 1 closed same-day (PR #304, see §9) — first of the 15 to go. Top 5
-remaining, using the board's own §7 numbering (do not confuse with §5's separate "Kill list" of
-don't-do items, which is where the MCP-polish freeze lives — see the note below the list):
+**The dominant thread this run: the merge pipeline has been fully stuck since 2026-07-23.** The
+last commit to land on `main` was PR #317 (`57c886d`, 2026-07-23T10:48 UTC). Every PR opened since
+— #318 through at least #356, 25+ and still growing as of today — shows the required `Vercel`
+status check frozen `pending` for 24–45+ hours with zero update, and `main`'s branch protection
+requires that check before merge, so nothing is actively rejecting these PRs, they're simply
+accumulating. Four independent reads this week converge on the same evidence: the 2026-07-26
+board memo (open, unmerged — PR #333), the same-day strategy review (open, unmerged — PR #334,
+which adopts the board's list as-is), the 2026-07-27 sheriff sweep (open, unmerged — PR #345,
+which narrowed the cause to a GitHub App identity mismatch on the Vercel check and separately
+found/dispatched fixes for 9 PRs with real git merge conflicts), and today's funnel-log entry
+(open — PR #356, 4th independent reconfirmation in 24h). **PR #352 (open, unmerged) documents the
+root cause precisely: the Vercel status was posted by the OAuth App identity, not the installed
+Vercel GitHub App branch protection expects.** The concrete, human-only fix, per PR #356: **GitHub
+→ Settings → Integrations → reauthorize the Vercel GitHub App** — under 5 minutes, unsticks all
+queued PRs across every desk. This is now the single highest-leverage founder action open, ahead
+of the two longer-running founder blockers below. This retro's own PR will queue behind the same
+stall.
 
-1. ~~Gate `app/pricing/page.tsx`'s `metadata` export via `generateMetadata()` behind
-   `isBillingEnabled()`~~ **Done** — PR #304, see §9. Drop from this list.
-2. Resolve N-319 (`/pricing`) fully — **still open, partial progress only**: the metadata bug
-   (item 1) is fixed, but the FAQ/JSON-LD finish work and the finish-or-revert decision itself are
-   not. The billing-on-or-off call is **[needs-founder]**; the finish-or-revert mechanics are
+**Priority ranking (adopted from the 2026-07-26 board memo, `docs/board/2026-07-26-board-memo.md`
+§7, open PR #333 — per the ownership rule in this doc's header, the board's ranked list wins, and
+the 2026-07-26 strategy review, PR #334, independently adopts the same list as-is):**
+
+1. Diagnose and unstick the frozen Vercel required-status-check — **narrowed this run** (see
+   above): an identity-split root cause is documented (PR #352) and the fix is a founder-only
+   GitHub App reauthorization (PR #356). **[needs-founder]** for the actual click;
+   **[agents-can-execute]** was the diagnosis, now done.
+2. Once unstuck, land the small, ready, already-reviewed PRs first — #331 (a real prerender-crash
+   fix), #324 (`/pricing` FAQ/JSON-LD, closes N-319/board item below), #325 (growth's stale
+   funnel-log entry) — before any new feature PR merges. **[agents-can-execute]**.
+3. Hold new design-system and self-improve PR creation (open: #319, #329, #330 design-system;
+   #320, #327, #328 self-improve) until the pipeline is confirmed clear, then resume — #320/#327
+   additionally can't fire until GitHub Actions billing (item 9) is separately fixed, so they'd
+   land dead-on-arrival regardless. **[agents-can-execute]**.
+4. Start the fallback award-data-source prototype — **still zero code**, now a 4th–5th
+   consecutive week flagged, and the market scan in the 2026-07-26 strategy review confirms
+   seats.aero's own published policy leaves no ambiguity about the written approval it requires.
    **[agents-can-execute]**.
-3. Start the fallback award-data-source prototype — **still zero code**, confirmed by this run's
-   own grep and by the 2026-07-20 funnel-log entry, which explicitly declined to attempt it as
-   out-of-scope for the growth desk. **[agents-can-execute]**.
-4. Build the content staleness/"verified as of" guard before any further content ships — **still
-   unbuilt, now violated a third time**: PR #293 (`/guides/points-101`, 2026-07-15) shipped after
-   PR #275 and PR #288. **No new violation this run** (no `app/guides/**`/`app/sweet-spots/**`
-   commits since PR #293) — see the updated freeze note below. **[agents-can-execute]**.
-5. Reopen Linear N-370 ("board review" perpetual thread, marked Done 6 seconds after creation,
-   breaking the board's own week-over-week memory) and fix whatever board-routine step closed it
-   — **not verified this run**, no Linear access from this session to confirm either way.
-   **[agents-can-execute]**, needs Linear-connector access.
+5. Verify whether `HOP_ENABLE_VALUATION_SYNC` and the Cloudflare worker are actually live — the
+   board found the flag unset and the worker untouched, meaning hop's claimed observed-cpp
+   differentiator may currently be inert while the strategy review's market scan found *four*
+   competitors (point.me, PointsYeah, Award Travel Finder, and a new direct MCP-native clone,
+   `gondola-ai/gondola-mcp`, created 2026-07-19) converging on the same wedge. **[agents-can-
+   execute]** to verify/flip if config-only; **[needs-founder]** if the differentiator claim
+   itself needs revisiting.
+6. Reply to seats.aero (N-320) or explicitly decide to flip `HOP_ENABLE_BILLING` off — **21 days
+   unanswered as of this run** (was 15 at last retro), still the oldest founder blocker.
+   **[needs-founder]**.
+7. Post the 3 ready-to-paste community drafts — ~20 days stale for the oldest two.
+   **[needs-founder]**.
+8. Grant the finance desk read-only DB/Stripe access, or explicitly pause it — **12 days silent**
+   (was flagged at 6 days last retro; the weekly cadence itself lapsed, no 2026-07-21 entry at
+   all). **[needs-founder]**.
+9. Fix GitHub Actions billing — now 17+ days broken, compounded by the separate Vercel-check
+   stall above. **[needs-founder]**.
+10. Decide explicitly whether to reset the 2026-08-05 $10k MRR target — **10 days remain** as of
+    the board's writing (fewer now); N-320 unmoved 20+ of the last 22 days. **[needs-founder]**.
+11. Add the missing `docs/finance/outreach.md` approval-log entries (see the 🚨 escalated item
+    below) — mechanically **[agents-can-execute]**, but whether Oliver actually approved the
+    sends is **[needs-founder]** to confirm.
+12. Fix the board/strategy cron ordering (board `0 13 * * 0` fires two hours before Marcus's
+    `0 15 * * 0` every Sunday) — **still not done, now a 4th week running**, `docs/team/
+    routines.md` unchanged. **[agents-can-execute]**, but touches another desk's schedule —
+    flagging rather than changing it unilaterally in a docs retro PR.
+13. Grant this session's harness Linear connector access (or fix whatever makes it non-
+    interactive-unreachable) so board/strategy/retro reviews can verify Linear state directly
+    instead of falling back to git-only mode every week. **[needs-founder]** (connector/auth
+    configuration).
+14. Fold `llmCostUsd` into the B3 unit-economics panel — carried 3rd+ week, still hardcoded
+    `null` at `lib/unit-economics.ts:32,120` (grep-confirmed this run). **[agents-can-execute]**.
+15. Write Product Hunt and X launch drafts (named as intended channels but never drafted, unlike
+    HN/Reddit/MCP-directories) — a real, still-open agent task independent of the founder-blocked
+    posting itself. **[agents-can-execute]**.
 
-**Separately (§5 Kill list, not a ranked amendment)**: no further `/mcp` page polish until at
-least one MCP-directory submission lands — **still open**, drafts only
-(`docs/marketing/drafts/2026-07-17-mcp-directory-submissions.md`), none of the three
-(Smithery/PulseMCP/mcp.so) completable unattended; actually submitting is folded into ranked
-amendment #12 below, **[needs-founder]**.
+**New this run, not on the board's numbered list:**
 
-Further down the board's §7 list, not previously called out at this level:
+- **PR #353 — ADR 0013 (mobile client is a thin engine consumer)**: open, unmerged, docs-only.
+  Settles a real upcoming taste call (Expo/React Native as the default mobile target, engine
+  numbers only reach a client via direct `lib/*` import or the `/api/mcp` tools) before any mobile
+  work starts. Worth merging promptly once the pipeline clears — it's exactly the kind of decision
+  §5 (Taste calls) says to settle once rather than re-litigate.
+- **PR #348 — LLM tracing privacy fix** (`charliecreates` bot): open. Double-locks the
+  already-landed LLM tracing path behind `HOP_ENABLE_LLM_TRACING` + a configured PostHog key, sets
+  `recordInputs`/`recordOutputs: false`. Worth prioritizing once unstuck — it's a privacy
+  tightening, not new surface area, so it isn't caught by the design-system/self-improve hold in
+  item 3 above.
+- **PR #346/#347 — bug fixes** (`charliecreates` bot): admin cron-heartbeat unavailable-vs-empty
+  presentation, and points-band search dates going stale/ignoring the `ret` query key. Both small,
+  already-reviewed, in the same "land these first" bucket as item 2 above.
+- **PR #343 — Hopper disambiguation FAQ + competitive-positioning plan**: open, adds a
+  `/support` FAQ distinguishing hop from Hopper (the travel-booking app) plus
+  `docs/plans/2026-07-02-competitive-positioning.md`. Not board-ranked yet — flag for next week's
+  board/strategy review to weigh in given the new gondola-mcp competitor finding above.
 
-- **#6 — fix the board/strategy cron ordering** (board `0 13 * * 0` fires two hours before
-  Marcus's `0 15 * * 0` every Sunday) — **still not done**, `docs/team/routines.md` unchanged,
-  now flagged a 3rd week running. **[agents-can-execute]**, but touches another desk's schedule —
-  flagging rather than changing it unilaterally in a docs retro PR.
-- **#7 — billing-gate-status line in `docs/ops-runbook.md`** cross-referencing business-plan.md
-  §3.1's four gates — **not done**, confirmed by grep this run (no "§3.1" match in
-  `docs/ops-runbook.md`). **[agents-can-execute]**.
-- **#8 — fold `llmCostUsd` into the B3 unit-economics panel** — **not done**, confirmed by grep
-  this run: still hardcoded `null` at `lib/unit-economics.ts:32,120`. **[agents-can-execute]**.
-- **#9, #10 — referrer/source-split in the funnel log, and de-tracking the $99/yr raise-gate as
-  "in progress"** — **not verified this run** either way; grep for a concrete signal wasn't
-  conclusive, flagging as unverified rather than guessing. **[agents-can-execute]**.
-- **#11–#15 — the five `[needs-founder]` items** (reply to seats.aero / decide on billing, post
-  the 3 ready-to-paste community drafts including the MCP-directory submissions above, fix GitHub
-  Actions billing, grant the finance desk DB/Stripe read access, decide whether to reset the Aug-5
-  $10k MRR target) — **all still open**, see the `[needs-founder]` list below, verbatim from the
-  board memo.
+**Separately (board's Kill list §5, not a ranked amendment)**: no further `/mcp` page polish until
+at least one MCP-directory submission lands — **still open**, folded into ranked item #7 above.
 
-**FREEZE — status this run: held, for the first time on either half since it was declared.** No
-commits under `app/guides/**`/`app/sweet-spots/**` or the admin-UI/nav-polish surfaces since PR
-#293 (2026-07-15) and PR #254 respectively — confirmed by this run's own `git log`. This is
-worth noting precisely because it's the first genuinely clean week on **both** halves at once;
-previous retros logged one half holding while the other was actively violated. Not claiming the
-freeze is "fixed" — nothing mechanical enforces it yet (item 4 above), so this is one clean week
-of discipline, not a guardrail. The content-pipeline half's violation count stands at 3 total
-(PRs #275, #288, #293), all logged in prior retros/board memos; no new violation this run.
+**FREEZE — status this run: held clean for a second straight week.** `git log --since=2026-07-20
+-- app/guides app/sweet-spots` is empty, confirming both the board's and strategy desk's
+independent reads. Violation count stands at 3 total (PRs #275, #288, #293), unchanged since last
+retro. Nothing mechanical enforces it yet (ranked item 4 in the previous retro's numbering, now
+folded into general vigilance since it dropped off this week's board list) — still one clean
+streak of discipline, not a guardrail.
 
-**[needs-founder] — verbatim, no agent substitute:**
+**[needs-founder] — verbatim/paraphrased from the board, no agent substitute:**
 
-- **🚨 ESCALATED — worse than last retro's warning, not resolved by it:** last retro flagged that
-  `docs/finance/outreach.md`'s two items (seats.aero commercial terms, AwardWallet partner
-  onboarding) were marked `approved-to-send` with no recorded approval reply from Oliver anywhere,
-  and asked for either an explicit logged approval or the status to be flipped back before the
-  finance desk's next run. **Neither happened — the finance desk sent both emails anyway.** PR
-  #245 (`39b2c7f`, "send approved outreach...") moved both items straight from
-  `approved-to-send` to `status: sent` / `sent-date: 2026-07-06`, and its commit message asserts
-  "Sent the two Oliver-approved outreach emails" — but `docs/finance/outreach.md` still has no
-  approval-log entry of any kind (contrast `docs/finance/budget.md`'s "Approval log" table, which
-  has a real, timestamped, quoted reply for the budget envelope). Two external, third-party
-  emails have now gone out on the owner's behalf — to seats.aero and AwardWallet, both real
-  companies hop has an ongoing relationship with — with **no verifiable record that Oliver ever
-  approved them**, only a commit message's unsourced claim. This is exactly the failure mode
-  "done-claims need evidence" exists to catch, applied to an approval claim instead of a
-  shipped-feature claim. **Action needed:** confirm directly with Oliver whether he actually
-  approved these two sends (outside this repo — a Slack message, a verbal OK, an email this repo
-  can't see); if yes, someone should backfill a proper approval-log entry in `outreach.md` mirroring
-  `budget.md`'s format so this doesn't reset to unverifiable the next time someone reads the file;
-  if no, this is a process failure in the finance desk that needs fixing before it queues (let
-  alone sends) anything else external. Filed here rather than fixed directly, because
-  `docs/finance/` is Elizabeth's owned surface (single-writer-per-surface) and because whether
-  these sends were actually authorized is a fact only Oliver can supply.
-- Confirm the configured Stripe keys are TEST mode, or hard-stop live charges and public
-  pricing until business-plan.md §3.1's gates close.
+- **🚨 ESCALATED, still unresolved 3 weeks running:** `docs/finance/outreach.md`'s two
+  `status: sent` items (seats.aero, AwardWallet, both dated 2026-07-06) still have no
+  approval-log entry anywhere, despite being escalated in the 2026-07-19 retro and again in the
+  2026-07-19 and 2026-07-26 board memos. Two external, third-party emails went out on the owner's
+  behalf with no verifiable record he approved them — only a commit message's unsourced claim
+  (PR #245, `39b2c7f`). **Action needed:** confirm directly with Oliver whether he approved these
+  sends; if yes, backfill an approval-log entry in `outreach.md` mirroring `budget.md`'s format
+  (which has a real, timestamped, quoted reply); if no, this is a finance-desk process failure to
+  fix before it sends anything else external. Filed here, not fixed directly — `docs/finance/` is
+  Elizabeth's owned surface, and whether the sends were authorized is a fact only Oliver can
+  supply.
+- **Reauthorize the Vercel GitHub App** (GitHub → Settings → Integrations) — see the pipeline
+  stall above; the single highest-leverage founder action open right now, <5 minutes.
+- Confirm the configured Stripe keys are TEST mode, or hard-stop live charges and public pricing
+  until business-plan.md §3.1's gates close.
 - Pre-approve the drafted community replies before they go out.
-- **Reply to seats.aero (N-320) or explicitly decide to flip `HOP_ENABLE_BILLING` off** — 15 days
-  unanswered as of 2026-07-20 (board memo `docs/board/2026-07-19-board-memo.md` ranked amendment
-  #11); this is the single blocker gating both the Wk1 MRR gate and the fallback-award-source
-  prioritization question.
-- **Grant the finance desk read-only DB/Stripe access, or explicitly pause it** — 6 ledger entries
-  running, none with a DB-verified subscriber count (even zero); the desk has been silent since
-  2026-07-14 (board ranked amendment #14).
-- **Decide explicitly whether to reset the 2026-08-05 $10k MRR target** — 17 days remain as of
-  2026-07-20 and N-320 (the seats.aero decision above) hasn't moved in 15 of them (board ranked
-  amendment #15). Not a call any desk should make by quietly re-planning around a target that may
-  already be dead.
+- **Reply to seats.aero (N-320) or explicitly decide to flip `HOP_ENABLE_BILLING` off** — 21 days
+  unanswered as of this run.
+- **Grant the finance desk read-only DB/Stripe access, or explicitly pause it** — 12 days silent,
+  a lapsed weekly cadence, not just an unanswered question.
+- **Decide explicitly whether to reset the 2026-08-05 $10k MRR target** — under 10 days remain and
+  N-320 hasn't moved in 20+ of the last 22.
 
 Things that are known, tracked, and waiting on a specific owner — check here before re-filing
 something that's already known. Mirrored into Linear (team `n3wth`, project
@@ -529,30 +605,15 @@ something that's already known. Mirrored into Linear (team `n3wth`, project
   predating 2026-07-14 aren't in it (the files exist, just not indexed, including the new Astryx
   entry this retro added). Low urgency, but worth a pass so the table is trustworthy again rather
   than a coin-flip.
-- **New this run**: the Data Refresh Loop (L3) GitHub Actions workflow
-  (`.github/workflows/data-refresh.yml`, merged PR #301/#302) checks out and pushes using
-  `secrets.HOP_BOT_TOKEN` — a fine-grained PAT scoped to `contents: write` + `pull-requests:
-  write` (`docs/solutions/2026-07-19-github-token-pr-ci-gotcha.md` explains why: the default
-  `GITHUB_TOKEN` can't trigger downstream `pull_request` CI on its own PRs). No evidence this
-  session can see that `HOP_BOT_TOKEN` is actually set as a repo secret yet, and GitHub Actions
-  billing is separately still broken (see above) — so this monthly workflow (next scheduled fire:
-  the 1st of the month) can't produce a working, CI-checked PR until **both** are resolved. Create/
-  confirm the secret alongside the GitHub Actions billing fix, since both block the same class of
-  automated PR.
+- The Data Refresh Loop (L3) GitHub Actions workflow (`.github/workflows/data-refresh.yml`,
+  merged PR #301/#302) checks out and pushes using `secrets.HOP_BOT_TOKEN` — a fine-grained PAT
+  scoped to `contents: write` + `pull-requests: write`
+  (`docs/solutions/2026-07-19-github-token-pr-ci-gotcha.md` explains why). Still no evidence this
+  session can see that `HOP_BOT_TOKEN` is actually set as a repo secret, and GitHub Actions
+  billing is separately still broken (ranked item 9 above) — so this monthly workflow can't
+  produce a working, CI-checked PR until both are resolved.
 
-**[agents] — pick up per the normal queue in `docs/autonomy-runbook.md`:**
-
-- Content staleness/"verified as of" guard — board's #4, now overdue three times over (PRs #275,
-  #288, #293 all shipped ahead of it); the freeze held this run with no new violation, so this is
-  the highest-leverage next pickup before the next content PR risks a fourth.
-- Prototype the seats.aero fallback award-data source behind `degraded[]` — board's #3, zero
-  lines of code, now split into its own agent-executable Linear issue per the strategy desk's
-  2026-07-19 review.
-- `/pricing`'s stalled state (finish FAQ/JSON-LD or revert) — board's #2; the underlying
-  billing-on-or-off call is [needs-founder], but finishing/reverting the page mechanically is not.
-  The `<head>` metadata half is already fixed (PR #304).
-- Reopen Linear N-370 and fix whatever board-routine step closes it seconds after creation —
-  board's #5, needs Linear-connector access to verify/fix.
-- Board amendment items #6, #7, #8, #9, #10 (cron ordering, ops-runbook §3.1 cross-ref, B3 panel's
-  `llmCostUsd`, funnel-log referrer/source split, de-tracking the $99/yr raise-gate) — all still
-  open and unclaimed.
+**[agents-can-execute] — pick up per the normal queue in `docs/autonomy-runbook.md`:** see the
+numbered ranked list at the top of this section (items marked `[agents-can-execute]`) — that list
+is now the single current queue; this bullet exists only to point there so nobody re-derives a
+second, competing list.
