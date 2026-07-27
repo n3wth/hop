@@ -78,7 +78,7 @@ export async function POST(request: Request): Promise<Response> {
       model: gateway(GATEWAY_MODEL),
       system,
       prompt: user,
-      experimental_telemetry: llmTelemetry('dream'),
+      telemetry: llmTelemetry('dream'),
       onError({ error }) {
         console.error('[dream] stream error', error)
       },

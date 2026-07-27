@@ -18,7 +18,7 @@
 // are preserved (pure, unit-tested) and still used by the fallback path.
 
 import { streamText, stepCountIs, gateway } from 'ai'
-import { trace, context as otelContext } from '@opentelemetry/api'
+import { trace } from '@opentelemetry/api'
 import {
   destinations,
   affordableWith,
@@ -33,7 +33,7 @@ import { reachableDestinations } from '@/lib/ledger-dream'
 import { POINTS_THRESHOLD_CPP } from '@/lib/search'
 import { buildConciergeTools } from '@/lib/concierge-tools'
 import { GATEWAY_MODEL } from '@/lib/ai-gateway'
-import { llmTelemetry } from '@/lib/llm-tracing'
+import { llmTelemetry, startLlmTraceAnchor, withLlmTraceAnchor } from '@/lib/llm-tracing'
 import type { Balance } from '@/lib/types'
 import { checkBotId } from 'botid/server'
 import { auth0 } from '@/lib/auth0'
@@ -739,18 +739,17 @@ export async function POST(request: Request): Promise<Response> {
 
     const tools = buildConciergeTools(context?.programs ?? [], userId)
 
-    // Mint a real OTel trace id for this turn BEFORE calling streamText, so the
-    // model call's gen_ai.* spans (children, via context propagation) share it.
+    // Create a real OTel trace id for this turn BEFORE calling streamText when
+    // tracing is active, so the model call's gen_ai.* spans inherit it.
     // When tracing is enabled, PostHogSpanProcessor preserves OTel trace/span
     // ids as $ai_generation's $ai_trace_id. Returning this id to the client lets
     // feedback join the call. This anchor span carries no model content and is
     // not itself forwarded by the processor's ai./gen_ai. name filter.
-    const turnSpan = trace.getTracer('hop.concierge').startSpan('concierge.turn')
-    const traceId = turnSpan.spanContext().traceId
-    const result = otelContext.with(trace.setSpan(otelContext.active(), turnSpan), () =>
+    const turnTrace = startLlmTraceAnchor('concierge.turn', trace.getTracer('hop.concierge'))
+    const run = () =>
       streamText({
         model: gateway(GATEWAY_MODEL),
-        experimental_telemetry: llmTelemetry('concierge'),
+        telemetry: llmTelemetry('concierge'),
         system: buildAgenticSystem(context, profile, history, liveValuations, memory, observed),
         // MULTI-TURN: thread the conversation (prior turns + this question) so the
         // agent answers in context. Single-question back-compat is preserved —
@@ -792,12 +791,16 @@ export async function POST(request: Request): Promise<Response> {
           // the /account glass box — nothing is ever auto-applied.
           void proposeInferredFacts(userId, fullThread)
         },
-      }),
-    )
-    // The span only needs to be active long enough for streamText's synchronous
-    // setup (and the async continuations it schedules there) to inherit its trace
-    // id — ending it now doesn't retroactively change the shared traceId above.
-    turnSpan.end()
+      })
+    const result = (() => {
+      try {
+        return withLlmTraceAnchor(turnTrace, run)
+      } finally {
+        // The span only needs to be active long enough for streamText's setup
+        // (and async continuations scheduled there) to inherit its trace id.
+        turnTrace?.span.end()
+      }
+    })()
 
     // Stream the answer as live text, but with THREE responsibilities:
     //   1. SURFACE TOOL ACTIVITY: pump the FULL stream so tool-call/result/error
@@ -906,9 +909,11 @@ export async function POST(request: Request): Promise<Response> {
       },
     })
 
+    const headers: Record<string, string> = { 'content-type': 'text/plain; charset=utf-8' }
+    if (turnTrace) headers[TRACE_ID_HEADER] = turnTrace.traceId
     return new Response(stream, {
       status: 200,
-      headers: { 'content-type': 'text/plain; charset=utf-8', [TRACE_ID_HEADER]: traceId },
+      headers,
     })
   } catch (err) {
     console.error('[concierge] setup failed, serving fallback', err)

@@ -49,8 +49,6 @@ import { ToolActivity, type ToolState } from './ai-elements/tool'
 import { Suggestions, Suggestion } from './ai-elements/suggestion'
 import {
   trackConciergeFeedback,
-  trackConciergeFeedbackReason,
-  CONCIERGE_FEEDBACK_REASON_MAX,
   type ConciergeFeedbackRating,
 } from '@/lib/concierge-feedback'
 
@@ -704,22 +702,15 @@ function AssistantActions({
 
 // Thumbs up/down on a settled answer, joined to the exact LLM call via
 // $ai_trace_id (lib/concierge-feedback.ts). One rating per turn — buttons
-// disable once clicked rather than allowing a flip-flop. Thumbs-down reveals a
-// one-line, optional reason; skipping it is fine, the rating alone is useful.
+// disable once clicked rather than allowing a flip-flop. Feedback stays bounded
+// and content-free: no user-entered text is sent to analytics.
 function MessageFeedback({ traceId, btn }: { traceId: string; btn: string }) {
   const [rating, setRating] = useState<ConciergeFeedbackRating | null>(null)
-  const [reason, setReason] = useState('')
-  const [reasonSent, setReasonSent] = useState(false)
 
   const rate = (value: ConciergeFeedbackRating) => {
     if (rating) return
     setRating(value)
     trackConciergeFeedback(traceId, value)
-  }
-
-  const sendReason = () => {
-    trackConciergeFeedbackReason(traceId, reason)
-    setReasonSent(true)
   }
 
   return (
@@ -746,28 +737,6 @@ function MessageFeedback({ traceId, btn }: { traceId: string; btn: string }) {
           <Icon name="thumbs_down" size={16} weight={rating === 'down' ? 'fill' : 'regular'} />
         </button>
       </div>
-      {rating === 'down' && !reasonSent ? (
-        <div className="flex items-center gap-1.5">
-          <input
-            type="text"
-            value={reason}
-            onChange={(e) => setReason(e.target.value.slice(0, CONCIERGE_FEEDBACK_REASON_MAX))}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') sendReason()
-            }}
-            placeholder="What went wrong? (optional)"
-            className="no-inner-ring w-[220px] rounded-full border border-border bg-transparent px-2.5 py-1 text-[11.5px] text-text2 outline-none placeholder:text-text3 focus:border-brand"
-          />
-          <button
-            type="button"
-            onClick={sendReason}
-            className="text-[11.5px] font-medium text-text3 transition-colors hover:text-brand"
-          >
-            Send
-          </button>
-        </div>
-      ) : null}
-      {reasonSent ? <p className="text-[11.5px] text-text3">Thanks — noted.</p> : null}
     </div>
   )
 }
