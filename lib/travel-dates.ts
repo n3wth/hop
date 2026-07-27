@@ -65,6 +65,37 @@ export function resolveTravelDateIntent(
   }
 }
 
+export type TravelDateQueryIntent = {
+  depart?: string
+  return?: string
+  ret?: string
+  departIn?: string
+  returnIn?: string
+}
+
+// Parse the /search date query contract in one testable seam. A non-empty
+// canonical `return` wins over the legacy `ret` alias; either exact value wins
+// over `returnIn`. The resolved pair then goes through the shared clamp so bad
+// or stale links remain total and safe.
+export function parseTravelDateQuery(
+  intent: TravelDateQueryIntent,
+  baseISO: string = todayISO(),
+): { depart: string; return?: string } {
+  const exactReturn = intent.return?.trim()
+    ? intent.return
+    : intent.ret?.trim()
+      ? intent.ret
+      : undefined
+  const resolved = resolveTravelDateIntent(
+    intent.depart,
+    exactReturn,
+    intent.departIn,
+    intent.returnIn,
+    baseISO,
+  )
+  return clampTravelDates(resolved.depart, resolved.return)
+}
+
 // Clamp a raw depart/return pair. Missing/malformed/past depart rises to
 // today (or the seed default while that is still in the future). Return is
 // one-way when absent and dropped when malformed or before depart.

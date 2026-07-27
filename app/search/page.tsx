@@ -12,11 +12,7 @@ import { affordableWith, topValue } from '@/lib/destinations'
 import { auth0 } from '@/lib/auth0'
 import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import { isShareReceiptsEnabled, isStandingOrdersCronLive } from '@/lib/env'
-import {
-  clampTravelDates,
-  DEFAULT_DEPART,
-  resolveTravelDateIntent,
-} from '@/lib/travel-dates'
+import { DEFAULT_DEPART, parseTravelDateQuery } from '@/lib/travel-dates'
 import { isoOffset } from '@/lib/dates'
 import { SITE_URL } from '@/lib/seo'
 import AppShell from '@/components/AppShell'
@@ -71,15 +67,16 @@ function parseParams(
   // Origin and destination must differ — fall back to a sane default destination.
   if (to === from) to = from === DEFAULT_PARAMS.to ? DEFAULT_PARAMS.from : DEFAULT_PARAMS.to
 
-  // Resolve evergreen relative-day links at request time, then apply the
-  // existing clamp. Exact depart/return keys take precedence when present.
-  const dateIntent = resolveTravelDateIntent(
-    str(q.depart),
-    str(q.return),
-    str(q.departIn),
-    str(q.returnIn),
-  )
-  const { depart, return: ret } = clampTravelDates(dateIntent.depart, dateIntent.return)
+  // Resolve exact, legacy, and evergreen relative-day query intents through
+  // one shared parser. Canonical `return` wins over legacy `ret`, and exact
+  // values win over relative offsets before the existing clamp is applied.
+  const { depart, return: ret } = parseTravelDateQuery({
+    depart: str(q.depart),
+    return: str(q.return),
+    ret: str(q.ret),
+    departIn: str(q.departIn),
+    returnIn: str(q.returnIn),
+  })
 
   const adultsRaw = parseInt(str(q.adults) ?? '', 10)
   const adults = Number.isFinite(adultsRaw)
