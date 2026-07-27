@@ -13,12 +13,18 @@
   Vercel status was posted by an OAuth App (id 1157143) instead of the installed Vercel GitHub App
   (id 8329) that branch protection requires — merge attempt failed with "status check was not set
   by the expected GitHub app"; the retrigger push fixed the app-identity issue (new status now
-  correctly from id 8329) but is still stuck pending on the same root-cause stall. **~16 PRs
+  correctly from id 8329) but is still stuck pending on the same root-cause stall. **~14 PRs
   blocked on this alone**: #318, #319, #320, #321, #323, #324, #325, #327, #328, #329, #330, #331,
-  #332, #333, #334, #343 — none are hold-for-owner by diff (no `lib/db/schema.ts`, `drizzle/**`,
-  new `lib/env.ts` flag, or `vercel.json` touches in any of them), all otherwise look mergeable
-  once Vercel resolves. **Separately, 9 PRs (#335-#342, #344) have a green Vercel check but a
-  real git merge conflict** (`mergeable_state: dirty`, confirmed via a live merge attempt on #341:
+  #332, #343 — none are hold-for-owner by diff (no `lib/db/schema.ts`, `drizzle/**`, new
+  `lib/env.ts` flag, or `vercel.json` touches in any of them), all otherwise look mergeable once
+  Vercel resolves. **#333 and #334 are a separate case**: both are still marked draft (opened/last
+  updated 2026-07-26, unchanged this run) — draft state is its own blocker independent of the
+  Vercel stall, so they are NOT simply "mergeable once Vercel resolves" like the other 14; #334 is
+  also stacked on #333's branch (`board/2026-07-26`), not `main`, so #333 must land first either
+  way. Neither was marked ready-for-review by this sweep (never mark someone else's draft ready —
+  only merge once actually green and clean). **Separately, 9 PRs (#335-#342, #344) have a green
+  Vercel check but a real git merge conflict** (`mergeable_state: dirty`, confirmed via a live
+  merge attempt on #341:
   "405 Pull Request has merge conflicts") — dispatched to a background agent this same run to
   resolve conflicts (notably #335 and #341 both touch `lib/mcp-tools.ts`'s card-affiliate map) and
   merge once clean; see this run's PR activity for that outcome. **Linear was unreachable this
