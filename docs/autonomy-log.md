@@ -1,5 +1,32 @@
 # Autonomy run log
 
+- 2026-07-27 (fifth sweep same day, ~04:40 UTC) · Claude Code (merge-queue sheriff, scheduled) ·
+  swept all 23 open PRs (#318-#353). **Root blocker unchanged**: spot-checked `get_status` on
+  #351/#353 (oldest/newest at sweep start) — same single `Vercel` context, `pending`,
+  `updated_at` frozen at creation, `mergeable_state: blocked`. No new action on that front; still
+  needs the founder's Vercel↔GitHub-App fix documented in the day-4 entry below and
+  `docs/solutions/2026-07-27-vercel-github-app-identity-split-status-checks.md` (added this
+  window by a parallel session, PR #352). **New this sweep — closed 3 more stale-duplicate
+  PRs**: #349 ("PR 5 — Stat primitive"), #350 ("PR 2 — system digest + D6 dead-watches"), #351
+  ("PR 6 — Field/Input/Textarea/Select primitives") all appeared after the day-4 sweep closed
+  #323/#329 for the identical reason, and turned out to be the same failure mode recurring: their
+  claimed features are already on `main` (verified directly — `components/ui/Stat.tsx` and
+  `components/ui/Field.tsx` on `main`@`57c886d` already have the full implementations, and
+  `lib/__tests__/health-checks.test.ts` already has the `D6 dead watches` describe block; #349's
+  and #351's actual diffs against `main` were 1 file each of trivial test whitespace, #350's diff
+  was empty). Closed all three with an evidence-linked comment each, no code lost. **This
+  strongly suggests a builder routine (likely "hop autonomous dev", every 6h) is regenerating
+  already-shipped self-improvement/design-system work** — plausibly because the multi-day merge
+  stall means it can't tell what's landed from merged-PR history and is re-picking the same
+  queue items. Worth a rule: before starting a picked item, diff its target files against `main`
+  first, not just check Linear/PR state. Classification re-confirmed: only #318 and #348 touch
+  `lib/env.ts` with a new flag among the 23 open PRs; both were last re-flagged within the last
+  24h (00:22 and 02:14 UTC respectively) so no re-nag posted, consistent with the no-nag rule.
+  #333/#334 remain draft, unchanged. **No merge/fix actions on non-hold PRs**: all still blocked
+  on the same external check. **Linear still unreachable** this session (headless, no interactive
+  OAuth) — git-fallback again, appending here per the runbook rather than the standing Linear
+  thread; the closed-duplicate-PRs and updated PR count should be reflected in the Linear
+  "Founder review queue" issue once a Linear-connected session runs.
 - 2026-07-27 (fourth sweep same day, ~04:13 UTC) · Claude Code (merge-queue sheriff, scheduled) ·
   independently re-verified the identical blocker via the GitHub MCP API (not `gh`, which this
   session doesn't have): pulled fresh `get_status`/`get` on the oldest fix PR (#331) and the newest
