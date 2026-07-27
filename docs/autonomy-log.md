@@ -1,5 +1,25 @@
 # Autonomy run log
 
+- 2026-07-27 (fourth sweep same day, ~04:13 UTC) · Claude Code (merge-queue sheriff, scheduled) ·
+  independently re-verified the identical blocker via the GitHub MCP API (not `gh`, which this
+  session doesn't have): pulled fresh `get_status`/`get` on the oldest fix PR (#331) and the newest
+  hold-for-owner PR (#348) — both still show a single `Vercel` context in state `pending`
+  (`"Waiting for checks to complete"`, avatar `.../in/8329`) with `updated_at` frozen at creation
+  time, and both PRs' `mergeable_state` is `blocked`. Confirmed the file-diff classification
+  independently too: #318 (`HOP_ENABLE_SUPPORT_AGENT`) and #348 (`HOP_ENABLE_LLM_TRACING`) are the
+  only two of the 18 open PRs that touch `lib/env.ts` with a new flag, matching the prior sweep's
+  hold-for-owner list exactly — no new hold candidates, no new schema/drizzle/`vercel.json` touches
+  found in any other PR's diff. Checked both hold-for-owner PRs' comment threads directly: #318 was
+  last re-flagged 2026-07-27T00:22 UTC (\"day 5\", ~4h before this sweep) and #348 at
+  2026-07-27T02:14 UTC (~2h before) — both inside the 24h no-nag window, so this sweep posted no
+  new PR comments. **No merge/fix actions taken**: every non-hold PR is blocked on the same external
+  check, not on code quality, and a live merge attempt has already failed identically in an earlier
+  sweep today (`405 ... was not set by the expected GitHub app`) — retrying would just reproduce
+  that. **Did not send another founder notification**: an earlier sweep today already pushed one for
+  this exact blocker (see the entry below), and nothing has changed since — no new PRs, no owner
+  action, no shift in check state — so a second alert would be pure noise, not new information.
+  **Linear still unreachable** this session (MCP requires interactive OAuth) — git-fallback again,
+  appending here per the runbook rather than the standing Linear thread.
 - 2026-07-27 (third sweep same day) · Claude Code (merge-queue sheriff, scheduled) · re-swept
   all 18 currently-open PRs (#318-#348; #323/#329/#335-#342/#344 confirmed gone — closed by the
   prior sweep) · **no change from the previous two entries below**: spot-checked `mergeable_state`
