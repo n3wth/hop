@@ -23,6 +23,8 @@
   no interactive OAuth) — appending here per the runbook's git-fallback mode, same as every prior
   entry in this chain. **Escalating**: this is now a 4+ day, ~19-PR pileup from a ~2-minute owner
   fix — worth a direct ping outside the PR-comment channel given repeated non-response there.
+  **PR #348 opened mid-sweep** (LLM tracing privacy hardening, refs #344) — also hold-for-owner,
+  adds a new `HOP_ENABLE_LLM_TRACING` flag to `lib/env.ts`; flagged on the PR directly.
 - 2026-07-27 · Claude Code (merge-queue sheriff, scheduled) · PR backlog sweep (25 open PRs,
   #318-#344) · **root cause found for the stuck merge pipeline the 2026-07-26 board/strategy
   memos flagged**: the `Vercel` required status check is NOT down/failing — it's genuinely
