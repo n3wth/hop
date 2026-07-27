@@ -173,6 +173,20 @@ function reachable(d: Destination, balances: Balance[]): EffectiveBalance | unde
   return eff.amount >= d.typicalAwardMiles ? eff : undefined
 }
 
+// affordableWith(totalPoints) sums a member's balance across EVERY program
+// regardless of currency, so a destination can be flagged "affordable" when
+// the member holds none of the SPECIFIC (non-transferable) currency its
+// bestProgram actually needs. This confirms the real per-program (or
+// verified-transfer) reach on top of that coarse pre-filter — same two-step
+// check rankedReachable() already does for the ledger dream, exported for
+// other "in reach" / "within reach" surfaces (SignedInHome, the concierge
+// fallback) so they never label a cross-currency mismatch as reachable.
+// Preserves affordableWith's byCppDesc (best-value-first) order.
+export function reachableDestinations(balances: Balance[]): Destination[] {
+  const total = balances.reduce((sum, b) => sum + (b.balance > 0 ? b.balance : 0), 0)
+  return affordableWith(total).filter((d) => reachable(d, balances) !== undefined)
+}
+
 // The user's reachable dreams, most aspirational-yet-valuable first. The list the
 // "Dream me another" index walks. Deterministic. We additionally require the
 // affordableWith() gate (total points >= award) so we never surface a reach the

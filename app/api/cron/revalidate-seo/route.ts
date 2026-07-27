@@ -9,6 +9,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { SEO_REVALIDATE_PATHS } from '@/lib/seo-routes'
+import { recordHeartbeat } from '@/lib/cron-heartbeat'
+import { isAuthorizedCron } from '@/lib/cron-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,19 +20,14 @@ function isEnabled(): boolean {
   return /^(1|true|yes)$/i.test(raw)
 }
 
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET
-  if (!secret) return true
-  const auth = request.headers.get('authorization')
-  return auth === `Bearer ${secret}`
-}
-
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) {
+  if (!isAuthorizedCron(request)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   if (!isEnabled()) {
+    // Liveness record (ADR 0007): being off is an owner choice, not an outage.
+    recordHeartbeat('revalidate-seo', false, 'disabled')
     return Response.json({ status: 'disabled' }, { status: 503 })
   }
 
@@ -42,6 +39,10 @@ export async function GET(request: Request) {
   // Metadata routes — invalidate so lastModified / robots stay fresh.
   revalidatePath('/sitemap.xml')
   revalidatePath('/robots.txt')
+
+  // Liveness record (ADR 0007): after the work — a fresh ok heartbeat means
+  // "ran to completion". Fire-and-forget.
+  recordHeartbeat('revalidate-seo', true, `revalidated:${revalidated.length + 2}`)
 
   return Response.json({ status: 'ok', revalidated, at: new Date().toISOString() })
 }

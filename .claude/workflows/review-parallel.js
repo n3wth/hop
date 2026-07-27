@@ -74,7 +74,7 @@ const REVIEWERS = [
     key: 'security-reviewer',
     paths: /^(lib|app|utils|drizzle|scripts)\/|^middleware\.ts$|^\.env/,
     domain:
-      'user_id scoping on every withDb query (service-role bypasses RLS), hop_ tokens hashed not plaintext, lazy env via lib/env.ts, no secrets in logs/responses/client bundles, route/cron authz',
+      'user_id scoping on every withDb query (no RLS safety net — Neon/Drizzle, scoping is enforced entirely in code), hop_ tokens hashed not plaintext, lazy env via lib/env.ts, no secrets in logs/responses/client bundles, route/cron authz',
   },
 ]
 
@@ -197,23 +197,90 @@ const results = await pipeline(
 )
 
 // Deterministic merge: collapse duplicates (several lenses on one line) into a single
-// entry that keeps the highest severity and names every reviewer that flagged it.
+// entry that keeps the highest severity and names every reviewer that flagged it. When two
+// lenses land on the same file:line with a DIFFERENT invariant/scenario, that's not a
+// duplicate — it's a contradiction — so it's tracked as a variant instead of silently
+// overwritten by whichever finding happened to have the higher severity.
+//
+// This block is bracketed with `test:extract` markers and kept as one self-contained unit
+// (RANK + mergeFindings) on purpose: workflow scripts run in the Workflow tool's sandbox
+// (plain JS, no import/export beyond `meta`, no module system — see .claude/workflows/README.md
+// "Constraints"), so lib/__tests__/review-parallel-dedup.test.ts cannot `import` this logic.
+// Instead it slices out this exact region by marker and evaluates it directly, so the test
+// always exercises the real shipped code, never a hand-copied duplicate.
+// test:extract-start
 const RANK = { P1: 0, P2: 1, P3: 2 }
-const merged = new Map()
-for (const f of results.filter(Boolean).flat()) {
-  const key = `${f.file}:${f.line}`
-  const prior = merged.get(key)
-  if (!prior) {
-    merged.set(key, { ...f, reviewers: [f.reviewer] })
-  } else {
-    if (RANK[f.severity] < RANK[prior.severity]) {
-      prior.severity = f.severity
-      prior.invariant = f.invariant
-      prior.scenario = f.scenario
+function mergeFindings(findings) {
+  const merged = new Map()
+  for (const f of findings) {
+    const key = `${f.file}:${f.line}`
+    const prior = merged.get(key)
+    if (!prior) {
+      merged.set(key, { ...f, reviewers: [f.reviewer], variants: [{ invariant: f.invariant, scenario: f.scenario, severity: f.severity, reviewer: f.reviewer }] })
+    } else {
+      // Compare against every previously-seen variant at this location, not just
+      // variants[0] — otherwise a finding that duplicates variants[1..n] (but happens to
+      // differ from variants[0]) is wrongly treated as new and appended, duplicating it
+      // in the final report.
+      const isNewClaim = !prior.variants.some((v) => v.invariant === f.invariant && v.scenario === f.scenario)
+      if (isNewClaim) prior.variants.push({ invariant: f.invariant, scenario: f.scenario, severity: f.severity, reviewer: f.reviewer })
+      if (RANK[f.severity] < RANK[prior.severity]) prior.severity = f.severity
+      if (!prior.reviewers.includes(f.reviewer)) prior.reviewers.push(f.reviewer)
     }
-    if (!prior.reviewers.includes(f.reviewer)) prior.reviewers.push(f.reviewer)
   }
+  return merged
 }
+// test:extract-end
+const merged = mergeFindings(results.filter(Boolean).flat())
+
+// Tie-break: a file:line with more than one distinct claim gets one adjudicating pass with
+// fresh evidence instead of the earlier behavior (silently keep the highest-severity claim's
+// text and drop the rest). Only P1s are worth the extra pass — P2/P3 disagreements are noted
+// but not blocking, so they're left as-is with all variants visible in `variants`.
+const ADJUDICATE_SCHEMA = {
+  type: 'object',
+  properties: {
+    verdict: { type: 'string', enum: ['upheld', 'refuted', 'reconciled'] },
+    severity: { type: 'string', enum: ['P1', 'P2', 'P3'] },
+    invariant: { type: 'string' },
+    scenario: { type: 'string' },
+    reason: { type: 'string' },
+  },
+  required: ['verdict', 'severity', 'invariant', 'scenario', 'reason'],
+}
+const contestedP1 = [...merged.entries()].filter(
+  ([, f]) => f.variants.length > 1 && f.variants.some((v) => v.severity === 'P1'),
+)
+if (contestedP1.length) {
+  phase('Verify')
+  log(`${contestedP1.length} contested P1 location(s) — reviewers disagree, adjudicating with fresh evidence`)
+  const adjudications = await parallel(
+    contestedP1.map(([key, f]) => () =>
+      agent(
+        [
+          `Reviewers disagree about ${key} in this change set. Read the file at that location in the CURRENT working tree yourself — do not defer to either reviewer's framing.`,
+          f.variants.map((v, i) => `Claim ${i} [${v.reviewer}, ${v.severity}]: ${v.invariant} — ${v.scenario}`).join('\n'),
+          'Return verdict="upheld" if exactly one claim holds (put the corrected severity/invariant/scenario in those fields); verdict="reconciled" if both claims point at a real but distinct problem at this spot that should be merged into one accurate combined finding; verdict="refuted" if neither claim survives contact with the code as it exists now (drop this finding).',
+        ].join('\n\n'),
+        { label: `adjudicate:${key}`, phase: 'Verify', schema: ADJUDICATE_SCHEMA, effort: 'high' },
+      ),
+    ),
+  )
+  contestedP1.forEach(([key, f], i) => {
+    const a = adjudications[i]
+    if (!a || a.verdict === 'refuted') {
+      merged.delete(key)
+      log(`Adjudication dropped contested finding at ${key} (${a ? a.reason : 'adjudicator failed'})`)
+      return
+    }
+    f.severity = a.severity
+    f.invariant = a.invariant
+    f.scenario = a.scenario
+    f.adjudicated = true
+    f.adjudicationReason = a.reason
+  })
+}
+
 const confirmed = [...merged.values()].sort((a, b) => RANK[a.severity] - RANK[b.severity] || a.file.localeCompare(b.file))
 
 log(`${confirmed.length} confirmed findings (${confirmed.filter((f) => f.severity === 'P1').length} P1)`)

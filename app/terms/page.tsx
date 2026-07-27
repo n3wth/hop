@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { toNavUser } from '@/lib/nav-user'
 import { auth0 } from '@/lib/auth0'
 import { getUserBalances } from '@/lib/accounts'
 import AppShell from '@/components/AppShell'
@@ -15,14 +16,7 @@ export const metadata = pageMeta({
 export default async function TermsPage() {
   const session = await auth0.getSession()
   const su = session?.user
-  const user = su
-    ? {
-        initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
-        name: su.name ?? su.email ?? undefined,
-        email: su.email ?? undefined,
-        picture: su.picture ?? undefined,
-      }
-    : null
+  const user = toNavUser(su)
 
   let pointsTotal: number | undefined
   if (user && su?.sub) {
@@ -36,7 +30,7 @@ export default async function TermsPage() {
         eyebrow="Legal"
         title="Terms of Service"
         intro="These terms govern your use of hop. By using the service you agree to them. Please read them carefully."
-        lastUpdated="June 29, 2026"
+        lastUpdated="July 5, 2026"
       >
         <h2>1. Acceptance of terms</h2>
         <p>
@@ -65,13 +59,33 @@ export default async function TermsPage() {
           <strong>informational only and are not financial, travel, or tax advice</strong>. You are
           responsible for confirming all details with the airline or provider before you transact.
         </p>
+        <p>
+          <strong>Balance sync.</strong> If you paste a statement or forward a balance email, hop
+          uses automated (including AI-assisted) extraction to read program names and balances
+          from the text you provide. Extraction can misread; every number is checked against your
+          text before it is saved, and you can review, edit, or remove any synced balance from
+          your account. Balances you track in hop do not change anything in the underlying loyalty
+          program.
+        </p>
+        <p>
+          <strong>Credential auto-sync (optional).</strong> If you choose to store a
+          loyalty-program login, you authorize hop to use it to sign in to that program on your
+          behalf and read your balance on a recurring basis. You confirm you are permitted to
+          grant that access; automated access may be limited or blocked by a program and may
+          violate that program&rsquo;s own terms, which are between you and the program. hop
+          encrypts stored credentials, uses them only to read balances (never to make changes,
+          bookings, or redemptions), and lets you remove them at any time. This feature is
+          provided &ldquo;as is&rdquo;; a login can fail or become unsupported, and paste/forward
+          remain available as a fallback.
+        </p>
 
         <h2>4. Third-party services</h2>
         <p>
           The Service relies on third parties, including (among others) Duffel (flight search and
           cash booking), airlines and their loyalty programs, seats.aero (award availability),
-          AwardWallet (optional loyalty-balance sync), Auth0 (sign-in), Supabase (data storage),
-          and Unsplash (destination imagery). Your use of those services is also subject to their
+          AwardWallet (optional loyalty-balance sync), Google (sign-in), Neon (data storage),
+          Vercel and Anthropic (AI-assisted balance extraction), Cloudflare (sync-address email
+          relay), and Unsplash (destination imagery). Your use of those services is also subject to their
           own terms and privacy policies. We are not responsible for third-party services and do
           not guarantee their availability or accuracy.
         </p>
@@ -109,7 +123,7 @@ export default async function TermsPage() {
 
         <h2>8. Accounts</h2>
         <p>
-          Sign-in is provided through Auth0. You are responsible for activity under your account
+          Sign-in is provided through Google. You are responsible for activity under your account
           and for keeping your credentials secure. You may delete your account; see our{' '}
           <Link href="/privacy">Privacy Policy</Link> for what that removes.
         </p>
@@ -153,7 +167,7 @@ export default async function TermsPage() {
           <a href="mailto:support@hop.flights">support@hop.flights</a>.
         </p>
       </LegalShell>
-      <div className="mx-auto max-w-[var(--container-app)]">
+      <div className="mx-auto max-w-[var(--container-shell)]">
         <SiteFooter />
       </div>
     </AppShell>

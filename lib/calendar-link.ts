@@ -65,7 +65,14 @@ export function googleCalendarUrl(ev: TripCalendarEvent): string | null {
   const details = [
     origin ? `${origin} (${ev.fromCode}) → ${dest} (${ev.toCode})` : `${dest} (${ev.toCode})`,
     ev.cabin ? `Cabin: ${cap(ev.cabin)}` : null,
-    'Planned with hop.',
+    'Planned with hop.\n\nSet a price alert for this trip: https://hop.flights/search?' +
+      new URLSearchParams({
+        from: ev.fromCode,
+        to: ev.toCode,
+        depart: ev.depart,
+        ...(ev.return ? { return: ev.return } : {}),
+        alert: '1',
+      }).toString(),
   ]
     .filter(Boolean)
     .join('\n')

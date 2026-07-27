@@ -15,6 +15,13 @@
 import { canonicalizeProgram } from '@/lib/programs'
 
 export interface CardAffiliate {
+  /**
+   * Stable card id — the canonical program id the card is keyed by (the table
+   * key). Referenced by the first-party outclick redirect
+   * (`/api/go/card/[id]`, see cardOutclickPath) so click tracking survives the
+   * placeholder→network applyUrl swap unchanged.
+   */
+  id: string
   /** Marketing card name, e.g. "United Explorer Card". */
   cardName: string
   /** Issuing bank, e.g. "Chase". */
@@ -55,10 +62,11 @@ export function formatBonus(offer: Pick<CardAffiliate, 'bonusMiles' | 'bonusSpen
   return `${points} after ${spend} in ${months}`
 }
 
-// Append the hop tracking param to a base application URL. Kept tiny + pure so
-// the table below reads as plain landing pages; the ref is attached in one place.
+// Append the affiliate tracking param to a base application URL.
+// Uses NEXT_PUBLIC_CJ_AFFILIATE_TAG env var (fallback to 'hop-card' for dev).
 function ref(url: string): string {
-  return `${url}${url.includes('?') ? '&' : '?'}ref=hop-card`
+  const tag = process.env.NEXT_PUBLIC_CJ_AFFILIATE_TAG ?? 'hop-card'
+  return `${url}${url.includes('?') ? '&' : '?'}ref=${tag}`
 }
 
 // --- Affiliate table --------------------------------------------------------
@@ -66,7 +74,8 @@ function ref(url: string): string {
 // in lib/valuations.ts / lib/destinations.ts. Bonus figures are public,
 // representative offers (vary by promo); refresh alongside the valuations table.
 // Hotel programs are intentionally omitted — hop only verdicts flights.
-const CARDS: Record<string, CardAffiliate> = {
+// (id is injected from the table key below, so it can never drift.)
+const CARD_TABLE: Record<string, Omit<CardAffiliate, 'id'>> = {
   // Transferable bank currencies — the cards that earn the points you transfer out.
   'amex-mr': {
     cardName: 'American Express Gold Card',
@@ -224,6 +233,11 @@ const CARDS: Record<string, CardAffiliate> = {
   },
 }
 
+// Each entry carries its own table key as `id` — derived, never hand-typed.
+const CARDS: Record<string, CardAffiliate> = Object.fromEntries(
+  Object.entries(CARD_TABLE).map(([id, card]) => [id, { id, ...card }]),
+)
+
 // --- Public API -------------------------------------------------------------
 
 // The card that earns a given program's currency. Accepts any free-text program
@@ -235,6 +249,25 @@ export function cardForProgram(program: string): CardAffiliate | undefined {
   const def = canonicalizeProgram(program)
   if (!def) return undefined
   return CARDS[def.id]
+}
+
+// Direct lookup by card id (the canonical table key). Exact match only — the
+// id comes from a href WE minted (cardOutclickPath), not from free text, so
+// there is nothing to canonicalize. Unknown/empty id → undefined, never throws.
+export function cardById(id: string): CardAffiliate | undefined {
+  if (!id || typeof id !== 'string') return undefined
+  return CARDS[id]
+}
+
+// The CTA's outbound href: the first-party outclick redirect
+// (app/api/go/card/[id]/route.ts) that logs the click and 302s to the card's
+// applyUrl. `program` is optional verdict context (the pick's free-text
+// program), stored with the click — never used as a redirect target. Pure and
+// client-safe; the single source of truth for the path shape.
+export function cardOutclickPath(cardId: string, program?: string): string {
+  const base = `/api/go/card/${encodeURIComponent(cardId)}`
+  const context = (program ?? '').trim()
+  return context ? `${base}?program=${encodeURIComponent(context)}` : base
 }
 
 // The full table (defensive copy) keyed by canonical program id — for menus,

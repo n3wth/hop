@@ -14,6 +14,8 @@
 
 import { env, hasEnv } from '@/lib/env'
 import type { StandingOrderAlert } from '@/lib/standing-order-alerts'
+import type { LedgerDream } from '@/lib/ledger-dream'
+import { SITE_URL } from '@/lib/seo'
 
 // Discriminated result — mirrors the upstream-client {ok} contract. Never throws.
 export type EmailResult =
@@ -125,11 +127,155 @@ export function renderAlertEmail(alert: StandingOrderAlert): {
     `<p style="margin:0 0 8px;font-size:17px;font-weight:600">${escapeHtml(subject)}</p>`,
     `<p style="margin:0;color:#555">${detail}</p>`,
     cta,
-    `<p style="margin:24px 0 0;color:#888;font-size:13px">You set this watch on hop. Manage it at hop.flights/account.</p>`,
+    `<p style="margin:24px 0 0;color:#767676;font-size:13px">You set this watch on hop. Manage it at hop.flights/account.</p>`,
     `</div>`,
   ].join('')
 
   return { subject, text, html }
+}
+
+// Render the "verify your email" message Better Auth requests on signup
+// (emailVerification.sendVerificationEmail, lib/auth.ts). Terse, no marketing —
+// state the action, one link, done.
+export function renderVerificationEmail(url: string): { subject: string; text: string; html: string } {
+  const subject = 'Verify your hop email'
+  const text = [
+    'Confirm this email to finish setting up hop.',
+    '',
+    `Verify: ${url}`,
+    '',
+    'If you didn’t request this, ignore it.',
+  ].join('\n')
+  const html = [
+    `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1a1a1a;font-size:15px;line-height:1.5;max-width:480px">`,
+    `<p style="margin:0 0 8px;font-size:17px;font-weight:600">Verify your hop email</p>`,
+    `<p style="margin:0 0 16px;color:#555">Confirm this email to finish setting up hop.</p>`,
+    `<p style="margin:0"><a href="${escapeAttr(url)}" style="color:#0f6f6a;font-weight:600;text-decoration:underline">Verify email</a></p>`,
+    `<p style="margin:24px 0 0;color:#767676;font-size:13px">If you didn’t request this, ignore it.</p>`,
+    `</div>`,
+  ].join('')
+  return { subject, text, html }
+}
+
+// Render the reset-password link (emailAndPassword.sendResetPassword, lib/auth.ts).
+export function renderResetPasswordEmail(url: string): { subject: string; text: string; html: string } {
+  const subject = 'Reset your hop password'
+  const text = [
+    'Reset your password.',
+    '',
+    `Reset: ${url}`,
+    '',
+    'This link expires in 1 hour. If you didn’t request this, ignore it.',
+  ].join('\n')
+  const html = [
+    `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1a1a1a;font-size:15px;line-height:1.5;max-width:480px">`,
+    `<p style="margin:0 0 8px;font-size:17px;font-weight:600">Reset your password</p>`,
+    `<p style="margin:0"><a href="${escapeAttr(url)}" style="color:#0f6f6a;font-weight:600;text-decoration:underline">Reset password</a></p>`,
+    `<p style="margin:24px 0 0;color:#767676;font-size:13px">This link expires in 1 hour. If you didn’t request this, ignore it.</p>`,
+    `</div>`,
+  ].join('')
+  return { subject, text, html }
+}
+
+// Render the newsletter double-opt-in confirmation link (R1.6). Terse, no
+// marketing — state the action, one link, done, same shape as
+// renderVerificationEmail.
+export function renderNewsletterConfirmationEmail(url: string): {
+  subject: string
+  text: string
+  html: string
+} {
+  const subject = 'Confirm your hop newsletter signup'
+  const text = [
+    'One click to start getting your wallet’s best redemption, weekly.',
+    '',
+    `Confirm: ${url}`,
+    '',
+    'If you didn’t request this, ignore it — nothing sends until you confirm.',
+  ].join('\n')
+  const html = [
+    `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1a1a1a;font-size:15px;line-height:1.5;max-width:480px">`,
+    `<p style="margin:0 0 8px;font-size:17px;font-weight:600">Confirm your hop newsletter signup</p>`,
+    `<p style="margin:0 0 16px;color:#555">One click to start getting your wallet’s best redemption, weekly.</p>`,
+    `<p style="margin:0"><a href="${escapeAttr(url)}" style="color:#0f6f6a;font-weight:600;text-decoration:underline">Confirm</a></p>`,
+    `<p style="margin:24px 0 0;color:#767676;font-size:13px">If you didn’t request this, ignore it — nothing sends until you confirm.</p>`,
+    `</div>`,
+  ].join('')
+  return { subject, text, html }
+}
+
+// Render the R2.3 weekly digest — "your wallet's best redemption this week".
+// dream is lib/ledger-dream.ts#ledgerDream's output: the SAME engine
+// (computeCpp/topValue/affordableWith over lib/destinations.ts) the signed-in
+// home page runs, so every number here is computed, never generated.
+// dream.saveToward distinguishes a personalized pick (real balances reach it
+// now) from the honest sample fallback (nothing reaches yet — save toward
+// this), and the subject/copy say which, never blurring the two.
+export function renderWeeklyDigestEmail(
+  dream: LedgerDream,
+  unsubscribeUrl: string,
+): { subject: string; text: string; html: string } {
+  const city = dream.destination.city
+  const country = dream.destination.country
+  const cpp = fmtCpp(dream.cpp)
+  const rate = cpp ? `${cpp}¢/pt` : null
+  const miles = `${dream.milesNeeded.toLocaleString('en-US')} pts`
+  const cash = `$${Math.round(dream.cashValue).toLocaleString('en-US')}`
+  const program = dream.proof.program
+
+  const headline = dream.saveToward
+    ? `Worth saving toward: ${city}`
+    : `This week's best redemption: ${city}`
+  const subjectParts = [headline]
+  if (rate) subjectParts.push(`at ${rate}`)
+  const subject = subjectParts.join(' ')
+
+  const detail = `${city}, ${country} · ${miles} via ${program}${rate ? ` · ${rate}` : ''} · cash price ${cash}`
+
+  const textLines = [`${subject}.`, '', detail]
+  if (!dream.saveToward) textLines.push('', dream.proof.path)
+  textLines.push(
+    '',
+    dream.saveToward
+      ? 'You don’t hold enough toward this one yet — it’s the best value in reach as your balance grows.'
+      : 'You can book this with the points you hold right now.',
+    '',
+    `See more: ${SITE_URL}/ask`,
+    '',
+    `Unsubscribe: ${unsubscribeUrl}`,
+  )
+  const text = textLines.join('\n')
+
+  const pathLine = !dream.saveToward
+    ? `<p style="margin:8px 0 0;color:#767676;font-size:13px">${escapeHtml(dream.proof.path)}</p>`
+    : ''
+  const html = [
+    `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1a1a1a;font-size:15px;line-height:1.5;max-width:480px">`,
+    `<p style="margin:0 0 8px;font-size:17px;font-weight:600">${escapeHtml(subject)}</p>`,
+    `<p style="margin:0;color:#555">${escapeHtml(detail)}</p>`,
+    pathLine,
+    `<p style="margin:16px 0 0"><a href="${escapeAttr(`${SITE_URL}/ask`)}" style="color:#0f6f6a;font-weight:600;text-decoration:underline">See more</a></p>`,
+    `<p style="margin:24px 0 0;color:#767676;font-size:13px">You get this because you subscribed on hop. <a href="${escapeAttr(unsubscribeUrl)}" style="color:#767676">Unsubscribe</a>.</p>`,
+    `</div>`,
+  ].join('')
+
+  return { subject, text, html }
+}
+
+// Send the newsletter double-opt-in confirmation link. Gated; never throws.
+export async function sendNewsletterConfirmationEmail(to: string, url: string): Promise<EmailResult> {
+  const { subject, text, html } = renderNewsletterConfirmationEmail(url)
+  return dispatch({ from: fromAddress(), to, subject, text, html })
+}
+
+// Send one subscriber's weekly digest. Gated; never throws.
+export async function sendWeeklyDigestEmail(
+  to: string,
+  dream: LedgerDream,
+  unsubscribeUrl: string,
+): Promise<EmailResult> {
+  const { subject, text, html } = renderWeeklyDigestEmail(dream, unsubscribeUrl)
+  return dispatch({ from: fromAddress(), to, subject, text, html })
 }
 
 // Minimal HTML escaping for the few user/engine-derived strings we interpolate.
@@ -175,9 +321,27 @@ async function dispatch(opts: Dispatch): Promise<EmailResult> {
       ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
       ...(opts.headers ? { headers: opts.headers } : {}),
     })
-    if (error) return { ok: false, reason: 'send-failed' }
+    if (error) {
+      // Resend refused the send — most commonly the From domain isn't verified
+      // (DKIM/SPF) in Resend. Log the provider's reason (never the recipient or
+      // the key): without this line, "no email arrived" is undiagnosable from
+      // Vercel logs because this seam deliberately never throws.
+      const e = error as { name?: string; message?: string }
+      console.error('[email] resend send failed', {
+        from: opts.from,
+        subject: opts.subject,
+        error: e.name,
+        message: e.message,
+      })
+      return { ok: false, reason: 'send-failed' }
+    }
     return { ok: true, id: data?.id }
-  } catch {
+  } catch (err) {
+    console.error('[email] resend dispatch threw', {
+      from: opts.from,
+      subject: opts.subject,
+      message: err instanceof Error ? err.message : String(err),
+    })
     return { ok: false, reason: 'send-failed' }
   }
 }
@@ -214,4 +378,18 @@ export async function sendSupportReply(
   const id = opts?.inReplyTo?.trim()
   const headers = id ? { 'In-Reply-To': id, References: id } : undefined
   return dispatch({ from: supportFromAddress(), to, subject, text, html: opts?.html, headers })
+}
+
+// Send the signup email-verification link (Better Auth's
+// emailVerification.sendVerificationEmail callback). Gated; never throws.
+export async function sendVerificationEmail(to: string, url: string): Promise<EmailResult> {
+  const { subject, text, html } = renderVerificationEmail(url)
+  return dispatch({ from: fromAddress(), to, subject, text, html })
+}
+
+// Send the password-reset link (Better Auth's
+// emailAndPassword.sendResetPassword callback). Gated; never throws.
+export async function sendResetPasswordEmail(to: string, url: string): Promise<EmailResult> {
+  const { subject, text, html } = renderResetPasswordEmail(url)
+  return dispatch({ from: fromAddress(), to, subject, text, html })
 }

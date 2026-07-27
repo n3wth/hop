@@ -1,7 +1,11 @@
 # Migration: Auth0 + Supabase → Better Auth + Neon + Drizzle (+ Upstash)
 
-Status: **planned** · Owner: (you) · Foundation work that the Gmail seam and future
-features land on. Phased and reversible — Supabase/Auth0 stay intact until the final cut.
+Status: **executed** — this plan has shipped; the runtime is Better Auth + Neon + Drizzle, not
+Supabase/Auth0. The rationale and current architecture live in
+`docs/decisions/0011-platform-stack-rationale.md`; read that ADR for ground truth, not this
+plan's "Architecture today" section below, which describes the pre-migration state at the time
+this was written. Kept as historical record of the phased approach. · Owner: (you) · Foundation
+work that the Gmail seam and future features landed on.
 
 ## Why
 

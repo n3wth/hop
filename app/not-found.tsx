@@ -16,7 +16,7 @@ export default function NotFound() {
       </div>
 
       <h1
-        className="hop-rise mt-7 font-display text-[34px] font-semibold tracking-[-0.02em] text-text"
+        className="hop-rise mt-7 text-balance font-display text-[34px] font-semibold tracking-[-0.02em] text-text"
         style={{ ['--hop-delay' as string]: '100ms' }}
       >
         This page took a wrong turn.

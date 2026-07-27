@@ -23,6 +23,8 @@ import { useChat } from '@ai-sdk/react'
 import Icon from './Icon'
 import { conciergeHeroCopy } from '@/lib/concierge-hero'
 import AskStart from './concierge/AskStart'
+import EscalationCTA from './EscalationCTA'
+import Sheet from './Sheet'
 import { A2UIBlocks } from './concierge/A2UIBlock'
 import type { A2UIBlock } from '@/lib/a2ui'
 import {
@@ -45,13 +47,18 @@ import {
 } from './ai-elements/prompt-input'
 import { ToolActivity, type ToolState } from './ai-elements/tool'
 import { Suggestions, Suggestion } from './ai-elements/suggestion'
+import {
+  trackConciergeFeedback,
+  trackConciergeFeedbackReason,
+  CONCIERGE_FEEDBACK_REASON_MAX,
+  type ConciergeFeedbackRating,
+} from '@/lib/concierge-feedback'
 
 // Fallback chips shown when a resumed thread has no model-authored follow-ups.
 // Terse, on-voice, generic but useful — the dock is never dead for a returning user.
 const FALLBACK_CHIPS = [
   'Plan a 5-day trip',
   'Cheaper in a different month?',
-  'Compare two cities',
   'Best use of my points',
 ] as const
 
@@ -63,6 +70,10 @@ export interface ConciergePhoto {
   city: string
   country: string
   countryCode: string
+  /** Unsplash attribution (API terms) — optional only so a hand-built caller
+   *  without a real photo doesn't need to fake one; every photo actually
+   *  resolved via lib/images.ts#DestImage carries one. */
+  credit?: { name: string; link: string }
 }
 
 export interface ConciergeProgram {
@@ -94,6 +105,8 @@ export interface ConciergeProps {
   /** When set, the concierge auto-sends this on mount — used when the home
    *  composer deep-links into /ask?q=… so the conversation starts immediately. */
   initialQuery?: string
+  /** Prefill for the "Have hop book it" sheet (the session email, editable). */
+  escalationEmail?: string
 }
 
 // Starter prompts now live in lib/concierge-hero (one canonical set) — rendered
@@ -122,8 +135,11 @@ export default function Concierge({
   gmailEnabled = false,
   initialMessages,
   initialQuery,
+  escalationEmail,
 }: ConciergeProps) {
   const [input, setInput] = useState('')
+  // "Have hop book it" opens a slide-up sheet on the surface (never below fold).
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   // Context is read fresh on each send so balances/airport are always current.
   // The ref is kept in sync via an effect (never mutated during render); the
@@ -208,6 +224,8 @@ export default function Concierge({
     [input, send],
   )
 
+  const closeSheet = useCallback(() => setSheetOpen(false), [])
+
   // Live "Connect Gmail" (gated by gmailEnabled). Signed-out → sign in first,
   // returning to /ask; signed-in → start the OAuth handshake. The start route
   // self-gates and bounces to /account?gmail=unconfigured if the flag is off, so
@@ -270,157 +288,208 @@ export default function Concierge({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  if (!hasThread) {
-    // Empty state: a CALM CREAM editorial start (AskStart) that shares the
-    // thread's measure and the SAME composer — no dark hero, no mood gallery.
-    // Copy comes from lib/concierge-hero (one voice, shared with the home teaser);
-    // a slim destination strip seeds a starter prompt on tap. The gets-to-know-you
-    // pills are intentionally dropped here — the thread's control rail is the one
-    // quiet set of controls (see the thread branch below).
-    const copy = conciergeHeroCopy({ signedIn, totalPoints })
-    const startTiles = galleryCodes
-      .map((c) => photos[c])
-      .filter((p): p is ConciergePhoto => Boolean(p))
-      .slice(0, 5)
-      .map((p) => ({ city: p.city, thumb: p.thumb, alt: p.alt, countryCode: p.countryCode }))
-    return (
-      <AskStart
-        eyebrow={copy.eyebrow}
-        heading={copy.heading}
-        sub={copy.sub}
-        placeholder={copy.placeholder}
-        chips={copy.chips}
-        input={input}
-        setInput={setInput}
-        onSubmit={onSubmit}
-        onStarter={send}
-        status={status}
-        onStop={stop}
-        destinations={startTiles}
-      />
-    )
-  }
+  // ONE surface, ONE scroll region. The stage is the whole page: a control rail
+  // pinned to the top, the conversation as the ONLY scroll region in the middle,
+  // and the composer DOCKED at the floor in BOTH states. The empty state fills the
+  // middle with a calm greeting (AskStart) centered vertically; the thread fills it
+  // with the streamed conversation. The dock (chips + the SINGLE composer) never
+  // moves — sending the first message just swaps the middle, with zero layout jump.
+  // Copy comes from lib/concierge-hero (one voice, shared with the home teaser).
+  const copy = conciergeHeroCopy({ signedIn, totalPoints })
+  const startTiles = galleryCodes
+    .map((c) => photos[c])
+    .filter((p): p is ConciergePhoto => Boolean(p))
+    .slice(0, 4)
+    .map((p) => ({
+      city: p.city,
+      thumb: p.thumb,
+      alt: p.alt,
+      countryCode: p.countryCode,
+      credit: p.credit,
+    }))
 
-  // Thread state: the conversation IS the surface. Re-apply horizontal padding
-  // (AppShell uses noPadX for the ask page so the landing hero is full-bleed).
   return (
-    <div className="flex min-h-0 flex-1 flex-col px-4 sm:px-8 lg:px-16">
+    <div className="flex min-h-0 flex-1 flex-col px-5 sm:px-8 lg:px-12 xl:px-16">
       {/* Screen-reader live status: announces "thinking" and the settled answer
           once. Visually hidden; sighted users read the streamed text directly. */}
       <div role="status" aria-live="polite" className="sr-only">
         {liveStatus}
       </div>
-      {/* control rail — a thin strip of thread controls. No bunny/wordmark here:
-          the nav logo and each turn's byline already brand the surface, so a
-          third mark would just be clutter. */}
-      <div className="hop-ask-measure flex flex-shrink-0 items-center justify-end pb-2 pt-1">
+
+      {/* control rail — a thin strip of quiet controls. Framed at the HEADER's
+          container (hop-ask-frame), so the controls align under the nav avatar —
+          chrome aligns with chrome. "Have hop book it" is always here (opens a
+          slide-up sheet ON the surface, never below fold); the thread also gets
+          "What hop remembers" (signed in) + "Start over". */}
+      <div className="hop-ask-frame flex flex-shrink-0 items-center justify-end pb-2 pt-1">
         <div className="flex items-center gap-1.5">
-          {signedIn ? (
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            aria-label="Have hop book it"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-paper px-3 py-1.5 text-[12px] font-semibold text-text2 transition-colors hover:border-brand hover:text-brand"
+            title="Have a hop specialist find the award space and book it by hand"
+          >
+            <Icon name="compass" size={16} />
+            <span className="hidden sm:inline">Have hop book it</span>
+          </button>
+          {hasThread && signedIn ? (
             <Link
               href="/account"
               aria-label="What hop remembers about you"
               className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] font-medium text-text3 transition-colors hover:text-brand"
               title="See and edit what hop remembers about you"
             >
-              <Icon name="loyalty" size={13} />
+              <Icon name="loyalty" size={16} />
               <span className="hidden sm:inline">What hop remembers</span>
             </Link>
           ) : null}
-          {confirmingClear ? (
-            <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text3">
-              <span className="hidden sm:inline">Clear this thread?</span>
+          {hasThread ? (
+            confirmingClear ? (
+              <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text3">
+                <span className="hidden sm:inline">Clear this thread?</span>
+                <button
+                  type="button"
+                  onClick={startOver}
+                  className="rounded-full bg-brand px-2.5 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-brand-deep"
+                >
+                  Yes, start over
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmingClear(false)}
+                  className="rounded-full px-2.5 py-1.5 text-[12px] font-medium text-text3 transition-colors hover:text-brand"
+                >
+                  Cancel
+                </button>
+              </span>
+            ) : (
               <button
                 type="button"
                 onClick={startOver}
-                className="rounded-full bg-brand px-2.5 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-brand-deep"
+                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] font-medium text-text3 transition-colors hover:text-brand"
               >
-                Yes, start over
+                <Icon name="refresh" size={16} />
+                Start over
               </button>
-              <button
-                type="button"
-                onClick={() => setConfirmingClear(false)}
-                className="rounded-full px-2.5 py-1.5 text-[12px] font-medium text-text3 transition-colors hover:text-brand"
-              >
-                Cancel
-              </button>
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={startOver}
-              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[12px] font-medium text-text3 transition-colors hover:text-brand"
-            >
-              <Icon name="lightbulb" size={13} />
-              Start over
-            </button>
-          )}
+            )
+          ) : null}
         </div>
       </div>
 
-      {/* the conversation — the ONLY scroll region. Full-bleed scroll, prose
-          centered at a calm measure. A soft top veil dissolves content under the
-          identity rail instead of a hard clip. */}
+      {/* the middle — the ONLY scroll region. A thread scrolls the conversation at
+          a calm measure; the empty state centers the greeting. A soft top veil
+          dissolves content under the identity rail instead of a hard clip. */}
       <div className="relative min-h-0 flex-1">
         <div
           aria-hidden
           className="hop-ask-veil pointer-events-none absolute inset-x-0 top-0 z-10 h-6"
         />
-        <Conversation className="h-full">
-          <ConversationContent className="hop-ask-measure pb-6 pt-4">
-            {messages.map((m, i) => {
-              // Suppress an assistant turn that has nothing renderable yet (the
-              // byline would flash empty before the first token/tool frame).
-              // While busy, the ThinkingTurn covers it; this avoids a bare byline.
-              if (busy && m.role === 'assistant' && !hasRenderablePart(m)) return null
-              return (
-                <Turn
-                  key={m.id}
-                  message={m}
-                  onChip={send}
-                  hasBalances={hasBalances}
-                  homeAirport={homeAirport}
-                  gmailEnabled={gmailEnabled}
-                  onConnectGmail={onConnectGmail}
-                  isLast={i === messages.length - 1}
-                  busy={busy}
-                  onRegenerate={() => void regenerate()}
-                />
-              )
-            })}
-            {/* keep the thinking indicator until the assistant turn has a
-                renderable part — no empty-byline flash */}
-            {busy && needsThinking(messages) ? <ThinkingTurn /> : null}
-            {error ? <ErrorTurn onRetry={() => void regenerate()} /> : null}
-          </ConversationContent>
-          <ConversationScrollButton />
-        </Conversation>
+        {hasThread ? (
+          <Conversation className="h-full">
+            <ConversationContent className="hop-ask-measure pb-6 pt-4">
+              {messages.map((m, i) => {
+                // Suppress an assistant turn that has nothing renderable yet (the
+                // byline would flash empty before the first token/tool frame).
+                // While busy, the ThinkingTurn covers it; this avoids a bare byline.
+                if (busy && m.role === 'assistant' && !hasRenderablePart(m)) return null
+                return (
+                  <Turn
+                    key={m.id}
+                    message={m}
+                    onChip={send}
+                    hasBalances={hasBalances}
+                    homeAirport={homeAirport}
+                    gmailEnabled={gmailEnabled}
+                    onConnectGmail={onConnectGmail}
+                    isLast={i === messages.length - 1}
+                    busy={busy}
+                    onRegenerate={() => void regenerate()}
+                  />
+                )
+              })}
+              {/* keep the thinking indicator until the assistant turn has a
+                  renderable part — no empty-byline flash */}
+              {busy && needsThinking(messages) ? <ThinkingTurn /> : null}
+              {error ? <ErrorTurn onRetry={() => void regenerate()} /> : null}
+            </ConversationContent>
+            <ConversationScrollButton />
+          </Conversation>
+        ) : (
+          // Greeting anchored in the upper third (not dead-centered) — on a tall
+          // desktop viewport, perfect vertical centering left as much empty
+          // canvas below the greeting as above it, reading as a mostly-blank
+          // page rather than a considered layout (ChatGPT/Claude's own new-chat
+          // screens anchor the same way). The outer div stays a plain scroll
+          // container; the inner min-h-full flex keeps the greeting REACHABLE
+          // under overflow (never `items-center` + `overflow` on one element —
+          // block-start overflow of a centered flex item can't be scrolled to,
+          // clipping the heading on short viewports).
+          <div className="h-full overflow-y-auto py-8">
+            <div className="flex min-h-full items-center justify-center pb-[18vh] sm:pb-[24vh]">
+              <AskStart
+                eyebrow={copy.eyebrow}
+                heading={copy.heading}
+                sub={copy.sub}
+                onStarter={send}
+                destinations={startTiles}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* pinned dock: follow-up chips above the persistent composer, aligned to
-          the reading measure. Lives at the viewport floor; the thread scrolls
-          behind it. */}
-      <div className="hop-ask-measure flex-shrink-0 border-t border-hair pb-5 pt-3">
-        {/* Follow-up chips: model-authored, contextual to the latest answer (the
-            agent emits prompt_chips each turn). Shown only when idle and present. */}
-        {!busy && followUps.length ? (
-          <Suggestions className="mb-3">
-            {followUps.map((f) => (
-              <Suggestion key={f} suggestion={f} onClick={send} disabled={busy} />
-            ))}
-          </Suggestions>
-        ) : null}
+      {/* docked dock: chips above the SINGLE composer, aligned to the reading
+          measure, pinned to the viewport floor in BOTH states — so it never moves.
+          Empty → starter chips (copy.chips) that seed a prompt; thread → the
+          model-authored follow-up chips. One <PromptInput> instance, shared. */}
+      <div className="hop-ask-frame flex-shrink-0 border-t border-hair pb-5 pt-3">
+        {/* The dock's hairline spans the header frame (integrated chrome); the
+            chips + composer stay at the thread's reading measure inside it. */}
+        <div className="hop-ask-measure">
+          {hasThread ? (
+            // Follow-up chips: model-authored, contextual to the latest answer (the
+            // agent emits prompt_chips each turn). Shown only when idle and present.
+            !busy && followUps.length ? (
+              <Suggestions className="mb-3">
+                {followUps.map((f) => (
+                  <Suggestion key={f} suggestion={f} onClick={send} disabled={busy} />
+                ))}
+              </Suggestions>
+            ) : null
+          ) : (
+            // Starter chips: the canonical concierge seed prompts (one voice, shared
+            // with the home). Tapping one sends it straight through.
+            <Suggestions className="mb-3">
+              {copy.chips.map((c) => (
+                <Suggestion key={c} suggestion={c} onClick={send} />
+              ))}
+            </Suggestions>
+          )}
 
-        <PromptInput onSubmit={onSubmit}>
-          <PromptInputTextarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onEnter={() => send(input)}
-            placeholder="Reply, or ask something new…"
-            aria-label="Message hop"
-          />
-          <PromptInputSubmit status={status} onStop={stop} disabled={!input.trim()} />
-        </PromptInput>
+          <PromptInput onSubmit={onSubmit}>
+            <PromptInputTextarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onEnter={() => send(input)}
+              placeholder={hasThread ? 'Reply, or ask something new…' : copy.placeholder}
+              aria-label="Message hop"
+            />
+            <PromptInputSubmit status={status} onStop={stop} disabled={!input.trim()} />
+          </PromptInput>
+        </div>
       </div>
+
+      {/* "Have hop book it" — a slide-up sheet ON the surface, so the expert-
+          booking request is reachable WITHOUT any below-fold scroll. */}
+      <Sheet open={sheetOpen} onClose={closeSheet} title="Have hop book it">
+        <EscalationCTA
+          defaultEmail={escalationEmail}
+          totalPoints={totalPoints}
+          embedded
+          onCancel={closeSheet}
+        />
+      </Sheet>
     </div>
   )
 }
@@ -481,6 +550,7 @@ function Turn({
 
   const inline: InlinePart[] = []
   const a2ui: { key: string; blocks: A2UIBlock[] }[] = []
+  let traceId: string | undefined
 
   message.parts.forEach((part, i) => {
     if (part.type === 'text') {
@@ -497,6 +567,8 @@ function Turn({
       // so follow-ups live in one place and don't clutter the answer.
       const blocks = (part.data?.blocks ?? []).filter((b) => b.type !== 'prompt_chips')
       if (blocks.length) a2ui.push({ key: part.id ?? `a${i}`, blocks })
+    } else if (part.type === 'data-meta') {
+      traceId = part.data?.traceId
     }
   })
 
@@ -541,6 +613,7 @@ function Turn({
       {showActions ? (
         <AssistantActions
           text={textOf(message)}
+          traceId={traceId}
           onRegenerate={isLast && !busy ? onRegenerate : undefined}
         />
       ) : null}
@@ -580,12 +653,17 @@ function textOf(m: HopUIMessage): string {
 
 // Per-turn affordances under a settled assistant answer: copy the prose, and
 // (on the latest turn) re-roll it. Flat, quiet — muted until hover, color-only.
-// "Copied" is a label/icon swap, not motion, so it's reduced-motion-safe.
+// On copy, the check settles in (.hop-check-in, transform-only); reduced-motion
+// falls back to the plain label/icon swap.
 function AssistantActions({
   text,
+  traceId,
   onRegenerate,
 }: {
   text: string
+  /** This turn's PostHog $ai_trace_id — absent on the curated-fallback path
+   *  (no gateway key), which never mints one. Gates the thumbs control. */
+  traceId?: string
   onRegenerate?: () => void
 }) {
   const [copied, setCopied] = useState(false)
@@ -604,17 +682,92 @@ function AssistantActions({
     'inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11.5px] font-medium text-text3 transition-colors hover:bg-sunk hover:text-brand'
 
   return (
-    <div className="-mt-0.5 flex items-center gap-0.5">
-      <button type="button" onClick={copy} aria-label={copied ? 'Copied' : 'Copy answer'} className={btn}>
-        <Icon name={copied ? 'check' : 'content_copy'} size={13} />
-        {copied ? 'Copied' : 'Copy'}
-      </button>
-      {onRegenerate ? (
-        <button type="button" onClick={onRegenerate} aria-label="Regenerate answer" className={btn}>
-          <Icon name="refresh" size={13} />
-          Retry
+    <div className="-mt-0.5 flex flex-wrap items-center gap-1">
+      <div className="flex items-center gap-0.5">
+        <button type="button" onClick={copy} aria-label={copied ? 'Copied' : 'Copy answer'} className={btn}>
+          <span key={copied ? 'check' : 'copy'} className={copied ? 'hop-check-in inline-flex' : 'inline-flex'}>
+            <Icon name={copied ? 'check' : 'content_copy'} size={16} />
+          </span>
+          {copied ? 'Copied' : 'Copy'}
         </button>
+        {onRegenerate ? (
+          <button type="button" onClick={onRegenerate} aria-label="Regenerate answer" className={btn}>
+            <Icon name="refresh" size={16} />
+            Retry
+          </button>
+        ) : null}
+      </div>
+      {traceId ? <MessageFeedback traceId={traceId} btn={btn} /> : null}
+    </div>
+  )
+}
+
+// Thumbs up/down on a settled answer, joined to the exact LLM call via
+// $ai_trace_id (lib/concierge-feedback.ts). One rating per turn — buttons
+// disable once clicked rather than allowing a flip-flop. Thumbs-down reveals a
+// one-line, optional reason; skipping it is fine, the rating alone is useful.
+function MessageFeedback({ traceId, btn }: { traceId: string; btn: string }) {
+  const [rating, setRating] = useState<ConciergeFeedbackRating | null>(null)
+  const [reason, setReason] = useState('')
+  const [reasonSent, setReasonSent] = useState(false)
+
+  const rate = (value: ConciergeFeedbackRating) => {
+    if (rating) return
+    setRating(value)
+    trackConciergeFeedback(traceId, value)
+  }
+
+  const sendReason = () => {
+    trackConciergeFeedbackReason(traceId, reason)
+    setReasonSent(true)
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      <div className="flex items-center gap-0.5">
+        <button
+          type="button"
+          onClick={() => rate('up')}
+          aria-label="Helpful"
+          aria-pressed={rating === 'up'}
+          disabled={!!rating}
+          className={`${btn} ${rating === 'up' ? 'text-brand' : ''} disabled:hover:bg-transparent`}
+        >
+          <Icon name="thumbs_up" size={16} weight={rating === 'up' ? 'fill' : 'regular'} />
+        </button>
+        <button
+          type="button"
+          onClick={() => rate('down')}
+          aria-label="Not helpful"
+          aria-pressed={rating === 'down'}
+          disabled={!!rating}
+          className={`${btn} ${rating === 'down' ? 'text-brand' : ''} disabled:hover:bg-transparent`}
+        >
+          <Icon name="thumbs_down" size={16} weight={rating === 'down' ? 'fill' : 'regular'} />
+        </button>
+      </div>
+      {rating === 'down' && !reasonSent ? (
+        <div className="flex items-center gap-1.5">
+          <input
+            type="text"
+            value={reason}
+            onChange={(e) => setReason(e.target.value.slice(0, CONCIERGE_FEEDBACK_REASON_MAX))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') sendReason()
+            }}
+            placeholder="What went wrong? (optional)"
+            className="no-inner-ring w-[220px] rounded-full border border-border bg-transparent px-2.5 py-1 text-[11.5px] text-text2 outline-none placeholder:text-text3 focus:border-brand"
+          />
+          <button
+            type="button"
+            onClick={sendReason}
+            className="text-[11.5px] font-medium text-text3 transition-colors hover:text-brand"
+          >
+            Send
+          </button>
+        </div>
       ) : null}
+      {reasonSent ? <p className="text-[11.5px] text-text3">Thanks — noted.</p> : null}
     </div>
   )
 }

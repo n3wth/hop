@@ -1,5 +1,17 @@
 import type { CppTier, FlightOption } from '@/lib/types'
 
+// The "use points" verdict line. The single owner of this number — lib/search.ts
+// re-exports it for existing call sites, and anything else that needs the same
+// threshold (standing-order watches, the concierge) imports it from here, never
+// re-declares it, so a re-tune of the line can't silently fork.
+export const POINTS_THRESHOLD_CPP = 2.5
+
+// tier() boundaries, named and exported so any surface describing "what counts
+// as a good redemption" (e.g. the /guides/point-value explainer) pulls the real
+// numbers instead of hand-typing them — never a second source of truth.
+export const GREEN_TIER_CPP = 3.0
+export const AMBER_TIER_CPP = 1.5
+
 export function cpp(cashPrice: number, taxes: number, miles: number): number | undefined {
   if (!cashPrice || cashPrice <= 0) return undefined
   if (miles <= 0) return undefined
@@ -8,8 +20,8 @@ export function cpp(cashPrice: number, taxes: number, miles: number): number | u
 
 export function tier(value: number | undefined): CppTier {
   if (value === undefined) return 'muted'
-  if (value >= 3.0) return 'green'
-  if (value >= 1.5) return 'amber'
+  if (value >= GREEN_TIER_CPP) return 'green'
+  if (value >= AMBER_TIER_CPP) return 'amber'
   return 'muted'
 }
 

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { toNavUser } from '@/lib/nav-user'
 import { auth0 } from '@/lib/auth0'
 import { getUserBalances } from '@/lib/accounts'
 import AppShell from '@/components/AppShell'
@@ -20,7 +21,7 @@ const SECTIONS: { id: string; label: string }[] = [
   { id: 'points-balances', label: 'Points & balances' },
   { id: 'the-verdict', label: 'How the verdict works' },
   { id: 'booking', label: 'Booking, changes & cancellations' },
-  { id: 'claude-mcp', label: 'Using hop from Claude' },
+  { id: 'mcp', label: 'Using hop from an AI assistant' },
   { id: 'account-privacy', label: 'Account & privacy' },
   { id: 'contact', label: 'Contact' },
 ]
@@ -28,14 +29,7 @@ const SECTIONS: { id: string; label: string }[] = [
 export default async function SupportPage() {
   const session = await auth0.getSession()
   const su = session?.user
-  const user = su
-    ? {
-        initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
-        name: su.name ?? su.email ?? undefined,
-        email: su.email ?? undefined,
-        picture: su.picture ?? undefined,
-      }
-    : null
+  const user = toNavUser(su)
 
   let pointsTotal: number | undefined
   if (user && su?.sub) {
@@ -54,7 +48,10 @@ export default async function SupportPage() {
             can skip straight to a section. The list styling overrides the
             inherited .legal-prose ul (disc bullets / indent). */}
         <nav aria-label="Help topics" className="mb-2">
-          <ul className="grid list-none grid-cols-1 gap-x-6 gap-y-1.5 !pl-0 sm:grid-cols-2">
+          {/* !list-none: .legal-prose ul (0,1,1) out-specifies the bare utility
+              (0,1,0), so without the important the discs come back and hang
+              outside the zeroed padding — bullets floating left of the column. */}
+          <ul className="grid !list-none grid-cols-1 gap-x-6 gap-y-1.5 !pl-0 sm:grid-cols-2">
             {SECTIONS.map((s) => (
               <li key={s.id} className="!mb-0">
                 <a
@@ -220,24 +217,25 @@ export default async function SupportPage() {
           price.
         </p>
 
-        <h2 id="claude-mcp" className="scroll-mt-24">
-          Using hop from Claude
+        <h2 id="mcp" className="scroll-mt-24">
+          Using hop from an AI assistant
         </h2>
 
-        <h3>What is &ldquo;Use hop from Claude&rdquo;?</h3>
+        <h3>What is &ldquo;Use hop from your AI assistant&rdquo;?</h3>
         <p>
           hop&rsquo;s engine is available as an <strong>MCP server</strong>, so you can call it from
-          Claude or any MCP client and get the same deterministic answers you&rsquo;d get on the
+          any MCP-capable client and get the same deterministic answers you&rsquo;d get on the
           site — pricing a trip, the full verdict, sweet-spot redemptions, and transfer paths.
         </p>
 
         <h3>How do I connect it?</h3>
         <p>
           On your <Link href="/account">account</Link>, open{' '}
-          <strong>Use hop from Claude (MCP)</strong> and mint a token. Add it to your MCP client and
-          your assistant can run hop on your behalf. A token is tied to <em>your</em> account: when
-          it&rsquo;s present, the tools see your real balances and tell you what you can afford. Treat
-          the token like a password — anyone with it can read your balances through hop.
+          <strong>Use hop from your AI assistant (MCP)</strong> and mint a token. Add it to your MCP
+          client and your assistant can run hop on your behalf. A token is tied to <em>your</em>{' '}
+          account: when it&rsquo;s present, the tools see your real balances and tell you what you
+          can afford. Treat the token like a password — anyone with it can read your balances
+          through hop.
         </p>
 
         <h3>Can I use it without a token?</h3>
@@ -266,8 +264,8 @@ export default async function SupportPage() {
 
         <h3>What does hop store, and who can see it?</h3>
         <p>
-          Your identity comes from Auth0; your balances, home airport, and any tokens are scoped to
-          your account and never exposed to other users. For the full picture — what&rsquo;s
+          Your identity comes from Google sign-in; your balances, home airport, and any tokens are
+          scoped to your account and never exposed to other users. For the full picture — what&rsquo;s
           collected, why, and who it&rsquo;s shared with — see the{' '}
           <Link href="/privacy">Privacy Policy</Link>.
         </p>
@@ -288,7 +286,7 @@ export default async function SupportPage() {
           your miles go furthest, the <Link href="/ask">concierge</Link> answers on the spot.
         </p>
       </LegalShell>
-      <div className="mx-auto max-w-[var(--container-app)]">
+      <div className="mx-auto max-w-[var(--container-shell)]">
         <SiteFooter />
       </div>
     </AppShell>

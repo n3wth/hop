@@ -38,7 +38,7 @@ const LENSES = [
   { key: 'nextjs16', agentType: 'nextjs16-reviewer', sweep: 'framework usage matches Next.js 16.2.9 + React 19 per node_modules/next/dist/docs — sync access to async params/searchParams, stale caching idioms, pre-16 handler shapes' },
   { key: 'eve', agentType: 'eve-architecture-reviewer', sweep: 'Eve tools wrap lib/* without duplicating economics; every proactive seam is flag-gated and no-ops cleanly; deliveries dedupe; irreversible actions are human-gated' },
   { key: 'security', agentType: 'security-reviewer', sweep: 'every withDb query is user_id-scoped; hop_ tokens hashed; env read lazily via lib/env.ts; no secret can reach a log, response, or client bundle; routes and cron endpoints check authz' },
-  { key: 'memory', agentType: null, sweep: 'the compound loop itself: docs/solutions/ index table matches the files on disk; no code change has quietly contradicted an Accepted ADR in docs/decisions/; no solved problem in docs/solutions/ has been reintroduced in the code it names; CLAUDE.md claims still match the repo (paths, commands, flags)' },
+  { key: 'memory', agentType: null, sweep: 'the compound loop itself: docs/solutions/ index table matches the files on disk; no code change has quietly contradicted an Accepted ADR in docs/decisions/; no solved problem in docs/solutions/ has been reintroduced in the code it names; AGENTS.md claims still match the repo (paths, commands, flags)' },
 ]
 
 const FINDINGS_SCHEMA = {

@@ -34,6 +34,8 @@ export type MemoryKind =
   | 'vacationDays'
   | 'travelParty'
   | 'cabin'
+  | 'fallbackCabin'
+  | 'preferredAirlines'
   | 'dietary'
   | 'accessibility'
   | 'lovedDestinations'
@@ -60,9 +62,11 @@ const SCALARS: { kind: MemoryKind; group: MemoryGroup; label: string }[] = [
   { kind: 'vacationDays', group: 'rhythm', label: 'Vacation days' },
   { kind: 'travelParty', group: 'rhythm', label: 'Usually travels' },
   { kind: 'cabin', group: 'style', label: 'Preferred cabin' },
+  { kind: 'fallbackCabin', group: 'style', label: 'Fallback cabin' },
 ]
 
 const LISTS: { kind: MemoryKind; group: MemoryGroup; label: string }[] = [
+  { kind: 'preferredAirlines', group: 'style', label: 'Prefers to fly' },
   { kind: 'dietary', group: 'style', label: 'Dietary' },
   { kind: 'accessibility', group: 'style', label: 'Accessibility' },
   { kind: 'lovedDestinations', group: 'places', label: 'Loves' },
@@ -88,6 +92,10 @@ function scalarValue(kind: MemoryKind, profile: TravelProfile): string | undefin
       const c: Cabin | undefined = profile.cabin
       return c ? titleCase(c) : undefined
     }
+    case 'fallbackCabin': {
+      const c: Cabin | undefined = profile.fallbackCabin
+      return c ? titleCase(c) : undefined
+    }
     default:
       return undefined
   }
@@ -95,6 +103,8 @@ function scalarValue(kind: MemoryKind, profile: TravelProfile): string | undefin
 
 function listEntries(kind: MemoryKind, profile: TravelProfile): string[] {
   switch (kind) {
+    case 'preferredAirlines':
+      return profile.preferredAirlines ?? []
     case 'dietary':
       return profile.dietary ?? []
     case 'accessibility':

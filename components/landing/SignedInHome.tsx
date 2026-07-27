@@ -1,10 +1,14 @@
 import Link from 'next/link'
 import Icon from '@/components/Icon'
+import Card from '@/components/ui/Card'
+import Eyebrow from '@/components/ui/Eyebrow'
 import HeroSearch from '@/components/landing/HeroSearch'
 import DestinationGrid from '@/components/landing/DestinationGrid'
-import AgentComposer from '@/components/landing/AgentComposer'
-import type { ConciergeHeroPhoto } from '@/components/ConciergeHero'
+import SignedInHero from '@/components/landing/SignedInHero'
+import type { ShowcaseEntry } from '@/components/landing/ShowcaseRotator'
 import LedgerDream from '@/components/landing/LedgerDream'
+import TransferUnlockShelf from '@/components/landing/TransferUnlockShelf'
+import LiveValuationShelf from '@/components/landing/LiveValuationShelf'
 import HomeAirportPrompt from '@/components/HomeAirportPrompt'
 import {
   affordableWith,
@@ -12,10 +16,12 @@ import {
   imageQuery,
   computeCpp,
 } from '@/lib/destinations'
+import { POINTS_THRESHOLD_CPP } from '@/lib/search'
+import { reachableDestinations } from '@/lib/ledger-dream'
 import { withoutAvoided, EMPTY_MEMORY_CONTEXT, type MemoryContext } from '@/lib/memory-context'
 import { destinationImages } from '@/lib/images'
-import { WALLET_VALUE_CAVEAT } from '@/lib/valuations'
 import type { SearchState } from '@/components/SearchBar'
+import type { Balance } from '@/lib/types'
 
 // The personalized home for a signed-in member. NOT the marketing page — the
 // AGENT is the front door: it leads with a prominent "talk to hop" composer that
@@ -29,8 +35,8 @@ export default async function SignedInHome({
   pointsWorth = 0,
   seed,
   hasHomeAirport = true,
-  heroBackdrop,
   memory = EMPTY_MEMORY_CONTEXT,
+  balances = [],
 }: {
   first?: string
   programs: number
@@ -39,16 +45,23 @@ export default async function SignedInHome({
   pointsWorth?: number
   seed: SearchState
   hasHomeAirport?: boolean
-  /** Photographic backdrop for the agent hero, matching the /ask landing. */
-  heroBackdrop?: ConciergeHeroPhoto
   /** Unified memory (lib/memory-context) — drops the member's stated "avoid"
       places from the feed. Defaults to the empty context → today's exact behavior. */
   memory?: MemoryContext
+  /** The member's real per-program balances. Confirms "in reach" against the
+      SPECIFIC (non-transferable) currency each destination's bestProgram
+      needs — totalPoints alone sums across every program regardless of
+      currency, so it can flag a destination reachable when the member holds
+      none of what it actually takes. Defaults to [] → today's exact fallback
+      (the totalPoints-only affordableWith gate) when a caller has nothing. */
+  balances?: Balance[]
 }) {
   // Personalized to the member's real balance; best value first. If they're
   // light on points (or programs failed), fall back to the universally great
-  // redemptions so the module is never empty.
-  const affordable = affordableWith(totalPoints)
+  // redemptions so the module is never empty. reachableDestinations() adds the
+  // per-program (or verified-transfer) confirmation on top of the raw-points
+  // affordableWith() gate — see lib/ledger-dream.ts.
+  const affordable = balances.length > 0 ? reachableDestinations(balances) : affordableWith(totalPoints)
   const personalized = affordable.length >= 4
   // M5 — compounding: drop the member's STATED "avoid" places from this
   // engine-ranked module. Value order is PRESERVED (hop leads with value; loved
@@ -56,151 +69,105 @@ export default async function SignedInHome({
   // per point" below stays true. A no-op when the profile has no avoided places
   // → today's exact feed.
   const base = personalized ? affordable : topValue(24)
-  const picks = withoutAvoided(base, memory.avoided).slice(0, 8)
-  const photos = await destinationImages(picks.map((d) => imageQuery(d)))
+  const pool = withoutAvoided(base, memory.avoided)
+  // The hero rotator takes the TOP picks; "Where your points already reach"
+  // takes the next 2-3; the grid continues where THAT ends — so one page
+  // never shows the same destination photo twice (experience heuristic:
+  // repetition reads as template, not curation). Value order is preserved
+  // across every seam.
+  const heroPicks = pool.slice(0, 5)
+  const reachPicks = pool.slice(heroPicks.length, heroPicks.length + 3)
+  const picks = pool.slice(
+    heroPicks.length + reachPicks.length,
+    heroPicks.length + reachPicks.length + 8,
+  )
+  const photos = await destinationImages(
+    [...heroPicks, ...reachPicks, ...picks].map((d) => imageQuery(d)),
+  )
 
-  // A single headline stat for the summary panel: the best-value trip the member
-  // can reach right now (or the best dream if they're light on points). Order is
-  // preserved above, so picks[0] is the true cpp-max of the shown set.
-  const topPick = picks[0]
-  const topCpp = topPick ? computeCpp(topPick) : undefined
+  // The hero showcase — the member's own reachable picks, in the exact visual
+  // language of the signed-out hero (photo + engine-numbers card + ambience).
+  // Every figure computed here, server-side; the rotator only cycles.
+  const heroEntries: ShowcaseEntry[] = heroPicks.flatMap((d) => {
+    const photo = photos[imageQuery(d)]
+    const cppVal = computeCpp(d)
+    if (!photo || cppVal === undefined) return []
+    return [
+      {
+        code: d.code,
+        city: d.city,
+        country: d.country,
+        cpp: cppVal,
+        miles: d.typicalAwardMiles,
+        program: d.bestProgram,
+        cabin: d.cabin,
+        pointsWin: cppVal >= POINTS_THRESHOLD_CPP,
+        image: photo.url,
+        thumb: photo.thumb,
+        color: photo.color,
+        href: `/search?from=${encodeURIComponent(seed.from)}&to=${encodeURIComponent(d.code)}&adults=1`,
+        cashValue: d.typicalCashUSD,
+      },
+    ]
+  })
 
   return (
     <div className="flex flex-col gap-14 pt-4 sm:gap-16 sm:pt-6 lg:gap-20">
-      {/* ── THE AGENT — the front door ───────────────────────────────────── */}
-      {/* Talking to hop is the primary action: a prominent greeting + composer
-          that opens the conversation in /ask. Everything else is secondary. */}
-      <section
-        className="hop-rise"
-        style={{ ['--hop-delay' as string]: '40ms' }}
-      >
-        <AgentComposer
-          variant="in"
+      {/* ── THE FRONT DOOR — hero + immediate reach, one coupled unit ─────── */}
+      {/* Tighter inner gap than the outer rhythm below: the reach tiles are
+          the hero's balance line paying off immediately, not a new section —
+          closing this "dead band" is what makes the two read as one move. */}
+      <div className="flex flex-col gap-8 sm:gap-10">
+        {/* Greeting + engine-computed wallet line + the conversation composer
+            on the left; the member's own reachable trips rotating on the
+            right with the photo ambience washing the section. The old stats
+            panel folded into the hero status line — the showcase card already
+            carries the best-value figures. */}
+        <SignedInHero
           first={first}
-          totalPoints={programs > 0 ? totalPoints : undefined}
-          backdrop={heroBackdrop}
+          programs={programs}
+          totalPoints={totalPoints}
+          pointsWorth={pointsWorth}
+          entries={heroEntries}
+          personalized={personalized}
+          balances={balances}
         />
-      </section>
 
-      {/* ── YOUR POINTS — compact synced state ───────────────────────────── */}
-      <section
-        className="hop-rise grid grid-cols-1 items-center gap-8 lg:grid-cols-[1fr_360px] lg:gap-12"
-        style={{ ['--hop-delay' as string]: '80ms' }}
-      >
-        {/* A short, secondary section header — the agent above already greeted
-            the member by name, so we don't repeat "Welcome back". */}
-        <div>
-          <h2 className="font-display text-[26px] font-semibold leading-[1.04] tracking-[-0.02em] text-text sm:text-[34px]">
-            {programs > 0 ? 'Your points, working.' : 'Get started.'}
-          </h2>
-          <p className="mt-3 max-w-[52ch] text-[15px] leading-[1.55] text-text2 sm:text-[17px]">
-            {programs > 0
-              ? 'What each balance is really worth — and whether to book with points or cash.'
-              : 'Add your loyalty programs and hop will show you what each balance is really worth — and whether to book with points or cash.'}
-          </p>
-        </div>
-
-        {/* Summary panel — anchors the right column.
-            Flat: a bordered paper card with a sunk stat row, no shadow/lift. */}
-        {programs > 0 ? (
-          <aside className="flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-6 lg:rounded-[var(--radius-hero)]">
-            <span className="text-[11.5px] font-semibold uppercase tracking-[0.16em] text-brand">
-              Your points
-            </span>
-            <p className="hop-price mt-2 text-[40px] leading-[1] text-text sm:text-[46px]">
-              {totalPoints.toLocaleString()}
-            </p>
-            <p className="mt-1 text-[13.5px] leading-[1.5] text-text2">
-              across {programs} {programs === 1 ? 'program' : 'programs'}
-            </p>
-            {pointsWorth > 0 ? (
-              <p
-                className="mt-0.5 text-[13.5px] leading-[1.5] text-text3"
-                title={WALLET_VALUE_CAVEAT}
-              >
-                worth ~${pointsWorth.toLocaleString()} at typical redemption value
-              </p>
-            ) : null}
-
-            <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius)] border border-hair bg-hair">
-              <div className="bg-sunk p-3.5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
-                  {personalized ? 'In reach' : 'Worth saving for'}
-                </p>
-                <p className="hop-price mt-1 text-[22px] leading-none text-text">
-                  {personalized ? affordable.length : picks.length}
-                </p>
-                <p className="mt-1 text-[12px] leading-[1.4] text-text2">
-                  {personalized ? 'trips to reach for' : 'dream trips'}
-                </p>
-              </div>
-              <div className="bg-sunk p-3.5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
-                  Best value
-                </p>
-                <p className="hop-price mt-1 text-[22px] leading-none text-text">
-                  {topCpp !== undefined ? `${topCpp.toFixed(1)}¢/pt` : '—'}
-                </p>
-                <p className="mt-1 truncate text-[12px] leading-[1.4] text-text2">
-                  {topPick ? topPick.city : 'per point'}
-                </p>
-              </div>
-            </div>
-
-            <Link
-              href="/account"
-              className="mt-5 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-brand transition-colors hover:text-brand-deep"
-            >
-              Refresh balances
-              <span aria-hidden className="text-[15px] leading-none">→</span>
-            </Link>
-          </aside>
-        ) : (
-          <aside className="flex flex-col justify-center rounded-[var(--radius-lg)] border border-border bg-brand-light p-6 lg:rounded-[var(--radius-hero)]">
-            <span className="grid h-11 w-11 place-items-center rounded-full bg-paper text-brand">
-              <Icon name="loyalty" size={22} />
-            </span>
-            <h2 className="mt-4 font-display text-[20px] font-semibold leading-[1.1] tracking-[-0.01em] text-text">
-              Connect your first program
-            </h2>
-            <p className="mt-2 text-[13.5px] leading-[1.5] text-text2">
-              Link a loyalty account and hop fills this in with your real
-              balances and where they can take you.
-            </p>
-            <Link
-              href="/account"
-              className="mt-5 inline-flex w-fit items-center gap-2 rounded-[var(--radius)] bg-brand px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep"
-            >
-              Add a program
-              <span aria-hidden className="text-[15px] leading-none">→</span>
-            </Link>
-          </aside>
-        )}
-      </section>
-
-      {/* ── THE LEDGER DREAM — a cinematic "Dream of the Week" ───────────── */}
-      {/* The single most aspirational-yet-affordable redemption built FROM their
-          real points stack, with the engine's transparent "how you afford it"
-          proof and a live AI narration. A highlight, placed right under their
-          points so the dream sits next to the wealth that funds it. */}
-      <LedgerDream />
+        {/* ── WHERE YOUR POINTS ALREADY REACH ────────────────────────────── */}
+        {/* A compact, static row of the member's next-best reachable
+            redemptions (continuing the ranked pool right where the hero
+            rotator left off — see the slicing above). `personalized`
+            (computed above from the real reachableDestinations() gate)
+            decides whether this is genuinely theirs or the generic
+            best-value sample. */}
+        {reachPicks.length > 0 ? (
+          <LedgerDream picks={reachPicks} origin={seed.from} sample={!personalized} photos={photos} />
+        ) : null}
+      </div>
 
       {/* ── SET HOME AIRPORT (only until they've set one) ────────────────── */}
       {!hasHomeAirport ? <HomeAirportPrompt /> : null}
 
       {/* ── TRIPS YOUR BALANCES CAN GET YOU TO ───────────────────────────── */}
+      {/* Hidden entirely when the hero already showcased everything reachable
+          (small wallets) — an empty grid under a full header reads broken. */}
+      {picks.length > 0 ? (
       <section>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex flex-col gap-2 sm:max-w-[54ch]">
-            <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
+          <div className="flex flex-col gap-2">
+            <Eyebrow className="text-brand text-[12px]">
               Trips your balances can get you to
-            </span>
+            </Eyebrow>
+            {/* No max-width/text-balance on the heading itself: a cap sized in ch
+                is relative to THIS block's (small) font-size, not the much larger
+                heading font, so it was clipping a one-line headline to two. Only
+                the body copy gets a measure cap — the heading sizes to its text. */}
             <h2 className="font-display text-[26px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[34px]">
               {personalized
                 ? 'Within reach.'
                 : 'Dreams worth saving toward.'}
             </h2>
-            <p className="text-[15px] leading-[1.55] text-text2">
+            <p className="max-w-[46ch] text-[15px] leading-[1.55] text-text2">
               {personalized
                 ? 'Where your balances can take you as you pool and transfer — sorted by value per point.'
                 : 'A few more points and these open up. Sorted by value per point.'}
@@ -219,17 +186,37 @@ export default async function SignedInHome({
           <DestinationGrid destinations={picks} origin={seed.from} photos={photos} />
         </div>
       </section>
+      ) : null}
+
+      {/* ── UNLOCKED BY TRANSFER — trips one verified transfer away ──────── */}
+      {/* Never repeats a destination already shown in "Within reach" above
+          (excludeCodes = the exact codes rendered there). Omits entirely
+          (returns null) when there's nothing left to show. */}
+      <TransferUnlockShelf
+        balances={balances}
+        excludeCodes={[
+          ...heroEntries.map((e) => e.code),
+          ...reachPicks.map((d) => d.code),
+          ...picks.map((d) => d.code),
+        ]}
+        origin={seed.from}
+      />
+
+      {/* ── YOUR POINTS, PRICED LIVE — real observed cpp for held programs ── */}
+      {/* Ships completely dark until a program the member holds crosses the
+          live-valuation trust threshold (lib/valuations-live). */}
+      <LiveValuationShelf balances={balances} />
 
       {/* ── RUN A SEARCH — secondary fast-path ───────────────────────────── */}
       {/* The agent above is the primary way in; search is the precise fast-path
           for members who already know the exact route they want. */}
       <section className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px] lg:gap-12">
         {/* Run a real search */}
-        <div className="flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-6 sm:p-8 lg:rounded-[var(--radius-hero)]">
-          <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
+        <Card surface="paper" radius="lg" className="flex flex-col p-6 sm:p-8 lg:rounded-[var(--radius-hero)]">
+          <Eyebrow className="text-brand text-[12px]">
             Already know the route?
-          </span>
-          <h2 className="mt-2 font-display text-[24px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[28px]">
+          </Eyebrow>
+          <h2 className="mt-2 text-balance font-display text-[24px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[28px]">
             Run a search. Get the verdict.
           </h2>
           <p className="mt-2 max-w-[44ch] text-[14.5px] leading-[1.55] text-text2">
@@ -239,7 +226,7 @@ export default async function SignedInHome({
           <div className="mt-6">
             <HeroSearch initial={seed} align="start" />
           </div>
-        </div>
+        </Card>
 
         {/* Back to the agent — a lighter nudge, not a competing concierge card. */}
         <aside
@@ -247,11 +234,11 @@ export default async function SignedInHome({
           style={{ background: 'var(--color-brand)' }}
         >
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-brand-deep px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-mint-bright">
-              <Icon name="lightbulb" size={13} />
+            <span className="inline-flex items-center gap-2 rounded-full bg-brand-deep px-3 py-1 text-[11px] font-semibold uppercase tracking-[var(--track-tag)] text-mint-bright">
+              <Icon name="lightbulb" size={12} />
               Or just ask
             </span>
-            <h2 className="mt-4 font-display text-[24px] font-semibold leading-[1.08] tracking-[-0.02em] text-white sm:text-[28px]">
+            <h2 className="mt-4 text-balance font-display text-[24px] font-semibold leading-[1.08] tracking-[-0.02em] text-white sm:text-[28px]">
               Not sure where to go?
             </h2>
             <p className="mt-2.5 text-[14.5px] leading-[1.55] text-hero-body">
@@ -270,10 +257,10 @@ export default async function SignedInHome({
       </section>
 
       {/* ── MANAGE PROGRAMS ──────────────────────────────────────────────── */}
-      <section className="flex flex-col items-start gap-5 rounded-[var(--radius-lg)] border border-border bg-paper p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8 lg:rounded-[var(--radius-hero)]">
+      <Card as="section" surface="paper" radius="lg" className="flex flex-col items-start gap-5 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8 lg:rounded-[var(--radius-hero)]">
         <div className="flex items-center gap-4">
           <span className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-full bg-brand-light text-brand">
-            <Icon name="loyalty" size={24} />
+            <Icon name="loyalty" size={24} weight="fill" />
           </span>
           <div>
             <h2 className="font-display text-[19px] font-semibold leading-[1.1] tracking-[-0.01em] text-text">
@@ -291,11 +278,11 @@ export default async function SignedInHome({
             href="/account"
             className="inline-flex items-center gap-2 rounded-[var(--radius)] bg-brand px-6 py-3 text-[14.5px] font-semibold text-white transition-colors hover:bg-brand-deep"
           >
-            <Icon name="settings" size={18} />
+            <Icon name="settings" size={16} />
             {programs > 0 ? 'Manage programs' : 'Add a program'}
           </Link>
         </div>
-      </section>
+      </Card>
     </div>
   )
 }

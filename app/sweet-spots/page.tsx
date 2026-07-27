@@ -2,11 +2,15 @@ import Link from 'next/link'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import EditorialHeader from '@/components/EditorialHeader'
+import BrandIcon from '@/components/BrandIcon'
 import { pageMeta } from '@/lib/seo'
-import { sweetSpotsByProgram, sweetSpots, VERIFY_CAVEAT } from '@/lib/sweet-spots'
+import { VERIFY_CAVEAT } from '@/lib/sweet-spots'
+import { getSweetSpotsByProgram, getAllSweetSpots } from '@/lib/sweet-spots-live'
+import { canonicalizeProgram } from '@/lib/programs'
 
 // Static SEO guide — no per-request data, so it prerenders. Weekly cron
-// (app/api/cron/revalidate-seo) calls revalidatePath when content changes.
+// (app/api/cron/revalidate-seo) calls revalidatePath when content changes; an
+// owner approving a draft (app/actions/admin.ts) revalidates it immediately.
 export const dynamic = 'force-static'
 
 export const metadata = pageMeta({
@@ -16,12 +20,14 @@ export const metadata = pageMeta({
   path: '/sweet-spots',
 })
 
-export default function SweetSpotsIndexPage() {
-  const programs = sweetSpotsByProgram()
+export default async function SweetSpotsIndexPage() {
+  const [programs, allSpots] = await Promise.all([getSweetSpotsByProgram(), getAllSweetSpots()])
 
   return (
     <AppShell user={null} hideSearch>
-      <div className="mx-auto max-w-[var(--container-md)]">
+      {/* Shell width, same as deals/destinations — the old --container-md cap
+          left this index visibly narrower than the header and sibling surfaces. */}
+      <div className="mx-auto max-w-[var(--container-shell)]">
         {/* editorial header */}
         <EditorialHeader
           eyebrow="Sweet spots"
@@ -36,7 +42,7 @@ export default function SweetSpotsIndexPage() {
             </span>
             <span className="hidden sm:inline">·</span>
             <span>
-              <b className="font-semibold text-text2">{sweetSpots.length}</b> redemptions
+              <b className="font-semibold text-text2">{allSpots.length}</b> redemptions
             </span>
             <span className="hidden sm:inline">·</span>
             <span>premium cabins first</span>
@@ -44,22 +50,34 @@ export default function SweetSpotsIndexPage() {
         </EditorialHeader>
 
         {/* the program list — each links to its per-program guide */}
-        <section className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <section className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {programs.map((p) => {
             const lead = p.spots[0]
             return (
               <Link
                 key={p.slug}
                 href={`/sweet-spots/${p.slug}`}
-                className="group flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-6 transition-colors hover:border-brand"
+                className="group flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-6 transition-colors duration-200 ease-[var(--ease-premium)] hover:border-brand"
               >
-                <div className="flex items-baseline justify-between gap-3">
-                  <h2 className="font-display text-[22px] font-semibold leading-tight tracking-[-0.01em] text-text">
-                    {p.name}
-                  </h2>
-                  <span className="flex-shrink-0 text-[13px] font-semibold text-text3">
-                    {p.spots.length} {p.spots.length === 1 ? 'route' : 'routes'}
-                  </span>
+                <div className="flex items-center gap-3">
+                  {/* real program mark (or a house monogram for programs with
+                      no logo asset) via the shared brand registry — the same
+                      code the detail header renders, so the tile reads as one
+                      identity across the shelf and the detail page
+                      (docs/design/experience-heuristics.md #16) */}
+                  <BrandIcon
+                    code={canonicalizeProgram(p.name)?.code}
+                    name={p.name}
+                    size={48}
+                  />
+                  <div className="flex min-w-0 flex-1 items-baseline justify-between gap-3">
+                    <h2 className="font-display text-[22px] font-semibold leading-tight tracking-[-0.01em] text-text">
+                      {p.name}
+                    </h2>
+                    <span className="flex-shrink-0 text-[13px] font-semibold text-text3">
+                      {p.spots.length} {p.spots.length === 1 ? 'route' : 'routes'}
+                    </span>
+                  </div>
                 </div>
                 {/* the program's strongest lead redemption, as a teaser */}
                 <p className="mt-3 text-[14px] leading-snug text-text2">
@@ -85,7 +103,7 @@ export default function SweetSpotsIndexPage() {
         </section>
 
         {/* accuracy caveat — the table is seed reference data, not live quotes */}
-        <p className="mt-8 rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[13px] leading-relaxed text-text3">
+        <p className="mt-8 rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[14px] leading-relaxed text-text3">
           {VERIFY_CAVEAT}
         </p>
 
@@ -102,7 +120,9 @@ export default function SweetSpotsIndexPage() {
             Run a search
           </Link>
         </div>
+      </div>
 
+      <div className="mx-auto max-w-[var(--container-shell)]">
         <SiteFooter />
       </div>
     </AppShell>

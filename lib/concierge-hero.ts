@@ -21,7 +21,6 @@
 export function conciergeChips(signedIn: boolean): string[] {
   return [
     'Where can I go with my points?',
-    'Cheapest way to Tokyo',
     signedIn ? 'Best use of my Amex points' : 'Best use of my points',
     'Somewhere warm for a long weekend',
   ]

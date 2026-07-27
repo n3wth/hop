@@ -131,12 +131,12 @@ function AirportField({
   }
 
   return (
-    <div ref={ref} className="relative flex min-w-0 flex-col justify-center leading-[1.05]">
+    <div ref={ref} className="group relative flex min-w-0 flex-col justify-center leading-[1.05]">
       <span
-        className={
+        className={`${
           labelClassName ??
-          'text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2'
-        }
+          'text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2'
+        } transition-colors group-focus-within:text-brand`}
       >
         {label}
       </span>
@@ -176,9 +176,13 @@ function AirportField({
             if (hit) choose(hit.code)
           }
         }}
-        className={
+        // no-inner-ring: text inputs match :focus-visible even on mouse click,
+        // so the global 2px ring draws a harsh rectangle mid-pill. Focus is
+        // shown by the label flipping to brand (group-focus-within above) and
+        // the results popover opening — quieter, still visible.
+        className={`no-inner-ring ${
           inputClassName ?? 'w-full bg-transparent font-semibold text-text outline-none'
-        }
+        }`}
       />
       {open && results.length > 0 && (
         <ul
@@ -186,7 +190,7 @@ function AirportField({
           id={listId}
           role="listbox"
           aria-label={label}
-          className="absolute left-0 top-[calc(100%+10px)] z-[80] max-h-[280px] w-[260px] overflow-auto rounded-xl border border-border bg-surface py-1"
+          className="absolute left-0 top-[calc(100%+18px)] z-[80] max-h-[280px] w-[260px] overflow-auto rounded-[var(--radius)] border border-border bg-surface py-1"
         >
           {results.map((a, i) => (
             <li key={a.code} id={`${optBaseId}-${i}`} role="option" aria-selected={i === active}>
@@ -380,7 +384,7 @@ function CalendarPop({
     <div ref={ref} className="relative">
       {children(open, () => setOpen((o) => !o))}
       {open && (
-        <div className="absolute left-0 top-[calc(100%+10px)] z-[60] rounded-xl border border-border bg-surface p-4">
+        <div className="absolute left-0 top-[calc(100%+18px)] z-[60] rounded-[var(--radius)] border border-border bg-surface p-4">
           {/* trip-type + stops live here (Google-Flights style), not in the search row */}
           <div className="mb-3 flex flex-col items-center gap-2 border-b border-hair pb-3">
             <TripTypeToggle oneWay={oneWay} onChange={onOneWayChange} />
@@ -394,9 +398,7 @@ function CalendarPop({
               onClick={() => shift(-1)}
               className="grid h-7 w-7 place-items-center rounded-full text-text2 enabled:hover:bg-sunk disabled:cursor-not-allowed disabled:text-text3/40"
             >
-              <span className="-scale-x-100">
-                <Icon name="expand_more" size={18} className="-rotate-90" />
-              </span>
+              <Icon name="caret_left" size={20} />
             </button>
             <button
               type="button"
@@ -404,7 +406,7 @@ function CalendarPop({
               onClick={() => shift(1)}
               className="grid h-7 w-7 place-items-center rounded-full text-text2 hover:bg-sunk"
             >
-              <Icon name="expand_more" size={18} className="-rotate-90" />
+              <Icon name="caret_right" size={20} />
             </button>
           </div>
           {/* Two months side-by-side on wider viewports; a single month on
@@ -527,7 +529,7 @@ function WhoPop({
     <div ref={ref} className="relative">
       {children(open, () => setOpen((o) => !o))}
       {open && (
-        <div className="absolute right-0 top-[calc(100%+10px)] z-[60] w-[260px] rounded-xl border border-border bg-surface p-4">
+        <div className="absolute right-0 top-[calc(100%+18px)] z-[60] w-[260px] rounded-[var(--radius)] border border-border bg-surface p-4">
           <div className="flex flex-col gap-4">
             <StepperRow
               label="Adults"
@@ -587,30 +589,76 @@ function CabinPop({
   children: (open: boolean, toggle: () => void) => ReactNode
 }) {
   const [open, setOpen] = useState(false)
+  const [active, setActive] = useState(0)
   const ref = usePopover(open, () => setOpen(false))
+  const listRef = useRef<HTMLUListElement>(null)
+  const baseId = useId()
+
+  // Move focus onto the list once it's in the DOM so arrow keys work
+  // immediately — a DOM-only effect (no setState), so it's exempt from the
+  // "don't setState in an effect" rule that governs `active` below.
+  useEffect(() => {
+    if (open) listRef.current?.focus()
+  }, [open])
+
+  // Reset the highlighted row to the current selection on OPEN — done inside
+  // the toggle handler (an event, not an effect) so it can't cascade renders.
+  function toggle() {
+    setOpen((o) => {
+      const next = !o
+      if (next) setActive(Math.max(0, CABIN_OPTIONS.findIndex((c) => c.value === cabin)))
+      return next
+    })
+  }
+
+  function choose(v: Cabin) {
+    onChange(v)
+    setOpen(false)
+  }
 
   return (
     <div ref={ref} className="relative">
-      {children(open, () => setOpen((o) => !o))}
+      {children(open, toggle)}
       {open && (
         <ul
+          ref={listRef}
           role="listbox"
           aria-label="Cabin"
-          className="absolute right-0 top-[calc(100%+10px)] z-[60] w-[220px] overflow-hidden rounded-xl border border-border bg-surface py-1"
+          tabIndex={-1}
+          aria-activedescendant={`${baseId}-${active}`}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault()
+              setActive((a) => Math.min(CABIN_OPTIONS.length - 1, a + 1))
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault()
+              setActive((a) => Math.max(0, a - 1))
+            } else if (e.key === 'Enter') {
+              e.preventDefault()
+              choose(CABIN_OPTIONS[active].value)
+            }
+          }}
+          // no-inner-ring: this listbox is focused programmatically on open so
+          // arrow keys work; without the opt-out the global [tabindex] rule
+          // draws a 2px brand rectangle around the whole popover. The active
+          // row highlight is the keyboard indicator here.
+          className="no-inner-ring absolute right-0 top-[calc(100%+18px)] z-[60] w-[220px] overflow-hidden rounded-[var(--radius)] border border-border bg-surface py-1 outline-none"
         >
-          {CABIN_OPTIONS.map((o) => {
+          {CABIN_OPTIONS.map((o, i) => {
             const selected = o.value === cabin
             return (
-              <li key={o.value} role="option" aria-selected={selected}>
+              <li key={o.value} id={`${baseId}-${i}`} role="option" aria-selected={selected}>
                 <button
                   type="button"
-                  onClick={() => {
-                    onChange(o.value)
-                    setOpen(false)
+                  tabIndex={-1}
+                  onMouseEnter={() => setActive(i)}
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    choose(o.value)
                   }}
                   className={`flex w-full items-center justify-between px-3.5 py-2.5 text-left text-[13.5px] font-semibold ${
-                    selected ? 'bg-sunk text-brand' : 'text-text hover:bg-sunk'
-                  }`}
+                    i === active ? 'bg-sunk' : ''
+                  } ${selected ? 'text-brand' : 'text-text'}`}
                 >
                   {o.label}
                   {selected && <Icon name="check" size={16} />}
@@ -696,7 +744,7 @@ function NonstopToggle({
           nonstop ? 'border-brand bg-brand text-white' : 'border-text3'
         }`}
       >
-        {nonstop && <Icon name="check" size={11} />}
+        {nonstop && <Icon name="check" size={12} />}
       </span>
       Nonstop only
     </button>
@@ -758,6 +806,7 @@ export function SearchForm({
   // Whether the user has explicitly set the origin field this session. Once true,
   // the persistent "where from" never clobbers their choice; reset on server re-sync.
   const [fromTouched, setFromTouched] = useState(false)
+  const [searching, setSearching] = useState(false)
 
   // Re-sync local edits when the server sends new params (e.g. after a search
   // navigation). React's "adjust state during render" pattern — keyed on the
@@ -769,6 +818,7 @@ export function SearchForm({
     setS(initial)
     setError(null)
     setFromTouched(false)
+    setSearching(false)
   }
 
   // Default the origin from the persistent "where from" when the user hasn't
@@ -816,6 +866,7 @@ export function SearchForm({
       setError(msg)
       return
     }
+    setSearching(true)
     const qs = new URLSearchParams({
       from,
       to,
@@ -846,7 +897,7 @@ export function SearchForm({
         }}
         className="flex flex-col gap-3"
       >
-        <div className="relative flex flex-col gap-2 rounded-xl border border-border bg-paper p-3">
+        <div className="relative flex flex-col gap-2 rounded-[var(--radius)] border border-border bg-paper p-3">
           <AirportField
             label="From"
             code={s.from}
@@ -868,7 +919,7 @@ export function SearchForm({
             onClick={swapFromTo}
             className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full border border-border bg-surface text-brand transition-colors hover:bg-sunk"
           >
-            <Icon name="swap_horiz" size={18} className="rotate-90" />
+            <Icon name="swap_horiz" size={20} className="rotate-90" />
           </button>
         </div>
 
@@ -889,9 +940,9 @@ export function SearchForm({
               type="button"
               onClick={toggle}
               aria-expanded={open}
-              className="flex w-full flex-col items-start rounded-xl border border-border bg-paper p-3 text-left"
+              className="flex w-full flex-col items-start rounded-[var(--radius)] border border-border bg-paper p-3 text-left"
             >
-              <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
                 {s.oneWay ? 'Date' : 'Dates'}
               </span>
               <span className="text-[15px] font-semibold text-text">
@@ -914,9 +965,9 @@ export function SearchForm({
               type="button"
               onClick={toggle}
               aria-expanded={open}
-              className="flex w-full flex-col items-start rounded-xl border border-border bg-paper p-3 text-left"
+              className="flex w-full flex-col items-start rounded-[var(--radius)] border border-border bg-paper p-3 text-left"
             >
-              <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
                 Who
               </span>
               <span className="text-[15px] font-semibold text-text">
@@ -932,9 +983,9 @@ export function SearchForm({
               type="button"
               onClick={toggle}
               aria-expanded={open}
-              className="flex w-full flex-col items-start rounded-xl border border-border bg-paper p-3 text-left"
+              className="flex w-full flex-col items-start rounded-[var(--radius)] border border-border bg-paper p-3 text-left"
             >
-              <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
                 Cabin
               </span>
               <span className="text-[15px] font-semibold text-text">
@@ -952,10 +1003,20 @@ export function SearchForm({
 
         <button
           type="submit"
-          className="mt-1 flex h-12 items-center justify-center gap-2 rounded-xl bg-brand font-semibold text-white transition-colors hover:bg-brand-deep hop-press"
+          disabled={searching}
+          className="mt-1 flex h-12 items-center justify-center gap-2 rounded-xl bg-brand font-semibold text-white transition-colors hover:bg-brand-deep disabled:bg-brand-deep disabled:cursor-not-allowed hop-press"
         >
-          <Icon name="search" size={18} />
-          Search
+          {searching ? (
+            <>
+              <Icon name="refresh" size={16} className="animate-spin motion-reduce:animate-none" />
+              Searching...
+            </>
+          ) : (
+            <>
+              <Icon name="search" size={16} />
+              Search
+            </>
+          )}
         </button>
       </form>
     )
@@ -970,7 +1031,7 @@ export function SearchForm({
         e.preventDefault()
         submit()
       }}
-      className="relative flex items-center rounded-full border"
+      className="relative flex items-center rounded-full border text-left"
       style={{
         gap: 16,
         paddingLeft: 22,
@@ -1026,7 +1087,7 @@ export function SearchForm({
               aria-expanded={open}
               className="flex flex-col justify-center text-left leading-[1.05]"
             >
-              <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
                 {s.oneWay ? 'Date' : 'Dates'}
               </span>
               <span className="w-[120px] text-[15px] font-semibold text-text">
@@ -1053,7 +1114,7 @@ export function SearchForm({
               aria-expanded={open}
               className="flex flex-col justify-center text-left leading-[1.05]"
             >
-              <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
                 Who
               </span>
               <span className="w-[80px] text-[15px] font-semibold text-text">
@@ -1073,7 +1134,7 @@ export function SearchForm({
               aria-expanded={open}
               className="flex flex-col justify-center text-left leading-[1.05]"
             >
-              <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
                 Cabin
               </span>
               <span className="w-[88px] text-[15px] font-semibold text-text">
@@ -1086,9 +1147,14 @@ export function SearchForm({
       <button
         type="submit"
         aria-label="Search"
-        className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-brand text-white transition-colors hover:bg-brand-deep hop-press"
+        disabled={searching}
+        className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-brand text-white transition-colors hover:bg-brand-deep disabled:bg-brand-deep disabled:cursor-not-allowed hop-press"
       >
-        <Icon name="search" size={19} />
+        {searching ? (
+          <Icon name="refresh" size={20} className="animate-spin motion-reduce:animate-none" />
+        ) : (
+          <Icon name="search" size={20} />
+        )}
       </button>
 
       {error && (

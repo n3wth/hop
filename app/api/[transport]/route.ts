@@ -16,8 +16,13 @@
 
 import { createMcpHandler, withMcpAuth } from 'mcp-handler'
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js'
-import { userIdForToken } from '@/lib/api-tokens'
+import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js'
+import type { ServerNotification, ServerRequest } from '@modelcontextprotocol/sdk/types.js'
+import { resolveToken } from '@/lib/api-tokens'
 import { getUserBalances } from '@/lib/accounts'
+import { checkRateLimit } from '@/lib/rate-limit'
+import { recordMcpUsage, mcpCallsToday, mcpQuotaExceeded } from '@/lib/mcp-usage'
+import { getUserTier, MCP_DAILY_LIMITS } from '@/lib/subscription'
 import {
   priceTripSchema,
   verdictSchema,
@@ -44,6 +49,104 @@ function userIdFromExtra(extra: { authInfo?: AuthInfo }): string | undefined {
   return typeof id === 'string' ? id : undefined
 }
 
+// The linked token's own row id (sibling of userIdFromExtra), stashed in
+// AuthInfo.extra.tokenId from verifyToken below. Usage rows key on this (not
+// just userId) so metering survives a user holding/rotating several tokens.
+function tokenIdFromExtra(extra: { authInfo?: AuthInfo }): string | undefined {
+  const id = extra.authInfo?.extra?.tokenId
+  return typeof id === 'string' ? id : undefined
+}
+
+// Best-effort client IP for anonymous (unlinked) rate-limit keys. Tool
+// handlers only see the plain-object IsomorphicHeaders record mcp-handler
+// builds from the real Request (Object.fromEntries(req.headers.entries())),
+// not a Request/Headers instance, so lib/rate-limit's clientIp() (which reads
+// via Headers.get) doesn't apply here — this mirrors its header preference:
+// Vercel's platform-computed x-vercel-forwarded-for / x-real-ip win over a
+// client-influenceable x-forwarded-for, so an attacker can't rotate the XFF
+// value to dodge the burst bucket (see lib/rate-limit.ts#clientIp).
+// Populated on the streamable-HTTP transport (/api/mcp, WebStandardStreamable-
+// HTTPServerTransport — confirmed in mcp-handler's dist); the legacy SSE
+// transport (/api/sse) doesn't set requestInfo, so anonymous SSE callers fall
+// back to 'unknown' and share one coarser bucket rather than being limited
+// per-IP — still enforced, just less granular.
+function clientIpFromExtra(extra: {
+  requestInfo?: { headers?: Record<string, string | string[] | undefined> }
+}): string {
+  const headers = extra.requestInfo?.headers ?? {}
+  const raw = headers['x-vercel-forwarded-for'] ?? headers['x-real-ip'] ?? headers['x-forwarded-for']
+  const first = Array.isArray(raw) ? raw[0] : raw?.split(',')[0]
+  const ip = first?.trim()
+  return ip || 'unknown'
+}
+
+// Anti-burst safety net, applied to EVERY caller regardless of tier — MCP
+// calls are cheap deterministic lookups (no LLM/tool-fanout cost like /ask),
+// so a generous burst is fine; this just blunts a scripted loop hammering the
+// endpoint. It is NOT the tier quota — see MCP_DAILY_LIMITS below, enforced
+// via a durable per-token count (lib/mcp-usage.ts#mcpCallsToday) rather than
+// this in-process bucket, which doesn't survive a process restart.
+const MCP_RATE = { capacity: 60, refillPerSec: 1 }
+
+type ToolExtra = RequestHandlerExtra<ServerRequest, ServerNotification>
+
+// Shape both the normal JSON envelope (ok()) and the rate-limit error below
+// satisfy — a subset of the SDK's CallToolResult (text content + optional
+// isError).
+interface ToolResult {
+  [x: string]: unknown
+  content: Array<{ type: 'text'; text: string }>
+  isError?: boolean
+}
+
+function errorResult(text: string): ToolResult {
+  return { content: [{ type: 'text' as const, text }], isError: true }
+}
+
+// Shared per-call metering + rate limiting, applied inside every tool
+// handler below (mcp-handler has no middleware hook around server.tool, so
+// this wraps the handler body instead of the registration). Keys the burst
+// limiter on the linked user when a valid hop token resolved, else on IP — so
+// stateless calls stay usable (just capped by IP) per the optional-auth
+// contract. Token-linked callers additionally get a tier-aware DAILY quota
+// (free 25/day, Pro 1,000/day, business plan §3.1/§7 B2) — stateless/no-token
+// callers keep only the flat burst limit above, never the day quota, since
+// there is no per-caller identity to meter against. On limit: returns an MCP
+// tool error (isError), never throws — a throw would surface as a
+// transport-level 500 instead of a clean tool result. On success:
+// fire-and-forget logs the call for metering.
+async function meteredCall(
+  tool: string,
+  extra: ToolExtra,
+  run: () => Promise<ToolResult>,
+): Promise<ToolResult> {
+  const userId = userIdFromExtra(extra)
+  const tokenId = tokenIdFromExtra(extra)
+
+  const burstKey = `mcp:${userId ?? clientIpFromExtra(extra)}`
+  const burst = await checkRateLimit(burstKey, MCP_RATE)
+  if (!burst.ok) {
+    return errorResult(`Rate limit exceeded for ${tool}. Try again in ${burst.retryAfterSec}s.`)
+  }
+
+  if (tokenId) {
+    const tier = await getUserTier(userId ?? '')
+    const limit = MCP_DAILY_LIMITS[tier]
+    const usedToday = await mcpCallsToday(tokenId)
+    if (mcpQuotaExceeded(usedToday, limit)) {
+      return errorResult(
+        tier === 'free'
+          ? `Daily limit of ${limit} calls reached on the free plan. Upgrade at hop.flights/pricing for ${MCP_DAILY_LIMITS.premium}/day.`
+          : `Daily limit of ${limit} calls reached. Try again tomorrow.`,
+      )
+    }
+  }
+
+  const result = await run()
+  recordMcpUsage({ userId, tokenId, tool })
+  return result
+}
+
 // Resolve the balances to feed a balance-aware tool: caller-supplied balances
 // win (explicit + stateless-friendly); otherwise, if the request is linked,
 // load the user's REAL balances. Linked-user data is ONLY ever reachable via
@@ -60,7 +163,7 @@ async function resolveBalances(
 
 // Serialize any tool result into the MCP text-content envelope. We return JSON
 // text so the calling model gets the full structured object verbatim.
-function ok(data: unknown) {
+function ok(data: unknown): ToolResult {
   return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] }
 }
 
@@ -71,10 +174,11 @@ const handler = createMcpHandler(
       'price_trip',
       'Price one destination with hop\'s deterministic engine: typical award miles, cash, cents-per-point (CPP), what you can put toward it (direct or via transfer), affordability, and a points/cash/save verdict. Pass balances or link a hop token for personalized affordability.',
       priceTripSchema,
-      async (args, extra) => {
-        const balances = await resolveBalances(args.balances, userIdFromExtra(extra))
-        return ok(runPriceTrip({ destinationCode: args.destinationCode, balances }))
-      },
+      async (args, extra) =>
+        meteredCall('price_trip', extra, async () => {
+          const balances = await resolveBalances(args.balances, userIdFromExtra(extra))
+          return ok(runPriceTrip({ destinationCode: args.destinationCode, balances }))
+        }),
     )
 
     // verdict — full points-vs-cash call for a route (runs assembleSearch).
@@ -82,19 +186,20 @@ const handler = createMcpHandler(
       'verdict',
       'Run hop\'s full points-vs-cash verdict for a route. Returns the verdict (use-points / pay-cash / none), a summary (cheapest cash, best miles, best CPP, $ saved vs cash), the chosen pick, and the top options. Pass balances or link a hop token for a personalized "you have" call.',
       verdictSchema,
-      async (args, extra) => {
-        const balances = await resolveBalances(args.balances, userIdFromExtra(extra))
-        return ok(
-          await runVerdict({
-            from: args.from,
-            to: args.to,
-            depart: args.depart,
-            return: args.return,
-            adults: args.adults,
-            balances,
-          }),
-        )
-      },
+      async (args, extra) =>
+        meteredCall('verdict', extra, async () => {
+          const balances = await resolveBalances(args.balances, userIdFromExtra(extra))
+          return ok(
+            await runVerdict({
+              from: args.from,
+              to: args.to,
+              depart: args.depart,
+              return: args.return,
+              adults: args.adults,
+              balances,
+            }),
+          )
+        }),
     )
 
     // sweet_spots — top-value redemptions by CPP.
@@ -102,7 +207,8 @@ const handler = createMcpHandler(
       'sweet_spots',
       'List hop\'s top-value award redemptions ("sweet spots") ranked by cents-per-point: destination, best program, miles needed, typical cash, and CPP.',
       sweetSpotsSchema,
-      async (args) => ok(runSweetSpots({ limit: args.limit })),
+      async (args, extra) =>
+        meteredCall('sweet_spots', extra, async () => ok(runSweetSpots({ limit: args.limit }))),
     )
 
     // transfer_paths — transfer reachability for a program.
@@ -110,7 +216,10 @@ const handler = createMcpHandler(
       'transfer_paths',
       'Show transfer paths for a program. For a bank currency (Amex/Chase/Citi/Cap One/Bilt) returns its outbound partners with ratios; for an airline/hotel program returns which bank currencies can reach it.',
       transferPathsSchema,
-      async (args) => ok(runTransferPaths({ program: args.program })),
+      async (args, extra) =>
+        meteredCall('transfer_paths', extra, async () =>
+          ok(runTransferPaths({ program: args.program })),
+        ),
     )
 
     // compare_programs — side-by-side cpp for named programs on a route.
@@ -121,18 +230,19 @@ const handler = createMcpHandler(
       'compare_programs',
       'Compare named loyalty programs head-to-head on a route, ranked by cents-per-point (best first). For each program: miles needed, cash comparison, computed CPP, and — when balances are supplied or a hop token is linked — whether you can afford it. Answers "should I use Chase points or transfer to United?".',
       compareProgramsSchema,
-      async (args, extra) => {
-        const balances = await resolveBalances(args.balances, userIdFromExtra(extra))
-        return ok(
-          await runComparePrograms({
-            from: args.from,
-            to: args.to,
-            depart: args.depart,
-            programs: args.programs,
-            balances,
-          }),
-        )
-      },
+      async (args, extra) =>
+        meteredCall('compare_programs', extra, async () => {
+          const balances = await resolveBalances(args.balances, userIdFromExtra(extra))
+          return ok(
+            await runComparePrograms({
+              from: args.from,
+              to: args.to,
+              depart: args.depart,
+              programs: args.programs,
+              balances,
+            }),
+          )
+        }),
     )
 
     // best_card_for_program — top earn card for a program (stateless, reference).
@@ -140,7 +250,10 @@ const handler = createMcpHandler(
       'best_card_for_program',
       'Return the top points-earning credit card for a loyalty/bank program: card name, issuer, headline earn rate, current welcome bonus, annual fee, and an application link. Use to answer "which card earns the most United miles?".',
       bestCardForProgramSchema,
-      async (args) => ok(runBestCardForProgram({ program: args.program })),
+      async (args, extra) =>
+        meteredCall('best_card_for_program', extra, async () =>
+          ok(runBestCardForProgram({ program: args.program })),
+        ),
     )
   },
   {
@@ -154,20 +267,22 @@ const handler = createMcpHandler(
 )
 
 // Bearer-token auth, OPTIONAL. A presented hop_ token resolves to its owner's
-// Auth0 sub and rides along in AuthInfo.extra.userId; an absent/invalid token
-// leaves the request unauthenticated (stateless mode) rather than rejecting it.
+// Auth0 sub (+ the token row's own id) and rides along in AuthInfo.extra
+// (userId, tokenId — the latter is what usage rows key on); an absent/invalid
+// token leaves the request unauthenticated (stateless mode) rather than
+// rejecting it.
 const verifyToken = async (
   _req: Request,
   bearerToken?: string,
 ): Promise<AuthInfo | undefined> => {
   if (!bearerToken) return undefined
-  const userId = await userIdForToken(bearerToken)
-  if (!userId) return undefined
+  const resolved = await resolveToken(bearerToken)
+  if (!resolved) return undefined
   return {
     token: bearerToken,
-    clientId: userId,
+    clientId: resolved.userId,
     scopes: ['hop:read'],
-    extra: { userId },
+    extra: { userId: resolved.userId, tokenId: resolved.tokenId },
   }
 }
 

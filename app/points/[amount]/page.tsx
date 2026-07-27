@@ -121,7 +121,11 @@ export default async function PointsBandPage({
   const depart = isoOffset(21)
   const ret = isoOffset(28)
   const jsonLd = buildPointsJsonLd(amount, list)
-  const returnTo = encodeURIComponent(`/points/${slug}`)
+  // Post-sign-in destination is the personalized HOME, not this page: this
+  // route is force-static and always renders the reference balance, so
+  // bouncing back here can never show "your real balance" — the signed-in
+  // dashboard is where that promise is actually kept.
+  const returnTo = encodeURIComponent('/')
 
   return (
     <AppShell user={null} hideSearch>
@@ -146,7 +150,7 @@ export default async function PointsBandPage({
         {/* header — evergreen framing: "N points, here's where that typically
             goes", never a claim that the visitor holds this balance. */}
         <header className="mt-6 max-w-[60ch]">
-          <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
+          <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
             {list.length} {list.length === 1 ? 'destination' : 'destinations'}
           </span>
           <h1 className="mt-3 text-balance font-display text-[32px] font-semibold leading-[1.06] tracking-[-0.02em] text-text sm:text-[46px]">
@@ -205,7 +209,7 @@ export default async function PointsBandPage({
                       <span className="text-[13px] text-text3">{d.country}</span>
                       {value !== undefined && (
                         <span
-                          className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em]"
+                          className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[var(--track-label)]"
                           style={{ background: chip.bg, color: chip.fg, borderColor: chip.bd }}
                         >
                           {formatValue(value)}
@@ -218,7 +222,7 @@ export default async function PointsBandPage({
                     <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] text-text3">
                       <span>
                         <b className="font-semibold text-text2">{compactMiles(d.typicalAwardMiles)}</b>{' '}
-                        miles one-way
+                        miles one-way{d.cabin ? ` · ${d.cabin}` : ''}
                       </span>
                       <span>
                         vs <b className="font-semibold text-text2">{money(d.typicalCashUSD)}</b> cash
@@ -264,7 +268,7 @@ export default async function PointsBandPage({
         )}
 
         {/* accuracy caveat — same seed-reference posture as /sweet-spots */}
-        <p className="mt-7 rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[13px] leading-relaxed text-text3">
+        <p className="mt-7 rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[14px] leading-relaxed text-text3">
           {VERIFY_CAVEAT}
         </p>
 
@@ -303,7 +307,9 @@ export default async function PointsBandPage({
             Today&rsquo;s deals
           </Link>
         </div>
+      </div>
 
+      <div className="mx-auto max-w-[var(--container-shell)]">
         <SiteFooter />
       </div>
     </AppShell>

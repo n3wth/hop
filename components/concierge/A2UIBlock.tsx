@@ -27,6 +27,8 @@ import { dismissVerdict } from '@/app/ask/verdict-actions'
 // belt-and-suspenders, the switch returns null for anything unexpected.
 
 import Icon from '../Icon'
+import Card from '../ui/Card'
+import Eyebrow from '../ui/Eyebrow'
 import type {
   A2UIBlock,
   A2UIEconomics,
@@ -148,7 +150,7 @@ function VerdictPill({ verdict, cpp }: { verdict: A2UIEconomics['verdict']; cpp?
         : 'var(--color-warn)'
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white"
+      className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[var(--track-tag)] text-white"
       style={{ background: bg }}
     >
       {label}
@@ -164,9 +166,12 @@ function VerdictPill({ verdict, cpp }: { verdict: A2UIEconomics['verdict']; cpp?
 // cash price plainly. Numbers are engine-stamped (econ), never model-authored.
 function SavingsLead({ econ }: { econ: A2UIEconomics }) {
   if (econ.verdict === 'points') {
-    // Cash you skip by flying on points = the cash price (award taxes are
-    // negligible in the dataset, mirroring VerdictRail's saveVsCash framing).
-    const save = Math.round(econ.cashUsd)
+    // Cash you skip by flying on points = cash price minus the taxes/fees the
+    // award still costs — matches lib/search.ts's real saveVsCash
+    // (cheapestCash - pick.taxes). Taxes range up to $120 in the dataset, so
+    // dropping them here would show the same number for "cash price" and
+    // "you save" with no visible reason why.
+    const save = Math.round(econ.cashUsd - econ.taxesUsd)
     return (
       <div className="mt-2.5 flex items-baseline gap-1.5">
         <span className="hop-price text-[30px] leading-[0.95] text-brand">
@@ -193,7 +198,7 @@ function SavingsLead({ econ }: { econ: A2UIEconomics }) {
 function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div>
-      <div className="mb-0.5 text-[9.5px] font-semibold uppercase tracking-[0.14em] text-text3">
+      <div className="mb-0.5 text-[9.5px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
         {label}
       </div>
       <div
@@ -220,8 +225,15 @@ function EconFacts({ econ, hasBalances }: { econ?: A2UIEconomics; hasBalances: b
         <Stat label={owns ? 'You pay' : 'Points'} value={points} />
         {econ.cpp != null ? <Stat label="Value" value={`${econ.cpp.toFixed(1)}¢/pt`} /> : null}
         <Stat label="Cash price" value={`$${Math.round(econ.cashUsd).toLocaleString('en-US')}`} />
+        {econ.verdict === 'points' && econ.taxesUsd > 0 ? (
+          <Stat label="Taxes & fees" value={`$${Math.round(econ.taxesUsd).toLocaleString('en-US')}`} />
+        ) : null}
         {econ.verdict === 'points' ? (
-          <Stat label="You save" value={`$${Math.round(econ.cashUsd).toLocaleString('en-US')}`} accent />
+          <Stat
+            label="You save"
+            value={`$${Math.round(econ.cashUsd - econ.taxesUsd).toLocaleString('en-US')}`}
+            accent
+          />
         ) : null}
       </div>
       {/* program path — value framing when signed-out, possession when owned */}
@@ -267,14 +279,14 @@ function VerdictCard({
     void dismissVerdict(city, b.cabin).catch(() => {})
   }
   return (
-    <div className="group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface transition-colors hover:border-brand">
+    <Card radius="lg" surface="surface" interactive className="group flex flex-col overflow-hidden">
       <Link href={searchHref(b.code, homeAirport)} className="flex flex-col p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-baseline gap-2">
             <span className="font-display text-[18px] font-semibold leading-tight text-text">
               {city}
             </span>
-            <span className="rounded-full bg-sunk px-1.5 py-0.5 font-display text-[10px] font-semibold uppercase tracking-[0.08em] text-text2">
+            <span className="rounded-full bg-sunk px-1.5 py-0.5 font-display text-[10px] font-semibold uppercase tracking-[var(--track-tag)] text-text2">
               {b.code}
             </span>
           </div>
@@ -284,7 +296,7 @@ function VerdictCard({
         {/* lead with the savings — the VerdictRail hero moment, compact */}
         {econ ? <SavingsLead econ={econ} /> : null}
 
-        <p className="mt-2 text-[13px] leading-[1.5] text-text2">{b.reason}</p>
+        <p className="mt-2 text-[14px] leading-[1.5] text-text2">{b.reason}</p>
 
         {/* personalization chips — only present when the server kept them */}
         {b.fitsDays != null || b.cabin ? (
@@ -308,7 +320,7 @@ function VerdictCard({
 
         <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand">
           See the search
-          <Icon name="swap_horiz" size={14} />
+          <Icon name="swap_horiz" size={16} />
         </span>
       </Link>
 
@@ -324,7 +336,7 @@ function VerdictCard({
           Not for me
         </button>
       ) : null}
-    </div>
+    </Card>
   )
 }
 
@@ -340,21 +352,21 @@ function Compare({
   homeAirport?: string
 }) {
   return (
-    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-      <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
-        <Icon name="swap_horiz" size={14} className="text-brand" />
+    <Card radius="lg" surface="surface" className="p-4">
+      <Eyebrow className="mb-3 flex items-center gap-1.5 text-text3">
+        <Icon name="swap_horiz" size={16} className="text-brand" />
         Side by side
-      </div>
+      </Eyebrow>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <CompareSide side={b.left} hasBalances={hasBalances} homeAirport={homeAirport} />
         <CompareSide side={b.right} hasBalances={hasBalances} homeAirport={homeAirport} />
       </div>
       {b.takeaway ? (
-        <p className="mt-3 border-t border-border pt-3 text-[13px] leading-[1.5] text-text2">
+        <p className="mt-3 border-t border-border pt-3 text-[14px] leading-[1.5] text-text2">
           {b.takeaway}
         </p>
       ) : null}
-    </div>
+    </Card>
   )
 }
 
@@ -372,15 +384,17 @@ function CompareSide({
   return (
     <Link
       href={searchHref(side.code, homeAirport)}
-      className="group flex flex-col rounded-[var(--radius)] border border-border bg-paper p-3 transition-colors hover:border-brand"
+      className="group flex flex-col"
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-display text-[15px] font-semibold leading-tight text-text">{city}</span>
-        {econ ? <VerdictPill verdict={econ.verdict} cpp={econ.cpp} /> : null}
-      </div>
-      {econ ? <SavingsLead econ={econ} /> : null}
-      <p className="mt-1.5 text-[12px] leading-[1.5] text-text2">{side.reason}</p>
-      <EconFacts econ={econ} hasBalances={hasBalances} />
+      <Card surface="paper" radius="md" interactive className="p-3 w-full h-full flex flex-col">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-display text-[15px] font-semibold leading-tight text-text">{city}</span>
+          {econ ? <VerdictPill verdict={econ.verdict} cpp={econ.cpp} /> : null}
+        </div>
+        {econ ? <SavingsLead econ={econ} /> : null}
+        <p className="mt-1.5 text-[12px] leading-[1.5] text-text2">{side.reason}</p>
+        <EconFacts econ={econ} hasBalances={hasBalances} />
+      </Card>
     </Link>
   )
 }
@@ -393,11 +407,11 @@ function Timing({ b }: { b: TimingBlock }) {
   const labelFor = (level: TimingBlock['weeks'][number]['level']) =>
     level === 'low' ? 'Cheapest' : level === 'mid' ? 'Mid' : 'Pricey'
   return (
-    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-      <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
-        <Icon name="schedule" size={14} className="text-brand" />
+    <Card radius="lg" surface="surface" className="p-4">
+      <Eyebrow className="mb-3 flex items-center gap-1.5 text-text3">
+        <Icon name="schedule" size={16} className="text-brand" />
         When to go · {b.place}
-      </div>
+      </Eyebrow>
       <div className="flex items-end gap-1.5">
         {b.weeks.map((w, i) => {
           const h = w.level === 'low' ? 18 : w.level === 'mid' ? 30 : 44
@@ -415,7 +429,7 @@ function Timing({ b }: { b: TimingBlock }) {
         })}
       </div>
       {b.note ? <p className="mt-3 text-[12px] leading-[1.5] text-text2">{b.note}</p> : null}
-    </div>
+    </Card>
   )
 }
 
@@ -424,12 +438,12 @@ function Timing({ b }: { b: TimingBlock }) {
 function Weather({ b }: { b: WeatherBlock }) {
   const hasTemp = b.highC != null || b.lowC != null
   return (
-    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
+    <Card radius="lg" surface="surface" className="p-4">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
-          <Icon name="info" size={14} className="text-brand" />
+        <Eyebrow className="flex items-center gap-1.5 text-text3">
+          <Icon name="info" size={16} className="text-brand" />
           {b.place} · {b.month}
-        </div>
+        </Eyebrow>
         {hasTemp ? (
           <span className="hop-num text-[15px] font-semibold text-text">
             {b.lowC != null ? `${Math.round(b.lowC)}°` : ''}
@@ -438,8 +452,8 @@ function Weather({ b }: { b: WeatherBlock }) {
           </span>
         ) : null}
       </div>
-      <p className="mt-2 text-[13px] leading-[1.5] text-text2">{b.summary}</p>
-    </div>
+      <p className="mt-2 text-[14px] leading-[1.5] text-text2">{b.summary}</p>
+    </Card>
   )
 }
 
@@ -447,8 +461,8 @@ function Weather({ b }: { b: WeatherBlock }) {
 
 function WebNote({ b }: { b: WebNoteBlock }) {
   return (
-    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-      <p className="text-[13px] leading-[1.55] text-text2">{b.text}</p>
+    <Card radius="lg" surface="surface" className="p-4">
+      <p className="text-[14px] leading-[1.5] text-text2">{b.text}</p>
       <div className="mt-2 flex items-center gap-1.5 text-[11px] text-text3">
         <Icon name="search" size={12} className="text-brand" />
         {b.url ? (
@@ -464,7 +478,7 @@ function WebNote({ b }: { b: WebNoteBlock }) {
           <span className="font-medium">{b.source}</span>
         )}
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -492,12 +506,12 @@ function PromptChips({ b, onChip }: { b: PromptChipsBlock; onChip?: (p: string) 
 
 function ProfileConfirm({ b }: { b: ProfileConfirmBlock }) {
   return (
-    <div className="flex items-center gap-2.5 rounded-[var(--radius-lg)] border border-border bg-sunk p-3.5">
-      <Icon name="check_circle" size={18} className="flex-shrink-0 text-brand" />
-      <span className="text-[13px] leading-[1.5] text-text2">
+    <Card radius="lg" surface="sunk" className="flex items-center gap-2.5 p-3.5">
+      <Icon name="check_circle" size={16} weight="fill" className="flex-shrink-0 text-brand" />
+      <span className="text-[14px] leading-[1.5] text-text2">
         <span className="font-semibold text-text">Got it.</span> {b.fact}
       </span>
-    </div>
+    </Card>
   )
 }
 
@@ -518,10 +532,10 @@ function ConnectGmail({
 }) {
   const live = gmailEnabled && !!onConnect
   return (
-    <div className="flex flex-col gap-2.5 rounded-[var(--radius-lg)] border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+    <Card radius="lg" surface="surface" className="flex flex-col gap-2.5 p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-2.5">
-        <Icon name="loyalty" size={18} className="mt-0.5 flex-shrink-0 text-brand" />
-        <span className="text-[13px] leading-[1.5] text-text2">
+        <Icon name="envelope" size={16} className="mt-0.5 flex-shrink-0 text-brand" />
+        <span className="text-[14px] leading-[1.5] text-text2">
           <span className="font-semibold text-text">Connect Gmail</span>
           {b.reason ? ` ${b.reason}` : ' so hop can learn from your past trips.'}
         </span>
@@ -533,7 +547,7 @@ function ConnectGmail({
           className="flex flex-shrink-0 items-center gap-1.5 self-start rounded-full border border-border bg-surface px-3.5 py-1.5 text-[12px] font-semibold text-text transition-colors hover:border-brand hover:text-brand sm:self-auto"
         >
           Connect
-          <Icon name="swap_horiz" size={14} />
+          <Icon name="swap_horiz" size={16} />
         </button>
       ) : (
         <button
@@ -548,7 +562,7 @@ function ConnectGmail({
           </span>
         </button>
       )}
-    </div>
+    </Card>
   )
 }
 
@@ -562,11 +576,11 @@ function Counterfactual({ b, homeAirport }: { b: CounterfactualBlock; homeAirpor
   const r = b.result
   if (!r) return null
   return (
-    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-      <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
-        <Icon name="swap_horiz" size={14} className="text-brand" />
+    <Card radius="lg" surface="surface" className="p-4">
+      <Eyebrow className="mb-2 flex items-center gap-1.5 text-text3">
+        <Icon name="swap_horiz" size={16} className="text-brand" />
         What if · {r.label}
-      </div>
+      </Eyebrow>
       {r.unlockedCount > 0 ? (
         <p className="font-display text-[15px] font-semibold leading-snug tracking-[-0.01em] text-text">
           Unlocks {r.unlockedCount} {r.unlockedCount === 1 ? 'trip' : 'trips'} worth about{' '}
@@ -574,7 +588,7 @@ function Counterfactual({ b, homeAirport }: { b: CounterfactualBlock; homeAirpor
           cash flights.
         </p>
       ) : (
-        <p className="text-[13px] leading-[1.5] text-text2">
+        <p className="text-[14px] leading-[1.5] text-text2">
           No new trips cross the line with that change.
         </p>
       )}
@@ -598,7 +612,7 @@ function Counterfactual({ b, homeAirport }: { b: CounterfactualBlock; homeAirpor
           ))}
         </div>
       ) : null}
-    </div>
+    </Card>
   )
 }
 

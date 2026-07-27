@@ -117,4 +117,5 @@ for (const code of Object.keys(normals)) {
   out += `  ${code}: { tempF: ${arr(n.tempF)}, precipMM: ${arr(n.precipMM)} },\n`
 }
 out += `}\n`
+out += `\nexport const GENERATED_AT = ${JSON.stringify(new Date().toISOString())}\n`
 process.stdout.write(out)

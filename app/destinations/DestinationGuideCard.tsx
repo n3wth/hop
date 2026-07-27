@@ -98,7 +98,7 @@ export default function DestinationGuideCard({
             <h3 className="truncate font-display text-[24px] font-semibold leading-tight tracking-[-0.01em] text-white">
               {dest.city}
             </h3>
-            <p className="truncate text-[12px] font-semibold uppercase tracking-[0.08em] text-white/85">
+            <p className="truncate text-[12px] font-semibold uppercase tracking-[var(--track-label)] text-white/85">
               {dest.country} · {dest.region}
             </p>
           </div>
@@ -111,6 +111,7 @@ export default function DestinationGuideCard({
         <div className="mt-4 flex items-center gap-x-4 border-t border-hair pt-4 text-[13px] text-text3">
           <span>
             <b className="font-semibold text-text2 tabular-nums">{compactMiles(dest.typicalAwardMiles)}</b> mi
+            {dest.cabin ? ` · ${dest.cabin}` : ''}
           </span>
           <span aria-hidden>·</span>
           <span>

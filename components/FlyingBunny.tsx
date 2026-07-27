@@ -7,13 +7,16 @@ export interface FlyingBunnyProps {
   size?: number
   className?: string
   carve?: string
+  /** Color class for the mark itself; defaults to the calm ink-soft. The
+      TopNav lockup paints it text-brand per the masthead canon. */
+  markClassName?: string
 }
 
 // The bunny does a single playful leap on first arrival (once per session), then
 // stays calm. No scroll-driven motion — a scroll listener + per-frame transform
 // made scrolling feel heavy, so the bunny just rests after its entrance.
 // Transform-only (nothing translucent). Honors prefers-reduced-motion.
-export default function FlyingBunny({ size = 46, className, carve }: FlyingBunnyProps) {
+export default function FlyingBunny({ size = 46, className, carve, markClassName }: FlyingBunnyProps) {
   const ref = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
@@ -64,7 +67,7 @@ export default function FlyingBunny({ size = 46, className, carve }: FlyingBunny
       className={className}
       style={{ display: 'inline-flex', willChange: 'transform', transformOrigin: 'center bottom' }}
     >
-      <Logo size={size} carve={carve} className="text-text2" />
+      <Logo size={size} carve={carve} className={markClassName ?? 'text-text2'} />
     </span>
   )
 }

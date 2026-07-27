@@ -107,7 +107,7 @@ export default function AirlineStatusManager({
         ) : (
           <div className="flex items-start gap-4 px-6 py-6">
             <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
-              <Icon name="workspace_premium" size={22} />
+              <Icon name="workspace_premium" size={24} weight="fill" />
             </span>
             <div className="min-w-0">
               <div className="text-[15px] font-semibold text-text">Add your elite status</div>
@@ -136,7 +136,7 @@ export default function AirlineStatusManager({
                 disabled={pending}
                 className="inline-flex items-center gap-1.5 rounded-full border border-border bg-paper px-3 py-1.5 text-[12.5px] font-semibold text-text2 transition-colors hover:border-brand hover:text-brand disabled:opacity-60"
               >
-                <Icon name="add" size={14} />
+                <Icon name="add" size={16} />
                 {s.program}: {s.tier}
               </button>
             ))}
@@ -277,7 +277,7 @@ function AddStatusForm({
           placeholder="Tier (e.g. Gold)"
           aria-label="Tier"
           autoComplete="off"
-          className="w-full rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[14px] font-semibold text-text outline-none transition-colors focus:border-brand sm:w-[150px]"
+          className="no-inner-ring w-full rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[14px] font-semibold text-text outline-none transition-colors focus:border-brand sm:w-[150px]"
         />
         <button
           type="button"
@@ -286,7 +286,7 @@ function AddStatusForm({
           className="inline-flex flex-shrink-0 items-center justify-center gap-1.5 rounded-[10px] bg-brand px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:opacity-70"
         >
           {busy ? 'Saving…' : 'Add'}
-          {!busy ? <Icon name="check_circle" size={16} /> : null}
+          {!busy ? <Icon name="check_circle" size={16} weight="fill" /> : null}
         </button>
       </div>
       {error ? (

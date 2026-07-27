@@ -127,10 +127,10 @@ export default function Counterfactual({
     <div className="mt-4 rounded-[var(--radius)] border border-border bg-surface p-5 sm:p-6">
       <div className="flex items-start gap-3">
         <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
-          <Icon name="swap_horiz" size={20} />
+          <Icon name="swap_horiz" size={24} weight="fill" />
         </span>
         <div className="min-w-0">
-          <p className="max-w-[58ch] text-[13px] leading-[1.55] text-text2">
+          <p className="max-w-[58ch] text-[14px] leading-[1.5] text-text2">
             A mirror for your portfolio. Ask what a different points stack would unlock — hop
             re-runs its real engine against your balances and shows the trips that open up.
           </p>
@@ -143,7 +143,7 @@ export default function Counterfactual({
           onChange={(e) => setText(e.target.value)}
           placeholder="What if I had 50k more Chase UR?"
           aria-label="Describe a different points portfolio"
-          className="min-w-0 flex-1 rounded-[12px] border border-border bg-paper px-4 py-2.5 text-[14px] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand"
+          className="no-inner-ring min-w-0 flex-1 rounded-[12px] border border-border bg-paper px-4 py-2.5 text-[14px] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand"
         />
         <button
           type="submit"
@@ -194,7 +194,7 @@ function ResultPanel({ result }: { result: CounterfactualResult }) {
     <div className="mt-5 border-t border-border pt-5">
       {/* headline — the one-glance financial mirror */}
       <div className="rounded-[14px] bg-brand-light px-5 py-4">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand">
+        <div className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
           {mutation.label}
         </div>
         {unlockedCount > 0 ? (
@@ -218,7 +218,7 @@ function ResultPanel({ result }: { result: CounterfactualResult }) {
       {/* unlocked destinations */}
       {unlocked.length > 0 ? (
         <div className="mt-4">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
             Newly within reach
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -232,7 +232,7 @@ function ResultPanel({ result }: { result: CounterfactualResult }) {
       {/* closer-but-not-there */}
       {closer.length > 0 ? (
         <div className="mt-4">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
             Getting closer
           </div>
           <div className="flex flex-col gap-1.5">

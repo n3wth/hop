@@ -46,13 +46,21 @@ currently built**:
 - a multi-channel preference store (email / slack / discord / webpush) with per-user channel
   selection;
 - an opportunity-vs-standing-order opt-in split (broad opportunity email is consent-sensitive and
-  separate from a watched-route crossing);
-- an idempotent outbox ledger (`UNIQUE(user_id, kind, dedupe_key)`) for true once-only delivery
-  with reserve / mark / release semantics.
+  separate from a watched-route crossing).
 
-None of these exist in the repo today. Main's sender is standing-order-shaped, email-only, and keyed
-on `order.notifyEmail`; dedupe today is the per-watch `lastNotifiedOffer` fingerprint, not a ledger.
-If/when proactive opportunity pushes or a second channel are built, this ADR is the starting point.
+None of these exist in the repo today. If/when proactive opportunity pushes or a second channel are
+built, this ADR is the starting point.
+
+**Update (moat-hardening pass):** the third deferred item — an idempotent outbox ledger
+(`UNIQUE(user_id, kind, dedupe_key)`) for once-only delivery with reserve/mark/release semantics —
+**has since shipped**: `lib/notification-outbox.ts` + `hop_notification_outbox`, wired into
+`app/api/cron/standing-orders/route.ts` ahead of `recordAlert`/`sendAlertEmail`. It is an ADDITIVE
+safety net on top of the pre-existing `lastNotifiedOffer` fingerprint stamp, not a replacement —
+`lastNotifiedOffer` remains the primary dedupe; the outbox closes the crash/race window between
+`recordAlert` and that stamp landing (e.g. overlapping cron runs on the same watch). The cron only
+stamps `lastNotifiedOffer` and closes the reservation once `recordAlert` actually returns an id; a
+failed alert write or an unexpected throw releases the reservation so the crossing gets a genuine
+retry next tick, rather than being silently treated as delivered.
 
 ## Consequences
 

@@ -1,0 +1,21 @@
+# The CI gate. Must equal the local gate (make check).
+name: check
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      APP_FAKE_BACKENDS: "1"       # no credentials in CI
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+      - run: make check            # ruff + mypy + pytest — same command agents run
+      # Migration sanity: upgrade to head on a disposable DB, catches broken revisions.
+      - run: |
+          uv run alembic upgrade head
+        env:
+          DATABASE_URL: sqlite:///./ci-migrate-check.db   # TODO(project): postgres service if needed

@@ -5,12 +5,19 @@ import { auth0 } from '@/lib/auth0'
 import {
   setUserAwId,
   clearUserAwId,
+  getUserAwId,
+  refreshAwCache,
+  getCachedAwBalances,
   addManualBalance,
   updateManualBalance,
   removeManualBalance,
   findManualByProgram,
+  getManualBalances,
+  seedQuickStartPrograms,
+  QUICK_START_PROGRAM_IDS,
 } from '@/lib/accounts'
 import { canonicalizeProgram } from '@/lib/programs'
+import { captureServerEvent } from '@/lib/posthog-server'
 
 // Server Actions for the signed-in user's balance sources. Every action is gated
 // by the Auth0 session and scoped to session.user.sub so one user can never touch
@@ -19,6 +26,10 @@ import { canonicalizeProgram } from '@/lib/programs'
 // `note` carries a human-readable confirmation when an action did something the
 // user should know about (e.g. it folded a duplicate into an existing program).
 type Result = { ok: boolean; error?: string; note?: string }
+
+// A user mashing Refresh shouldn't hammer AwardWallet outside the cron
+// cadence — a plain synced-at diff, no new table.
+const REFRESH_THROTTLE_MS = 60_000
 
 // Fold free-text onto the canonical registry so "amex" / "membership rewards" /
 // typos all persist as ONE program identity. Returns the canonical display name
@@ -43,10 +54,23 @@ async function requireUser(): Promise<{ userId: string } | { error: string }> {
 }
 
 // Parse a balance from form input: strip commas/spaces, reject negatives/NaN.
+// An empty/whitespace-only input is invalid here — this is the STRICT parser,
+// used everywhere except addProgram's optional-balance flow (see
+// parseOptionalBalance below), so clearing an existing balance (editProgram)
+// is still rejected, never silently saved as 0.
 function parseBalance(raw: unknown): number | null {
   const n = typeof raw === 'number' ? raw : parseFloat(String(raw ?? '').replace(/[^0-9.]/g, ''))
   if (!Number.isFinite(n) || n < 0 || n > MAX_BALANCE) return null
   return Math.round(n)
+}
+
+// R1.4: addProgram's balance is optional — an empty/whitespace-only input is a
+// valid "balance unknown" submission (parses to 0, the engine's existing
+// "don't claim ownership" value), not an error. Scoped to addProgram only —
+// editProgram keeps using the strict parseBalance above.
+function parseOptionalBalance(raw: unknown): number | null {
+  if (typeof raw !== 'number' && String(raw ?? '').trim() === '') return 0
+  return parseBalance(raw)
 }
 
 // --- Manual balances (primary path) ----------------------------------------
@@ -62,7 +86,7 @@ export async function addProgram(
   if (!raw) return { ok: false, error: 'Enter a program' }
   if (raw.length > MAX_PROGRAM_LEN) return { ok: false, error: 'That name is too long' }
 
-  const balance = parseBalance(balanceRaw)
+  const balance = parseOptionalBalance(balanceRaw)
   if (balance == null) return { ok: false, error: 'Enter a valid balance' }
 
   // Canonicalize so the stored name is the one true program identity.
@@ -82,17 +106,70 @@ export async function addProgram(
     })
     if (!ok) return { ok: false, error: "Couldn't add — try again" }
     revalidateBalances()
+    // An empty/unknown-balance submission (parses to 0) against an existing
+    // program is a genuine no-op — merged === existing.balance — so don't
+    // claim anything was "added".
     return {
       ok: true,
-      note: `Added to your existing ${name} — now ${merged.toLocaleString()}.`,
+      note:
+        balance === 0
+          ? `You already have ${name} — balance unchanged.`
+          : `Added to your existing ${name} — now ${merged.toLocaleString('en-US')}.`,
     }
   }
 
   const id = await addManualBalance(auth.userId, name, balance, kind)
   if (!id) return { ok: false, error: "Couldn't add — try again" }
 
+  // R0.5 funnel event #2 — first_program_added fires when this insert made the
+  // user's first program row (the activation moment). Best-effort: a degraded
+  // count read just skips the event, never the add.
+  const programs = await getManualBalances(auth.userId)
+  if (programs.length === 1) {
+    captureServerEvent('first_program_added', {}, { distinctId: auth.userId })
+  }
+
   revalidateBalances()
   return { ok: true }
+}
+
+// R1.4 quick-start: seed the 5 transferable bank currencies as zero-balance
+// rows in one tap, so a cold-start user reaches a real (non-"example") verdict
+// without an external lookup. Idempotent — never overwrites a program the user
+// already holds (lib/accounts.ts#seedQuickStartPrograms skips those).
+export async function addQuickStartPrograms(): Promise<Result> {
+  const auth = await requireUser()
+  if ('error' in auth) return { ok: false, error: auth.error }
+
+  const before = await getManualBalances(auth.userId)
+  const { added, alreadyHeld } = await seedQuickStartPrograms(auth.userId)
+
+  if (added.length === 0) {
+    // Only claim "already had all 5" when that's actually why nothing was
+    // added — a mid-loop insert failure (neither added nor alreadyHeld) is a
+    // real error, not "you already had it".
+    return alreadyHeld.length === QUICK_START_PROGRAM_IDS.length
+      ? { ok: true, note: 'Already had all 5 — nothing new to add.' }
+      : { ok: false, error: "Couldn't add — try again" }
+  }
+
+  // R0.5 funnel event #2 — fires when this was the user's first program row,
+  // same contract as the manual addProgram path.
+  if (before.length === 0) {
+    captureServerEvent('first_program_added', {}, { distinctId: auth.userId })
+  }
+  // Distinct from first_program_added — measures activation via quick-start
+  // specifically, whether or not it was the user's first program.
+  captureServerEvent('quick_start_used', { added_count: added.length }, { distinctId: auth.userId })
+
+  revalidateBalances()
+  return {
+    ok: true,
+    note:
+      alreadyHeld.length > 0
+        ? `Added ${added.length} — you already had ${alreadyHeld.length}. Fill in real balances below.`
+        : `Added ${added.length} programs. Fill in real balances below.`,
+  }
 }
 
 export async function editProgram(
@@ -156,6 +233,10 @@ export async function connectAwardWallet(awUserId: string): Promise<Result> {
   const saved = await setUserAwId(auth.userId, id)
   if (!saved) return { ok: false, error: "Couldn't connect — try again" }
 
+  // Bootstrap the cache right away, best-effort, so /account shows real
+  // balances immediately instead of waiting for the next cron tick.
+  await refreshAwCache(auth.userId, id).catch(() => false)
+
   revalidateBalances()
   return { ok: true }
 }
@@ -169,6 +250,39 @@ export async function disconnectAwardWallet(): Promise<Result> {
 
   revalidateBalances()
   return { ok: true }
+}
+
+// User-initiated re-sync — the ONLY other live-call path besides bootstrap and
+// the cron. Throttled to one live pull per REFRESH_THROTTLE_MS so mashing the
+// button can't hammer AwardWallet outside the cron cadence; a throttled call
+// still returns ok with the existing syncedAt (the UI has nothing new to show,
+// not an error). The throttle only applies after a GOOD sync (cached.ok) — if
+// the last attempt failed, a mash of the button should keep retrying rather
+// than silently reporting a throttled "ok" that looks like recovery when
+// nothing was actually re-fetched. Never throws.
+export async function refreshAwardWallet(): Promise<Result & { syncedAt: string | null }> {
+  const auth = await requireUser()
+  if ('error' in auth) return { ok: false, error: auth.error, syncedAt: null }
+
+  const awId = await getUserAwId(auth.userId)
+  if (!awId) return { ok: false, error: 'Not connected to AwardWallet', syncedAt: null }
+
+  const cached = await getCachedAwBalances(auth.userId)
+  if (cached.ok && cached.syncedAt) {
+    const age = Date.now() - Date.parse(cached.syncedAt)
+    if (Number.isFinite(age) && age >= 0 && age < REFRESH_THROTTLE_MS) {
+      return { ok: true, syncedAt: cached.syncedAt }
+    }
+  }
+
+  const ok = await refreshAwCache(auth.userId, awId)
+  const fresh = await getCachedAwBalances(auth.userId)
+  revalidateBalances()
+  return {
+    ok,
+    error: ok ? undefined : "Couldn't reach AwardWallet — showing your last known balances",
+    syncedAt: fresh.syncedAt,
+  }
 }
 
 // --- Gmail travel-history seam ---------------------------------------------
@@ -193,9 +307,34 @@ export async function resyncGmailHistory(): Promise<Result> {
   if ('error' in auth) return { ok: false, error: auth.error }
 
   const { syncTravelHistory } = await import('@/lib/travel-history-sync')
-  const count = await syncTravelHistory(auth.userId)
+  const result = await syncTravelHistory(auth.userId)
+  if (!result.ok) {
+    const error =
+      result.reason === 'not-connected'
+        ? 'Gmail is not connected.'
+        : result.reason === 'auth-failed'
+          ? 'Gmail access expired — reconnect to keep syncing.'
+          : "Couldn't reach Gmail — try again shortly."
+    return { ok: false, error }
+  }
   revalidateBalances()
-  return { ok: true, note: `Synced ${count} trip${count === 1 ? '' : 's'} from Gmail.` }
+  return { ok: true, note: `Synced ${result.count} trip${result.count === 1 ? '' : 's'} from Gmail.` }
+}
+
+// --- Account deletion (the /privacy promise) ---------------------------------
+
+// Deletes every row we hold for the signed-in user (lib/account-deletion.ts),
+// including their Better Auth identity — the session cookie dies with the
+// session rows. The client redirects home on ok. Gated on the live session
+// like every other action here; never throws.
+export async function deleteAccount(): Promise<Result> {
+  const auth = await requireUser()
+  if ('error' in auth) return { ok: false, error: auth.error }
+
+  const { deleteUserAccount } = await import('@/lib/account-deletion')
+  const result = await deleteUserAccount(auth.userId)
+  if (!result.ok) return { ok: false, error: result.error ?? "Couldn't delete — try again" }
+  return { ok: true }
 }
 
 // Pages whose output depends on the user's balances.

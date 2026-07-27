@@ -62,4 +62,24 @@ describe('searchAirports ranking', () => {
       expect(results[i - 1].size).toBeGreaterThanOrEqual(results[i].size)
     }
   })
+
+  it('surfaces the busiest hubs for an empty query, not alphabetical large airports', () => {
+    const codes = searchAirports('', 6).map((a) => a.code)
+    // ATL is the world's busiest airport — it leads; the rest are recognizable
+    // top-10 hubs, not the alphabetically-first "large" airports (AAL, ABJ, …).
+    expect(codes[0]).toBe('ATL')
+    expect(codes).toContain('DFW')
+  })
+
+  it('breaks same-tier ties by traffic rank, not alphabetically', () => {
+    // Both Chicago airports city-prefix-match at the same score tier; ORD must
+    // beat MDW even though MDW sorts first alphabetically.
+    const results = searchAirports('chicago', 5)
+    expect(results[0]?.code).toBe('ORD')
+  })
+
+  it('ranks LHR first among London airports', () => {
+    const results = searchAirports('london', 6)
+    expect(results[0]?.code).toBe('LHR')
+  })
 })

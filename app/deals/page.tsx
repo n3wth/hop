@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers'
 import Link from 'next/link'
+import { toNavUser } from '@/lib/nav-user'
 import { topValue, imageQuery } from '@/lib/destinations'
 import { destinationImages } from '@/lib/images'
 import { getUserBalances } from '@/lib/accounts'
@@ -12,7 +13,7 @@ import DegradedNote from '@/components/DegradedNote'
 import SiteFooter from '@/components/SiteFooter'
 import EditorialHeader from '@/components/EditorialHeader'
 import Icon from '@/components/Icon'
-import { ORIGIN_STORAGE_KEY } from '@/lib/origin-context'
+import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import { pageMeta } from '@/lib/seo'
 import { localISO } from '@/lib/dates'
 
@@ -74,34 +75,34 @@ export default async function DealsPage({
   const deals = withoutAvoided(topValue(24), memory.avoided)
   const photos = await destinationImages(deals.map((d) => imageQuery(d)))
   const su = session?.user
-  const user = su
-    ? {
-        initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
-        name: su.name ?? su.email ?? undefined,
-        email: su.email ?? undefined,
-        picture: su.picture ?? undefined,
-      }
-    : null
+  const user = toNavUser(su)
 
-  // Header points chip + origin seed. Balances and prefs each degrade on their
-  // own — a balances failure is surfaced (the figure goes stale), a prefs
-  // failure just falls back to the default origin. Neither throws the page.
+  // Header points chip + origin seed. Balances and prefs are independent reads
+  // keyed only on su.sub — fetched together (one round trip instead of two) and
+  // still degrade on their own: a balances failure is surfaced (the figure goes
+  // stale), a prefs failure just falls back to the default origin. Neither
+  // throws the page.
   let pointsTotal: number | undefined
   let homeAirport: string | undefined
   const degraded: string[] = []
   if (user && su?.sub) {
-    try {
+    const [balancesRes, prefsRes] = await Promise.allSettled([
+      getUserBalances(su.sub),
+      getPrefs(su.sub),
+    ])
+    if (balancesRes.status === 'fulfilled') {
       // Unified per-user balances (manual + AwardWallet) for the header chip.
-      const real = await getUserBalances(su.sub)
-      if (real.length > 0) pointsTotal = real.reduce((s, b) => s + b.balance, 0)
-    } catch {
+      if (balancesRes.value.length > 0) {
+        pointsTotal = balancesRes.value.reduce((s, b) => s + b.balance, 0)
+      }
+    } else {
       degraded.push('balances')
     }
-    try {
-      homeAirport = (await getPrefs(su.sub)).homeAirport
-    } catch {
-      // No saved origin → default. Not worth a degraded note.
+    if (prefsRes.status === 'fulfilled') {
+      homeAirport = prefsRes.value.homeAirport
     }
+    // A prefs failure just falls back to the default origin — not worth a
+    // degraded note.
   }
 
   // Origin precedence: explicit ?from= → saved home airport → "where from"
@@ -110,13 +111,13 @@ export default async function DealsPage({
   const hasDeals = deals.length > 0
 
   return (
-    <AppShell user={user} pointsTotal={pointsTotal} hideSearch>
-      <div className="mx-auto max-w-[var(--container-app)] xl:max-w-[var(--container-wide)] 2xl:max-w-[var(--container-xwide)]">
+    <AppShell user={user} pointsTotal={pointsTotal} homeAirport={homeAirport} hideSearch>
+      <div className="mx-auto max-w-[var(--container-shell)]">
         {/* editorial header — centered over the full-width feed */}
         <EditorialHeader
-          eyebrow="Sweet spots"
+          eyebrow="Deals"
           title="Where your miles go furthest"
-          intro="The redemptions where points beat cash by the widest margin, ranked by cents per point. Every one is a route you can book."
+          intro="The redemptions where points beat cash by the widest margin, ranked by cents per point net of typical taxes. Every one is a route you can book — the full program-by-program reference lives in Sweet spots."
         >
           <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[13px] text-text3">
             <span>
@@ -138,7 +139,7 @@ export default async function DealsPage({
             /ask so the static feed isn't a dead end. */}
         <div className="mx-auto mt-7 flex max-w-[640px] flex-col items-center justify-between gap-3 rounded-[16px] border border-border bg-surface px-5 py-4 text-center sm:flex-row sm:gap-4 sm:text-left">
           <div className="flex items-center gap-2.5">
-            <Icon name="lightbulb" size={18} className="flex-shrink-0 text-brand" />
+            <Icon name="lightbulb" size={16} className="flex-shrink-0 text-brand" />
             <span className="text-[14px] leading-[1.5] text-text2">
               <span className="font-semibold text-text">Not sure which fit?</span> Ask hop
               which of these your points can reach.
@@ -155,7 +156,7 @@ export default async function DealsPage({
 
         {/* the feed */}
         {hasDeals ? (
-          <section className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
+          <section className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {deals.map((dest, i) => (
               <DealCard
                 key={dest.code}
@@ -182,7 +183,7 @@ export default async function DealsPage({
         <p className="mt-8 text-[12px] text-text3">
           Destination photography via{' '}
           <a
-            href="https://unsplash.com"
+            href="https://unsplash.com/?utm_source=hop&utm_medium=referral"
             target="_blank"
             rel="noopener noreferrer"
             className="underline decoration-border underline-offset-2 hover:text-text2"

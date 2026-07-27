@@ -1,0 +1,58 @@
+# Finance desk
+
+The hop CFO function — an agent-run finance desk that tracks budget, burn, and startup-credit
+opportunities, and asks Oliver for decisions by email. It never spends money, commits to
+anything, or submits an external application on its own; every commitment goes to Oliver for
+emailed approval first.
+
+## Identity
+
+- **Inbox**: `finance-hop@agentmail.to` (AgentMail), created 2026-07-06, `displayName` "hop
+  Finance Desk". Reused across runs — do not create a second inbox; check here first.
+- **Reports to**: oliver@newth.ai (plain-text weekly memo, subject `hop finance — week of
+  <date>`).
+- **Mirrors to**: Linear issue "Finance desk — approvals & budget" in the `hop` project
+  (team `n3wth`) — same memo posted as a comment each run.
+- **`custom_domain_status`**: `resolved` (2026-07-06) — the AgentMail MCP tool surface has no
+  domain-creation/DNS capability, so `agents.hop.flights` was never pursued (see
+  `agentmail-domain-dns.md` for that dead end). Instead, `finance@hop.flights` now routes to
+  this inbox via a plain Cloudflare Email Routing forward rule (destination
+  `finance-hop@agentmail.to` verified 2026-07-06T06:17Z, rule `finance to agentmail` added the
+  same day) — mail sent to `finance@hop.flights` lands here automatically. **Do not include the
+  Cloudflare destination-verification link in memos anymore** — verification is done and the
+  routing rule exists; this was a one-time setup step, not a recurring check.
+
+## Files
+
+- `budget.md` — the single source of truth for the agreed budget envelope. Updated from
+  Oliver's email replies (approvals/rejections/counters), never from assumption.
+- `ledger.md` — a 5-line weekly financial note (date, MRR estimate, known burn, notable
+  changes). Figures come from the repo's own signals (business plan, `lib/unit-economics.ts`,
+  ops runbook) or are marked `unknown` — never invented.
+- `opportunities.md` — tracked startup-credit / discount programs: eligibility, value, effort,
+  deadline, and drafted (not submitted) application answers. Rejected or already-pitched
+  opportunities are marked so they aren't re-pitched.
+- `outreach.md` — the queue for owner-approved external outreach (e.g. seats.aero commercial
+  terms, AwardWallet partner onboarding). Items only move to `status: sent` once Oliver has
+  marked them `approved-to-send` in a prior reply — this desk never adds an item as
+  pre-approved. Processed **every run**, no day-of-week gate (a prior version of this note
+  incorrectly claimed a Tuesday-only cadence — corrected 2026-07-06).
+
+## Weekly run protocol
+
+1. Read replies in the inbox since last run; update `budget.md`.
+2. Skim the ledger inputs, append a note to `ledger.md`.
+3. Spend ~20 min searching for 1-2 new credit/discount opportunities; update
+   `opportunities.md` (skip anything already tracked or rejected there). **Paused as of
+   2026-07-14** — Oliver's own feedback ("youre sending me the same kinda thing in the end",
+   2026-07-08) and the board's independent 2026-07-12 review (kill-list item 4, ranked amendment
+   7: `docs/board/2026-07-12-board-memo.md`) both flag that this desk has spent real effort
+   chasing free credits while never answering the one question that matters — is there a real
+   paying subscriber. This desk has no DB/Stripe read access to answer that itself (confirmed
+   again 2026-07-14, `DATABASE_URL` unset in every session so far). Skip step 3 until either (a)
+   Oliver reports a real subscriber count (even zero) from `/admin`, or (b) this desk is given
+   read-only DB/Stripe access to check itself — resume the credit hunt only after that.
+4. **Every run**: scan `outreach.md` for items with `status: approved-to-send`, send each
+   from this inbox, and update its `status` to `sent` (with a `sent-date`).
+5. Send one consolidated memo to oliver@newth.ai and mirror it to the Linear issue.
+6. Commit `docs/finance/` on a `finance/<date>` branch, push, open a draft PR.

@@ -4,6 +4,7 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useTransi
 import { searchAirports, airportByCode } from '@/lib/airports'
 import { saveHomeAirport } from '@/app/actions/prefs'
 import Icon from './Icon'
+import { Input } from '@/components/ui/Field'
 
 // Airport autocomplete + save. Used in the "set your home airport" prompt and in
 // /account settings. On save, calls the server action; reports success/error.
@@ -80,7 +81,7 @@ export default function HomeAirportPicker({
   return (
     <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-start">
       <div ref={ref} className="relative flex-1">
-        <input
+        <Input
           ref={inputRef}
           value={query}
           placeholder="City or airport"
@@ -115,7 +116,7 @@ export default function HomeAirportPicker({
               setOpen(false)
             }
           }}
-          className="w-full rounded-[12px] border border-border bg-surface px-4 py-3 text-[15px] font-semibold text-text outline-none transition-colors focus:border-brand"
+          className="bg-surface px-4 py-3 text-[15px]"
         />
         {hasResults && (
           <ul
@@ -123,7 +124,7 @@ export default function HomeAirportPicker({
             id={listId}
             role="listbox"
             aria-label="Airport suggestions"
-            className={`absolute left-0 z-[60] max-h-[260px] w-full overflow-auto rounded-[12px] border border-border bg-surface py-1 ${
+            className={`absolute left-0 z-[60] max-h-[260px] w-full overflow-auto rounded-[var(--radius)] border border-border bg-surface py-1 ${
               flipUp ? 'bottom-[calc(100%+8px)]' : 'top-[calc(100%+8px)]'
             }`}
           >
@@ -165,7 +166,7 @@ export default function HomeAirportPicker({
         className="inline-flex flex-shrink-0 items-center justify-center gap-2 rounded-[12px] bg-brand px-6 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:opacity-70"
       >
         {pending ? 'Saving…' : cta}
-        {!pending ? <Icon name="check_circle" size={17} /> : null}
+        {!pending ? <Icon name="check_circle" size={16} weight="fill" /> : null}
       </button>
     </div>
   )

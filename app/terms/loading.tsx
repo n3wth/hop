@@ -1,13 +1,16 @@
 import AppShell from '@/components/AppShell'
 import LegalShellSkeleton from '@/components/LegalShellSkeleton'
+import { getSessionNavUser } from '@/lib/nav-user'
 
-// Route-level loading UI for /terms. The page resolves the Auth0 session +
-// balances before it can render the header chip, so this fills the gap with
-// the same LegalShell measure used by /support and /privacy.
-export default function Loading() {
+// Route-level loading UI for /terms. The page resolves balances (pointsTotal)
+// before it can render the header chip — that's still skipped here — but user
+// (a cheap session read) is resolved so the avatar doesn't flip for signed-in
+// visitors. Uses the same LegalShell measure as /support and /privacy.
+export default async function Loading() {
+  const user = await getSessionNavUser()
   return (
-    <AppShell hideSearch>
-      <div className="mx-auto max-w-[var(--container-app)]">
+    <AppShell user={user} hideSearch>
+      <div className="mx-auto max-w-[var(--container-sm)]">
         <LegalShellSkeleton />
       </div>
     </AppShell>

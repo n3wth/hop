@@ -73,6 +73,12 @@ export default async function Image({ params }: { params: Promise<{ city: string
             <div style={{ display: 'flex', color: valueColor, fontWeight: 700 }}>
               {value !== undefined ? `${value.toFixed(1)}¢/pt` : '—'}
             </div>
+            {d.cabin ? (
+              <>
+                <Dot />
+                <div style={{ display: 'flex', color: OG.ink2, fontSize: 32 }}>{d.cabin}</div>
+              </>
+            ) : null}
           </div>
         </div>
       </div>

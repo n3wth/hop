@@ -19,6 +19,7 @@
 //   - user_id-scoped. Every query filters by the Auth0 sub; a record is only ever
 //     written for the acting user.
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { withDb } from '@/lib/supabase-helpers'
 import { isObservedOutcomesEnabled } from '@/lib/env'
 
@@ -137,7 +138,7 @@ async function readOutcomes(userId: string): Promise<OutcomeRow[]> {
       .order('created_at', { ascending: false })
       .limit(READ_LIMIT)
     if (error || !data) return []
-    return data.map((r) => ({
+    return data.map((r: any) => ({
       kind: String(r.kind),
       subject: String(r.subject),
       cabin: r.cabin == null ? null : String(r.cabin),

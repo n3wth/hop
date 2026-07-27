@@ -8,12 +8,12 @@ export default function FooterNav() {
   const pathname = usePathname()
 
   return (
-    <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3 sm:gap-x-8">
+    <div className="grid grid-cols-2 gap-x-8 gap-y-5 sm:grid-cols-3 sm:gap-x-12 lg:gap-x-16">
       {FOOTER_SECTIONS.map((section) => (
         <nav key={section.title} aria-labelledby={`footer-${section.title.toLowerCase()}`}>
           <h2
             id={`footer-${section.title.toLowerCase()}`}
-            className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text2"
+            className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2"
           >
             {section.title}
           </h2>

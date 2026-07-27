@@ -116,7 +116,7 @@ export default function ProgramPicker({
         aria-autocomplete="list"
         aria-activedescendant={showList ? `${listId}-${active}` : undefined}
         disabled={disabled}
-        className={`w-full rounded-[10px] border bg-paper px-3.5 py-2.5 text-[14px] font-semibold text-text outline-none transition-colors focus:border-brand disabled:opacity-60 ${
+        className={`no-inner-ring w-full rounded-[10px] border bg-paper px-3.5 py-2.5 text-[14px] font-semibold text-text outline-none transition-colors focus:border-brand disabled:opacity-60 ${
           error ? 'border-weak' : 'border-border'
         }`}
       />

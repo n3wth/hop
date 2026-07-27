@@ -13,6 +13,7 @@ import type { ApiResult, FlightOption, SearchParams } from '@/lib/types'
 import { env, hasEnv } from '@/lib/env'
 import { tier } from '@/lib/cpp'
 import { pointsBookingUrl } from '@/lib/booking'
+import { cacheGet, cacheSet } from './cache'
 
 const SEATS_AERO_BASE = 'https://seats.aero/partnerapi'
 const TIMEOUT_MS = 10_000
@@ -224,6 +225,11 @@ export async function searchAwards(params: SearchParams): Promise<ApiResult<Flig
     return { ok: false, reason: 'Seats.aero API key not configured' }
   }
 
+  const cacheKey = `hop:search:awards:${params.from.toUpperCase()}:${params.to.toUpperCase()}:${params.depart}:${params.return || 'one-way'}:${params.cabin || 'economy'}`
+
+  const cached = await cacheGet<ApiResult<FlightOption[]>>(cacheKey)
+  if (cached !== null && cached.ok) return cached
+
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
 
@@ -254,7 +260,9 @@ export async function searchAwards(params: SearchParams): Promise<ApiResult<Flig
     const options = records
       .map((rec, i) => normalizeSeatsAeroRecord(rec, params, i))
       .filter((o): o is FlightOption => o !== undefined)
-    return { ok: true, data: options }
+    const result: ApiResult<FlightOption[]> = { ok: true, data: options }
+    await cacheSet(cacheKey, result, 300)
+    return result
   } catch (err) {
     const reason =
       err instanceof Error && err.name === 'AbortError'

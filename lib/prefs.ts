@@ -1,10 +1,10 @@
 import { withDb } from '@/lib/supabase-helpers'
 import { validatePrefs, type TravelPrefs } from '@/lib/prefs-model'
 
-// User preferences (home airport, travel prefs, …) persisted in Supabase via
-// the service-role client (server-only). Identity is Auth0, so we scope every
-// query by user_id in code. All functions degrade gracefully — never throw to
-// the page.
+// User preferences (home airport, travel prefs, …) persisted via withDb to
+// Neon (lib/supabase-helpers.ts, server-only). Identity is Better Auth's
+// user.id, so we scope every query by user_id in code. All functions degrade
+// gracefully — never throw to the page.
 
 export interface UserPrefs {
   homeAirport?: string
@@ -42,6 +42,19 @@ export async function setHomeAirport(userId: string, code: string): Promise<bool
       },
       { onConflict: 'user_id' },
     )
+    return !error
+  })
+}
+
+// Unset the saved home airport (e.g. the origin pill's "Clear") without
+// touching travel_prefs/travel_profile. A no-op (not an error) when the user
+// has no row yet.
+export async function clearHomeAirport(userId: string): Promise<boolean> {
+  return withDb(false, async (db) => {
+    const { error } = await db
+      .from(TABLE)
+      .update({ home_airport: null, updated_at: new Date().toISOString() })
+      .eq('user_id', userId)
     return !error
   })
 }

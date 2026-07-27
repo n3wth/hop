@@ -55,7 +55,7 @@ function FactRow({ fact, onForgotten }: { fact: MemoryFact; onForgotten: (id: st
     <div className="flex items-center justify-between gap-3 border-b border-hair py-3 last:border-b-0">
       <div className="min-w-0">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text3">
+          <span className="text-[11px] font-semibold uppercase tracking-[var(--track-tag)] text-text3">
             {fact.label}
           </span>
           <span className="font-display text-[15px] font-semibold tracking-[-0.01em] text-text">
@@ -166,8 +166,8 @@ export default function MemoryKnows({
   const noticedBlock =
     pendingNoticed.length > 0 ? (
       <div>
-        <h3 className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-brand">
-          <Icon name="lightbulb" size={13} />
+        <h3 className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
+          <Icon name="lightbulb" size={12} />
           hop noticed
         </h3>
         <div className="rounded-[var(--radius)] border border-border bg-brand-tint px-4">
@@ -186,8 +186,8 @@ export default function MemoryKnows({
   const observedBlock =
     observed.length > 0 ? (
       <div>
-        <h3 className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-text3">
-          <Icon name="trending_up" size={13} />
+        <h3 className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
+          <Icon name="trending_up" size={12} />
           hop observed
         </h3>
         <div className="rounded-[var(--radius)] border border-border bg-surface px-4">
@@ -210,7 +210,7 @@ export default function MemoryKnows({
     return (
       <div className="rounded-[var(--radius)] border border-dashed border-border bg-paper px-5 py-7 text-center">
         <span className="grid mx-auto h-10 w-10 place-items-center rounded-full bg-brand-light text-brand">
-          <Icon name="lightbulb" size={20} />
+          <Icon name="lightbulb" size={24} weight="fill" />
         </span>
         <p className="mt-3 text-[14px] leading-[1.55] text-text2">
           hop hasn&apos;t learned anything durable about you yet. Tell it in{' '}
@@ -228,7 +228,7 @@ export default function MemoryKnows({
       {noticedBlock}
       {groups.map((g) => (
         <div key={g.group}>
-          <h3 className="mb-1 text-[12px] font-semibold uppercase tracking-[0.12em] text-brand">
+          <h3 className="mb-1 text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
             {g.title}
           </h3>
           <div className="rounded-[var(--radius)] border border-border bg-surface px-4">
