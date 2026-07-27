@@ -1,5 +1,33 @@
 # Autonomy run log
 
+- 2026-07-27 · Claude Code (merge-queue sheriff, scheduled) · PR backlog sweep (25 open PRs,
+  #318-#344) · **root cause found for the stuck merge pipeline the 2026-07-26 board/strategy
+  memos flagged**: the `Vercel` required status check is NOT down/failing — it's genuinely
+  wedged in `pending` ("Waiting for checks to complete") on the GitHub side and never resolves,
+  confirmed by pushing a brand-new empty commit to PR #331 and watching its fresh commit SHA get
+  the exact same stuck-pending status a minute later (`docs/ops-runbook.md`'s "Required PR check
+  is the Vercel build" — so this alone blocks 100% of merges). This is external to the repo (no
+  workflow/config file controls it) — **needs-founder**: check the Vercel↔GitHub App integration
+  in the Vercel dashboard (Project Settings → Git) for a broken webhook/permission, since retrying
+  from this side does nothing. Separately, PR #331 also had its OWN one-off issue: its original
+  Vercel status was posted by an OAuth App (id 1157143) instead of the installed Vercel GitHub App
+  (id 8329) that branch protection requires — merge attempt failed with "status check was not set
+  by the expected GitHub app"; the retrigger push fixed the app-identity issue (new status now
+  correctly from id 8329) but is still stuck pending on the same root-cause stall. **~16 PRs
+  blocked on this alone**: #318, #319, #320, #321, #323, #324, #325, #327, #328, #329, #330, #331,
+  #332, #333, #334, #343 — none are hold-for-owner by diff (no `lib/db/schema.ts`, `drizzle/**`,
+  new `lib/env.ts` flag, or `vercel.json` touches in any of them), all otherwise look mergeable
+  once Vercel resolves. **Separately, 9 PRs (#335-#342, #344) have a green Vercel check but a
+  real git merge conflict** (`mergeable_state: dirty`, confirmed via a live merge attempt on #341:
+  "405 Pull Request has merge conflicts") — dispatched to a background agent this same run to
+  resolve conflicts (notably #335 and #341 both touch `lib/mcp-tools.ts`'s card-affiliate map) and
+  merge once clean; see this run's PR activity for that outcome. **Linear was unreachable this
+  session** (MCP requires interactive OAuth, unavailable headless) — falling back to this log per
+  `docs/autonomy-runbook.md`'s git-fallback mode; the "Founder review queue" issue this run would
+  have updated could not be reached. **lesson**: when the whole backlog looks uniformly stuck
+  rather than individually red, don't diagnose PR-by-PR — pick one representative PR, push a real
+  test commit, and read the *shape* of the stuck status (which app posted it, whether it's a fresh
+  vs. stale SHA) before assuming it's the same failure as a normal red CI run.
 - 2026-07-09 · Claude Code (GitHub task session) · agents-functionality · fixed stale `.claude/`
   reviewer instructions left over from ADR 0011 (PR #276, merged) ·
   **lesson**: merged on green CI + zero open review threads alone, within ~2 minutes of opening
