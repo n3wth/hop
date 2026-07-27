@@ -307,7 +307,7 @@ Agent work is priced in tokens and wall-clock; the code's shape sets that price.
 ## 9. Done since last retro (2026-07-20 → 2026-07-27)
 
 Evidence rule: a claim below has a merged commit/PR link. Nothing here is taken on trust. The
-previous retro (PR #306, `b6026ea`) captured everything through PR #305. **Only 10 PRs merged
+previous retro (PR #306, `b6026ea`) captured everything through PR #305. **Only 11 PRs merged
 after it before the pipeline stalled dead: #307–#317.** PR #317 (`57c886d`, 2026-07-23T10:48 UTC)
 is the last commit on `main` as of this run — every PR opened since (#318 onward, 25+ and still
 growing as of PR #356 today) is stuck behind a frozen required status check. That stall, not any
@@ -324,10 +324,14 @@ single shipped feature, is this retro's dominant finding — see §10.
 - **Design system PR 8 — outline-none focus-ring accessibility audit + ESLint rule** — PR #311
   (`aa4012c`), merged. Solutions entry:
   `docs/solutions/2026-07-21-outline-none-focus-ring-audit-and-eslint-enforcement.md`.
-- **claude.ai/design sync** — PR #314 (`2431d47` + `fe386f4`), merged: hop's component library
+- **claude.ai/design sync** — PR #313 (`2431d47` + `fe386f4`), merged: hop's component library
   synced to claude.ai/design, recorded as **ADR 0010** plus a solutions entry
   (`docs/solutions/2026-07-22-sync-nextjs-app-components-to-claude-design.md`).
-- **Competitor-branding removal** — PR #315 (`309de77`/`cebafa9`), merged: genericized the MCP
+- **Research: live artifacts/codex sites + avoiding AI design slop** — PR #314 (`3252236`),
+  merged: two docs-only research reports (`docs/research/2026-07-22-*.md`) from a deep-research
+  workflow with adversarial claim verification. No code paths touched, no solutions entry
+  warranted (it's a research artifact, not a bug fix or a durable operating rule).
+- **Competitor-branding removal** — PR #315 (`309de77`/`cebabcf`), merged: genericized the MCP
   landing page's copy/config snippets and removed named-competitor (Claude/ChatGPT) branding from
   public surfaces. **The commit message states the actual reason**: Oliver can't publicly
   name/promote non-Gemini LLM products while at Google. Solutions entry via PR #316 (`4c08557`):
@@ -349,105 +353,32 @@ single shipped feature, is this retro's dominant finding — see §10.
 - No merged PR since last retro fixed a non-obvious bug without an accompanying `docs/solutions/`
   entry — every bug-shaped merge above already captured its lesson in the same or a paired PR.
 
-- **Board ranked amendment #1 — `/pricing`'s `<head>` advertised `$49/yr` unconditionally** — PR
-  #304 (`ac45604`), merged same morning it was flagged: `app/pricing/page.tsx`'s static `metadata`
-  export became `generateMetadata()`, gated on `isBillingEnabled()` (the page body already
-  branched correctly; only the `<head>`/social-preview description didn't). Verified with
-  `typecheck`/`lint`/`test`/`build` per the growth desk's own funnel-log entry
-  (`docs/marketing/funnel-log.md`, 2026-07-20). This is a genuine same-day close of a board
-  finding — the fastest amendment turnaround logged so far.
-- **Self-improvement loop (ADR 0007), two more slices shipped**: PR #300 (`bebf850`) — system
-  digest section in `lib/business-digest.ts` plus a new **D6 "dead watches" detector**
-  (`lib/health-checks.ts`: flags standing-order watches older than `WATCH_DEAD_DAYS` with zero
-  alerts fired). PR #301/#302 (`692b709` + `947d37f` fixup + `cdb4a01` docs) — the **Data Refresh
-  Loop (L3)**: a new monthly GitHub Actions workflow (`.github/workflows/data-refresh.yml`)
-  regenerates `lib/place-facts.ts`/`lib/climate-normals.ts` from Wikidata/Open-Meteo/Frankfurter
-  and opens a PR, gated by a new `lib/__tests__/data-snapshot.test.ts` structural-invariant suite
-  so a malformed upstream payload fails the Action instead of landing as a broken diff. Adversarial
-  review on the first pass caught three real defects before merge — a `GITHUB_TOKEN`
-  (vs. `HOP_BOT_TOKEN`) checkout that would have opened PRs with no CI trigger
-  (`docs/solutions/2026-07-19-github-token-pr-ci-gotcha.md`), an `|| echo` that swallowed all
-  `gh pr create` failures as green, and a weakened affiliate-tracking test assertion — all fixed in
-  `947d37f` and captured in three new `docs/solutions/` entries (see below). **Needs an owner
-  action to actually run**: see the new `[Oliver]` item below — the workflow references
-  `secrets.HOP_BOT_TOKEN`, which has no evidence of being set as a repo secret yet, and GitHub
-  Actions billing on this account is still broken (carried board item), so this workflow can't fire
-  either way until both are resolved.
-- **Astryx a11y primitives port** — PR #291 (`897996e`), merged: Dialog, DropdownMenu, Toast, and
-  EmptyState rebuilt on `@astryxdesign/core` (native `<dialog>`/focus-trap/roving-menu-focus
-  instead of hand-rolled JS), themed to hop's tokens via `lib/astryx-theme.ts`. Shipped a real,
-  non-obvious production-only build crash (Astryx's dist hardcoded a dev-only `jsxDEV` import that
-  crashes Next 16's static prerendering under React 19's production JSX runtime, fixed via two
-  `patch-package` patches) and a CSS `@layer` cascade-order bug. **No `docs/solutions/` entry
-  existed for either — written this retro**:
-  `docs/solutions/2026-07-14-astryx-jsxdev-prod-crash-and-css-layer-order.md`.
-- **Design system PR 4 — Card and Eyebrow primitives** — PR #303 (`62260ca`), merged: new `<Card>`/
-  `<Eyebrow>` primitives plus call-site migrations. Not a full sweep — `npm run lint` still flags
-  ~10 hand-rolled card/eyebrow instances across `components/landing/*` this run (informational
-  `no-restricted-syntax` warnings, not errors); remaining migrations are follow-up work, not a
-  defect in this PR.
-- **Security** — PR #297 (`7bac24f`), merged: removed a third-party `emrldtp.com` attribution
-  script that was tripping Safe Browsing flags. Already has a solutions entry from the same week
-  (`docs/solutions/2026-07-18-remove-emrldtp-attribution-tag-safe-browsing-flag.md`).
-- **Docs infra** — PR #295 (`ce9879d`), merged: added the Spiral writing skill and brought
-  README's stack description up to date.
-- **Board review (weekly)** — PR #298 (`f397b2b`), `docs/board/2026-07-19-board-memo.md`: found the
-  org executed 1 of 13 prior amendments (the VerdictRail CTA fix, already closed last retro), 1
-  net-negative (content freeze violated again), 11 unchanged/worse. **Strategy review (weekly)** —
-  PR #299 (`6f17223`), `docs/strategy/2026-07-19-weekly-strategy.md`: adopted the board's ranked
-  list as-is (per the ownership rule — this was the first week the board memo wasn't stale
-  relative to the strategy desk), added a fresh PostHog pull and market scan (point.me's 2026-07-16
-  "Explore"/"My Points" launch lands close to hop's cpp-verdict pitch; a journalist's LLM test found
-  no assistant recommends hop by name yet), and logged the first-ever nonzero `signed_up`/
-  `first_program_added` read (2026-07-18, n=1, one real multi-search session) as a watch item, not
-  a confirmed fix.
-- **Growth desk** — PR #292/#294/#296/#305 (`925db17`/`12d7708`/`f6b8d04`/`23e1c1e`): weekly
-  funnel-log entries. #293 (`7d22b7e`) shipped `/guides/points-101`, a beginner-education SEO page
-  sourced entirely from `lib/programs.ts`/`lib/cpp.ts` — **this is the content-pipeline freeze's
-  third violation** (after PR #275 and PR #288), confirmed by the board's own follow-through table;
-  see the updated freeze note in Open Threads. #296 also drafted (but could not complete
-  unattended) copy for 3 MCP-directory submissions — Smithery/PulseMCP/mcp.so all hit auth or
-  scope walls; drafts sit in `docs/marketing/drafts/2026-07-17-mcp-directory-submissions.md`.
-- **Finance desk** — PR #290 (`aae2b66`): paused the credit/discount-hunt cadence (Oliver's direct
-  feedback that the memos had become repetitive) and escalated the subscriber-count access gap to
-  the board. No finance PR since — the desk has now gone 6 days silent, matching the board's own
-  finding; not a new problem this retro is surfacing, just confirming it's still true.
-- **CRON_JOBS ↔ vercel.json lockstep** — still in sync this run: same 10 crons on both sides,
-  matching paths/schedules (the new `data-refresh.yml` is a GitHub Actions workflow, not a Vercel
-  cron, so it's correctly outside `CRON_JOBS`' scope). The lockstep test
-  (`lib/__tests__/health-checks.test.ts`) still exists and passes.
-- **`npm run check` on `main`** — green at `23e1c1e`: `db:check-migrations` OK, lint 0 errors (268
-  warnings — mostly the `no-restricted-syntax` Card/Eyebrow migration reminders above, expected and
-  informational), typecheck clean, 112 test files / 1353 tests passing. **One easy-to-misread
-  wrinkle**: mid-run, `npm test`'s console briefly prints a `[check-migration-sequence] FAILED —
-  migration sequence collision detected` line that looks like a build failure. It isn't — it's
-  `lib/__tests__/migration-sequence-check.test.ts` exercising the checker's own error path against
-  an in-memory fixture, and the real `db:check-migrations` step (which ran first, standalone)
-  already reported OK. Confirmed by running `npm run db:check-migrations` in isolation. Not a
-  P1/P2 — just noting it here so the next retro doesn't lose a few minutes re-diagnosing a false
-  alarm; a low-effort follow-up would be silencing that test's `console.error` under
-  `vi.spyOn`.
-- **Zero open PRs** at the time of this run — the queue is clear, same as last retro.
-
 ## 10. Open threads
 
 **The dominant thread this run: the merge pipeline has been fully stuck since 2026-07-23.** The
-last commit to land on `main` was PR #317 (`57c886d`, 2026-07-23T10:48 UTC). Every PR opened since
-— #318 through at least #356, 25+ and still growing as of today — shows the required `Vercel`
+last commit to land on `main` was PR #317 (`57c886d`, 2026-07-23T10:48 UTC). Most PRs opened since
+— #318 through at least #356, 25+ and still growing as of today — show the required `Vercel`
 status check frozen `pending` for 24–45+ hours with zero update, and `main`'s branch protection
-requires that check before merge, so nothing is actively rejecting these PRs, they're simply
-accumulating. Four independent reads this week converge on the same evidence: the 2026-07-26
-board memo (open, unmerged — PR #333), the same-day strategy review (open, unmerged — PR #334,
-which adopts the board's list as-is), the 2026-07-27 sheriff sweep (open, unmerged — PR #345,
-which narrowed the cause to a GitHub App identity mismatch on the Vercel check and separately
-found/dispatched fixes for 9 PRs with real git merge conflicts), and today's funnel-log entry
-(open — PR #356, 4th independent reconfirmation in 24h). **PR #352 (open, unmerged) documents the
-root cause precisely: the Vercel status was posted by the OAuth App identity, not the installed
-Vercel GitHub App branch protection expects.** The concrete, human-only fix, per PR #356: **GitHub
-→ Settings → Integrations → reauthorize the Vercel GitHub App** — under 5 minutes, unsticks all
-queued PRs across every desk. This is now the single highest-leverage founder action open, ahead
-of the two longer-running founder blockers below. This retro's own PR will queue behind the same
-stall.
+requires that check before merge, so nothing is actively rejecting those PRs, they're simply
+accumulating. **Not every PR shows `pending`, though, and the exception is itself the clearest
+evidence of the root cause**: PR #352 currently shows `Vercel: success` — but that status was
+posted by a different identity than the one the other PRs' `pending` checks are stuck under
+(compare its check's avatar/description to a plain `vercel[bot]` status), and PR #352 still hasn't
+merged despite the green check. That's consistent with, not a contradiction of, the diagnosis
+below: a `success` from the wrong identity doesn't satisfy the specific GitHub App instance branch
+protection requires, so it can show green and still not unblock the merge. Four independent reads
+this week converge on the same underlying evidence: the 2026-07-26 board memo (open, unmerged —
+PR #333), the same-day strategy review (open, unmerged — PR #334, which adopts the board's list
+as-is), the 2026-07-27 sheriff sweep (open, unmerged — PR #345, which narrowed the cause to a
+GitHub App identity mismatch on the Vercel check and separately found/dispatched fixes for 9 PRs
+with real git merge conflicts), and today's funnel-log entry (open — PR #356, 4th independent
+reconfirmation in 24h). **PR #352 (open, unmerged) documents the root cause precisely: the green
+status above was posted by the OAuth App identity, not the installed Vercel GitHub App branch
+protection expects.** The concrete, human-only fix, per PR #356: **GitHub → Settings →
+Integrations → reauthorize the Vercel GitHub App** — under 5 minutes, unsticks all queued PRs
+across every desk. This is now the single highest-leverage founder action open, ahead of the two
+longer-running founder blockers below. This retro's own PR (#357) shows the more common
+`pending` variant of the same stall.
 
 **Priority ranking (adopted from the 2026-07-26 board memo, `docs/board/2026-07-26-board-memo.md`
 §7, open PR #333 — per the ownership rule in this doc's header, the board's ranked list wins, and
