@@ -1,5 +1,30 @@
 # Autonomy run log
 
+- 2026-07-27 (tenth sweep same day) · Claude Code (merge-queue sheriff, scheduled) · re-swept all
+  20 currently-open PRs (#318-#353) — identical open set to the ninth sweep (which itself closed
+  #354/#355 as stale duplicates), zero net change since: no new PRs, none closed/merged/converted
+  from draft. **No new information this run**: spot-checked `get_status` on #331 (oldest fix-PR)
+  directly — still the single `Vercel` context `pending` ("Waiting for checks to complete", stale
+  app avatar `.../in/8329`), `created_at` == `updated_at` (2026-07-27T01:12:13Z), i.e. frozen since
+  creation, unchanged from every prior sweep. `get` on both hold-for-owner PRs (#318
+  `HOP_ENABLE_SUPPORT_AGENT`, #348 `HOP_ENABLE_LLM_TRACING`) confirms `mergeable_state: blocked` on
+  both, unchanged; their last PR-comment flags (00:22 and 02:22 UTC) remain the most recent —
+  inside the 24h no-nag window, so no re-nag posted. Also re-checked #353 (newest PR, ADR 0013,
+  docs-only) — same `blocked` state as everything else, confirming the stall is still fleet-wide,
+  not PR-specific. Classification re-confirmed unchanged: only #318 and #348 touch `lib/env.ts`
+  with a new flag among the 20 open PRs; no `lib/db/schema.ts`, `drizzle/**`, or `vercel.json`
+  touches found anywhere else. **No merge/fix/comment actions taken**: every non-hold PR is still
+  blocked purely on the external Vercel required-status-check stall (root-caused in
+  `docs/solutions/2026-07-27-vercel-github-app-identity-split-status-checks.md`, PR #352), not on
+  code quality — nothing to fix, and a repeat merge/retrigger probe would only reproduce the same
+  already-documented `405 ... was not set by the expected GitHub app` failure. **No founder
+  notification sent** (10th consecutive sweep since 2026-07-24 reporting the identical unresolved
+  blocker, with a direct out-of-band founder ping already sent earlier today and zero owner action
+  or check-state change since — a repeat alert now would be pure noise, not new information). Will
+  re-notify only if the check state changes or the PR backlog shows evidence of owner action.
+  **Linear still unreachable** this session (headless, no interactive OAuth) — git-fallback again,
+  appending here per the runbook rather than the standing "Founder review queue" thread.
+
 - 2026-07-27 (ninth sweep same day) · Claude Code (merge-queue sheriff, scheduled) · full backlog
   sweep of 21 open PRs (#318-#355 minus gaps). **Root blocker unchanged**: spot-checked `get_status`
   on #345 and #352 — every non-hold PR still shows the single `Vercel` context `pending` from the
