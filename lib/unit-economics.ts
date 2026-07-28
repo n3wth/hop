@@ -28,12 +28,21 @@ export interface UnitEconomics {
   escalationsNew: number | null
   /** Handled booking requests (status done). null = degraded. */
   escalationsDone: number | null
-  /** PostHog LLM spend — not wired yet. */
-  llmCostUsd: null
+  /** PostHog/OpenAI LLM spend (null when unconfigured). Override via HOP_LLM_COST_MONTHLY_USD. */
+  llmCostUsd: number | null
   /** Documented infra baseline (Neon + Vercel + email). */
   infraCostUsd: number
-  /** MRR − infra when MRR is known (LLM omitted until wired). null when MRR degraded. */
+  /** MRR − infra − llmCost when MRR is known. null when MRR degraded. */
   contributionUsd: number | null
+}
+
+export function readLlmCostMonthlyUsd(): number | null {
+  const raw = process.env.HOP_LLM_COST_MONTHLY_USD
+  if (raw) {
+    const n = parseFloat(raw)
+    if (Number.isFinite(n) && n >= 0) return n
+  }
+  return null
 }
 
 export function readInfraCostMonthlyUsd(): number {
@@ -100,6 +109,7 @@ async function countEscalationsByStatus(): Promise<{ new: number; done: number }
 
 export async function computeUnitEconomics(): Promise<UnitEconomics> {
   const infraCostUsd = readInfraCostMonthlyUsd()
+  const llmCostUsd = readLlmCostMonthlyUsd()
   const [mrr, outclicks, escalations] = await Promise.all([
     computeMrr(),
     getOutclickSummary(),
@@ -108,7 +118,9 @@ export async function computeUnitEconomics(): Promise<UnitEconomics> {
 
   const mrrUsd = mrr?.mrrUsd ?? null
   const contributionUsd =
-    mrrUsd !== null ? Math.round((mrrUsd - infraCostUsd) * 100) / 100 : null
+    mrrUsd !== null
+      ? Math.round((mrrUsd - infraCostUsd - (llmCostUsd ?? 0)) * 100) / 100
+      : null
 
   return {
     mrrUsd,
@@ -117,7 +129,7 @@ export async function computeUnitEconomics(): Promise<UnitEconomics> {
     outclicksTotal7d: outclicks?.total ?? null,
     escalationsNew: escalations?.new ?? null,
     escalationsDone: escalations?.done ?? null,
-    llmCostUsd: null,
+    llmCostUsd,
     infraCostUsd,
     contributionUsd,
   }
