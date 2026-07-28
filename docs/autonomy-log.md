@@ -1,5 +1,17 @@
 # Autonomy run log
 
+- 2026-07-28 (fourteenth sweep, ~07:19 UTC) · Claude Code (merge-queue sheriff, scheduled) · no
+  change since the thirteenth sweep. Re-checked all 9 open PRs (#321, #330, #332, #333, #334,
+  #343, #345, #353, #357) directly via `get_status`: all still `Vercel: pending`, stuck 40min–2h
+  (one, #334, ~40h — stacked on #333's branch, unmoved). None are hold-for-owner (still docs-only
+  except #321's `scripts/hermes/*.sh` and #343's `app/support/page.tsx`, neither touches
+  schema/drizzle/a new `lib/env.ts` flag/`vercel.json`). Confirmed auto-merge is armed on all 6
+  eligible non-draft PRs (321, 330, 332, 343, 345, 353) — each was already enabled by an earlier
+  sweep (earliest: #330 at 2026-07-25T15:22Z), re-confirmed live this run, nothing to re-arm.
+  #333/#357 stay draft (not mine to flip); #334 stays blocked behind #333. No merge/fix/comment
+  actions taken — nothing changed to act on. No push notification sent (the thirteenth sweep
+  already surfaced this exact finding minutes ago; re-sending now would be noise, not signal).
+  Linear still unreachable — git-fallback, this entry.
 - 2026-07-28 (thirteenth sweep) · Claude Code (merge-queue sheriff, scheduled) · **correction to
   the twelfth-sweep entry immediately below** — the Vercel required-status-check itself is NOT
   fixed. Re-swept the same 9 open PRs (#321, #330, #332, #333, #334, #343, #345, #353, #357),
