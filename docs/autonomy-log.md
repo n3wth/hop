@@ -1,5 +1,23 @@
 # Autonomy run log
 
+- 2026-07-28 (seventeenth sweep) · Claude Code (merge-queue sheriff, scheduled) · **correction to
+  the sixteenth-sweep entry immediately below**: #362 is hold-for-owner after all. The sixteenth
+  sweep checked only the sheriff prompt's abbreviated hold criteria (`lib/db/schema.ts`,
+  `drizzle/**`, a new `lib/env.ts` flag, `vercel.json`) and missed that ADR 0009's actual hold
+  list (`docs/decisions/0009-tiered-autonomous-merge.md`) is broader and explicitly names
+  `.github/workflows/**`: "CI is the merge gate itself; an agent edit could weaken it." #362
+  rewrites `.github/workflows/data-refresh.yml` (checkout-token fallback, path-guard tightening,
+  PR-creation steps) — squarely in scope. Posted a hold-for-owner comment on #362 tagging
+  @n3wth (https://github.com/n3wth/hop/pull/362#issuecomment-5102250701) summarizing the change
+  and why it needs review; not re-checked against the other 9 open PRs' fuller diffs beyond what
+  the sixteenth sweep already confirmed (none touch schema/drizzle/env.ts-flags/vercel.json/
+  workflows/money-identity-files/package.json/eve/displayed-prices). No merge/fix actions taken on
+  any PR this run — #362 is now correctly held, everything else is still blocked on the
+  wedged `Vercel` check. **No push notification sent** — a classification correction on a PR that
+  wasn't mergeable anyway (still `Vercel: pending`) isn't new information for the founder. Linear
+  still unreachable (headless, no interactive OAuth) — recording the hold here and on #362's PR
+  comment as git-fallback; should mirror to the "Founder review queue" issue once a
+  Linear-connected session runs.
 - 2026-07-28 (sixteenth sweep) · Claude Code (merge-queue sheriff, scheduled) · one new PR since
   the fifteenth sweep — #362 (`feat(self-improve): PR 3 — data-refresh loop (L3) + standing
   data-snapshot invariants`, self-improve desk, opened 08:18 UTC) joins the queue, now 10 open PRs
