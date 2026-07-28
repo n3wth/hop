@@ -1,5 +1,39 @@
 # Autonomy run log
 
+- 2026-07-28 (eighteenth sweep) · Claude Code (merge-queue sheriff, scheduled) · **Linear was
+  reachable this session** (unlike every sweep since the seventeenth — no OAuth issue this run) —
+  posted directly to the "Founder review queue" issue (N-355) instead of git-fallback, correcting
+  a comment posted there minutes earlier by a different session that declared the merge-pipeline
+  stall fully "RESOLVED." **It is not.** Full sweep of the same 10 open PRs (#321, #330, #332,
+  #333, #334, #343, #345, #353, #357, #362), oldest→newest, with fresh live `get_status` on every
+  one: **all 10 still show `Vercel: pending`**, including commits pushed hours *after* the
+  claimed 04:59–05:11 UTC fix — #330/#332 got fresh pushes at 08:20/08:21 UTC today and were still
+  frozen `pending` an hour later at check time; #362 (opened 08:18 UTC) the same; #334 has been
+  dead-frozen on the identical `pending` status since 2026-07-26T15:12 UTC (42+ hours), completely
+  untouched. Every status is posted by the correct app identity (avatar id 8329, the installed
+  Vercel GitHub App) — the PR #352 identity-mismatch bug is not recurring, so this is the older,
+  more fundamental symptom several earlier sweeps already diagnosed: the Vercel build finishes but
+  the commit-status callback never flips off `pending`. Read: this morning's 17-PR merge burst
+  happened because Oliver merged by hand, not because the check started resolving end-to-end —
+  exactly what the thirteenth-sweep entry above warned would keep being true. Zero PRs have
+  auto-merged on their own since that burst despite several having auto-merge armed for hours.
+  **Hold-for-owner re-confirmed**: only #362 (`.github/workflows/data-refresh.yml`, ADR 0009's
+  explicit CI-workflow hold) — already flagged on the PR ~2h before this sweep
+  (https://github.com/n3wth/hop/pull/362#issuecomment-5102250701), inside the 24h no-nag window,
+  not re-posted. **Actions taken**: re-confirmed/armed auto-merge (squash where not already set)
+  on the 6 eligible non-hold, non-draft PRs (#321, #330, #332, #343, #345, #353) — four were
+  already armed with plain `MERGE` from earlier sweeps; left as-is since ADR 0009's own Mechanics
+  line specifies "merge-commit method (matches repo history)," not squash, despite this sheriff
+  prompt's own shorthand saying `--squash` — deferring to the accepted ADR text over the prompt's
+  paraphrase. #333/#334/#357 remain draft, untouched (not mine to flip); #334 stays blocked behind
+  #333's branch. **Posted a correction comment to Linear N-355** (not git-fallback this run) laying
+  out the above; did not send a push notification on top of it — the Linear correction reaches the
+  same audience and a phone alert this soon after another session's Linear post would be redundant
+  noise, not new reach. **This run:** Seen 10 · Merged 0 · Fixed-and-reverified 0 · Held-for-owner
+  1 (#362, already flagged) · Blocked 9 (external Vercel check, not code quality). **Worth a
+  `docs/solutions/` follow-up once someone has bandwidth**: distinguish, in writing, "the Vercel
+  GitHub App identity is correct" from "the Vercel check completes" — this run is proof those are
+  two separate failure modes and a same-day sweep conflated them into a premature "resolved."
 - 2026-07-28 (seventeenth sweep) · Claude Code (merge-queue sheriff, scheduled) · **correction to
   the sixteenth-sweep entry immediately below**: #362 is hold-for-owner after all. The sixteenth
   sweep checked only the sheriff prompt's abbreviated hold criteria (`lib/db/schema.ts`,
