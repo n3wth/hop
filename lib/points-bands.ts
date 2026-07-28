@@ -52,3 +52,17 @@ export function neighborBands(amount: number): { prev?: number; next?: number } 
   if (idx === -1) return {}
   return { prev: POINTS_BANDS[idx - 1], next: POINTS_BANDS[idx + 1] }
 }
+
+// Evergreen CTA from a force-static points-band page into request-time search.
+// Relative dates are resolved by /search, so a build can never freeze the link
+// to dates that later become stale.
+export function pointsBandSearchHref(destination: string): string {
+  const query = new URLSearchParams({
+    from: 'SFO',
+    to: destination,
+    departIn: '21',
+    returnIn: '28',
+    adults: '1',
+  })
+  return `/search?${query.toString()}`
+}

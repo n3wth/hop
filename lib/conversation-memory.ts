@@ -121,6 +121,10 @@ const SUMMARY_SYSTEM = [
   'stale and misleading. No preamble; output only the note.',
 ].join(' ')
 
+// This call handles accumulated transcript content plus durable memory. Keep an
+// explicit opt-out even though hop never globally registers AI telemetry.
+export const CONVERSATION_MEMORY_TELEMETRY = { isEnabled: false } as const
+
 // Fold the older turns (with any prior summary) into a fresh durable summary.
 // Fire-and-forget, gated, best-effort — NEVER throws to the caller. `thread` is
 // the FULL conversation (the client resends its whole prior thread each turn), so
@@ -139,6 +143,7 @@ export async function updateConversationMemory(
       .join('\n')
     const { text } = await generateText({
       model: gateway(process.env.AI_GATEWAY_SUMMARY_MODEL || GATEWAY_MODEL),
+      telemetry: CONVERSATION_MEMORY_TELEMETRY,
       system: SUMMARY_SYSTEM,
       prompt: `Running memory so far:\n${prior || '(none yet)'}\n\nNewer conversation to fold in:\n${transcript}\n\nUpdated memory note:`,
     })

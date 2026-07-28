@@ -7,6 +7,7 @@ import {
   formatPointsLabel,
   formatPointsCompact,
   neighborBands,
+  pointsBandSearchHref,
 } from '@/lib/points-bands'
 
 describe('POINTS_BANDS', () => {
@@ -93,5 +94,24 @@ describe('neighborBands', () => {
 
   it('returns an empty object for a value that is not a curated band', () => {
     expect(neighborBands(12345)).toEqual({})
+  })
+})
+
+describe('pointsBandSearchHref', () => {
+  it('uses the evergreen request-time search date contract', () => {
+    const href = pointsBandSearchHref('NRT')
+    const url = new URL(href, 'https://example.com')
+
+    expect(url.pathname).toBe('/search')
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      from: 'SFO',
+      to: 'NRT',
+      departIn: '21',
+      returnIn: '28',
+      adults: '1',
+    })
+    expect(url.searchParams.has('depart')).toBe(false)
+    expect(url.searchParams.has('return')).toBe(false)
+    expect(url.searchParams.has('ret')).toBe(false)
   })
 })
