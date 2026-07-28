@@ -115,23 +115,11 @@ export default function AdminDashboard({
       {/* Wide screens: health + findings side by side; below lg they stack. */}
       <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">
       <Section title="System health">
-        {heartbeats === null && degradation === null ? (
-          <Empty>
-            {selfImproveEnabled
-              ? 'No health data yet.'
-              : 'Monitoring is off (HOP_ENABLE_SELF_IMPROVE).'}
-          </Empty>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              {CRON_JOBS.map((spec) => (
-                <HeartbeatRow key={spec.job} spec={spec} heartbeat={heartbeats?.find((h) => h.job === spec.job) ?? null} />
-              ))}
-            </div>
-            {degradation ? <DegradationList degradation={degradation} /> : null}
-            <AnalyzeButton label="health" run={analyzeAdminHealth} />
-          </div>
-        )}
+        <SystemHealthContent
+          heartbeats={heartbeats}
+          degradation={degradation}
+          monitoringEnabled={selfImproveEnabled}
+        />
       </Section>
 
       <Section title="Open findings">
@@ -350,6 +338,50 @@ function Empty({ children }: { children: ReactNode }) {
   return (
     <div className="rounded-[14px] border border-dashed border-border bg-paper/50 px-4 py-6 text-center text-[13px] text-text3">
       {children}
+    </div>
+  )
+}
+
+export function SystemHealthContent({
+  heartbeats,
+  degradation,
+  monitoringEnabled,
+}: {
+  heartbeats: CronHeartbeat[] | null
+  degradation: DegradationWindowCounts | null
+  monitoringEnabled: boolean
+}) {
+  if (heartbeats === null && degradation === null) {
+    return (
+      <Empty>
+        {monitoringEnabled
+          ? 'Cron health is unavailable.'
+          : 'Monitoring is off (HOP_ENABLE_SELF_IMPROVE).'}
+      </Empty>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {heartbeats === null ? (
+        <Empty>
+          {monitoringEnabled
+            ? 'Cron health is unavailable.'
+            : 'Monitoring is off (HOP_ENABLE_SELF_IMPROVE).'}
+        </Empty>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {CRON_JOBS.map((spec) => (
+            <HeartbeatRow
+              key={spec.job}
+              spec={spec}
+              heartbeat={heartbeats.find((heartbeat) => heartbeat.job === spec.job) ?? null}
+            />
+          ))}
+        </div>
+      )}
+      {degradation ? <DegradationList degradation={degradation} /> : null}
+      <AnalyzeButton label="health" run={analyzeAdminHealth} />
     </div>
   )
 }
