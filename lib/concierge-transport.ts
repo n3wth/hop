@@ -128,9 +128,14 @@ function parseEnvelope(envelope: string): A2UIBlock[] | undefined {
 
 export class ConciergeTransport implements ChatTransport<HopUIMessage> {
   private readonly getContext: () => ConciergeRequestContext | undefined
+  private readonly endpoint: string
 
-  constructor(getContext: () => ConciergeRequestContext | undefined) {
+  constructor(
+    getContext: () => ConciergeRequestContext | undefined,
+    endpoint = '/api/concierge'
+  ) {
     this.getContext = getContext
+    this.endpoint = endpoint
   }
 
   async sendMessages(
@@ -145,7 +150,7 @@ export class ConciergeTransport implements ChatTransport<HopUIMessage> {
       : thread
     const context = this.getContext()
 
-    const res = await fetch('/api/concierge', {
+    const res = await fetch(this.endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: abortSignal,

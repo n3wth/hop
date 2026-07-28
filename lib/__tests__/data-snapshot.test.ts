@@ -1,74 +1,71 @@
 import { describe, expect, it } from 'vitest'
 import { destinations } from '@/lib/destinations'
-import { PLACE_FACTS, CURRENCY, FX } from '@/lib/place-facts'
-import { CLIMATE_NORMALS, DEST_COORDS } from '@/lib/climate-normals'
+import { PLACE_FACTS, CURRENCY, FX, GENERATED_AT as PLACE_FACTS_GENERATED_AT } from '@/lib/place-facts'
+import { CLIMATE_NORMALS, DEST_COORDS, GENERATED_AT as CLIMATE_GENERATED_AT } from '@/lib/climate-normals'
 
-describe('committed datasets structural invariants', () => {
-  it('has destination-set parity with lib/destinations.ts', () => {
-    const destinationCodes = destinations.map((d) => d.code)
-
-    expect(destinationCodes.length).toBeGreaterThan(0)
-
-    for (const code of destinationCodes) {
-      expect(PLACE_FACTS[code], `PLACE_FACTS is missing destination: ${code}`).toBeDefined()
-      expect(CLIMATE_NORMALS[code], `CLIMATE_NORMALS is missing destination: ${code}`).toBeDefined()
-      expect(DEST_COORDS[code], `DEST_COORDS is missing destination: ${code}`).toBeDefined()
+describe('data snapshot invariants', () => {
+  it('covers every destination in destinations.ts in PLACE_FACTS and CLIMATE_NORMALS', () => {
+    const destCodes = destinations.map((d) => d.code)
+    for (const code of destCodes) {
+      expect(PLACE_FACTS[code], `missing PLACE_FACTS for ${code}`).toBeDefined()
+      expect(CLIMATE_NORMALS[code], `missing CLIMATE_NORMALS for ${code}`).toBeDefined()
+      expect(DEST_COORDS[code], `missing DEST_COORDS for ${code}`).toBeDefined()
     }
   })
 
-  it('verifies that currency codes match /^[A-Z]{3}$/ and exist in the CURRENCY table', () => {
-    for (const facts of Object.values(PLACE_FACTS)) {
-      const curCode = facts.currencyCode
-      if (curCode !== null) {
-        expect(curCode).match(/^[A-Z]{3}$/)
-        expect(CURRENCY[curCode], `CURRENCY table is missing entry for: ${curCode}`).toBeDefined()
+  it('validates currency codes and CURRENCY table', () => {
+    for (const [code, fact] of Object.entries(PLACE_FACTS)) {
+      if (fact.currencyCode) {
+        expect(fact.currencyCode).toMatch(/^[A-Z]{3}$/)
+        expect(
+          CURRENCY[fact.currencyCode],
+          `missing CURRENCY entry for ${fact.currencyCode} (destination ${code})`,
+        ).toBeDefined()
+        expect(CURRENCY[fact.currencyCode].name).toBeTruthy()
+        expect(CURRENCY[fact.currencyCode].symbol).toBeTruthy()
       }
     }
   })
 
-  it('verifies FX snapshot invariants', () => {
-    expect(FX).toBeDefined()
-    expect(FX.date).toBeDefined()
-    expect(FX.agoDate).toBeDefined()
+  it('validates FX snapshot rates', () => {
+    expect(FX.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(FX.agoDate).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(Date.parse(FX.date)).toBeGreaterThanOrEqual(Date.parse(FX.agoDate))
 
-    const dateMs = Date.parse(FX.date)
-    const agoDateMs = Date.parse(FX.agoDate)
-
-    expect(Number.isFinite(dateMs)).toBe(true)
-    expect(Number.isFinite(agoDateMs)).toBe(true)
-    expect(dateMs).toBeGreaterThanOrEqual(agoDateMs)
-
-    for (const [code, rate] of Object.entries(FX.rates)) {
-      expect(code).match(/^[A-Z]{3}$/)
+    for (const [cur, rate] of Object.entries(FX.rates)) {
+      expect(cur).toMatch(/^[A-Z]{3}$/)
       expect(Number.isFinite(rate)).toBe(true)
       expect(rate).toBeGreaterThan(0)
     }
-
-    for (const [code, rate] of Object.entries(FX.agoRates)) {
-      expect(code).match(/^[A-Z]{3}$/)
+    for (const [cur, rate] of Object.entries(FX.agoRates)) {
+      expect(cur).toMatch(/^[A-Z]{3}$/)
       expect(Number.isFinite(rate)).toBe(true)
       expect(rate).toBeGreaterThan(0)
     }
   })
 
-  it('verifies 12 climate normals per destination', () => {
-    for (const [code, normals] of Object.entries(CLIMATE_NORMALS)) {
-      expect(normals.tempF, `CLIMATE_NORMALS for ${code} tempF is missing`).toBeDefined()
-      expect(normals.precipMM, `CLIMATE_NORMALS for ${code} precipMM is missing`).toBeDefined()
-      expect(normals.tempF).toHaveLength(12)
-      expect(normals.precipMM).toHaveLength(12)
-
-      for (const t of normals.tempF) {
+  it('validates 12 monthly climate normals per destination', () => {
+    for (const [code, normal] of Object.entries(CLIMATE_NORMALS)) {
+      expect(normal.tempF, `tempF for ${code}`).toHaveLength(12)
+      expect(normal.precipMM, `precipMM for ${code}`).toHaveLength(12)
+      for (let i = 0; i < 12; i++) {
+        const t = normal.tempF[i]
+        const p = normal.precipMM[i]
         if (t !== null) {
           expect(Number.isFinite(t)).toBe(true)
         }
-      }
-
-      for (const p of normals.precipMM) {
         if (p !== null) {
           expect(Number.isFinite(p)).toBe(true)
+          expect(p).toBeGreaterThanOrEqual(0)
         }
       }
     }
+  })
+
+  it('has parseable GENERATED_AT timestamps', () => {
+    expect(PLACE_FACTS_GENERATED_AT).toBeDefined()
+    expect(Number.isNaN(Date.parse(PLACE_FACTS_GENERATED_AT))).toBe(false)
+    expect(CLIMATE_GENERATED_AT).toBeDefined()
+    expect(Number.isNaN(Date.parse(CLIMATE_GENERATED_AT))).toBe(false)
   })
 })

@@ -19,6 +19,7 @@
     "check": "npm run db:check-migrations && npm run lint && npm run typecheck && npm test"
   },
   "dependencies": {
+    "@ai-sdk/otel": "1.0.4",
     "@ai-sdk/react": "^4.0.5",
     "@anthropic-ai/sdk": "^0.106.0",
     "@astryxdesign/core": "^0.1.5",

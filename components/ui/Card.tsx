@@ -2,7 +2,7 @@ import React from 'react'
 
 export interface CardProps extends React.HTMLAttributes<HTMLElement> {
   surface?: 'paper' | 'surface' | 'sunk'
-  radius?: 'md' | 'lg'
+  radius?: 'sm' | 'md' | 'lg'
   interactive?: boolean
   as?: 'div' | 'section' | 'article' | 'li'
   children: React.ReactNode
@@ -24,6 +24,7 @@ export default function Card({
   }[surface]
 
   const radiusClass = {
+    sm: 'rounded-[var(--radius-sm)]',
     md: 'rounded-[var(--radius)]',
     lg: 'rounded-[var(--radius-lg)]',
   }[radius]

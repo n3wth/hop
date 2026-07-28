@@ -70,14 +70,21 @@ export type EnvKey =
   | 'LINEAR_API_KEY'
   | 'LINEAR_TEAM_ID'
   // PostHog server-side capture (lib/posthog-server.ts). The write-only project
-  // token — POSTHOG_KEY (server) wins over the public client token, matching
-  // instrumentation.ts precedence. Absent → captureServerEvent is a no-op.
+  // token — POSTHOG_KEY (server) wins over the public client token. Absent →
+  // captureServerEvent is a no-op.
   | 'POSTHOG_KEY'
   | 'NEXT_PUBLIC_POSTHOG_KEY'
+  // PostHog's Vercel integration aliases. LLM tracing accepts these for
+  // compatibility, but still requires HOP_ENABLE_LLM_TRACING explicitly.
+  | 'NEXT_PUBLIC_VERCEL_HOP_POSTHOG_PROJECT_TOKEN'
   // Optional ingestion-host override (no trailing slash); defaults to the US
   // cloud host in lib/posthog-server.ts when absent.
   | 'POSTHOG_HOST'
   | 'NEXT_PUBLIC_POSTHOG_HOST'
+  | 'NEXT_PUBLIC_VERCEL_HOP_POSTHOG_HOST'
+  // LLM tracing is privacy-sensitive and disabled unless this flag AND a
+  // configured PostHog project key are present.
+  | 'HOP_ENABLE_LLM_TRACING'
   // ── Identity + data (Better Auth on Neon) ─────────────────────────────────
   // Neon Postgres connection string (pooled). The Drizzle client (lib/db) and
   // Better Auth both read it lazily; absent → getDb() returns null and every
@@ -171,6 +178,18 @@ export const env = {
   linearTeamId: () => read('LINEAR_TEAM_ID'),
   posthogKey: () => firstEnv('POSTHOG_KEY', 'NEXT_PUBLIC_POSTHOG_KEY'),
   posthogHost: () => firstEnv('POSTHOG_HOST', 'NEXT_PUBLIC_POSTHOG_HOST'),
+  llmTracingPosthogKey: () =>
+    firstEnv(
+      'POSTHOG_KEY',
+      'NEXT_PUBLIC_POSTHOG_KEY',
+      'NEXT_PUBLIC_VERCEL_HOP_POSTHOG_PROJECT_TOKEN',
+    ),
+  llmTracingPosthogHost: () =>
+    firstEnv(
+      'POSTHOG_HOST',
+      'NEXT_PUBLIC_POSTHOG_HOST',
+      'NEXT_PUBLIC_VERCEL_HOP_POSTHOG_HOST',
+    ),
   databaseUrl: () => read('DATABASE_URL'),
   googleClientId: () => firstEnv('GOOGLE_CLIENT_ID', 'GOOGLE_ID'),
   googleClientSecret: () => firstEnv('GOOGLE_CLIENT_SECRET', 'GOOGLE_SECRET'),
@@ -193,6 +212,20 @@ function firstEnv(...keys: EnvKey[]): string {
 // capture is fire-and-forget observability, not a product seam.
 export function isPostHogEnabled(): boolean {
   return hasEnv('POSTHOG_KEY') || hasEnv('NEXT_PUBLIC_POSTHOG_KEY')
+}
+
+// LLM tracing is a privacy-sensitive double lock: a project key alone never
+// activates it. The AI SDK call-site helper separately disables input/output
+// recording even when this returns true.
+export function isLlmTracingEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_LLM_TRACING ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return (
+    on &&
+    (hasEnv('POSTHOG_KEY') ||
+      hasEnv('NEXT_PUBLIC_POSTHOG_KEY') ||
+      hasEnv('NEXT_PUBLIC_VERCEL_HOP_POSTHOG_PROJECT_TOKEN'))
+  )
 }
 
 // True when a key is present without throwing — lets a client degrade
@@ -372,6 +405,16 @@ export function isBillingEnabled(): boolean {
 // the table is created to let resumed threads stay context-aware.
 export function isConversationMemoryEnabled(): boolean {
   const flag = process.env.HOP_ENABLE_CONVO_MEMORY ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && Boolean(process.env.AI_GATEWAY_API_KEY?.trim())
+}
+
+// AI Customer Support Agent behind /support is GATED behind an explicit flag
+// AND the AI Gateway key it needs to stream replies. Off by default: /support
+// renders byte-identical static FAQ, and the route returns a calm 200 text line.
+// Flip HOP_ENABLE_SUPPORT_AGENT and provide AI_GATEWAY_API_KEY to enable.
+export function isSupportAgentEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_SUPPORT_AGENT ?? ''
   const on = /^(1|true|yes)$/i.test(flag.trim())
   return on && Boolean(process.env.AI_GATEWAY_API_KEY?.trim())
 }
