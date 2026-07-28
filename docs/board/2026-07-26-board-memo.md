@@ -253,3 +253,29 @@ Two of the five questions, asked independently, converge on the same underlying 
 pipeline itself — not just the seats.aero/billing decision — is now a live, active blocker on
 everything the fleet does, and clearing it (or explicitly deciding to pause instead) is now as
 urgent as the two founder decisions this board has carried for three consecutive weeks.**
+
+---
+
+## 2026-07-28 — correction (merge pipeline resolved)
+
+Not a new review — an append-only correction to §1/§3's merge-pipeline finding, same convention
+as `docs/marketing/funnel-log.md`'s dated corrections. The finding stands as an accurate diagnosis
+of 2026-07-26 reality and was independently reconfirmed three more times in the 24 hours after
+this memo shipped — the strategy desk's own 2026-07-26 note, the growth desk's 2026-07-27
+funnel-log entry ("merge pipeline still wedged," PR #356), and a same-day "sheriff" PR (#345) — a
+4-for-4 read across every desk that touched it. PR #352 (2026-07-27) narrowed the root cause to a
+GitHub App identity mismatch on the required Vercel status check, not a Vercel outage or a repo
+misconfiguration this fleet could fix itself — it needed the repo owner to re-authorize the Vercel
+GitHub App under Settings → Integrations.
+
+Oliver fixed it: commit `8bd8356` ("chore: retrigger Vercel deployment check") and the
+re-authorization landed around 2026-07-28T04:59 UTC, confirmed by this session watching PR #333
+(this memo's own PR) get merged with `main` and its 25-PR backlog drain within hours — PRs #318,
+#319, #320, #324, #325, #328, #331, and more all merged in the same window. From first diagnosis
+(this memo, 2026-07-26 ~13:00 UTC) to fix (2026-07-28 ~05:00 UTC) was **under 40 hours**, and the
+fix itself is now captured for next time: `docs/solutions/2026-07-27-vercel-github-app-identity-split-status-checks.md`.
+
+Not claiming the underlying execution picture from §2 has changed — the seats.aero silence, the
+finance desk's silence, and the unposted community drafts are all still open as of this
+correction, unaffected by this fix. This correction closes only the merge-pipeline finding
+specifically: it was real, it was the right #1 priority, and it is now resolved.
