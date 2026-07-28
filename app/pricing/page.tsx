@@ -5,6 +5,8 @@ import { countActiveStandingOrders } from '@/lib/standing-orders'
 import { isBillingEnabled } from '@/lib/env'
 import { PRO_PRICE_YEARLY_USD } from '@/lib/pricing'
 import { BillingSection } from '@/components/BillingSection'
+import Card from '@/components/ui/Card'
+import Eyebrow from '@/components/ui/Eyebrow'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import { pageMeta } from '@/lib/seo'
@@ -55,9 +57,7 @@ export default async function PricingPage({
     <AppShell user={navUser} hideSearch>
       <div className="mx-auto max-w-[var(--container-shell)] pb-16 pt-8 sm:pt-12">
         <div className="max-w-[560px]">
-          <p className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
-            Pricing
-          </p>
+          <Eyebrow>Pricing</Eyebrow>
           <h1 className="mt-2 font-display text-[30px] font-semibold tracking-[-0.02em] text-text sm:text-[36px]">
             {userId ? 'Your plan' : 'Free to search. Pay to watch.'}
           </h1>
@@ -69,18 +69,18 @@ export default async function PricingPage({
         </div>
 
         {errorNote ? (
-          <p className="mt-6 max-w-[560px] rounded-[12px] border border-border bg-sunk px-4 py-2.5 text-[13px] font-medium text-text2">
+          <Card surface="sunk" radius="md" className="mt-6 max-w-[560px] px-4 py-2.5 text-[13px] font-medium text-text2">
             {errorNote}
-          </p>
+          </Card>
         ) : null}
 
         <div className="mt-8">
           {billingEnabled ? (
             <BillingSection isSignedIn={!!userId} tier={tier} activeCount={activeCount} />
           ) : (
-            <p className="rounded-[var(--radius)] border border-border bg-sunk px-5 py-4 text-[13.5px] text-text2">
+            <Card surface="sunk" className="px-5 py-4 text-[13.5px] text-text2">
               hop is free for everyone right now — a paid plan isn&apos;t live yet.
-            </p>
+            </Card>
           )}
         </div>
 
