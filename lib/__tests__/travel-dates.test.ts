@@ -1,5 +1,13 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { clampTravelDates, DEFAULT_DEPART, isValidISO, todayISO } from '@/lib/travel-dates'
+import {
+  clampTravelDates,
+  DEFAULT_DEPART,
+  isValidISO,
+  parseTravelDateQuery,
+  resolveRelativeDate,
+  resolveTravelDateIntent,
+  todayISO,
+} from '@/lib/travel-dates'
 
 afterEach(() => {
   vi.useRealTimers()
@@ -65,5 +73,114 @@ describe('clampTravelDates', () => {
       depart: '2027-01-15',
       return: '2027-01-20',
     })
+  })
+})
+
+describe('relative travel-date intent', () => {
+  it('resolves whole-day offsets from a supplied base', () => {
+    expect(resolveRelativeDate('21', '2026-07-27')).toBe('2026-08-17')
+    expect(resolveRelativeDate('28', '2026-07-27')).toBe('2026-08-24')
+  })
+
+  it('uses calendar-safe UTC arithmetic across a year rollover', () => {
+    expect(resolveRelativeDate('21', '2026-12-20')).toBe('2027-01-10')
+  })
+
+  it('rejects malformed, out-of-range, and invalid-base input without throwing', () => {
+    for (const raw of ['', '-1', '+1', '1.5', '01', '366', 'days']) {
+      expect(resolveRelativeDate(raw, '2026-07-27')).toBeUndefined()
+    }
+    expect(resolveRelativeDate('365', '2026-07-27')).toBe('2027-07-27')
+    expect(resolveRelativeDate('1', '2026-02-30')).toBeUndefined()
+  })
+
+  it('gives exact dates precedence while filling omitted values from offsets', () => {
+    expect(
+      resolveTravelDateIntent('2026-09-01', '2026-09-08', '21', '28', '2026-07-27'),
+    ).toEqual({ depart: '2026-09-01', return: '2026-09-08' })
+    expect(resolveTravelDateIntent(undefined, undefined, '21', '28', '2026-07-27')).toEqual({
+      depart: '2026-08-17',
+      return: '2026-08-24',
+    })
+  })
+
+  it('preserves the existing return-before-depart clamp semantics', () => {
+    setToday('2026-07-27')
+    const intent = resolveTravelDateIntent(undefined, undefined, '28', '21', '2026-07-27')
+    expect(clampTravelDates(intent.depart, intent.return)).toEqual({ depart: '2026-08-24' })
+  })
+})
+
+describe('parseTravelDateQuery', () => {
+  it('honors the legacy exact ret alias', () => {
+    setToday('2026-07-27')
+    expect(
+      parseTravelDateQuery({ depart: '2026-09-01', ret: '2026-09-08' }, '2026-07-27'),
+    ).toEqual({ depart: '2026-09-01', return: '2026-09-08' })
+  })
+
+  it('gives a non-empty canonical return precedence over ret', () => {
+    setToday('2026-07-27')
+    expect(
+      parseTravelDateQuery(
+        { depart: '2026-09-01', return: '2026-09-10', ret: '2026-09-08' },
+        '2026-07-27',
+      ),
+    ).toEqual({ depart: '2026-09-01', return: '2026-09-10' })
+  })
+
+  it('gives canonical and legacy exact returns precedence over returnIn', () => {
+    setToday('2026-07-27')
+    expect(
+      parseTravelDateQuery(
+        { departIn: '21', return: '2026-09-10', returnIn: '28' },
+        '2026-07-27',
+      ),
+    ).toEqual({ depart: '2026-08-17', return: '2026-09-10' })
+    expect(
+      parseTravelDateQuery(
+        { departIn: '21', ret: '2026-09-08', returnIn: '28' },
+        '2026-07-27',
+      ),
+    ).toEqual({ depart: '2026-08-17', return: '2026-09-08' })
+  })
+
+  it('still resolves relative values when exact values are absent', () => {
+    setToday('2026-07-27')
+    expect(
+      parseTravelDateQuery({ departIn: '21', returnIn: '28' }, '2026-07-27'),
+    ).toEqual({ depart: '2026-08-17', return: '2026-08-24' })
+  })
+
+  it('falls back from an empty canonical return to ret and stays safe for bad input', () => {
+    setToday('2026-07-27')
+    expect(
+      parseTravelDateQuery(
+        { depart: '2026-09-01', return: '', ret: '2026-09-08' },
+        '2026-07-27',
+      ),
+    ).toEqual({ depart: '2026-09-01', return: '2026-09-08' })
+    expect(() =>
+      parseTravelDateQuery(
+        { depart: 'not-a-date', return: 'also-bad', ret: '', returnIn: 'nope' },
+        '2026-07-27',
+      ),
+    ).not.toThrow()
+    expect(
+      parseTravelDateQuery(
+        { depart: 'not-a-date', return: 'also-bad', ret: '', returnIn: 'nope' },
+        '2026-07-27',
+      ),
+    ).toEqual({ depart: '2026-07-27' })
+  })
+
+  it('keeps calendar rollover and return-before-depart behavior intact', () => {
+    setToday('2026-12-20')
+    expect(
+      parseTravelDateQuery({ departIn: '21', returnIn: '28' }, '2026-12-20'),
+    ).toEqual({ depart: '2027-01-10', return: '2027-01-17' })
+    expect(
+      parseTravelDateQuery({ departIn: '28', returnIn: '21' }, '2026-12-20'),
+    ).toEqual({ depart: '2027-01-17' })
   })
 })

@@ -7,7 +7,9 @@
 // for preview deploys; otherwise fall back to prod.
 
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'https://hop.flights'
+  (process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.trim() !== '')
+    ? process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')
+    : 'https://hop.flights'
 
 // Join a path onto the prod origin. The home path collapses to the bare origin
 // (no trailing slash) so canonical/OG urls don't double up on '/'.

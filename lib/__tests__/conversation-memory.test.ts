@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  CONVERSATION_MEMORY_TELEMETRY,
   olderTurns,
   scrubEconomics,
   SUMMARIZE_AFTER,
@@ -87,5 +88,11 @@ describe('buildAgenticSystem memory block', () => {
   it('omits the memory framing when there is no summary', () => {
     const sys = buildAgenticSystemForTest(undefined, undefined, undefined, undefined, '')
     expect(sys).not.toMatch(/remember from earlier/i)
+  })
+})
+
+describe('conversation memory telemetry', () => {
+  it('explicitly opts the transcript summarizer out of all AI telemetry', () => {
+    expect(CONVERSATION_MEMORY_TELEMETRY).toEqual({ isEnabled: false })
   })
 })
