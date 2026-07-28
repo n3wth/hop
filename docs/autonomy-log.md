@@ -1,5 +1,36 @@
 # Autonomy run log
 
+- 2026-07-28 · Claude Code (merge-queue sheriff, scheduled) · full sweep of all 23 currently-open
+  PRs (#318-#358; #358 opened 22:52 UTC on 7/27, after the eleventh sweep's snapshot, is the only
+  addition — no PRs closed or merged since). **Root blocker unchanged, independently
+  re-verified**: pulled fresh `get_status` and `get_check_runs` on the newest PR (#358) —
+  identical single `Vercel` context in state `pending` ("Waiting for checks to complete", stale
+  app avatar `.../in/8329`), frozen since creation (`created_at` == `updated_at`,
+  2026-07-27T22:52:42Z, now 24h+ stale); `get_check_runs` across a further 16 non-hold PRs shows
+  only a completed/successful "Vercel Preview Comments" check on every one of them — there is no
+  separate GitHub Actions lint/test/typecheck workflow gating these PRs, so the single wedged
+  `Vercel` status is the entire blocker, not one of several. Root cause remains the GitHub App
+  identity mismatch documented in open PR #352 and reconfirmed via `main`'s commit log: last merge
+  is still PR #317 (2026-07-23T10:48 UTC), unchanged for 5 full days. **Hold-for-owner
+  classification re-confirmed unchanged by direct file-diff read of all 23 PRs**: only #318
+  (`HOP_ENABLE_SUPPORT_AGENT`) and #348 (`HOP_ENABLE_LLM_TRACING`) touch `lib/env.ts` with a new
+  flag; no `lib/db/schema.ts`, `drizzle/**`, or `vercel.json` touches found anywhere else in the
+  backlog. Both holds' most recent PR-comment flags are from 2026-07-28T00:19–00:22 UTC (well
+  inside the 24h no-nag window relative to this sweep) — no re-comment posted on either. **No
+  merge/fix/comment actions taken on any PR this sweep**: every non-hold PR is blocked purely on
+  the external Vercel stall, not code quality; nothing to fix, and a live merge attempt would only
+  reproduce the already-documented `405 ... was not set by the expected GitHub app` failure (or
+  the perpetual-pending variant). **Sent one push notification to the founder this run**: this is
+  now day 6 with zero owner action despite 11+ same-day automated sweeps on 2026-07-27 alone (all
+  independently reaching the identical diagnosis) plus prior direct pings — per the established
+  "re-notify if 24h passes with zero owner action since the last ping" rule from earlier sweeps,
+  and since a new calendar day has turned over since the last direct ping, one more concise
+  reminder is warranted rather than noise; kept to a single message with the concrete fix (GitHub
+  → repo Settings → Integrations → reauthorize the Vercel GitHub App) so it's actionable without
+  opening the session. **Linear unreachable this session** (headless, no interactive OAuth) —
+  git-fallback again, appending here per the runbook rather than the standing "Founder review
+  queue" thread; the current 23-PR count and unchanged hold list should be reflected there once a
+  Linear-connected session runs.
 - 2026-07-27 (eleventh sweep same day) · Claude Code (merge-queue sheriff, scheduled) · re-swept
   all 22 currently-open PRs (#318-#357). **Two new PRs since the tenth sweep**: #356
   (`docs(growth): funnel-log entry — merge pipeline still wedged`, opened 15:09 UTC) and #357
