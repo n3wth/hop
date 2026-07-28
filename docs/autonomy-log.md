@@ -1,5 +1,22 @@
 # Autonomy run log
 
+- 2026-07-28 (fifteenth sweep) · Claude Code (merge-queue sheriff, scheduled) · no change since
+  the fourteenth sweep. Re-swept all 9 open PRs (#321, #330, #332, #333, #334, #343, #345, #353,
+  #357) via fresh `get_status`/`get`/`get_files` calls: every one still `Vercel: pending`
+  (`#334`'s status unchanged since 2026-07-26T15:12Z — now 40h+ frozen, stacked on `#333`'s branch,
+  unmoved), and every `mergeable_state` still `blocked` (`#334`: `unstable`). Re-confirmed
+  hold-for-owner classification by re-reading every PR's diff directly this run (not assumed from
+  the prior sweep): none touch `lib/db/schema.ts`, `drizzle/**`, a new `lib/env.ts` flag, or
+  `vercel.json` — #321 is `scripts/hermes/*.sh` only, #343 is `app/support/page.tsx` (FAQ/JSON-LD)
+  only, everything else is docs-only. No holds, no PR comments needed. `#333`/`#357` remain draft
+  (not mine to flip); `#334` stays blocked behind `#333`. No merge/fix actions taken — nothing
+  changed to act on, and a repeat live-merge/retrigger probe would only reproduce the same already-
+  documented stuck-`Vercel`-check failure. **No push notification sent**: the thirteenth sweep's
+  founder ping earlier today is still the most recent new information; this run found zero change
+  since the fourteenth sweep re-confirmed the identical state minutes earlier — a repeat alert now
+  would be noise, not signal. Linear still unreachable (headless, no interactive OAuth) —
+  git-fallback, this entry, appended to the existing sheriff-log PR (#345) rather than opening a
+  new one.
 - 2026-07-28 (fourteenth sweep, ~07:19 UTC) · Claude Code (merge-queue sheriff, scheduled) · no
   change since the thirteenth sweep. Re-checked all 9 open PRs (#321, #330, #332, #333, #334,
   #343, #345, #353, #357) directly via `get_status`: all still `Vercel: pending`, stuck 40min–2h
