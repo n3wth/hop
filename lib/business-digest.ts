@@ -79,6 +79,8 @@ export interface BusinessDigest {
    *  measurement ("is anyone sharing?"). null = degraded — expected until the
    *  drizzle/0010_nervous_clea.sql migration has been applied or the flag is off. */
   receiptsCreated: WeeklyMetric | null
+  /** Support escalations via the support agent (hop_escalations, source='support-agent'), last 7d. null = degraded. */
+  supportEscalations?: WeeklyMetric | null
   /** System section (PR 2 of self-improvement loop) — four independent
    *  null-degrading queries. null = degraded entirely. */
   system?: SystemDigest | null
@@ -388,6 +390,31 @@ async function computeSystemDigest(
   return { openFindings, counts, degradations, sentinelLastRunAt }
 }
 
+async function supportEscalationsMetric(
+  w: { start: string; end: string; prevStart: string },
+): Promise<WeeklyMetric | null> {
+  return withDb<WeeklyMetric | null>(null, async (db) => {
+    const { data: curr, error } = await db
+      .from('hop_escalations')
+      .select('trip')
+      .gte('created_at', w.start)
+      .lt('created_at', w.end)
+    const { data: prev, error: prevErr } = await db
+      .from('hop_escalations')
+      .select('trip')
+      .gte('created_at', w.prevStart)
+      .lt('created_at', w.start)
+    if (error || prevErr || !curr || !prev) return null
+    const count = (curr as { trip?: { source?: string } }[]).filter(
+      (r) => r.trip?.source === 'support-agent'
+    ).length
+    const prevCount = (prev as { trip?: { source?: string } }[]).filter(
+      (r) => r.trip?.source === 'support-agent'
+    ).length
+    return { count, prev: prevCount }
+  })
+}
+
 // Compute the week's digest from hop's own tables. Every section is an
 // independent query; a failure in one degrades only that section. NEVER throws.
 export async function computeBusinessDigest(now: Date = new Date()): Promise<BusinessDigest> {
@@ -401,6 +428,7 @@ export async function computeBusinessDigest(now: Date = new Date()): Promise<Bus
     activeSubscriptions,
     outclicks,
     receiptsCreated,
+    supportEscalations,
     system,
   ] = await Promise.all([
     activeUsersMetric(w, now),
@@ -411,6 +439,7 @@ export async function computeBusinessDigest(now: Date = new Date()): Promise<Bus
     countActiveSubscriptions(),
     outclickMetric(w, now),
     weeklyMetric('hop_shared_verdicts', w, now),
+    supportEscalationsMetric(w),
     computeSystemDigest(w),
   ])
   return {
@@ -423,6 +452,7 @@ export async function computeBusinessDigest(now: Date = new Date()): Promise<Bus
     activeSubscriptions,
     outclicks,
     receiptsCreated,
+    supportEscalations,
     system,
   }
 }

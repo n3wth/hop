@@ -386,6 +386,67 @@ weight, not as a complaint.
 
 ---
 
+## 2026-07-27
+
+- **Traffic (7d, `$host=hop.flights` filtered)**: 10 visitors, 66 pageviews, 14 sessions, 50%
+  bounce rate, ~3.2 min avg session. Visitors roughly flat vs. the 7/22 read (9) and the 7/26
+  strategy-desk read (9) — still a single-digit-to-low-teens-visitors/week site.
+- **Funnel (7d)**: `search_ran` 7 (1 on 7/20, 2 on 7/21, 4 on 7/22, **0 every day 7/23–7/27
+  partial**), `verdict_viewed` 4 (1/2/1 on 7/20–7/22, 0 since) — same known search/verdict count
+  mismatch on 7/22 as the 7/24 entry traced (verdict-only-fires-on-render, not a tracking bug).
+  **`signed_up` and `first_program_added` are zero across all 7 days** — a 9th+ consecutive read
+  at zero since 2026-07-05. `outclick` (unfiltered — the standing note that server-side outclick
+  carries no `$host` applies) shows 1 on 7/26 and 3 on 7/27, the first nonzero outclick reads since
+  7/14 — but breaking down by `$virt_traffic_type` per this log's standing requirement shows **all
+  4 are `Automation`**, not `Regular`. Same pattern as the 7/22 entry's automation-flagged signup:
+  downgraded, not counted as a real conversion. Zero confirmed-`Regular` outclicks since 7/14.
+- **New this run — investigated whether the 4 straight zero-funnel days (7/23–7/27) mean the site
+  is down, not just quiet**: the zero-activity window starts exactly on 2026-07-23, the same day
+  as the last successful merge to `main` (see below), which made the coincidence worth checking
+  rather than assuming. Fetched `https://hop.flights` directly: it loads correctly — full nav,
+  working search UI, sample destination cards with live-looking cpp values, no error state. Ruling
+  this out as an outage; it's a genuine near-zero-traffic read at this site's existing baseline
+  volume, not a technical failure.
+- **MRR-gate status — Wk1 ("payment path proven, one real stranger pays")**: **not met.** Linear
+  was unreachable this session (headless, no interactive OAuth) so N-320's live status couldn't be
+  re-verified directly, but no PR or commit anywhere in `n3wth/hop`'s history touches billing/N-320
+  since the last read, so nothing indicates it moved. The gate has now been open **22 days**
+  (declared 2026-07-05) on the same single owner-only blocker per every prior read.
+- **This run's dominant finding — independently reconfirmed, not new, but now acute**: the merge
+  pipeline to `main` is still completely wedged, exactly as the 2026-07-26 board memo, the
+  2026-07-26 strategy memo, and today's sheriff sweep (PR #345) all found. Reverified live just
+  now: PR #332 (a plain docs PR, opened yesterday) still shows the required `Vercel` status check
+  as `pending` from the real Vercel GitHub App (`in/8329`) — unchanged since it was opened. A
+  second PR opened today, #352, dug one level deeper and found the likely root cause: Vercel *is*
+  completing builds and posting `success`, but under a different GitHub App identity (OAuth App
+  `oa/1157143`) than the one `main`'s branch protection requires (`in/8329`) — so even a
+  green-looking status check gets rejected by GitHub's merge API
+  ("Required status check was not set by the expected GitHub app"), not just a slow one. **Last
+  successful merge to `main` was PR #317 on 2026-07-23T10:48 UTC — zero merges in the 4 days
+  since**, with 25 PRs now queued (#318–#353), including growth-relevant work already built and
+  waiting: PR #324 (`/pricing` FAQ + JSON-LD, closes a board kill-list item), PR #347 (SEO
+  points-band date fix). This is a repo-admin-only fix (GitHub → repo Settings → Integrations →
+  reauthorize/reinstall the Vercel GitHub App so its status posts under the App id branch
+  protection expects) — no agent has repo integration-settings access. Given every desk's output
+  is blocked on this, not just growth's, and it's now been flagged independently 4 times across
+  24+ hours with no founder action logged, escalating this run via direct notification rather than
+  filing a 5th silent memo entry.
+- **This run's action**: content-pipeline work stays frozen per the 2026-07-19/7-26 board votes,
+  and would be moot regardless — nothing merges right now no matter what's built. Pulled and
+  verified this week's funnel/traffic numbers (including the automation-flagged outclick check and
+  the outage-vs-quiet check above), filed this log entry as a docs-only PR per the same
+  can't-merge-anyway constraint as everything else in the queue, and escalated the merge-pipeline
+  finding directly rather than re-filing it as unread prose. Did not attempt the community-draft
+  posting ask (still owner-only, still the second-highest-leverage founder action after the merge
+  pipeline) or any new content/code (frozen + would sit unmerged either way).
+- **Still the single highest-leverage thing sitting undone, in order**: (1) re-authorize the
+  Vercel GitHub App in GitHub repo Settings → Integrations — unsticks all 25 queued PRs across
+  every desk, <5 min, new as of this week's finding; (2) the three ready-to-paste drafts in
+  `docs/marketing/drafts/` (Show HN, r/awardtravel, MCP-directory submissions) — now ~21 days
+  unposted, flagged every read since 7/13.
+
+---
+
 ## 2026-07-22
 
 - **Traffic (7d, `$host=hop.flights` filtered)**: 9 visitors, 46 pageviews, 15 sessions, 40% bounce
@@ -435,3 +496,56 @@ weight, not as a complaint.
   7/18 automation-flagged signup/first-program-add was his own testing or something else — cheap
   to confirm with DB or PostHog person-profile access this session doesn't have, and it would
   resolve real ambiguity in this log rather than leaving it open indefinitely.
+
+---
+
+## 2026-07-24
+
+- **Traffic (7d, `$host=hop.flights` filtered)**: 11 visitors, 62 pageviews, 17 sessions, 47.1%
+  bounce rate, ~4.8 min avg session. Visitors up slightly vs. the 7/22 read (9→11) but still a
+  single-digit-to-low-teens-visitors/day site with no shape change from the last five reads.
+- **Funnel (7d)**: `search_ran` 14 / `verdict_viewed` 11 (0/0 on 7/17, 7/7 on 7/18, 0/0 on 7/19,
+  1/1 on 7/20, 2/2 on 7/21, **4/1 on 7/22**, 0/0 on 7/23, 0/0 partial 7/24). **New this run**: the
+  first break in the search_ran = verdict_viewed invariant every prior read has reported — 3 of
+  the 4 real searches on 7/22 rendered no verdict. Traced it before flagging as a bug: broke the
+  4 `search_ran` events down by `$virt_traffic_type` and all 4 are `Regular` (not automation), so
+  this isn't the same false-positive pattern as the 7/18 signup. Then checked the code
+  (`components/SearchTelemetry.tsx:32-33`): `verdict_viewed` only fires when the search actually
+  produced a rendered verdict pick (`if (verdict) track('verdict_viewed', ...)`) — a search with
+  nothing to recommend (degraded upstream, no award space, no cash fare) legitimately runs without
+  one. This is expected product behavior, not a tracking defect — no code change made. Logging it
+  because every prior read's "every search still produces a verdict" line was true by coincidence
+  of small sample size, not by invariant; future reads should expect occasional real gaps here.
+  `signed_up`/`first_program_added` are zero for `Regular` traffic across all 19 days logged since
+  2026-07-05 (the 7/18 automation-flagged event remains the only nonzero read, still unconfirmed
+  either way). `outclick` fired zero times this window — last real fire 7/14, 10 days ago now.
+- **MRR-gate status — Wk1 ("payment path proven, one real stranger pays")**: **not met.** N-320
+  (seats.aero written commercial terms, owner-only) is still Backlog, `startedAt: null` per
+  Linear — unchanged since 2026-07-19, now **19 days** open on the same single blocker declared
+  2026-07-05. No code change this run affects this gate either way.
+- **This run's action**: N-319 (`/pricing`) has been the board's explicit kill-list item #1 for
+  three consecutive weekly reviews (7/05, 7/12, 7/19) and its own Linear thread confirmed on
+  7/23 that PR #304 (the metadata-gating fix) closed one gap but left the issue's "Done means"
+  checklist incomplete: no FAQ section, no JSON-LD, and — new finding this run — **no link to
+  `/pricing` anywhere in the site's nav or footer** (`lib/seo-routes.ts`'s `PRIMARY_NAV`,
+  `FOOTER_SECTIONS`, `STATIC_SEO_ROUTES`, and `SEO_REVALIDATE_PATHS` all lacked an entry; only
+  `/account` linked to it). This is agent-executable, in-scope for the growth desk (on-page SEO
+  copy + structured data on an owned page, not new frozen content), and directly named in the
+  board's ranked amendment list — so built it: added a 4-question FAQ section
+  (`app/pricing/page.tsx`) sourced from `lib/pricing.ts`/`lib/subscription.ts` constants (never
+  hand-typed), matching `FAQPage` JSON-LD built from the same source so the two can't drift
+  (same pattern as `app/guides/point-value/page.tsx`), and added `/pricing` to `TopNav`,
+  `FooterNav`, the sitemap, and the weekly SEO-revalidate list. Verified with `npm run typecheck`
+  (clean), `npm run lint` (0 errors, no new warnings), and `npm test` (1356/1356 passing — one
+  transient `check-migration-sequence` failure from an untracked stray file another concurrent
+  session was writing to this shared container mid-run, gone by the next check, not part of this
+  diff). Opened PR #324 (`growth/2026-07-24-pricing-faq-jsonld-nav-link`) — mergeable once CI is
+  green. Did not attempt N-386 (fallback award-data source) or N-387 (content staleness guard):
+  both remain real engine/product builds outside this desk's owned-channel scope, same read as
+  the 7/20 and 7/22 entries — filed as-is for a dedicated engineering run.
+- **Still the single highest-leverage thing sitting undone**: the three ready-to-paste drafts in
+  `docs/marketing/drafts/` (Show HN, r/awardtravel, MCP-directory submissions) have now been
+  sitting unposted for **18 days** (oldest two, drafted 2026-07-06; flagged every read since
+  7/13 — 8th consecutive flag). No amount of on-site work fixes a traffic problem this small;
+  this and the seats.aero reply (N-320, 19 days unstarted) remain the two founder actions the
+  board's 7/19 memo converged on independently from five different lenses.

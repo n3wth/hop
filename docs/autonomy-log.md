@@ -1,5 +1,33 @@
 # Autonomy run log
 
+- 2026-07-28 (twelfth sweep) · Claude Code (merge-queue sheriff, scheduled) · full sweep of all 9
+  currently-open PRs (#321, #330, #332, #333, #334, #343, #345, #353, #357). **Root blocker
+  resolved since the last sweep** — Oliver merged 9+ queued PRs directly to `main` between
+  05:02–05:11 UTC today (#361, #358, #348, #347, #346, #318, #319, #320, #324), confirming the
+  Vercel required-status-check identity mismatch (PR #352) is fixed; this is the first sweep since
+  2026-07-23 able to actually merge anything. **Hold-for-owner re-check**: none of the 9 remaining
+  open PRs touch `lib/db/schema.ts`, `drizzle/**`, a new `lib/env.ts` flag, or `vercel.json` — no
+  holds this run. **Actions taken**: ran `update_pull_request_branch` on 6 PRs that were simply
+  `behind` (#321, #330, #332, #333, #353, #357) to retrigger fresh (now-working) Vercel checks.
+  2 PRs had real merge conflicts against the new `main` content, both resolved and pushed: #343
+  (`app/support/page.tsx` — its FAQ/JSON-LD import block collided with #318's newly-merged
+  `SupportChat` import; combined both cleanly, verified both features still render) and this same
+  log file on #345 itself (`docs/autonomy-log.md` — see the recovery note below). #334 stays
+  blocked behind #333 (its base branch is `board/2026-07-26`, not `main`; will retarget once #333
+  merges). **Data-loss found and repaired while resolving the #345 conflict**: `main`'s commit
+  `2959ec4` (a manual conflict-resolution merge by Oliver for PR #346, 2026-07-27T22:07 -07:00)
+  silently dropped ~20 lines of this file's older history (the 2026-07-09 lesson's tail, both
+  2026-07-04 entries, and the format legend) while resolving a conflict between two branches that
+  had each independently prepended new entries — a manual three-way markdown merge that kept both
+  sides' new content but truncated the shared tail instead of keeping it. Restored by merging this
+  branch's intact copy of that history back in, plus keeping `main`'s two entries this branch
+  didn't have (Charlie's admin-heartbeat entry, the growth desk's 7/27 funnel-log entry) — zero net
+  entries lost either direction. **Lesson**: a markdown log's merge conflicts should be resolved by
+  concatenating both sides' new entries, never by hand-editing down to one side's block — worth a
+  `docs/solutions/` entry once this lands. **Linear still unreachable** this session (headless, no
+  interactive OAuth) — git-fallback again; this run's summary (blocker resolved, 8 of 9 PRs
+  progressed, 1 data-loss bug fixed) should be posted to the "Founder review queue" Linear thread
+  once a Linear-connected session runs.
 - 2026-07-28 · Claude Code (merge-queue sheriff, scheduled) · full sweep of all 23 currently-open
   PRs (#318-#358; #358 opened 22:52 UTC on 7/27, after the eleventh sweep's snapshot, is the only
   addition — no PRs closed or merged since). **Root blocker unchanged, independently
@@ -248,6 +276,28 @@
   fix — worth a direct ping outside the PR-comment channel given repeated non-response there.
   **PR #348 opened mid-sweep** (LLM tracing privacy hardening, refs #344) — also hold-for-owner,
   adds a new `HOP_ENABLE_LLM_TRACING` flag to `lib/env.ts`; flagged on the PR directly.
+- 2026-07-27 · Charlie · admin cron health semantics · opened replacement PR
+  https://github.com/n3wth/hop/pull/346 so an unavailable heartbeat read renders one explicit
+  unknown state while successful empty reads still render `never run` rows · **lesson**: preserve
+  `null` as unavailable at the presentation boundary when sibling telemetry can load independently.
+- 2026-07-27 · Claude Code (growth desk, scheduled) · weekly funnel-log pull + merge-pipeline
+  escalation · PR #356 (docs-only, not merged — see below) ·
+  **outcome**: pulled 7d PostHog traffic/funnel (10 visitors, funnel events zero for a 9th+
+  consecutive read; this week's 4 nonzero `outclick` events all `$virt_traffic_type: Automation`,
+  not real). Investigated whether 4 straight zero-funnel days (7/23–7/27) meant the site was down
+  rather than quiet — ruled out, `hop.flights` fetches and renders correctly. **Did not merge
+  PR #356** — reconfirmed live (PR #332's status still `Vercel: pending` from the real GitHub App
+  hours after opening) that the merge pipeline to `main` has been completely wedged since PR #317
+  (2026-07-23T10:48 UTC), now a 4th independent read to find this in 24h after the 7/26 board
+  memo, 7/26 strategy memo, and sheriff PR #345. PR #352 (opened same day) traced the likely root
+  cause to a GitHub App identity mismatch on the required `Vercel` status check — repo-admin-only,
+  no agent can fix it. 25 PRs queued, zero merged in 4 days. Content-pipeline work stayed frozen
+  per the board's 7/19/7/26 votes and would be moot regardless (nothing merges right now).
+  **lesson**: when every desk's PRs are blocked by the same infra-level cause for multiple days
+  running, re-filing it as another memo paragraph has diminishing value — escalated directly via
+  push notification this run instead of adding a 5th silent write-up. Linear was unreachable
+  (headless, no interactive OAuth) — noted "Linear sync needed" in the PR body per the runbook's
+  git-fallback mode.
 - 2026-07-27 · Claude Code (merge-queue sheriff, scheduled) · PR backlog sweep (25 open PRs,
   #318-#344) · **root cause found for the stuck merge pipeline the 2026-07-26 board/strategy
   memos flagged**: the `Vercel` required status check is NOT down/failing — it's genuinely

@@ -10,11 +10,11 @@ import {
   formatPointsLabel,
   formatPointsCompact,
   neighborBands,
+  pointsBandSearchHref,
 } from '@/lib/points-bands'
 import { affordableWith, computeCpp, type Destination } from '@/lib/destinations'
 import { tier, formatValue } from '@/lib/cpp'
 import type { CppTier } from '@/lib/types'
-import { isoOffset } from '@/lib/dates'
 import { VERIFY_CAVEAT } from '@/lib/sweet-spots'
 
 // Prerender one page per curated band; nothing else is valid.
@@ -47,11 +47,6 @@ const TIER_CHIP: Record<CppTier, { bg: string; fg: string; bd: string }> = {
   amber: { bg: 'var(--color-ok-bg)', fg: 'var(--color-ok)', bd: 'var(--color-gold-soft)' },
   muted: { bg: 'var(--color-sunk)', fg: 'var(--color-text3)', bd: 'var(--color-border)' },
 }
-
-// Static seed origin for the CTA link — this page has no request-scoped
-// visitor context (it's force-static), so it seeds the same way /deals does
-// before an explicit ?from= or saved home airport is known.
-const DEFAULT_ORIGIN = 'SFO'
 
 // 37500 -> "37.5K". Compact miles for the row figures (mirrors DealCard).
 function compactMiles(n: number): string {
@@ -118,8 +113,6 @@ export default async function PointsBandPage({
 
   const list = affordableWith(amount)
   const { prev, next } = neighborBands(amount)
-  const depart = isoOffset(21)
-  const ret = isoOffset(28)
   const jsonLd = buildPointsJsonLd(amount, list)
   // Post-sign-in destination is the personalized HOME, not this page: this
   // route is force-static and always renders the reference balance, so
@@ -188,9 +181,7 @@ export default async function PointsBandPage({
               const t = tier(value)
               const chip = TIER_CHIP[t]
               const leftover = amount - d.typicalAwardMiles
-              const searchHref =
-                `/search?from=${DEFAULT_ORIGIN}&to=${d.code}` +
-                `&depart=${depart}&ret=${ret}&adults=1`
+              const searchHref = pointsBandSearchHref(d.code)
 
               return (
                 <article
