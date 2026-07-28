@@ -1,5 +1,24 @@
 # Autonomy run log
 
+- 2026-07-28 (sixteenth sweep) · Claude Code (merge-queue sheriff, scheduled) · one new PR since
+  the fifteenth sweep — #362 (`feat(self-improve): PR 3 — data-refresh loop (L3) + standing
+  data-snapshot invariants`, self-improve desk, opened 08:18 UTC) joins the queue, now 10 open PRs
+  (#321, #330, #332, #333, #334, #343, #345, #353, #357, #362). Classified #362 directly by diff:
+  touches `.github/workflows/data-refresh.yml` and a new test file, not `lib/db/schema.ts`,
+  `drizzle/**`, a new `lib/env.ts` flag, or `vercel.json` — not hold-for-owner. Re-checked all 10
+  via fresh `get_status`/`get`: every one still `Vercel: pending`, several with a status object
+  freshly reposted on the *same* commit within the last few minutes (e.g. #330, #332, #343, #353
+  all show a status `created_at` of 08:19–08:22 UTC on commits that haven't moved since they were
+  opened days ago) — consistent with the check periodically re-posting `pending` without ever
+  resolving, not a retrigger effect; a repeat `update_pull_request_branch` attempt would reproduce
+  the identical no-op. `mergeable_state` still `blocked` across the board (`#334`: `unstable`,
+  stacked on `#333`'s branch, unmoved). No holds, no merge/fix/comment actions taken — nothing
+  changed to act on beyond the one new low-risk PR joining the pile. **No push notification
+  sent**: this is the identical unresolved state the thirteenth/fourteenth/fifteenth sweeps already
+  surfaced and the founder was already pinged on earlier today; one new docs/workflow PR queuing
+  behind the same known blocker isn't new information worth a phone interrupt. Linear still
+  unreachable this session (headless, no interactive OAuth) — git-fallback, appended to the
+  existing sheriff-log PR (#345) rather than opening a new one.
 - 2026-07-28 (fifteenth sweep) · Claude Code (merge-queue sheriff, scheduled) · no change since
   the fourteenth sweep. Re-swept all 9 open PRs (#321, #330, #332, #333, #334, #343, #345, #353,
   #357) via fresh `get_status`/`get`/`get_files` calls: every one still `Vercel: pending`
