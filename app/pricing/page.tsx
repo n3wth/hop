@@ -1,6 +1,6 @@
 import { getUserId } from '@/lib/session'
 import { getSessionNavUser } from '@/lib/nav-user'
-import { getUserTier } from '@/lib/subscription'
+import { getUserTier, ALERT_LIMITS, MCP_DAILY_LIMITS } from '@/lib/subscription'
 import { countActiveStandingOrders } from '@/lib/standing-orders'
 import { isBillingEnabled } from '@/lib/env'
 import { PRO_PRICE_YEARLY_USD } from '@/lib/pricing'
@@ -9,7 +9,7 @@ import Card from '@/components/ui/Card'
 import Eyebrow from '@/components/ui/Eyebrow'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
-import { pageMeta } from '@/lib/seo'
+import { pageMeta, absoluteUrl } from '@/lib/seo'
 
 // Billing is flag-gated (isBillingEnabled()) — the page body already branches on it
 // (BillingSection vs. the "not live yet" note). Metadata must branch the same way:
@@ -28,6 +28,51 @@ const BILLING_ERROR_COPY: Record<string, string> = {
   'rate-limited': 'One moment — try again shortly.',
   stripe: 'Couldn’t reach billing — try again in a minute.',
   'no-customer': 'Upgrade first — there’s no billing account to manage yet.',
+}
+
+// FAQ copy, built entirely from lib/pricing.ts + lib/subscription.ts values —
+// the single source for both the FAQPage JSON-LD and the visible FAQ section,
+// so the two can never drift. The Pro-cost answer branches on
+// isBillingEnabled() so the FAQ never claims a plan is purchasable while
+// checkout is flag-gated off.
+function pricingFaq(billingEnabled: boolean): { q: string; a: string }[] {
+  return [
+    {
+      q: 'Is hop free to use?',
+      a: `Yes — hop's points-vs-cash verdict is free for everyone, always, with no signup required. The Free plan includes full search, the computed verdict, and ${ALERT_LIMITS.free} active route alerts.`,
+    },
+    {
+      q: 'What does hop Pro cost?',
+      a: billingEnabled
+        ? `Pro is $${PRO_PRICE_YEARLY_USD}/yr — an early-adopter price that's grandfathered for life. It's billed annually with no monthly option yet.`
+        : `Pro isn't live yet — hop's paid plan hasn't launched, so there's nothing to buy right now. Search and the verdict stay free either way.`,
+    },
+    {
+      q: "What's the difference between Free and Pro?",
+      a: `Free includes ${ALERT_LIMITS.free} active alerts and ${MCP_DAILY_LIMITS.free} MCP calls/day for agents. Pro adds unlimited alerts, ${MCP_DAILY_LIMITS.premium.toLocaleString()} MCP calls/day, and a weekly best-redemption digest.`,
+    },
+    {
+      q: 'What is an MCP call?',
+      a: `hop exposes its verdict engine as an MCP server, so AI agents like Claude can price trips and check your balances directly. Each tool call an agent makes counts against your daily MCP quota.`,
+    },
+  ]
+}
+
+// FAQPage JSON-LD — same posture as lib/seo.ts#buildJsonLd and
+// app/guides/point-value/page.tsx#buildPointValueJsonLd: no user input flows
+// in, so JSON.stringify alone keeps it XSS-safe.
+function buildPricingJsonLd(billingEnabled: boolean) {
+  const url = absoluteUrl('/pricing')
+  const faq = {
+    '@type': 'FAQPage',
+    '@id': `${url}#faq`,
+    mainEntity: pricingFaq(billingEnabled).map(({ q, a }) => ({
+      '@type': 'Question',
+      name: q,
+      acceptedAnswer: { '@type': 'Answer', text: a },
+    })),
+  }
+  return { '@context': 'https://schema.org', '@graph': [faq] }
 }
 
 // Public pricing surface (business plan §7 B1). Signed-out visitors get the
@@ -52,9 +97,16 @@ export default async function PricingPage({
       : (['free', 0] as const)
 
   const errorNote = sp.billingError ? BILLING_ERROR_COPY[sp.billingError] : undefined
+  const faq = pricingFaq(billingEnabled)
+  const jsonLd = buildPricingJsonLd(billingEnabled)
 
   return (
     <AppShell user={navUser} hideSearch>
+      <script
+        type="application/ld+json"
+        // Static, config-sourced JSON-LD only — no user input is interpolated.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="mx-auto max-w-[var(--container-shell)] pb-16 pt-8 sm:pt-12">
         <div className="max-w-[560px]">
           <Eyebrow>Pricing</Eyebrow>
@@ -83,6 +135,22 @@ export default async function PricingPage({
             </Card>
           )}
         </div>
+
+        <section className="mx-auto mt-14 max-w-[560px]">
+          <h2 className="font-display text-[20px] font-semibold leading-tight tracking-[-0.01em] text-text">
+            Questions
+          </h2>
+          <div className="mt-4 divide-y divide-hair border-y border-border">
+            {faq.map((item) => (
+              <details key={item.q} className="group py-3.5">
+                <summary className="cursor-pointer list-none text-[14.5px] font-semibold text-text marker:content-none">
+                  {item.q}
+                </summary>
+                <p className="mt-2 text-[13.5px] leading-[1.6] text-text2">{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
 
         <SiteFooter />
       </div>
