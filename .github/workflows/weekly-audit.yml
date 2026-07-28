@@ -1,0 +1,50 @@
+name: Weekly Invariant Audit Loop (Phase 1.5)
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run: print findings without filing issues'
+        type: boolean
+        required: true
+        default: true
+
+concurrency:
+  group: weekly-audit
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node
+        uses: actions/setup-node@39376e3e73fc7a1d668824e5b6723a03284cd150 # v4.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run weekly audit (Dry Run)
+        if: ${{ github.event.inputs.dry_run == 'true' || (github.event.inputs.dry_run == '' && github.event_name == 'workflow_dispatch') }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/weekly-audit.mjs --dry-run
+
+      - name: Run weekly audit (File Issues)
+        if: ${{ github.event.inputs.dry_run == 'false' || github.event_name == 'schedule' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/weekly-audit.mjs --no-dry-run --file-issues
