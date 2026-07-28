@@ -4,6 +4,7 @@ import {
   PRO_PRICE_MONTHLY_USD,
   PRO_PRICE_YEARLY_USD,
   readInfraCostMonthlyUsd,
+  readLlmCostMonthlyUsd,
 } from '@/lib/unit-economics'
 import * as pricing from '@/lib/pricing'
 
@@ -57,5 +58,22 @@ describe('readInfraCostMonthlyUsd', () => {
     delete process.env.HOP_INFRA_COST_MONTHLY_USD
     expect(readInfraCostMonthlyUsd()).toBe(75)
     if (prev) process.env.HOP_INFRA_COST_MONTHLY_USD = prev
+  })
+})
+
+describe('readLlmCostMonthlyUsd', () => {
+  it('returns null when env unset', () => {
+    const prev = process.env.HOP_LLM_COST_MONTHLY_USD
+    delete process.env.HOP_LLM_COST_MONTHLY_USD
+    expect(readLlmCostMonthlyUsd()).toBeNull()
+    if (prev) process.env.HOP_LLM_COST_MONTHLY_USD = prev
+  })
+
+  it('parses valid numeric env override', () => {
+    const prev = process.env.HOP_LLM_COST_MONTHLY_USD
+    process.env.HOP_LLM_COST_MONTHLY_USD = '42.50'
+    expect(readLlmCostMonthlyUsd()).toBe(42.5)
+    if (prev) process.env.HOP_LLM_COST_MONTHLY_USD = prev
+    else delete process.env.HOP_LLM_COST_MONTHLY_USD
   })
 })

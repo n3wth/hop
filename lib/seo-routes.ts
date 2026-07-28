@@ -27,6 +27,7 @@ export const STATIC_SEO_ROUTES: StaticSeoRoute[] = [
   { path: '/guides/points-101', changeFrequency: 'weekly', priority: 0.6 },
   { path: '/points', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/ask', changeFrequency: 'weekly', priority: 0.7 },
+  { path: '/pricing', changeFrequency: 'weekly', priority: 0.6 },
   { path: '/mcp', changeFrequency: 'monthly', priority: 0.5 },
   { path: '/stats', changeFrequency: 'weekly', priority: 0.4 },
   { path: '/support', changeFrequency: 'monthly', priority: 0.4 },
@@ -45,6 +46,7 @@ export const PRIMARY_NAV: NavLink[] = [
   { href: '/search', label: 'Search' },
   { href: '/deals', label: 'Deals' },
   { href: '/ask', label: 'Ask' },
+  { href: '/pricing', label: 'Pricing' },
 ]
 
 export interface FooterSection {
@@ -65,6 +67,7 @@ export const FOOTER_SECTIONS: FooterSection[] = [
       { href: '/guides', label: 'Program guides' },
       { href: '/ask', label: 'Ask hop' },
       { href: '/mcp', label: 'Use hop from your AI agent' },
+      { href: '/pricing', label: 'Pricing' },
     ],
   },
   {
@@ -97,6 +100,7 @@ export const SEO_REVALIDATE_PATHS: string[] = [
   '/guides/point-value',
   '/guides/points-101',
   '/ask',
+  '/pricing',
   '/mcp',
   '/support',
   '/privacy',

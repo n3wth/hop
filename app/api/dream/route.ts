@@ -16,6 +16,7 @@ import { resolveDreamSession } from '@/lib/dream-server'
 import { buildDreamPrompt, templatedBlurb } from '@/lib/dream-narration'
 import { checkRateLimit, clientIp } from '@/lib/rate-limit'
 import { GATEWAY_MODEL } from '@/lib/ai-gateway'
+import { llmTelemetry } from '@/lib/llm-tracing'
 
 export const runtime = 'nodejs'
 
@@ -77,8 +78,7 @@ export async function POST(request: Request): Promise<Response> {
       model: gateway(GATEWAY_MODEL),
       system,
       prompt: user,
-      // PostHog LLM analytics → $ai_generation (see instrumentation.ts).
-      experimental_telemetry: { isEnabled: true, functionId: 'dream' },
+      telemetry: llmTelemetry('dream'),
       onError({ error }) {
         console.error('[dream] stream error', error)
       },

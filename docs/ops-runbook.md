@@ -389,6 +389,12 @@ aliases win when set). Point a Stripe webhook at `/api/webhooks/stripe`.
 **Turn off:** unset `HOP_ENABLE_BILLING` — /account hides billing, checkout and
 webhook routes refuse softly (`{ok:false}`/503), alert-cap copy reverts.
 
+**Gate status (business-plan.md §3.1 — all four required before enabling billing):**
+1. Multi-pax cpp fixed (R0.1) — **Passed**
+2. Single tested Stripe lane with real purchase (R0.2) — **Passed**
+3. Alerts firing reliably (R0.4 + R1.3) — **Passed**
+4. seats.aero written commercial terms (R3.1) — **Pending / Blocked** (awaiting commercial response or fallback award source)
+
 ## Resend webhooks (deliverability / suppression list)
 
 `app/api/webhooks/resend/route.ts` receives Resend's email-event webhook
