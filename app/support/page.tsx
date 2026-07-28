@@ -2,9 +2,12 @@ import Link from 'next/link'
 import { toNavUser } from '@/lib/nav-user'
 import { auth0 } from '@/lib/auth0'
 import { getUserBalances } from '@/lib/accounts'
+import { getPrefs, type UserPrefs } from '@/lib/prefs'
+import { isSupportAgentEnabled } from '@/lib/env'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import LegalShell from '@/components/LegalShell'
+import SupportChat from '@/components/SupportChat'
 import { pageMeta } from '@/lib/seo'
 
 export const metadata = pageMeta({
@@ -16,7 +19,7 @@ export const metadata = pageMeta({
 
 // Section anchors for the quick-jump nav. Keep in sync with the <h2 id> values
 // below so every entry lands on a real heading.
-const SECTIONS: { id: string; label: string }[] = [
+export const SECTIONS: { id: string; label: string }[] = [
   { id: 'getting-started', label: 'Getting started' },
   { id: 'points-balances', label: 'Points & balances' },
   { id: 'the-verdict', label: 'How the verdict works' },
@@ -32,10 +35,20 @@ export default async function SupportPage() {
   const user = toNavUser(su)
 
   let pointsTotal: number | undefined
+  let realBalances: { program: string; balance: number }[] = []
+  let homeAirport: string | undefined
+
   if (user && su?.sub) {
-    const real = await getUserBalances(su.sub)
-    if (real.length > 0) pointsTotal = real.reduce((s, b) => s + b.balance, 0)
+    const [real, prefs] = await Promise.all([
+      getUserBalances(su.sub).catch(() => []),
+      getPrefs(su.sub).catch((): UserPrefs => ({})),
+    ])
+    realBalances = real
+    if (real.length > 0) pointsTotal = real.reduce((s: number, b: { balance: number }) => s + b.balance, 0)
+    homeAirport = prefs?.homeAirport
   }
+
+  const showSupportChat = isSupportAgentEnabled()
 
   return (
     <AppShell user={user} pointsTotal={pointsTotal} hideSearch>
@@ -44,6 +57,15 @@ export default async function SupportPage() {
         title="Help center"
         intro="What hop does, and clear answers to the things people ask most. Can't find it? Email us — a real person reads it."
       >
+        {showSupportChat && (
+          <SupportChat
+            signedIn={Boolean(user && su?.sub)}
+            email={su?.email}
+            totalPoints={pointsTotal}
+            programs={realBalances}
+            homeAirport={homeAirport}
+          />
+        )}
         {/* Quick-jump nav. A real landmark so keyboard and screen-reader users
             can skip straight to a section. The list styling overrides the
             inherited .legal-prose ul (disc bullets / indent). */}
