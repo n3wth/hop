@@ -119,7 +119,7 @@ and never persists to routines.
   sheriff session read the scheduled prompt's abbreviated hold-list (schema/drizzle/env-flag/
   `vercel.json`) instead of checking this file's full list, which also includes
   `.github/workflows/**`, money/identity paths, deps, and displayed prices. Reverted in
-  <REVERT_PR_URL>. Per ADR 0009's own Consequences section ("one bad autonomous merge → revert,
+  [PR #373](https://github.com/n3wth/hop/pull/373). Per ADR 0009's own Consequences section ("one bad autonomous merge → revert,
   flip the kill switch, and record the lesson... before re-enabling"), flipping `on` back requires
   confirming the next sheriff/routine prompt actually enumerates this file's full hold list, not
   a paraphrase of it — until then, hold everything for owner review.
