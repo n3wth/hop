@@ -69,3 +69,4 @@ of these decisions automatically (e.g. `engine-invariant-reviewer` guards ADR 00
 | [0010](0010-single-rules-file-agents-md.md) | Single rules file: AGENTS.md is canon, CLAUDE.md imports it | Accepted |
 | [0011](0011-platform-stack-rationale.md) | Platform stack: Vercel + Neon + Better Auth + Drizzle + Upstash | Accepted |
 | [0012](0012-claude-design-component-library-sync.md) | hop's component primitives are synced to a claude.ai/design project | Accepted |
+| [0013](0013-mobile-client-is-a-thin-engine-consumer.md) | The mobile client is a thin engine consumer, never its own engine | Accepted |
