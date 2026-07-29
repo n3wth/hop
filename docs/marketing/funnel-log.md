@@ -549,3 +549,50 @@ weight, not as a complaint.
   7/13 — 8th consecutive flag). No amount of on-site work fixes a traffic problem this small;
   this and the seats.aero reply (N-320, 19 days unstarted) remain the two founder actions the
   board's 7/19 memo converged on independently from five different lenses.
+
+---
+
+## 2026-07-29
+
+- **Traffic (7d, `$host=hop.flights` filtered)**: 7 visitors, 58 pageviews, 11 sessions, 45.5%
+  bounce rate, ~1.5 min avg session. Visitors down vs. the 7/27 read and still the same
+  single-digit-per-week baseline this site has held since traffic peaked around 7/10 (95
+  visitors) and declined through every subsequent read.
+- **Funnel (7d)**: `search_ran` 6, `verdict_viewed` 3 (expected — `verdict_viewed` only fires on a
+  rendered pick, per the 2026-07-24 finding, not a tracking gap). `signed_up` **0**,
+  `first_program_added` **0** — zero for confirmed-`Regular` traffic across all **24 days** logged
+  since 2026-07-05. `outclick` read **5** in the raw pull, the first non-zero outclick count since
+  7/14 — before reporting it as a real conversion, broke it down by `$virt_traffic_type` per the
+  standing check: **100% `Automation`** (1 on 7/26, 3 on 7/27, 1 on 7/28), 0 `Regular`. Same
+  false-positive pattern as the 7/18 `signed_up` event — downgraded, not counted as a real
+  conversion. Zero confirmed-`Regular` outclicks since 7/14, now 15 days.
+- **MRR-gate status — Wk1 ("payment path proven, one real stranger pays")**: **not met.** N-320
+  (seats.aero written commercial terms, owner-only) is still Backlog, `startedAt: null` — the gate
+  has now been open **24 days** (declared 2026-07-05) on the same single blocker, unchanged since
+  every prior read.
+- **Major finding this run — the merge-pipeline stall flagged in the last four reads is
+  resolved.** Verified against `main`'s commit history: after zero merges for 4 days
+  (2026-07-23T10:48 UTC → 2026-07-27T21:59 PT), a burst of 11 PRs merged in the span of one minute
+  at 2026-07-27T21:59 PT (#352, #356, #331, #328, #325, #359, #361, #358, #348, #347, #346, #319,
+  #318, #320, #324), and merges have continued normally since — most recently PR #371 at
+  2026-07-28T22:57 PT. Whatever fixed the Vercel GitHub App identity mismatch (the repo-admin-only
+  fix escalated directly on 2026-07-27) worked; the 25-PR backlog is draining. ~10 PRs remain open
+  as of this read (#321, #330, #332, #333, #343, #345, #353, #357, #362, #364) but none are
+  growth-owned — this desk's own queued work (#324, #325, #356) already merged in that burst.
+- **This run's action**: re-verified the MCP-directory submission blockers from the 7/17 draft
+  before re-flagging them as unchanged. PulseMCP now has a discoverable `/submit` form (a "Submit"
+  button on `pulsemcp.com/servers`, no login required per the page copy) — tried it directly:
+  `curl` against `pulsemcp.com/submit` gets blocked by the site's Cloudflare bot-challenge (403,
+  "security service... action triggered the security solution") even with a browser user-agent, so
+  it's a JS-rendered form no headless/programmatic path in this session can complete (Chromium
+  here can't reach external hosts through the agent proxy either). Same conclusion as 7/17, now
+  confirmed against the current page rather than assumed stale. Filed this funnel-log entry
+  (docs-only, self-merging once CI is green per standing policy); did not attempt new content
+  (freeze still in effect, N-387 still Backlog/unbuilt) or find a new payment/UX bug (none open).
+- **Still the single highest-leverage thing sitting undone, in order**: (1) the three
+  ready-to-paste drafts in `docs/marketing/drafts/` (Show HN, r/awardtravel, MCP-directory
+  submissions) — **23 days** unposted now (oldest two, drafted 2026-07-06), flagged every read
+  since 7/13; (2) the seats.aero reply (N-320) — 24 days unstarted, the structural block on the
+  entire Wk1 MRR gate. With the merge pipeline now unstuck, neither of these has a technical
+  blocker left standing between it and being posted/sent — both are purely a founder
+  five-minutes-each action at this point.
