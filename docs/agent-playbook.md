@@ -74,6 +74,14 @@ desk picking up this playbook's priority order should check whether that's still
 assuming a later-ranked item is actually reachable. If a future board memo confirms the pipeline is
 healthy again, that caveat lapses; don't carry it forward past the memo that raised it.
 
+**Strategy desk independently re-confirmed the same day:** the 2026-07-26 strategy review
+(`docs/strategy/2026-07-26-weekly-strategy.md`) adopted the board's ranked list as-is after
+checking it against a fresh PostHog pull and market scan — neither contradicted it — and directly
+re-verified the caveat above was *still* true several hours after the board's own write-up (PR
+#333 itself, opened the same morning, still showed `Vercel: pending` that afternoon). Any desk
+picking up this playbook's priority order should check current PR-merge status before assuming a
+later-ranked item is actually reachable.
+
 **Ongoing priority ownership (from 2026-07-06):** the board memo above was a one-time review; the
 strategy desk (Marcus, `docs/team/routines.md`) now owns re-ranking priority on a weekly cadence
 via `docs/strategy/<date>-weekly-strategy.md`. Once Marcus has run at least once, his latest file
