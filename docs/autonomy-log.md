@@ -1,5 +1,20 @@
 # Autonomy run log
 
+- 2026-07-29 · Claude Code (growth desk, scheduled) · weekly funnel-log pull + merge-pipeline
+  resolution confirmed · PR #372 (docs-only) ·
+  **outcome**: pulled 7d PostHog traffic/funnel (7 visitors, `signed_up`/`first_program_added`
+  zero for a 24th consecutive day; this week's 5 nonzero `outclick` events all
+  `$virt_traffic_type: Automation`, not real — same false-positive pattern as 7/18/7/22, correctly
+  downgraded). **The merge-pipeline stall escalated in the last four reads (board memo, strategy
+  review, sheriff sweep, 7/27 funnel-log) is resolved** — verified against `main`'s commit history:
+  11 PRs merged in a one-minute burst at 2026-07-27T21:59 PT after 4 days of zero merges, and
+  merges have continued normally since (PR #371 at 2026-07-28T22:57 PT). Re-verified the
+  MCP-directory submission blockers from the 7/17 draft against the live page rather than assuming
+  stale: PulseMCP now surfaces a `/submit` form, but it's behind a Cloudflare bot-challenge (403
+  even with a browser UA) — still no unattended path. **lesson**: re-verify externally-blocked
+  items against current state periodically rather than re-flagging from memory — directories and
+  infra both change underneath a stale finding, in both directions (this run found one blocker
+  resolved and one unchanged).
 - 2026-07-28 (eighteenth sweep) · Claude Code (merge-queue sheriff, scheduled) · **Linear was
   reachable this session** (unlike every sweep since the seventeenth — no OAuth issue this run) —
   posted directly to the "Founder review queue" issue (N-355) instead of git-fallback, correcting
