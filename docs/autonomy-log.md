@@ -1,5 +1,23 @@
 # Autonomy run log
 
+- 2026-07-29 · Claude Code (merge-queue sheriff, scheduled) · sweep of 4 open PRs (#333, #357,
+  #362, #364) · **mistake, self-corrected**: squash-merged PR #362
+  (`.github/workflows/data-refresh.yml`) without checking it against ADR 0009's full hold-for-owner
+  list — the scheduled prompt's own classification step only named
+  `lib/db/schema.ts`/`drizzle/**`/a new `lib/env.ts` flag/`vercel.json`, and this session applied
+  that literally instead of also checking `docs/decisions/0009-tiered-autonomous-merge.md`, which
+  additionally holds `.github/workflows/**`, money/identity paths, deps, and displayed prices. At
+  least five earlier sheriff sweeps *that same day* (16:16–20:10 UTC, all logged on Linear N-355)
+  had correctly held this exact PR for this exact reason — the information needed to avoid this
+  was already in the transcript this session didn't have and in the docs it didn't check. Reverted
+  on `main` via a follow-up PR (not self-merged — the revert itself touches the same workflow
+  file, so it's hold-for-owner too) and flipped the runbook's `Auto-merge` kill switch to `off`
+  pending owner confirmation, per ADR 0009's own documented remediation for a bad autonomous
+  merge. The other 3 PRs (#333/#357/#364, all draft, docs-only) were correctly left unmerged —
+  GitHub's merge API hard-rejects drafts (405) regardless of policy. **lesson**: a scheduled
+  prompt's inline restatement of a policy (like a hold-list) is a paraphrase, not the source of
+  truth — check the ADR/runbook file directly before relying on a prompt's summary of it,
+  especially for an irreversible action like a merge.
 - 2026-07-29 · Claude Code (growth desk, scheduled) · weekly funnel-log pull + merge-pipeline
   resolution confirmed · PR #372 (docs-only) ·
   **outcome**: pulled 7d PostHog traffic/funnel (7 visitors, `signed_up`/`first_program_added`

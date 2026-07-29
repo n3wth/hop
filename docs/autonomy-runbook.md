@@ -53,8 +53,8 @@
 
 ## Merge policy (ADR 0009)
 
-**Auto-merge: on**  *(kill switch — flip to `off` in one docs commit and every routine stops
-merging on its next run; no trigger changes needed)*
+**Auto-merge: off**  *(kill switch — flip to `on` in one docs commit to resume; see the
+2026-07-29 amendment below for why it's off)*
 
 Merge a PR only when ALL hold: CI green (`check` + build on the head commit) · the wired
 automatic PR-review bot (`charliecreates`/`vercel-agent`) has actually posted, not merely had
@@ -111,6 +111,18 @@ and never persists to routines.
 
 *(Runs append here — rule, date, one-line reason. Keep newest first.)*
 
+- 2026-07-29 · **Auto-merge flipped off — one bad autonomous merge.** The merge-queue sheriff
+  routine squash-merged PR #362 (`.github/workflows/data-refresh.yml`), which is explicitly on
+  ADR 0009's hold-for-owner list ("CI is the merge gate itself; an agent edit could weaken it") —
+  a rule multiple prior sheriff sweeps that same day had correctly applied to this exact PR
+  (see the Linear "Founder review queue" issue, N-355, and PR #362's own comment history). The
+  sheriff session read the scheduled prompt's abbreviated hold-list (schema/drizzle/env-flag/
+  `vercel.json`) instead of checking this file's full list, which also includes
+  `.github/workflows/**`, money/identity paths, deps, and displayed prices. Reverted in
+  <REVERT_PR_URL>. Per ADR 0009's own Consequences section ("one bad autonomous merge → revert,
+  flip the kill switch, and record the lesson... before re-enabling"), flipping `on` back requires
+  confirming the next sheriff/routine prompt actually enumerates this file's full hold list, not
+  a paraphrase of it — until then, hold everything for owner review.
 - 2026-07-04 · **Tiered autonomous merge adopted (ADR 0009)** — owner-authorized; guardrail
   changed from "never merge" to "merge per policy"; `Auto-merge: on` line is the kill switch.
 - 2026-07-04 · **Verify Linear writes took effect** (check `updatedAt` changed in the response);
