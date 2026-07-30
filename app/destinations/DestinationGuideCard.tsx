@@ -1,24 +1,8 @@
 import Link from 'next/link'
 import type { Destination } from '@/lib/destinations'
 import { computeCpp } from '@/lib/destinations'
-import { tier, formatValue } from '@/lib/cpp'
-import type { CppTier } from '@/lib/types'
 import type { DestImage } from '@/lib/images'
-
-// cpp tier → chip palette. Mirrors DealCard's editorial mapping (strong = teal,
-// fair = amber, low = neutral) but this card links into the destination GUIDE,
-// not straight to /search — it's the inspiration grid's tile. Tokens only.
-const CHIP: Record<CppTier, { bg: string; fg: string; bd: string }> = {
-  green: { bg: 'var(--color-good-bg)', fg: 'var(--color-good)', bd: 'var(--color-brand-mint-deep)' },
-  amber: { bg: 'var(--color-ok-bg)', fg: 'var(--color-ok)', bd: 'var(--color-gold-soft)' },
-  muted: { bg: 'var(--color-sunk)', fg: 'var(--color-text3)', bd: 'var(--color-border)' },
-}
-
-const TIER_WORD: Record<CppTier, string> = {
-  green: 'strong value',
-  amber: 'fair value',
-  muted: 'low value',
-}
+import { TierChip } from '@/components/ui/TierChip'
 
 function compactMiles(n: number): string {
   const k = n / 1000
@@ -38,8 +22,6 @@ export default function DestinationGuideCard({
   photo?: DestImage | null
 }) {
   const value = computeCpp(dest)
-  const t = tier(value)
-  const chip = CHIP[t]
 
   return (
     <Link
@@ -74,22 +56,9 @@ export default function DestinationGuideCard({
         )}
 
         {value !== undefined && (
-          <span
-            className="absolute right-3 top-3 flex items-baseline gap-0.5 rounded-full border px-3 py-1.5"
-            style={{ background: chip.bg, borderColor: chip.bd }}
-            aria-label={`${formatValue(value)} — ${TIER_WORD[t]}`}
-          >
-            <span
-              aria-hidden
-              className="font-display text-[17px] font-semibold leading-none tabular-nums"
-              style={{ color: chip.fg }}
-            >
-              {value.toFixed(1)}
-            </span>
-            <span aria-hidden className="text-[11px] font-semibold leading-none" style={{ color: chip.fg }}>
-              ¢/pt
-            </span>
-          </span>
+          <div className="absolute right-3 top-3">
+            <TierChip cpp={value} />
+          </div>
         )}
 
         <div className="absolute inset-x-0 bottom-0 flex items-end gap-2.5 p-4">
