@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import type { Destination } from '@/lib/destinations'
 import { computeCpp } from '@/lib/destinations'
-import { tier } from '@/lib/cpp'
-import type { CppTier } from '@/lib/types'
+import { TierChip } from '@/components/ui/TierChip'
 import type { DestImage } from '@/lib/images'
 
 export interface DealCardProps {
@@ -18,20 +17,7 @@ export interface DealCardProps {
   photo?: DestImage | null
 }
 
-// cpp tier → chip palette. Mirrors lib/cpp tiers but renders editorially:
-// strong value reads teal, mid reads amber, weak/muted stays neutral.
-const CHIP: Record<CppTier, { bg: string; fg: string; bd: string }> = {
-  green: { bg: 'var(--color-good-bg)', fg: 'var(--color-good)', bd: 'var(--color-brand-mint-deep)' },
-  amber: { bg: 'var(--color-ok-bg)', fg: 'var(--color-ok)', bd: 'var(--color-gold-soft)' },
-  muted: { bg: 'var(--color-sunk)', fg: 'var(--color-text3)', bd: 'var(--color-border)' },
-}
 
-// Plain-language strength word per tier, for the chip's screen-reader label.
-const TIER_WORD: Record<CppTier, string> = {
-  green: 'strong value',
-  amber: 'fair value',
-  muted: 'low value',
-}
 
 // 37500 → "37.5K", 40000 → "40K". Compact miles for the headline figure.
 function compactMiles(n: number): string {
@@ -57,13 +43,11 @@ function sentenceCase(s: string): string {
 // the border only — never movement (house rule: no hover transforms, anywhere).
 export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: DealCardProps) {
   const value = computeCpp(dest)
-  const t = tier(value)
-  const chip = CHIP[t]
   // "Best find" must be earned: the #1-ranked card only carries the badge when
   // it actually clears the strong-value bar (rank is by cpp desc, so rank 0 is
   // the highest cpp in the feed — but if even the top card is only fair, don't
   // overclaim). Factual, not decorative.
-  const isTopFind = rank === 0 && t === 'green'
+  const isTopFind = rank === 0 && value !== undefined && value >= 3.0
 
   const href =
     `/search?from=${fromCode}&to=${dest.code}` +
@@ -136,26 +120,9 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
             honestly. The visible figure is decorative; the spoken label carries
             the full meaning. */}
         {value !== undefined && (
-          <span
-            className="absolute right-3 top-3 flex items-baseline gap-0.5 rounded-full border px-3 py-1.5"
-            style={{ background: chip.bg, borderColor: chip.bd }}
-            aria-label={`${value.toFixed(1)} cents per point — ${TIER_WORD[t]}`}
-          >
-            <span
-              aria-hidden
-              className="hop-price text-[17px] leading-none"
-              style={{ color: chip.fg }}
-            >
-              {value.toFixed(1)}
-            </span>
-            <span
-              aria-hidden
-              className="text-[11px] font-semibold leading-none"
-              style={{ color: chip.fg }}
-            >
-              ¢/pt
-            </span>
-          </span>
+          <div className="absolute right-3 top-3">
+            <TierChip cpp={value} />
+          </div>
         )}
 
         {/* city + flag overlaid bottom-left */}
