@@ -3,6 +3,7 @@ import Link from 'next/link'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import { DESTINATION_PHOTOS } from '@/lib/destination-photos'
+import Eyebrow from '@/components/ui/Eyebrow'
 
 export const metadata: Metadata = {
   title: 'Photo credits · hop',
@@ -37,9 +38,9 @@ export default function CreditsPage() {
           ['Pexels', pexels],
         ].map(([title, group]) => (
           <section key={title as string} className="mt-10">
-            <h2 className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
+            <Eyebrow className="block text-brand">
               {title as string}
-            </h2>
+            </Eyebrow>
             <ul className="mt-3 divide-y divide-hair">
               {(group as typeof entries).map(([code, p]) => (
                 <li key={code} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 py-2.5">
