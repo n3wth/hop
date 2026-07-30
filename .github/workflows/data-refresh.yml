@@ -2,31 +2,27 @@ name: Data Refresh Loop (L3)
 
 on:
   schedule:
-    - cron: '0 9 1 * *'
+    - cron: '0 9 1 * *' # Monthly on the 1st at 09:00 UTC
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Dry run: print changes without creating a branch/PR'
+        description: 'Dry run (print diff, create no PR)'
         type: boolean
-        required: true
         default: true
 
 concurrency:
   group: data-refresh
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  refresh:
+  data-refresh:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          fetch-depth: 0
-          token: ${{ secrets.HOP_BOT_TOKEN }}
+          token: ${{ secrets.HOP_BOT_TOKEN || secrets.GITHUB_TOKEN }}
 
-      - name: Setup Node
-        uses: actions/setup-node@39376e3e73fc7a1d668824e5b6723a03284cd150 # v4.1.0
+      - uses: actions/setup-node@39370e3970a6d050c08001b064075cd0dd1b110a # v4.1.0
         with:
           node-version: 22
           cache: npm
@@ -34,98 +30,74 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Regenerate place facts
-        run: node scripts/gen-place-facts.mjs > lib/place-facts.ts
-
-      - name: Regenerate climate normals
-        run: node scripts/gen-climate-normals.mjs > lib/climate-normals.ts
-
-      - name: Bump CONTENT_LAST_MODIFIED in lib/seo-routes.ts
+      - name: Regenerate place facts and climate normals
         run: |
-          python3 -c "
-          import re
-          from datetime import datetime
+          node scripts/gen-place-facts.mjs > lib/place-facts.ts
+          node scripts/gen-climate-normals.mjs > lib/climate-normals.ts
 
-          path = 'lib/seo-routes.ts'
-          content = open(path).read()
-          today = datetime.now().strftime('%Y-%m-%d')
-
-          matches = re.findall(r\"export const CONTENT_LAST_MODIFIED = '(\d{4}-\d{2}-\d{2})'\", content)
-          if len(matches) != 1:
-              print(f'Error: Found {len(matches)} matches of CONTENT_LAST_MODIFIED, expected exactly 1.')
-              exit(1)
-
-          new_content = re.sub(
-              r\"export const CONTENT_LAST_MODIFIED = '\d{4}-\d{2}-\d{2}'\",
-              f\"export const CONTENT_LAST_MODIFIED = '{today}'\",
-              content
-          )
-
-          new_matches = re.findall(f\"export const CONTENT_LAST_MODIFIED = '{today}'\", new_content)
-          if len(new_matches) != 1:
-              print('Error: After replacement, found != 1 matches of the new CONTENT_LAST_MODIFIED.')
-              exit(1)
-
-          open(path, 'w').write(new_content)
-          print(f'Successfully bumped CONTENT_LAST_MODIFIED in {path} to {today}')
-          "
-
-      - name: Hard path guard
+      - name: Update CONTENT_LAST_MODIFIED in lib/seo-routes.ts
         run: |
-          CHANGED_FILES=$(git diff --name-only)
-          echo "Changed files:"
-          echo "$CHANGED_FILES"
-
-          BAD_FILES=0
-          for f in $CHANGED_FILES; do
-            if [ "$f" != "lib/place-facts.ts" ] && [ "$f" != "lib/climate-normals.ts" ] && [ "$f" != "lib/seo-routes.ts" ]; then
-              echo "ERROR: Disallowed file changed: $f"
-              BAD_FILES=$((BAD_FILES + 1))
-            fi
-          done
-
-          if [ "$BAD_FILES" -gt 0 ]; then
-            echo "Hard path guard failed. Aborting."
+          BEFORE_COUNT=$(grep -c "export const CONTENT_LAST_MODIFIED =" lib/seo-routes.ts)
+          if [ "$BEFORE_COUNT" -ne 1 ]; then
+            echo "::error::Expected exactly 1 line matching CONTENT_LAST_MODIFIED before replacement, found $BEFORE_COUNT"
             exit 1
           fi
-          echo "Hard path guard passed."
+          TODAY=$(date -u +'%Y-%m-%d')
+          sed -i.bak "s/export const CONTENT_LAST_MODIFIED = '[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}'/export const CONTENT_LAST_MODIFIED = '$TODAY'/" lib/seo-routes.ts
+          rm -f lib/seo-routes.ts.bak
+          AFTER_COUNT=$(grep -c "export const CONTENT_LAST_MODIFIED =" lib/seo-routes.ts)
+          if [ "$AFTER_COUNT" -ne 1 ]; then
+            echo "::error::Expected exactly 1 line matching CONTENT_LAST_MODIFIED after replacement, found $AFTER_COUNT"
+            exit 1
+          fi
 
-      - name: Validate changes (npm run check)
+      - name: Path guard verification
+        run: |
+          CHANGED=$(git diff --name-only)
+          echo "Changed files:"
+          echo "$CHANGED"
+          
+          # Allow only lib/place-facts.ts, lib/climate-normals.ts, and lib/seo-routes.ts
+          FORBIDDEN=$(echo "$CHANGED" | grep -vE '^(lib/place-facts\.ts|lib/climate-normals\.ts|lib/seo-routes\.ts)$' || true)
+          if [ -n "$FORBIDDEN" ]; then
+            echo "::error::Path guard violation: data refresh modified unallowed files:"
+            echo "$FORBIDDEN"
+            exit 1
+          fi
+
+      - name: Run verification checks
         run: npm run check
 
-      - name: Dry Run reporting
-        if: ${{ github.event.inputs.dry_run == 'true' || (github.event.inputs.dry_run == '' && github.event_name == 'workflow_dispatch') }}
-        run: |
-          echo "=== DRY RUN COMPLETED ==="
-          git diff
-          echo "No branch or PR created."
-
-      - name: Commit and push changes
-        if: ${{ github.event.inputs.dry_run == 'false' || github.event_name == 'schedule' }}
+      - name: Handle dry run or PR creation
         env:
-          GITHUB_TOKEN: ${{ secrets.HOP_BOT_TOKEN }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+          GH_TOKEN: ${{ secrets.HOP_BOT_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          git config --global user.name "hop-bot"
-          git config --global user.email "bot@hop.flights"
-          
-          # Create and switch to bot/data-refresh branch
-          git checkout -b bot/data-refresh
-          
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "Dry run complete. Git diff output:"
+            git diff
+            exit 0
+          fi
+
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No changes produced by data refresh scripts."
+            exit 0
+          fi
+
+          BRANCH="bot/data-refresh"
+          git config user.name "hop-bot"
+          git config user.email "bot@hop.flights"
+          git checkout -B "$BRANCH"
           git add lib/place-facts.ts lib/climate-normals.ts lib/seo-routes.ts
-          git commit -m "chore(data): monthly place facts and climate normals refresh"
-          
-          # Force push to origin
-          git push origin bot/data-refresh --force
-          
-          # Create pull request using GitHub CLI, ignoring only if it already exists
-          gh pr create --head bot/data-refresh --base main \
-            --title "chore(data): monthly place facts and climate normals refresh" \
-            --body "Monthly auto-refresh of Wikidata facts, Open-Meteo climate normals, and Frankfurter FX rates. This PR is created automatically by the Data Refresh Loop (L3)." > pr_output.log 2>&1 || {
-              cat pr_output.log
-              if grep -qi "already exists" pr_output.log; then
-                echo "PR already exists"
-              else
-                echo "Error: gh pr create failed"
-                exit 1
-              fi
-            }
+          git commit -m "chore(data): monthly dataset refresh (place facts + climate normals)"
+          git push origin "$BRANCH" --force
+
+          if gh pr view "$BRANCH" >/dev/null 2>&1; then
+            echo "PR for $BRANCH already exists. Branch force-pushed successfully."
+          else
+            gh pr create \
+              --title "chore(data): monthly dataset refresh" \
+              --body "Monthly keyless data refresh generated by \`scripts/gen-place-facts.mjs\` and \`scripts/gen-climate-normals.mjs\`. Verified with \`lib/__tests__/data-snapshot.test.ts\` and \`npm run check\`." \
+              --head "$BRANCH" \
+              --base main
+          fi
