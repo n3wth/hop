@@ -13,8 +13,8 @@ import {
   pointsBandSearchHref,
 } from '@/lib/points-bands'
 import { affordableWith, computeCpp, type Destination } from '@/lib/destinations'
-import { tier, formatValue } from '@/lib/cpp'
-import type { CppTier } from '@/lib/types'
+import { formatValue } from '@/lib/cpp'
+import { TierChip } from '@/components/ui/TierChip'
 import { VERIFY_CAVEAT } from '@/lib/sweet-spots'
 
 // Prerender one page per curated band; nothing else is valid.
@@ -41,12 +41,7 @@ export async function generateMetadata({
   })
 }
 
-// cpp tier -> chip palette. Mirrors DealCard/sweet-spots chip conventions.
-const TIER_CHIP: Record<CppTier, { bg: string; fg: string; bd: string }> = {
-  green: { bg: 'var(--color-good-bg)', fg: 'var(--color-good)', bd: 'var(--color-brand-mint-deep)' },
-  amber: { bg: 'var(--color-ok-bg)', fg: 'var(--color-ok)', bd: 'var(--color-gold-soft)' },
-  muted: { bg: 'var(--color-sunk)', fg: 'var(--color-text3)', bd: 'var(--color-border)' },
-}
+
 
 // 37500 -> "37.5K". Compact miles for the row figures (mirrors DealCard).
 function compactMiles(n: number): string {
@@ -178,8 +173,6 @@ export default async function PointsBandPage({
           <section className="mt-9 divide-y divide-hair border-y border-border">
             {list.map((d) => {
               const value = computeCpp(d)
-              const t = tier(value)
-              const chip = TIER_CHIP[t]
               const leftover = amount - d.typicalAwardMiles
               const searchHref = pointsBandSearchHref(d.code)
 
@@ -198,14 +191,7 @@ export default async function PointsBandPage({
                         {d.city}
                       </h2>
                       <span className="text-[13px] text-text3">{d.country}</span>
-                      {value !== undefined && (
-                        <span
-                          className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[var(--track-label)]"
-                          style={{ background: chip.bg, color: chip.fg, borderColor: chip.bd }}
-                        >
-                          {formatValue(value)}
-                        </span>
-                      )}
+                      {value !== undefined && <TierChip cpp={value} />}
                     </div>
                     <p className="mt-2.5 max-w-[60ch] text-[14.5px] leading-relaxed text-text2">
                       {sentenceCase(d.vibe)}
