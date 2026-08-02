@@ -63,6 +63,22 @@ org executing on roughly 1 of 13 of the prior week's board amendments, so treat 
 is the harder-won, more authoritative one" as load-bearing, not aspirational: a desk that finds
 its own prior-week asks unmet should escalate rather than silently re-derive a fresh ranking.
 
+**Ownership order reaffirmed again (2026-08-02), plus one resolved question worth acting on
+immediately once the merge pipeline allows it:** the board memo dated 2026-08-02
+(`docs/board/2026-08-02-board-memo.md`) exists only as an unmerged draft PR (#383) as of this
+note — same institutional-memory-pipeline failure the memo itself names (PR #333, the 2026-07-26
+board memo, was still open 7 days later at the time of this review). Per the caveat added
+2026-08-02: this playbook's own pointer means the *merged* ranked list, not a draft PR's claimed
+one — but with no merged board/strategy memo newer than 2026-07-19 on `main`, the most current
+available adversarial evidence is PR #383's content, verified independently (live GitHub PR
+status, a live PostHog pull, a live curl of the valuation-sync worker) by
+`docs/strategy/2026-08-02-weekly-strategy.md` rather than trusted as prose. That file is the
+current priority order per the pointer below. One genuinely new, actionable finding: the board's
+own "is `HOP_ENABLE_VALUATION_SYNC` actually live" contested question is now answerable with
+reasonable confidence from `docs/ops-runbook.md`'s current-state table plus a live worker
+response — it is very likely live, not inert — which unblocks shipping a public page off it as a
+near-term agent-executable move (not a founder-gated one) once merges resume.
+
 **Ongoing priority ownership (from 2026-07-06):** the board memo above was a one-time review; the
 strategy desk (Marcus, `docs/team/routines.md`) now owns re-ranking priority on a weekly cadence
 via `docs/strategy/<date>-weekly-strategy.md`. Once Marcus has run at least once, his latest file
