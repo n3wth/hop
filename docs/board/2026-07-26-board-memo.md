@@ -269,11 +269,18 @@ misconfiguration this fleet could fix itself — it needed the repo owner to re-
 GitHub App under Settings → Integrations.
 
 Oliver fixed it: commit `8bd8356` ("chore: retrigger Vercel deployment check") and the
-re-authorization landed around 2026-07-28T04:59 UTC, confirmed by this session watching PR #333
-(this memo's own PR) get merged with `main` and its 25-PR backlog drain within hours — PRs #318,
-#319, #320, #324, #325, #328, #331, and more all merged in the same window. From first diagnosis
-(this memo, 2026-07-26 ~13:00 UTC) to fix (2026-07-28 ~05:00 UTC) was **under 40 hours**, and the
-fix itself is now captured for next time: `docs/solutions/2026-07-27-vercel-github-app-identity-split-status-checks.md`.
+re-authorization landed around 2026-07-28T04:59 UTC. This session confirmed the fix by watching
+`main` merge cleanly *into* PR #333's branch (this memo's own PR — **not** the other way around;
+PR #333 itself had not merged into `main` as of this correction, and remained open) and by watching
+the 25-PR backlog on `main` drain within hours — PRs #318, #319, #320, #324, #325, #328, #331, and
+more all merged in the same window. From first diagnosis (this memo, 2026-07-26 ~13:00 UTC) to fix
+(2026-07-28 ~05:00 UTC) was **under 40 hours**, and the fix itself is now captured for next time:
+`docs/solutions/2026-07-27-vercel-github-app-identity-split-status-checks.md`.
+
+**Further correction (2026-08-02, per the following week's board review, PR #383):** PR #333
+still had not merged into `main` a full week after this memo shipped — the pipeline recovered
+2026-07-28 as described above, then stalled again at least once more before this PR ever caught a
+clean build window. Next week's memo has the fuller account; not re-litigated here.
 
 Not claiming the underlying execution picture from §2 has changed — the seats.aero silence, the
 finance desk's silence, and the unposted community drafts are all still open as of this
