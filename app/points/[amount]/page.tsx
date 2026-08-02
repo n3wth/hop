@@ -15,6 +15,8 @@ import {
 import { affordableWith, computeCpp, type Destination } from '@/lib/destinations'
 import { formatValue } from '@/lib/cpp'
 import { TierChip } from '@/components/ui/TierChip'
+import Card from '@/components/ui/Card'
+import Button from '@/components/ui/Button'
 import { VERIFY_CAVEAT } from '@/lib/sweet-spots'
 
 // Prerender one page per curated band; nothing else is valid.
@@ -154,18 +156,20 @@ export default async function PointsBandPage({
         {/* soft sign-in CTA — never claims the visitor owns this balance;
             offers to reprice against their real one instead. Consistent with
             VerdictRail's owns/hasRealBalances framing. */}
-        <div className="mx-auto mt-7 flex flex-col items-center justify-between gap-3 rounded-[16px] border border-border bg-surface px-5 py-4 text-center sm:flex-row sm:gap-4 sm:text-left">
+        <Card className="mx-auto mt-7 flex flex-col items-center justify-between gap-3 px-5 py-4 text-center sm:flex-row sm:gap-4 sm:text-left">
           <span className="text-[14px] leading-[1.5] text-text2">
             <span className="font-semibold text-text">This is a reference balance, not yours.</span>{' '}
             Sign in and hop prices every destination against what you actually hold.
           </span>
-          <Link
+          <Button
             href={`/auth/login?returnTo=${returnTo}`}
-            className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-[var(--radius)] bg-brand px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep"
+            native
+            size="sm"
+            className="flex-shrink-0"
           >
             Sign in to see it with your real balance
-          </Link>
-        </div>
+          </Button>
+        </Card>
 
         {/* the destination rows — flat editorial, best-cpp-first (already
             sorted by affordableWith) */}
