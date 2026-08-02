@@ -2,6 +2,7 @@
 
 import { useId, useState, useTransition } from 'react'
 import Icon from '@/components/Icon'
+import Card from '@/components/ui/Card'
 
 // "Have hop book it for you" — the quiet expert-booking affordance on /ask
 // (roadmap §6 / N-290, Phase 1). It does NOT book anything: it logs a request a
@@ -77,14 +78,9 @@ export default function EscalationCTA({
 
   // Confirmation — calm and honest about what happens next (a human, not a bot,
   // and no promised turnaround we can't keep in Phase 1).
-  // Card chrome only when free-standing — inside the Sheet the panel is the frame.
-  const frame = embedded
-    ? ''
-    : 'rounded-[16px] border border-border bg-surface px-5 py-4 sm:px-6'
-
   if (phase === 'done') {
     return (
-      <section className={frame}>
+      <Card surface="surface" radius="lg" className={embedded ? 'border-0 bg-transparent p-0' : 'px-5 py-4 sm:px-6'} as="section">
         <div className="flex items-start gap-3">
           <span className="mt-0.5 flex-shrink-0 text-brand">
             <Icon name="check_circle" size={20} weight="fill" />
@@ -99,7 +95,7 @@ export default function EscalationCTA({
             </p>
           </div>
         </div>
-      </section>
+      </Card>
     )
   }
 
@@ -107,7 +103,7 @@ export default function EscalationCTA({
   // user who wants a human to do the booking.
   if (phase === 'idle') {
     return (
-      <section className="rounded-[16px] border border-border bg-surface px-5 py-4 sm:px-6">
+      <Card surface="surface" radius="lg" className="px-5 py-4 sm:px-6" as="section">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <span className="mt-0.5 flex-shrink-0 text-brand">
@@ -134,15 +130,94 @@ export default function EscalationCTA({
             Request a booking
           </button>
         </div>
-      </section>
+      </Card>
     )
   }
 
   // Open: the inline form. Email (required) + optional note. No modal — flat.
   // Embedded (in the Sheet), the sheet header already carries the icon + title,
   // so only the explainer + form render.
+  if (embedded) {
+    return (
+      <div className="">
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="mt-1 max-w-[60ch] text-[14px] leading-[1.5] text-text2">
+              Leave your email and anything you know about the trip. A hop specialist books it by
+              hand and emails you — it&apos;s a concierge request, not an instant confirmation.
+            </p>
+
+            <div className="mt-3 flex flex-col gap-2.5">
+              <div className="flex flex-col gap-1">
+                <label htmlFor={emailId} className="text-[12px] font-semibold text-text2">
+                  Email
+                </label>
+                <input
+                  id={emailId}
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  disabled={pending}
+                  className="w-full rounded-[10px] border border-border bg-bg px-3 py-2 text-[14px] text-text placeholder:text-text3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label htmlFor={noteId} className="text-[12px] font-semibold text-text2">
+                  Trip details <span className="font-normal text-text3">(optional)</span>
+                </label>
+                <textarea
+                  id={noteId}
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  rows={3}
+                  placeholder="e.g. 2 in business to Tokyo, late March, flexible by a few days."
+                  disabled={pending}
+                  className="w-full resize-y rounded-[10px] border border-border bg-bg px-3 py-2 text-[14px] leading-[1.5] text-text placeholder:text-text3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60"
+                />
+              </div>
+
+              {error ? (
+                <p role="alert" className="flex items-center gap-1.5 text-[13px] text-weak">
+                  <Icon name="error" size={16} weight="fill" />
+                  {error}
+                </p>
+              ) : null}
+
+              <div className="mt-0.5 flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={submit}
+                  disabled={pending}
+                  className="inline-flex items-center gap-1.5 rounded-[12px] bg-brand px-4 py-2 text-[13px] font-semibold text-white transition-colors duration-200 hover:bg-brand-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60"
+                >
+                  {pending ? 'Sending…' : 'Send request'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError(null)
+                    if (embedded && onCancel) onCancel()
+                    else setPhase('idle')
+                  }}
+                  disabled={pending}
+                  className="rounded-[12px] px-3 py-2 text-[13px] font-semibold text-text3 transition-colors duration-200 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <section className={frame}>
+    <Card surface="surface" radius="lg" className="px-5 py-4 sm:px-6" as="section">
       <div className="flex items-start gap-3">
         {embedded ? null : (
           <span className="mt-0.5 flex-shrink-0 text-brand">
@@ -225,6 +300,6 @@ export default function EscalationCTA({
           </div>
         </div>
       </div>
-    </section>
+    </Card>
   )
 }
