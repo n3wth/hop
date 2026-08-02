@@ -1,4 +1,5 @@
 import AppShell from '@/components/AppShell'
+import Card from '@/components/ui/Card'
 import { getSessionNavUser } from '@/lib/nav-user'
 
 // Route-level loading UI for /deals. Next wraps page.js in a Suspense boundary
@@ -16,7 +17,7 @@ const SKELETON_COUNT = 24
 // and the footer CTA row. Same radii + borders so the real card swaps in clean.
 function CardSkeleton() {
   return (
-    <div className="flex min-w-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper">
+    <Card surface="paper" radius="lg" className="flex min-w-0 flex-col overflow-hidden">
       {/* photo header placeholder — matches the card's 16/10 aspect */}
       <div className="hop-skeleton aspect-[16/10] w-full" />
       {/* body placeholder */}
@@ -31,7 +32,7 @@ function CardSkeleton() {
           <span className="hop-skeleton hop-skeleton-line block w-2/5" />
         </div>
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -57,10 +58,10 @@ export default async function Loading() {
 
         {/* "Ask hop" on-ramp band — mirrors the real page's concierge door so the
             feed lands at the same vertical offset (no jump when content swaps). */}
-        <div className="mx-auto mt-7 flex max-w-[640px] items-center justify-between gap-4 rounded-[16px] border border-border bg-surface px-5 py-4">
+        <Card surface="surface" radius="lg" className="mx-auto mt-7 flex max-w-[640px] items-center justify-between gap-4 px-5 py-4">
           <span className="hop-skeleton hop-skeleton-line block w-3/5" />
           <span className="hop-skeleton block h-[42px] w-[112px] flex-shrink-0 rounded-[var(--radius)]" />
-        </div>
+        </Card>
 
         {/* the feed skeleton */}
         <section className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">

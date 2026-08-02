@@ -1,5 +1,4 @@
 import { cookies } from 'next/headers'
-import Link from 'next/link'
 import { toNavUser } from '@/lib/nav-user'
 import { topValue, imageQuery } from '@/lib/destinations'
 import { destinationImages } from '@/lib/images'
@@ -13,6 +12,8 @@ import DegradedNote from '@/components/DegradedNote'
 import SiteFooter from '@/components/SiteFooter'
 import EditorialHeader from '@/components/EditorialHeader'
 import Icon from '@/components/Icon'
+import Card from '@/components/ui/Card'
+import Button from '@/components/ui/Button'
 import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import { pageMeta } from '@/lib/seo'
 import { localISO } from '@/lib/dates'
@@ -137,7 +138,7 @@ export default async function DealsPage({
         {/* agent on-ramp — these are great-value routes in the abstract; hop's
             concierge can say which ones YOUR points actually reach. A door into
             /ask so the static feed isn't a dead end. */}
-        <div className="mx-auto mt-7 flex max-w-[640px] flex-col items-center justify-between gap-3 rounded-[16px] border border-border bg-surface px-5 py-4 text-center sm:flex-row sm:gap-4 sm:text-left">
+        <Card surface="surface" className="mx-auto mt-7 flex max-w-[640px] flex-col items-center justify-between gap-3 px-5 py-4 text-center sm:flex-row sm:gap-4 sm:text-left">
           <div className="flex items-center gap-2.5">
             <Icon name="lightbulb" size={16} className="flex-shrink-0 text-brand" />
             <span className="text-[14px] leading-[1.5] text-text2">
@@ -145,14 +146,15 @@ export default async function DealsPage({
               which of these your points can reach.
             </span>
           </div>
-          <Link
+          <Button
             href="/ask?q=Which%20of%20these%20sweet%20spots%20fit%20my%20points%3F"
-            className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-[var(--radius)] bg-brand px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep"
+            size="sm"
+            className="flex-shrink-0"
           >
             <Icon name="flight" size={16} />
             Ask hop
-          </Link>
-        </div>
+          </Button>
+        </Card>
 
         {/* the feed */}
         {hasDeals ? (
@@ -172,11 +174,11 @@ export default async function DealsPage({
         ) : (
           // Defensive: the dataset is static so this shouldn't happen, but never
           // render a bare, dead grid if it ever does.
-          <div className="mt-9 rounded-[var(--radius-lg)] border border-border bg-surface px-6 py-12 text-center">
+          <Card surface="surface" radius="lg" className="mt-9 px-6 py-12 text-center">
             <p className="text-[15px] text-text2">
               No sweet spots to show right now. Ask hop where your points can take you.
             </p>
-          </div>
+          </Card>
         )}
 
         {/* Unsplash attribution (API terms) */}
