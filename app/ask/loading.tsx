@@ -1,4 +1,5 @@
 import AppShell from '@/components/AppShell'
+import Card from '@/components/ui/Card'
 import { getSessionNavUser } from '@/lib/nav-user'
 
 // Route-level loading UI for /ask. The concierge is now ONE fixed surface: a quiet
@@ -43,10 +44,14 @@ export default async function Loading() {
                 {/* slim destination strip */}
                 <div className="mt-8 flex flex-wrap justify-center gap-2.5">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <span
+                    <Card
                       key={i}
-                      className="h-[78px] w-[92px] rounded-[var(--radius)] border border-border bg-paper"
-                    />
+                      surface="paper"
+                      radius="md"
+                      className="h-[78px] w-[92px]"
+                    >
+                      {null}
+                    </Card>
                   ))}
                 </div>
               </div>

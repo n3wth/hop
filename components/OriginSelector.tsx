@@ -3,6 +3,8 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { searchAirports, airportByCode } from '@/lib/airports'
 import { useOrigin } from '@/lib/origin-context'
+import Card from './ui/Card'
+import Eyebrow from './ui/Eyebrow'
 
 // Compact "where from" control for the TopNav — a flat pill that states the
 // current origin ("From SFO") and opens a small popover to set or change it.
@@ -93,14 +95,16 @@ export default function OriginSelector() {
       </button>
 
       {open && (
-        <div
+        <Card
+          surface="surface"
+          radius="md"
           role="dialog"
           aria-label="Set departure airport"
-          className="absolute right-0 top-[calc(100%+10px)] z-[80] w-[300px] rounded-[var(--radius)] border border-border bg-surface p-2.5"
+          className="absolute right-0 top-[calc(100%+10px)] z-[80] w-[300px] p-2.5"
         >
-          <span className="mb-1.5 block px-1 text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
+          <Eyebrow className="mb-1.5 block px-1 text-[10.5px]">
             Where from
-          </span>
+          </Eyebrow>
           <input
             ref={inputRef}
             value={query}
@@ -185,7 +189,7 @@ export default function OriginSelector() {
               </button>
             </div>
           ) : null}
-        </div>
+        </Card>
       )}
     </div>
   )
