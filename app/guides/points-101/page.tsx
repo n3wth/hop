@@ -3,6 +3,7 @@ import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import EditorialHeader from '@/components/EditorialHeader'
 import BrandIcon from '@/components/BrandIcon'
+import Card from '@/components/ui/Card'
 import { pageMeta } from '@/lib/seo'
 import { GREEN_TIER_CPP, AMBER_TIER_CPP, POINTS_THRESHOLD_CPP } from '@/lib/cpp'
 import { listPrograms, listTransferablePrograms } from '@/lib/programs'
@@ -100,13 +101,14 @@ export default function Points101Page() {
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             {lockedAirlines.map((p) => (
-              <div
+              <Card
                 key={p.id}
-                className="flex items-center gap-2 rounded-full border border-border bg-paper py-1 pl-1 pr-3"
+                surface="paper"
+                className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3"
               >
                 <BrandIcon code={p.code} name={p.name} size={22} />
                 <span className="text-[13.5px] font-medium text-text">{p.name}</span>
-              </div>
+              </Card>
             ))}
           </div>
           <p className="mt-4 text-[13px] text-text3">
@@ -114,13 +116,14 @@ export default function Points101Page() {
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             {lockedHotels.map((p) => (
-              <div
+              <Card
                 key={p.id}
-                className="flex items-center gap-2 rounded-full border border-border bg-paper py-1 pl-1 pr-3"
+                surface="paper"
+                className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3"
               >
                 <BrandIcon code={p.code} name={p.name} size={22} />
                 <span className="text-[13.5px] font-medium text-text">{p.name}</span>
-              </div>
+              </Card>
             ))}
           </div>
 

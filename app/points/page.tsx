@@ -2,6 +2,7 @@ import Link from 'next/link'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import EditorialHeader from '@/components/EditorialHeader'
+import Card from '@/components/ui/Card'
 import { pageMeta } from '@/lib/seo'
 import { POINTS_BANDS, pointsBandSlug, formatPointsCompact, formatPointsLabel } from '@/lib/points-bands'
 import { affordableWith } from '@/lib/destinations'
@@ -48,50 +49,55 @@ export default function PointsIndexPage() {
               <Link
                 key={amount}
                 href={`/points/${pointsBandSlug(amount)}`}
-                className="group flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-6 transition-colors hover:border-brand"
+                className="group flex flex-col focus:outline-none"
               >
-                <div className="flex items-baseline justify-between gap-3">
-                  <h2 className="font-display text-[22px] font-semibold leading-tight tracking-[-0.01em] text-text">
-                    {formatPointsLabel(amount)} points
-                  </h2>
-                  <span className="flex-shrink-0 text-[13px] font-semibold text-text3">
-                    {list.length} {list.length === 1 ? 'destination' : 'destinations'}
-                  </span>
-                </div>
-                {/* the strongest lead destination at this balance, as a teaser */}
-                <p className="mt-3 text-[14px] leading-snug text-text2">
-                  {lead ? (
-                    <>
-                      <span className="font-semibold text-text">
-                        {lead.city}, {lead.country}
-                      </span>{' '}
-                      leads — {lead.bestProgram}, about {formatPointsCompact(lead.typicalAwardMiles)} miles
-                      one-way.
-                    </>
-                  ) : (
-                    'No destination in hop’s set clears at this balance yet.'
-                  )}
-                </p>
-                <div className="mt-auto flex items-center justify-between gap-3 pt-5">
-                  <span className="text-[14px] font-semibold text-text transition-colors group-hover:text-brand">
-                    See what {formatPointsCompact(amount)} gets you
-                  </span>
-                  <span
-                    aria-hidden
-                    className="flex-shrink-0 text-[15px] font-semibold text-text3 transition-colors group-hover:text-brand"
-                  >
-                    →
-                  </span>
-                </div>
+                <Card
+                  surface="paper"
+                  radius="lg"
+                  interactive
+                  className="flex flex-1 flex-col p-6"
+                >
+                  <div className="flex items-baseline justify-between gap-3">
+                    <h2 className="font-display text-[22px] font-semibold leading-tight tracking-[-0.01em] text-text">
+                      {formatPointsLabel(amount)} points
+                    </h2>
+                    <span className="flex-shrink-0 text-[13px] font-semibold text-text3">
+                      {list.length} {list.length === 1 ? 'destination' : 'destinations'}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-[14px] leading-snug text-text2">
+                    {lead ? (
+                      <>
+                        <span className="font-semibold text-text">
+                          {lead.city}, {lead.country}
+                        </span>{' '}
+                        leads — {lead.bestProgram}, about {formatPointsCompact(lead.typicalAwardMiles)} miles
+                        one-way.
+                      </>
+                    ) : (
+                      'No destination in hop’s set clears at this balance yet.'
+                    )}
+                  </p>
+                  <div className="mt-auto flex items-center justify-between gap-3 pt-5">
+                    <span className="text-[14px] font-semibold text-text transition-colors group-hover:text-brand">
+                      See what {formatPointsCompact(amount)} gets you
+                    </span>
+                    <span
+                      aria-hidden
+                      className="flex-shrink-0 text-[15px] font-semibold text-text3 transition-colors group-hover:text-brand"
+                    >
+                      →
+                    </span>
+                  </div>
+                </Card>
               </Link>
             )
           })}
         </section>
 
-        {/* accuracy caveat — the table is seed reference data, not live quotes */}
-        <p className="mt-8 rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[14px] leading-relaxed text-text3">
+        <Card surface="surface" radius="md" as="p" className="mt-8 px-4 py-3 text-[14px] leading-relaxed text-text3">
           {VERIFY_CAVEAT}
-        </p>
+        </Card>
 
         {/* internal-link mesh: out to inspiration + the live tool */}
         <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[14px]">
