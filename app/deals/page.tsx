@@ -138,7 +138,7 @@ export default async function DealsPage({
         {/* agent on-ramp — these are great-value routes in the abstract; hop's
             concierge can say which ones YOUR points actually reach. A door into
             /ask so the static feed isn't a dead end. */}
-        <Card className="mx-auto mt-7 flex max-w-[640px] flex-col items-center justify-between gap-3 px-5 py-4 text-center sm:flex-row sm:gap-4 sm:text-left">
+        <Card surface="surface" className="mx-auto mt-7 flex max-w-[640px] flex-col items-center justify-between gap-3 px-5 py-4 text-center sm:flex-row sm:gap-4 sm:text-left">
           <div className="flex items-center gap-2.5">
             <Icon name="lightbulb" size={16} className="flex-shrink-0 text-brand" />
             <span className="text-[14px] leading-[1.5] text-text2">
@@ -174,11 +174,11 @@ export default async function DealsPage({
         ) : (
           // Defensive: the dataset is static so this shouldn't happen, but never
           // render a bare, dead grid if it ever does.
-          <div className="mt-9 rounded-[var(--radius-lg)] border border-border bg-surface px-6 py-12 text-center">
+          <Card surface="surface" radius="lg" className="mt-9 px-6 py-12 text-center">
             <p className="text-[15px] text-text2">
               No sweet spots to show right now. Ask hop where your points can take you.
             </p>
-          </div>
+          </Card>
         )}
 
         {/* Unsplash attribution (API terms) */}
