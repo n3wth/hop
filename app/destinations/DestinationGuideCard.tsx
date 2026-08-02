@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Card from '@/components/ui/Card'
 import type { Destination } from '@/lib/destinations'
 import { computeCpp } from '@/lib/destinations'
 import type { DestImage } from '@/lib/images'
@@ -24,10 +25,13 @@ export default function DestinationGuideCard({
   const value = computeCpp(dest)
 
   return (
-    <Link
-      href={`/destinations/${dest.code.toLowerCase()}`}
-      className="group flex min-w-0 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-colors hover:border-brand"
-    >
+    <Link href={`/destinations/${dest.code.toLowerCase()}`}>
+      <Card
+        surface="paper"
+        radius="lg"
+        interactive
+        className="group flex min-w-0 flex-col overflow-hidden"
+      >
       {/* photo header */}
       <div className="relative aspect-[16/10] w-full overflow-hidden" style={{ background: 'var(--color-brand-deep)' }}>
         {photo ? (
@@ -96,6 +100,7 @@ export default function DestinationGuideCard({
           </span>
         </div>
       </div>
+      </Card>
     </Link>
   )
 }
