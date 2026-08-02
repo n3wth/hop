@@ -13,6 +13,7 @@ import CountUp from '@/components/CountUp'
 import FarePolicyCard from '@/components/checkout/FarePolicyCard'
 import ConfirmationSkeleton from '@/components/checkout/ConfirmationSkeleton'
 import Button from '@/components/ui/Button'
+import Card from '@/components/ui/Card'
 
 // Private, per-user confirmation — keep it out of the index. (template adds "· hop".)
 export const metadata: Metadata = {
@@ -65,7 +66,7 @@ async function OrderGate({ sub, orderId }: { sub: string; orderId?: string }) {
 
   if (!res.ok) {
     return (
-      <div className="mt-2 flex items-start gap-4 rounded-[16px] border border-border bg-surface px-6 py-7">
+      <Card className="mt-2 flex items-start gap-4 px-6 py-7">
         <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
           <Icon name="info" size={24} weight="fill" />
         </span>
@@ -83,7 +84,7 @@ async function OrderGate({ sub, orderId }: { sub: string; orderId?: string }) {
             </Button>
           </div>
         </div>
-      </div>
+      </Card>
     )
   }
 
@@ -168,7 +169,7 @@ function Confirmed({
       </section>
 
       {/* itinerary */}
-      <section className="mt-6 rounded-[16px] border border-border bg-surface p-5 sm:p-6">
+      <Card as="section" className="mt-6 p-5 sm:p-6">
         <h2 className="font-display text-[15px] font-semibold text-text">Itinerary</h2>
         <div className="mt-4 space-y-4">
           {order.segments.map((s, i) => (
@@ -194,10 +195,10 @@ function Confirmed({
             </div>
           ))}
         </div>
-      </section>
+      </Card>
 
       {/* passengers + total */}
-      <section className="mt-4 rounded-[16px] border border-border bg-surface p-5 sm:p-6">
+      <Card as="section" className="mt-4 p-5 sm:p-6">
         {order.passengerNames.length ? (
           <div className="mb-4">
             <div className="text-[12.5px] font-semibold text-text2">Travelers</div>
@@ -208,7 +209,7 @@ function Confirmed({
           <span className="text-[13.5px] text-text2">Total paid</span>
           <TotalPaid amount={order.totalAmount} currency={order.totalCurrency} />
         </div>
-      </section>
+      </Card>
 
       {/* change/cancel policy */}
       <FarePolicyCard policy={order.farePolicy} airline={order.airline} className="mt-4" />
