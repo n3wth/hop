@@ -264,7 +264,7 @@ function ProgramRow({ program, first }: { program: ManualBalance; first: boolean
             }}
             inputMode="numeric"
             aria-label="Balance"
-            className="sm:w-[140px]"
+            className="font-semibold tabular-nums sm:w-[140px]"
           />
           <div className="flex items-center gap-1.5">
             <button
@@ -453,7 +453,7 @@ function AddProgramForm({ hasRows }: { hasRows: boolean }) {
           placeholder="Balance (optional)"
           aria-label="Balance (optional)"
           autoComplete="off"
-          className="sm:w-[140px]"
+          className="font-semibold tabular-nums sm:w-[140px]"
         />
         <button
           type="button"
