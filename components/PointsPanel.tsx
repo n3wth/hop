@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Balance, FlightOption } from '@/lib/types'
 import { walletValue, WALLET_VALUE_CAVEAT } from '@/lib/valuations'
 import BrandIcon from './BrandIcon'
+import Eyebrow from '@/components/ui/Eyebrow'
 
 export interface PointsPanelProps {
   balances: Balance[]
@@ -54,9 +55,9 @@ export default function PointsPanel({ balances, pick, isExample = false }: Point
         className="overflow-hidden rounded-[22px] px-5 py-7 text-hero-cream sm:px-[30px]"
         style={{ background: 'var(--color-brand-ink)' }}
       >
-        <h2 className="text-[13px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-wallet-active">
+        <Eyebrow as="h2" onDark className="text-wallet-active">
           Your points
-        </h2>
+        </Eyebrow>
         <p className="mt-2 max-w-[40ch] text-[14px] leading-[1.55] text-hero-body">
           {hasPrograms
             ? `You've added ${balances.length} ${balances.length === 1 ? 'program' : 'programs'} but no balances yet. Fill in real numbers so hop can tell you which redemptions they actually unlock.`
