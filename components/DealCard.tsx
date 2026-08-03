@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Destination } from '@/lib/destinations'
 import { computeCpp } from '@/lib/destinations'
 import { TierChip } from '@/components/ui/TierChip'
+import Eyebrow from '@/components/ui/Eyebrow'
 import type { DestImage } from '@/lib/images'
 
 export interface DealCardProps {
@@ -108,12 +109,13 @@ export default function DealCard({ dest, fromCode, depart, ret, rank, photo }: D
         {/* best-find ribbon — light surface w/ brand text: reads on photo + on
             the dark fallback, and stays distinct from the gold cpp chip */}
         {isTopFind && (
-          <span
-            className="absolute left-3 top-3 inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[var(--track-eyebrow)]"
+          <Eyebrow
+            as="span"
+            className="absolute left-3 top-3 inline-flex items-center rounded-full px-2.5 py-1 text-[10px]"
             style={{ background: 'var(--color-paper)', color: 'var(--color-brand)' }}
           >
             Best find
-          </span>
+          </Eyebrow>
         )}
 
         {/* value chip — cents per point, color-coded by tier so amber/muted read

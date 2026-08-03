@@ -645,3 +645,49 @@ weight, not as a complaint.
   ADR-0009-violating merge or re-enable auto-merge), open since 2026-07-29, blocking nothing
   growth-owned today but worth a founder minute since it governs whether the fleet keeps shipping
   autonomously at all.
+
+---
+
+## 2026-08-03
+
+- **Traffic (7d, `$host=hop.flights` filtered)**: 10 visitors, 76 pageviews, 14 sessions, 35.7%
+  bounce rate, ~2.7 min avg session. Up slightly from the 7/31 read (7 visitors) but still the
+  same single-digit-per-week baseline this site has held since traffic peaked around 7/10 (95
+  visitors, later corrected to ~24 hop.flights-only) and declined through every subsequent read.
+- **Funnel (7d)**: `search_ran` 8, `verdict_viewed` 8 — both broken down by `$virt_traffic_type`
+  per the standing check and confirmed **100% `Regular`** (3 on 7/29, 5 on 7/30, per-day
+  breakdown), the same real search activity already logged in the 7/31 read. `signed_up`,
+  `first_program_added`, and `outclick` all read **0** in the raw pull this window — genuinely
+  zero, not even the `Automation` false-positive noise seen in prior weeks' `outclick` counts.
+  `signed_up`/`first_program_added` remain zero for confirmed-`Regular` traffic across all **29
+  days** logged since 2026-07-05. Confirmed-`Regular` `outclick`s: zero since 7/14, now 20 days.
+- **MRR-gate status — Wk1 ("payment path proven, one real stranger pays")**: **not met.** N-320
+  (seats.aero written commercial terms, owner-only) is still Backlog, `startedAt: null` in
+  Linear — unchanged since every prior read. The gate has now been open **29 days** (declared
+  2026-07-05) on the same single owner-only blocker.
+- **Merge pipeline**: last merge to `main` was PR #387 at 2026-08-03T00:26 UTC (~14.5h before this
+  run). The next open PR, #388 (docs-only), has had its Vercel check stuck at `pending` since it
+  was opened at 2026-08-03T12:51 UTC — consistent with N-389 ("Vercel checks stuck pending
+  repo-wide," filed 2026-07-24, still In Progress as of this read). Not a new finding and not
+  growth-desk scope to fix, but it means this run's own PR may sit pending rather than
+  self-merging today.
+- **This run's action**: with the content-pipeline freeze still in effect (N-387, the staleness
+  guard, still Backlog/unstarted) and no new content shippable, spent the run checking the
+  signup/checkout path specifically for regressions from the recent design-system migration wave
+  (11 PRs, #375–#387) rather than a generic re-check — that path is exactly where this log's
+  29-day zero-signup streak lives. Reviewed the two migrations that touched it:
+  `components/auth/EmailPasswordForm.tsx`'s email/password `<input>`s → the new `Input` primitive
+  (PR from commit `a13c8d4`) and `app/book/confirmation/page.tsx`'s callout/itinerary sections →
+  the `Card` primitive (commit `60931fe`). Both are confirmed cosmetic-only: `components/ui/
+  Field.tsx`'s `Input`/`Card` forward all props and reproduce the prior border/padding/type-size
+  styling exactly, and the confirmation-page change is a pure `<div>`→`<Card>` swap with no logic
+  touched. No regression found, no new payment/upgrade UX bug to file. Filed this funnel-log entry
+  (docs-only, self-merging once CI is green per standing policy, contingent on the Vercel stall
+  above clearing).
+- **Still the single highest-leverage thing sitting undone, in order**: (1) the three
+  ready-to-paste drafts in `docs/marketing/drafts/` (Show HN, r/awardtravel, MCP-directory
+  submissions) — now **28 days** unposted (oldest two, drafted 2026-07-06), flagged every read
+  since 7/13 — 10th consecutive flag; (2) the seats.aero reply (N-320) — 29 days unstarted, the
+  structural block on the entire Wk1 MRR gate; (3) PR #373 (decide: revert the ADR-0009-violating
+  merge, or re-enable auto-merge) — open 5 days now since 2026-07-29, still undecided, still
+  governs whether the fleet keeps shipping autonomously at all.
