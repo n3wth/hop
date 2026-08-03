@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Logo from '@/components/Logo'
 import Icon from '@/components/Icon'
+import Eyebrow from '@/components/ui/Eyebrow'
 import ResetPasswordForm from '@/components/auth/ResetPasswordForm'
 
 export const metadata: Metadata = {
@@ -25,9 +26,9 @@ export default async function ResetPasswordPage({
           <Logo size={28} carve="var(--color-brand-ink)" />
         </Link>
         <div className="relative z-10 max-w-[34ch]">
-          <p className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-hero-eyebrow">
+          <Eyebrow as="p" onDark>
             Points or cash
-          </p>
+          </Eyebrow>
           <h2 className="mt-4 text-balance font-display text-[40px] font-semibold leading-[1.06] tracking-[-0.02em] text-white xl:text-[46px]">
             Know which one wins before you book.
           </h2>

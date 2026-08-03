@@ -7,6 +7,7 @@ import { track } from '@/lib/posthog-client'
 import Icon from './Icon'
 import BrandIcon from './BrandIcon'
 import Button from './ui/Button'
+import Eyebrow from './ui/Eyebrow'
 
 export interface ResultRowProps {
   option: FlightOption
@@ -286,9 +287,7 @@ const ResultRow = memo(function ResultRow({ option, rank, maxCpp, index = 0, ope
             {/* transfer steps */}
             {option.kind === 'transfer' && transfers.length > 0 && (
               <div className="mt-[14px] rounded-[10px] bg-brand-tint px-[12px] py-[10px]">
-                <div className="mb-[6px] text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
-                  How to book
-                </div>
+                <Eyebrow className="mb-[6px]">How to book</Eyebrow>
                 <ol className="space-y-[5px] text-[12.5px] leading-[1.45] text-text2">
                   {transfers.map((t, i) => (
                     <li key={t.source} className="flex gap-[8px]">

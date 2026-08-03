@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { FOOTER_SECTIONS } from '@/lib/seo-routes'
+import Eyebrow from '@/components/ui/Eyebrow'
 
 export default function FooterNav() {
   const pathname = usePathname()
@@ -11,12 +12,13 @@ export default function FooterNav() {
     <div className="grid grid-cols-2 gap-x-8 gap-y-5 sm:grid-cols-3 sm:gap-x-12 lg:gap-x-16">
       {FOOTER_SECTIONS.map((section) => (
         <nav key={section.title} aria-labelledby={`footer-${section.title.toLowerCase()}`}>
-          <h2
+          <Eyebrow
+            as="h2"
             id={`footer-${section.title.toLowerCase()}`}
-            className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2"
+            className="text-[11px] text-text2"
           >
             {section.title}
-          </h2>
+          </Eyebrow>
           <ul className="mt-2.5 space-y-2">
             {section.links.map((link) => {
               const linkPath = link.href.split('#')[0]
