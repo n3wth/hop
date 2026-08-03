@@ -2,6 +2,7 @@
 
 import { useId, useState, useTransition } from 'react'
 import Icon from '@/components/Icon'
+import { Input } from '@/components/ui/Field'
 
 // Newsletter signup (R1.6) — a single compact email input in the footer's
 // brand column. Double opt-in (R2.3 sends a real weekly digest to this list),
@@ -60,7 +61,7 @@ export default function NewsletterForm() {
         Your wallet&apos;s best redemption, once a week.
       </label>
       <div className="mt-1.5 flex items-center gap-2">
-        <input
+        <Input
           id={inputId}
           type="email"
           inputMode="email"
@@ -69,7 +70,7 @@ export default function NewsletterForm() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@email.com"
           disabled={pending}
-          className="w-full min-w-0 rounded-[10px] border border-border bg-bg px-3 py-2 text-[13px] text-text placeholder:text-text3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60"
+          className="bg-bg text-[13px] disabled:opacity-60"
         />
         <button
           type="submit"
