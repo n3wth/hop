@@ -2,7 +2,7 @@ import React, { useId, forwardRef } from 'react'
 import Icon from '@/components/Icon'
 
 export interface FieldProps {
-  label: string
+  label?: string
   error?: string
   hint?: string
   id?: string
@@ -17,7 +17,7 @@ export function Field({
   hint,
   id,
   required,
-  className,
+  className = '',
   children,
 }: FieldProps) {
   const generatedId = useId()
@@ -32,12 +32,13 @@ export function Field({
 
   const wiredChildren = React.Children.map(children, (child) => {
     if (React.isValidElement(child)) {
-      const childProps: Record<string, unknown> = { id: controlId }
+      const childProps: Record<string, unknown> = { id: (child.props as Record<string, unknown>).id || controlId }
       if (ariaDescribedBy) {
         childProps['aria-describedby'] = ariaDescribedBy
       }
       if (error) {
         childProps.invalid = true
+        childProps['aria-invalid'] = true
       }
       return React.cloneElement(child, childProps)
     }
@@ -45,15 +46,17 @@ export function Field({
   })
 
   return (
-    <div className={`flex flex-col gap-1.5 ${className ?? ''}`}>
-      <label htmlFor={controlId} className="text-[12.5px] font-semibold tracking-[var(--track-label)] text-text2">
-        {label}
-        {required && <span className="text-weak ml-0.5">*</span>}
-      </label>
+    <div className={`flex flex-col gap-1.5 ${className}`}>
+      {label && (
+        <label htmlFor={controlId} className="text-[12.5px] font-semibold tracking-[var(--track-label)] text-text2">
+          {label}
+          {required && <span className="ml-0.5 text-weak">*</span>}
+        </label>
+      )}
       {wiredChildren}
       {error ? (
-        <p id={errorId} role="alert" className="mt-1.5 text-[12.5px] font-medium text-weak flex items-center gap-1.5">
-          <Icon name="warning" size={16} className="text-weak flex-shrink-0" />
+        <p id={errorId} role="alert" className="mt-1.5 flex items-center gap-1.5 text-[12.5px] font-medium text-weak">
+          <Icon name="warning" size={16} className="flex-shrink-0 text-weak" />
           {error}
         </p>
       ) : hint ? (
@@ -73,7 +76,7 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, invalid, onChange, onChangeValue, ...props }, ref) => {
+  ({ className = '', invalid = false, onChange, onChangeValue, ...props }, ref) => {
     return (
       <input
         ref={ref}
@@ -81,10 +84,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           onChange?.(e)
           onChangeValue?.(e.target.value)
         }}
-        {...props}
-        className={`no-inner-ring w-full rounded-[10px] border bg-paper px-3.5 py-2.5 text-[14px] font-semibold tabular-nums text-text outline-none transition-colors placeholder:text-text3 focus:border-brand ${
+        className={`w-full rounded-[11px] border-[1.5px] bg-paper px-3 py-[10px] text-[14.5px] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand no-inner-ring ${
           invalid ? 'border-weak' : 'border-border'
-        } ${className ?? ''}`}
+        } ${className}`}
+        {...props}
       />
     )
   }
@@ -97,7 +100,7 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, invalid, onChange, onChangeValue, ...props }, ref) => {
+  ({ className = '', invalid = false, onChange, onChangeValue, ...props }, ref) => {
     return (
       <textarea
         ref={ref}
@@ -105,10 +108,10 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           onChange?.(e)
           onChangeValue?.(e.target.value)
         }}
-        {...props}
-        className={`no-inner-ring w-full rounded-[10px] border bg-paper px-3.5 py-2.5 text-[14px] font-semibold text-text outline-none transition-colors placeholder:text-text3 focus:border-brand ${
+        className={`w-full rounded-[11px] border-[1.5px] bg-paper px-3 py-[10px] text-[14.5px] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand no-inner-ring ${
           invalid ? 'border-weak' : 'border-border'
-        } ${className ?? ''}`}
+        } ${className}`}
+        {...props}
       />
     )
   }
@@ -117,12 +120,12 @@ Textarea.displayName = 'Textarea'
 
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   invalid?: boolean
-  options?: Array<[string, string]>
+  options?: Array<[string, string]> | Array<{ value: string; label: string }>
   onChangeValue?: (v: string) => void
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, invalid, options, children, onChange, onChangeValue, ...props }, ref) => {
+  ({ className = '', invalid = false, options, children, onChange, onChangeValue, ...props }, ref) => {
     return (
       <div className="relative w-full">
         <select
@@ -131,18 +134,20 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             onChange?.(e)
             onChangeValue?.(e.target.value)
           }}
-          {...props}
-          className={`no-inner-ring w-full cursor-pointer appearance-none rounded-[10px] border bg-paper px-3.5 py-2.5 pr-9 text-[14px] font-semibold text-text outline-none transition-colors focus:border-brand ${
+          className={`w-full cursor-pointer appearance-none rounded-[11px] border-[1.5px] bg-paper px-3 py-[10px] pr-9 text-[14.5px] text-text outline-none transition-colors focus:border-brand no-inner-ring ${
             invalid ? 'border-weak' : 'border-border'
-          } ${className ?? ''}`}
+          } ${className}`}
+          {...props}
         >
-          {options
-            ? options.map(([v, label]) => (
-                <option key={v} value={v}>
-                  {label}
-                </option>
-              ))
-            : children}
+          {children}
+          {options?.map((opt) => {
+            const [v, label] = Array.isArray(opt) ? opt : [opt.value, opt.label]
+            return (
+              <option key={v} value={v}>
+                {label}
+              </option>
+            )
+          })}
         </select>
         <Icon
           name="expand_more"
