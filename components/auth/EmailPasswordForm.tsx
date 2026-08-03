@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { authClient } from '@/lib/auth-client'
+import { Input } from '@/components/ui/Field'
 
 const inputClass =
   'no-inner-ring w-full rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[13.5px] font-semibold text-text outline-none transition-colors focus:border-brand'
@@ -148,7 +149,7 @@ export default function EmailPasswordForm({
       ) : null}
 
       <div className="space-y-3">
-        <input
+        <Input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -156,9 +157,9 @@ export default function EmailPasswordForm({
           aria-label="Email"
           autoComplete="email"
           required
-          className={inputClass}
+          className="font-semibold"
         />
-        <input
+        <Input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -167,7 +168,7 @@ export default function EmailPasswordForm({
           autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
           required
           minLength={8}
-          className={inputClass}
+          className="font-semibold"
         />
       </div>
 
