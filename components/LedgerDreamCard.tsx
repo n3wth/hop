@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Icon from '@/components/Icon'
+import Eyebrow from '@/components/ui/Eyebrow'
 import type { DreamCardData } from '@/lib/dream-view'
 
 export type { DreamCardData }
@@ -216,9 +217,9 @@ export default function LedgerDreamCard({
           <div className="mt-6 rounded-[var(--radius)] border border-hair bg-sunk p-4 sm:p-5">
             <div className="flex items-center gap-1.5">
               <Icon name="shield" size={12} className="text-brand" />
-              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
+              <Eyebrow as="span" className="text-[10.5px] text-text3">
                 How you afford it
-              </span>
+              </Eyebrow>
             </div>
 
             <div className="mt-3.5 grid grid-cols-2 gap-x-4 gap-y-3.5">

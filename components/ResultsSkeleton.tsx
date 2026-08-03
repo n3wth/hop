@@ -5,6 +5,8 @@
 // spinner that snaps). Warm cream/sunk tones, subtle sheen (.hop-skeleton).
 // Shown by app/search/loading.tsx while the Server Component fetches (~3s).
 
+import Eyebrow from '@/components/ui/Eyebrow'
+
 function Bar({ w, h = 12, className = '' }: { w: string; h?: number; className?: string }) {
   return (
     <span
@@ -101,9 +103,9 @@ export default function ResultsSkeleton() {
               real copy instead of a shimmer bar, so the wait reads as the engine
               doing something specific, not a generic spinner. */}
           <div className="mb-[26px] border-b border-white/15 pb-4">
-            <span className="inline-flex items-center text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-hero-eyebrow">
+            <Eyebrow as="span" onDark className="inline-flex items-center">
               Pricing cash. Checking award space.
-            </span>
+            </Eyebrow>
           </div>
           <div className="space-y-[14px]">
             <span className="hop-skeleton-dark block h-[52px] w-[78%] rounded-[10px]" />
