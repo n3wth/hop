@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { authClient } from '@/lib/auth-client'
+import { Input } from '@/components/ui/Field'
 import { setAccountPassword } from '@/app/account/security-actions'
 
 const inputClass =
@@ -96,7 +97,7 @@ export default function SecurityPassword({
         }}
       >
         {hasPassword ? (
-          <input
+          <Input
             type="password"
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
@@ -104,10 +105,10 @@ export default function SecurityPassword({
             aria-label="Current password"
             autoComplete="current-password"
             required
-            className={inputClass}
+            className="font-semibold"
           />
         ) : null}
-        <input
+        <Input
           type="password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
@@ -116,7 +117,7 @@ export default function SecurityPassword({
           autoComplete="new-password"
           required
           minLength={8}
-          className={inputClass}
+          className="font-semibold"
         />
         <button
           type="submit"

@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import React from 'react'
 import Card from '../../components/ui/Card'
 import Eyebrow from '../../components/ui/Eyebrow'
 import Stat from '../../components/ui/Stat'
+import { Field, Input, Textarea, Select } from '../../components/ui/Field'
 
 describe('Card primitive', () => {
   it('renders default surface and radius', () => {
@@ -95,5 +96,69 @@ describe('Stat primitive', () => {
     const centerEl = Stat({ value: '123', label: 'points', align: 'center' })
     expect(centerEl.props.className).toContain('items-center')
     expect(centerEl.props.className).toContain('text-center')
+  })
+})
+
+describe('Field/Input/Textarea/Select primitives', () => {
+  const originalUseId = React.useId
+
+  beforeAll(() => {
+    React.useId = () => 'test-id'
+  })
+
+  afterAll(() => {
+    React.useId = originalUseId
+  })
+
+  it('renders Field with label and error', () => {
+    const inputEl = React.createElement(Input, { value: 'test', onChange: () => {} })
+    const el = Field({ label: 'Name', error: 'Required', children: inputEl })
+    
+    // Field should have label child
+    const labelChild = el.props.children[0]
+    expect(labelChild.props.children).toBe('Name')
+    
+    // Field should wire id
+    const inputChild = el.props.children[1]
+    expect(inputChild.props.id).toBeDefined()
+    expect(labelChild.props.htmlFor).toBe(inputChild.props.id)
+    
+    // Field should render error
+    const errorChild = el.props.children[2]
+    expect(errorChild.props.role).toBe('alert')
+    expect(errorChild.props.children).toBe('Required')
+  })
+
+  it('renders Input with invalid style', () => {
+    const Component = Input as unknown as React.FC<{ invalid?: boolean; value?: string; onChange?: () => void }>
+    const el = React.createElement(Component, { invalid: true, value: 'test', onChange: () => {} })
+    const rendered = (Input as unknown as { render: (p: Record<string, unknown>, r: unknown) => React.ReactElement }).render(el.props, null)
+    expect((rendered.props as { className: string }).className).toContain('border-weak')
+    expect((rendered.props as { className: string }).className).toContain('no-inner-ring')
+  })
+
+  it('renders Textarea with invalid style', () => {
+    const rendered = (Textarea as unknown as { render: (p: Record<string, unknown>, r: unknown) => React.ReactElement }).render({ invalid: true, value: 'test', onChange: () => {} }, null)
+    expect((rendered.props as { className: string }).className).toContain('border-weak')
+  })
+
+  it('renders Select with options', () => {
+    const rendered = (Select as unknown as { render: (p: Record<string, unknown>, r: unknown) => React.ReactElement }).render({
+      value: 'mr',
+      onChange: () => {},
+      options: [
+        ['mr', 'Mr'],
+        ['ms', 'Ms'],
+      ],
+    }, null)
+    
+    const children = (rendered.props as { children: React.ReactElement[] }).children
+    const selectEl = children[0]
+    expect((selectEl.props as { className: string }).className).toContain('no-inner-ring')
+    
+    const selectChildren = (selectEl.props as { children: [unknown, React.ReactElement[]] }).children
+    const optionMr = selectChildren[1][0]
+    expect((optionMr.props as { value: string; children: string }).value).toBe('mr')
+    expect((optionMr.props as { value: string; children: string }).children).toBe('Mr')
   })
 })
