@@ -1,5 +1,6 @@
 'use client'
 
+import Card from '@/components/ui/Card'
 import { useState, useTransition } from 'react'
 import { deleteAccount } from '@/app/actions/accounts'
 
@@ -26,7 +27,7 @@ export default function DeleteAccount() {
 
   return (
     <section id="delete-account" className="mt-6 scroll-mt-24">
-      <div className="rounded-[var(--radius)] border border-border bg-surface px-5 py-4">
+      <Card surface="surface" className="px-5 py-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
@@ -66,7 +67,7 @@ export default function DeleteAccount() {
           )}
         </div>
         {error ? <p className="mt-2 text-[13px] font-medium text-weak">{error}</p> : null}
-      </div>
+      </Card>
     </section>
   )
 }

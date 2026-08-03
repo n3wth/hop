@@ -1,53 +1,66 @@
-import React from 'react'
-import Icon from '../Icon'
+import React, { useId, forwardRef } from 'react'
+import Icon from '@/components/Icon'
 
 export interface FieldProps {
   label?: string
-  id?: string
-  hint?: string
   error?: string
-  children: React.ReactNode
+  hint?: string
+  id?: string
+  required?: boolean
   className?: string
+  children?: React.ReactNode
 }
 
 export function Field({
   label,
-  id,
-  hint,
   error,
-  children,
+  hint,
+  id,
+  required,
   className = '',
+  children,
 }: FieldProps) {
-  const generatedId = React.useId()
-  const inputId = id || generatedId
+  const generatedId = useId()
+  const controlId = id || generatedId
+  const errorId = `${controlId}-error`
+  const hintId = `${controlId}-hint`
 
-  // Wire id to child if it's a valid element and doesn't have its own id
-  let wiredChildren = children
-  if (React.isValidElement(children)) {
-    const childProps = children.props as Record<string, unknown>
-    wiredChildren = React.cloneElement(children, {
-      id: childProps.id || inputId,
-      'aria-invalid': error ? true : childProps['aria-invalid'],
-    } as Record<string, unknown>)
-  }
+  let ariaDescribedBy = ''
+  if (error) ariaDescribedBy += `${errorId} `
+  if (hint) ariaDescribedBy += `${hintId} `
+  ariaDescribedBy = ariaDescribedBy.trim()
+
+  const wiredChildren = React.Children.map(children, (child) => {
+    if (React.isValidElement(child)) {
+      const childProps: Record<string, unknown> = { id: (child.props as Record<string, unknown>).id || controlId }
+      if (ariaDescribedBy) {
+        childProps['aria-describedby'] = ariaDescribedBy
+      }
+      if (error) {
+        childProps.invalid = true
+        childProps['aria-invalid'] = true
+      }
+      return React.cloneElement(child, childProps)
+    }
+    return child
+  })
 
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       {label && (
-        <label
-          htmlFor={inputId}
-          className="text-[12.5px] font-semibold tracking-[var(--track-label)] text-text2"
-        >
+        <label htmlFor={controlId} className="text-[12.5px] font-semibold tracking-[var(--track-label)] text-text2">
           {label}
+          {required && <span className="ml-0.5 text-weak">*</span>}
         </label>
       )}
       {wiredChildren}
       {error ? (
-        <p role="alert" className="text-[12.5px] font-medium text-weak">
+        <p id={errorId} role="alert" className="mt-1.5 flex items-center gap-1.5 text-[12.5px] font-medium text-weak">
+          <Icon name="warning" size={16} className="flex-shrink-0 text-weak" />
           {error}
         </p>
       ) : hint ? (
-        <p className="text-[12.5px] font-medium text-text3">
+        <p id={hintId} className="mt-1.5 text-[12.5px] text-text3">
           {hint}
         </p>
       ) : null}
@@ -55,15 +68,22 @@ export function Field({
   )
 }
 
+export default Field
+
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   invalid?: boolean
+  onChangeValue?: (v: string) => void
 }
 
-export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className = '', invalid = false, ...props }, ref) => {
+export const Input = forwardRef<HTMLInputElement, InputProps>(
+  ({ className = '', invalid = false, onChange, onChangeValue, ...props }, ref) => {
     return (
       <input
         ref={ref}
+        onChange={(e) => {
+          onChange?.(e)
+          onChangeValue?.(e.target.value)
+        }}
         className={`w-full rounded-[11px] border-[1.5px] bg-paper px-3 py-[10px] text-[14.5px] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand no-inner-ring ${
           invalid ? 'border-weak' : 'border-border'
         } ${className}`}
@@ -76,13 +96,18 @@ Input.displayName = 'Input'
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   invalid?: boolean
+  onChangeValue?: (v: string) => void
 }
 
-export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className = '', invalid = false, ...props }, ref) => {
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ className = '', invalid = false, onChange, onChangeValue, ...props }, ref) => {
     return (
       <textarea
         ref={ref}
+        onChange={(e) => {
+          onChange?.(e)
+          onChangeValue?.(e.target.value)
+        }}
         className={`w-full rounded-[11px] border-[1.5px] bg-paper px-3 py-[10px] text-[14.5px] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand no-inner-ring ${
           invalid ? 'border-weak' : 'border-border'
         } ${className}`}
@@ -96,21 +121,26 @@ Textarea.displayName = 'Textarea'
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   invalid?: boolean
   options?: Array<[string, string]> | Array<{ value: string; label: string }>
+  onChangeValue?: (v: string) => void
 }
 
-export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className = '', invalid = false, options = [], children, ...props }, ref) => {
+export const Select = forwardRef<HTMLSelectElement, SelectProps>(
+  ({ className = '', invalid = false, options, children, onChange, onChangeValue, ...props }, ref) => {
     return (
       <div className="relative w-full">
         <select
           ref={ref}
+          onChange={(e) => {
+            onChange?.(e)
+            onChangeValue?.(e.target.value)
+          }}
           className={`w-full cursor-pointer appearance-none rounded-[11px] border-[1.5px] bg-paper px-3 py-[10px] pr-9 text-[14.5px] text-text outline-none transition-colors focus:border-brand no-inner-ring ${
             invalid ? 'border-weak' : 'border-border'
           } ${className}`}
           {...props}
         >
           {children}
-          {options.map((opt) => {
+          {options?.map((opt) => {
             const [v, label] = Array.isArray(opt) ? opt : [opt.value, opt.label]
             return (
               <option key={v} value={v}>

@@ -16,7 +16,7 @@ import {
 import BrandIcon from './BrandIcon'
 import ProgramPicker from './ProgramPicker'
 import Icon from './Icon'
-import { Input } from './ui/Field'
+import { Input } from '@/components/ui/Field'
 
 // "Your programs" — manual-first balance management on /account.
 //
@@ -676,7 +676,7 @@ function AdvancedIdEntry() {
 
   return (
     <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
-      <input
+      <Input
         value={value}
         onChange={(e) => {
           setValue(e.target.value)
@@ -685,7 +685,7 @@ function AdvancedIdEntry() {
         placeholder="AwardWallet connected-user ID"
         aria-label="AwardWallet connected-user ID"
         autoComplete="off"
-        className="flex-1 rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[13.5px] font-semibold text-text outline-none transition-colors focus:border-brand"
+        className="flex-1"
       />
       <button
         type="button"

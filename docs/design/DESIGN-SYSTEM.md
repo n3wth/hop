@@ -313,7 +313,7 @@ card index drives `120 + index * 70ms` delays automatically.
 **Bunny leap** (logo mark in TopNav) — single warm moment per session, on first arrival
 (`FlyingBunny.tsx`), not on hover.
 
-One easing token: `var(--ease-premium)` (`cubic-bezier(0.16, 1, 0.32, 1)`).
+One easing token: `var(--ease-premium)` (`cubic-bezier(0.2, 0, 0, 1)`).
 
 **No hover movement, anywhere.** `:hover`/`group-hover:` must never trigger `translate`,
 `scale`, or any other transform — no card lift, no arrow nudge, no icon shift. Hover states are
@@ -324,61 +324,19 @@ feedback on click, a distinct interaction from hover, and is unaffected by this 
 
 ---
 
-## Component Patterns
+## Primitives Index (`components/ui/*`)
 
-### Cards
+New UI must compose these server-renderable primitives instead of hand-rolling raw class strings. Hand-rolling a button, card, chip, eyebrow, stat, or field recipe outside `components/ui/` is flagged by ESLint and reviewer checks as a defect.
 
-Flat, bordered, no shadow. Standard pattern:
-
-```tsx
-<div className="rounded-[var(--radius)] border border-border bg-paper p-6">
-```
-
-Hover state: `transition-colors hover:border-brand` (color shift only, no lift/shadow).
-
-### Value chips (cpp / tier)
-
-```tsx
-// Chip color from tier():
-const TIER_CHIP = {
-  green: 'bg-good-bg text-good',
-  amber: 'bg-ok-bg text-ok',
-  muted: 'bg-weak-bg text-weak',
-}
-
-<span className={`hop-num rounded-full px-2.5 py-1 text-[11.5px] font-semibold ${TIER_CHIP[tier(cppVal)]}`}>
-  {formatValue(cppVal)}
-</span>
-```
-
-### Eyebrow labels
-
-Small uppercase tracking label above a section or card headline:
-
-```tsx
-<span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
-  Already know the route?
-</span>
-```
-
-### CTA buttons
-
-Primary (brand fill):
-```tsx
-<a className="inline-flex items-center gap-2 rounded-[var(--radius)] bg-brand px-6 py-3 text-[14.5px] font-semibold text-white transition-colors hover:bg-brand-deep">
-```
-
-Secondary (bordered):
-```tsx
-<a className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-border bg-paper px-5 py-3 text-[14.5px] font-semibold text-text transition-colors hover:border-brand hover:text-brand">
-```
-
-Ghost (text link):
-```tsx
-<a className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-brand transition-colors hover:text-brand-deep">
-  Label <span aria-hidden>→</span>
-</a>
-```
+| Primitive | Path | Main Props / Variants | Description & Invariants |
+|---|---|---|---|
+| `<Button>` | `components/ui/Button.tsx` | `variant` (`primary` \| `secondary` \| `ghost` \| `ink`), `size` (`sm` \| `md` \| `lg`), `fullWidth`, `onDark`, `href`, `native` | Shared CTA primitive. Renders `<Link>`, `<a>` (when `native: true`), or `<button>`. |
+| `<TierChip>` | `components/ui/TierChip.tsx` | `cpp: number`, `className?: string` | Displays engine cpp value with auto-derived tier color via `lib/cpp.ts#tier`. Derives tone internally — cannot mis-color cpp. |
+| `<Chip>` | `components/ui/Chip.tsx` | `tone` (`neutral` \| `brand` \| `good` \| `ok` \| `weak`), `size` (`sm` \| `md`), `interactive` | Program badges, cabin chips, status chips. |
+| `<Card>` | `components/ui/Card.tsx` | `surface` (`paper` \| `surface` \| `sunk`), `radius` (`sm` \| `md` \| `lg`), `interactive`, `as` | Container card primitive with consistent borders and radii. |
+| `<Eyebrow>` | `components/ui/Eyebrow.tsx` | `children`, `onDark?: boolean` | Uppercase tracked section or card header label using `--track-eyebrow`. |
+| `<Stat>` | `components/ui/Stat.tsx` | `label`, `value`, `sub?: string`, `size` (`sm` \| `md` \| `lg`), `onDark` | Mono value + caption pair for economic summary metrics. |
+| `<Field>`, `<Input>`, `<Textarea>`, `<Select>` | `components/ui/Field.tsx` | `label`, `hint`, `error`, `id`, `htmlFor` | Input primitive family with connected labels, error messages, and focus rings. |
 
 ---
 

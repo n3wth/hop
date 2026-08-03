@@ -3,6 +3,8 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Icon from './Icon'
+import Card from './ui/Card'
+import Eyebrow from './ui/Eyebrow'
 import { groupFacts, type MemoryFact } from '@/lib/memory-view'
 import type { InferredFact } from '@/lib/inferred-facts'
 import type { Observation } from '@/lib/memory-outcomes'
@@ -166,15 +168,15 @@ export default function MemoryKnows({
   const noticedBlock =
     pendingNoticed.length > 0 ? (
       <div>
-        <h3 className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
+        <Eyebrow className="mb-1 flex items-center gap-1.5 text-brand" as="h3">
           <Icon name="lightbulb" size={12} />
           hop noticed
-        </h3>
-        <div className="rounded-[var(--radius)] border border-border bg-brand-tint px-4">
+        </Eyebrow>
+        <Card radius="md" className="bg-brand-tint px-4">
           {pendingNoticed.map((n) => (
             <NoticedRow key={n.id} fact={n} onResolved={onResolved} />
           ))}
-        </div>
+        </Card>
         <p className="mt-1 text-[12px] leading-[1.5] text-text3">
           Guesses from how you chat. Confirm one and hop remembers it for good; dismiss and it won&apos;t ask again.
         </p>
@@ -186,11 +188,11 @@ export default function MemoryKnows({
   const observedBlock =
     observed.length > 0 ? (
       <div>
-        <h3 className="mb-1 flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
+        <Eyebrow className="mb-1 flex items-center gap-1.5 text-text3" as="h3">
           <Icon name="trending_up" size={12} />
           hop observed
-        </h3>
-        <div className="rounded-[var(--radius)] border border-border bg-surface px-4">
+        </Eyebrow>
+        <Card surface="surface" radius="md" className="px-4">
           {observed.map((o) => (
             <div
               key={o.id}
@@ -199,7 +201,7 @@ export default function MemoryKnows({
               {o.text}
             </div>
           ))}
-        </div>
+        </Card>
         <p className="mt-1 text-[12px] leading-[1.5] text-text3">
           Picked up from what you tap. hop uses this to rank what it leads with — it never hides a place you ask for.
         </p>
@@ -228,14 +230,14 @@ export default function MemoryKnows({
       {noticedBlock}
       {groups.map((g) => (
         <div key={g.group}>
-          <h3 className="mb-1 text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
+          <Eyebrow className="mb-1 text-brand" as="h3">
             {g.title}
-          </h3>
-          <div className="rounded-[var(--radius)] border border-border bg-surface px-4">
+          </Eyebrow>
+          <Card surface="surface" radius="md" className="px-4">
             {g.facts.map((f) => (
               <FactRow key={f.id} fact={f} onForgotten={onForgotten} />
             ))}
-          </div>
+          </Card>
         </div>
       ))}
       {groups.length > 0 ? (

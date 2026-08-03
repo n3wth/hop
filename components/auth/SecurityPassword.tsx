@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/Field'
 import { setAccountPassword } from '@/app/account/security-actions'
 
 const inputClass =
-  'w-full rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[13.5px] font-semibold text-text outline-none transition-colors focus:border-brand'
+  'no-inner-ring w-full rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[13.5px] font-semibold text-text outline-none transition-colors focus:border-brand'
 
 // Two distinct code paths behind one component, gated on whether the user
 // already has a password (server-fetched hasPassword prop) — NOT one shared

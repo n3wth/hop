@@ -34,7 +34,7 @@ export default function UsersTable({ users, total, page, pageSize, search }: Pro
               name="q"
               defaultValue={search}
               placeholder="Search name or email"
-              className="w-56 rounded-full border border-border bg-paper px-3.5 py-2 text-[13px] text-text placeholder:text-text3 focus:border-brand focus:outline-none"
+              className="no-inner-ring w-56 rounded-full border border-border bg-paper px-3.5 py-2 text-[13px] text-text placeholder:text-text3 focus:border-brand focus:outline-none"
             />
             <button
               type="submit"

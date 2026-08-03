@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { toNavUser } from '@/lib/nav-user'
 import { auth0 } from '@/lib/auth0'
 import { getOrder } from '@/lib/duffel-orders'
@@ -13,6 +12,8 @@ import Icon from '@/components/Icon'
 import CountUp from '@/components/CountUp'
 import FarePolicyCard from '@/components/checkout/FarePolicyCard'
 import ConfirmationSkeleton from '@/components/checkout/ConfirmationSkeleton'
+import Button from '@/components/ui/Button'
+import Card from '@/components/ui/Card'
 
 // Private, per-user confirmation — keep it out of the index. (template adds "· hop".)
 export const metadata: Metadata = {
@@ -65,7 +66,7 @@ async function OrderGate({ sub, orderId }: { sub: string; orderId?: string }) {
 
   if (!res.ok) {
     return (
-      <div className="mt-2 flex items-start gap-4 rounded-[16px] border border-border bg-surface px-6 py-7">
+      <Card className="mt-2 flex items-start gap-4 px-6 py-7">
         <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
           <Icon name="info" size={24} weight="fill" />
         </span>
@@ -77,14 +78,13 @@ async function OrderGate({ sub, orderId }: { sub: string; orderId?: string }) {
             If you just booked, your confirmation is on the way by email. You can also find this
             trip on your account page.
           </p>
-          <Link
-            href="/account"
-            className="mt-4 inline-flex items-center gap-2 rounded-[11px] border-[1.5px] border-text px-4 py-[9px] text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
-          >
-            Go to account
-          </Link>
+          <div className="mt-4">
+            <Button variant="ink" href="/account">
+              Go to account
+            </Button>
+          </div>
         </div>
-      </div>
+      </Card>
     )
   }
 
@@ -169,7 +169,7 @@ function Confirmed({
       </section>
 
       {/* itinerary */}
-      <section className="mt-6 rounded-[16px] border border-border bg-surface p-5 sm:p-6">
+      <Card as="section" className="mt-6 p-5 sm:p-6">
         <h2 className="font-display text-[15px] font-semibold text-text">Itinerary</h2>
         <div className="mt-4 space-y-4">
           {order.segments.map((s, i) => (
@@ -195,10 +195,10 @@ function Confirmed({
             </div>
           ))}
         </div>
-      </section>
+      </Card>
 
       {/* passengers + total */}
-      <section className="mt-4 rounded-[16px] border border-border bg-surface p-5 sm:p-6">
+      <Card as="section" className="mt-4 p-5 sm:p-6">
         {order.passengerNames.length ? (
           <div className="mb-4">
             <div className="text-[12.5px] font-semibold text-text2">Travelers</div>
@@ -209,24 +209,18 @@ function Confirmed({
           <span className="text-[13.5px] text-text2">Total paid</span>
           <TotalPaid amount={order.totalAmount} currency={order.totalCurrency} />
         </div>
-      </section>
+      </Card>
 
       {/* change/cancel policy */}
       <FarePolicyCard policy={order.farePolicy} airline={order.airline} className="mt-4" />
 
       <div className="mt-6 flex flex-wrap gap-3">
-        <Link
-          href="/account#trips"
-          className="inline-flex items-center gap-2 rounded-[12px] bg-brand px-5 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep"
-        >
+        <Button variant="primary" href="/account#trips">
           View my trips
-        </Link>
-        <Link
-          href="/search"
-          className="inline-flex items-center gap-2 rounded-[12px] border-[1.5px] border-text px-5 py-3 text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
-        >
+        </Button>
+        <Button variant="ink" href="/search">
           Book another flight
-        </Link>
+        </Button>
       </div>
     </>
   )

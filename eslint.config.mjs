@@ -43,18 +43,38 @@ const eslintConfig = defineConfig([
     ignores: ["components/ui/**"],
     rules: {
       "no-restricted-syntax": [
-        "warn",
+        "error",
         {
           // PR 1 (tokens): hand-rolled numeric letter-spacing, e.g. tracking-[0.12em].
           // Use the role tokens instead: tracking-[var(--track-eyebrow)], -label, or -tag
           // (app/globals.css @theme; index in docs/design/DESIGN-SYSTEM.md).
-          // The "[" is regex-escaped so the pattern stays a valid RegExp (an
-          // unescaped [ opens a character class). Negative display tracking
-          // (tracking-[-…]) is deliberately not matched: it has no token.
           selector: String.raw`Literal[value=/tracking-\[0\./]`,
           message:
             "Hand-rolled tracking value — use the letter-spacing tokens: tracking-[var(--track-eyebrow)] (0.12em), tracking-[var(--track-label)] (0.06em), or tracking-[var(--track-tag)] (0.1em). See docs/design/DESIGN-SYSTEM.md.",
         },
+        {
+          // PR 2/7 (Button): hand-rolled ink button recipe (border-[1.5px] border-text).
+          // Use <Button variant="ink"> primitive instead.
+          selector: String.raw`Literal[value=/border-\[1\.5px\] border-text/]`,
+          message:
+            "Hand-rolled ink button style — use the <Button variant=\"ink\"> primitive instead. See docs/design/DESIGN-SYSTEM.md.",
+        },
+        {
+          // PR 8 (Focus ring): outline-none without no-inner-ring.
+          // Never suppress global focus ring without marking container focus via no-inner-ring.
+          selector: String.raw`Literal[value=/^(?!.*no-inner-ring).*\boutline-none\b/]`,
+          message:
+            "outline-none without no-inner-ring suppresses the global focus ring. Pair with no-inner-ring class or use <Input>/<Field> primitives. See docs/design/DESIGN-SYSTEM.md.",
+        },
+      ],
+    },
+  },
+  {
+    files: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}"],
+    ignores: ["components/ui/**"],
+    rules: {
+      "no-restricted-syntax": [
+        "warn",
         {
           // PR 4 (Card): hand-rolled card recipe, e.g. border-border bg-surface, rounded-[12px], etc.
           selector: String.raw`Literal[value=/border border-border bg-(paper|surface|sunk)/]`,
@@ -66,7 +86,7 @@ const eslintConfig = defineConfig([
           selector: String.raw`Literal[value=/tracking-\[var\(--track-eyebrow\)\].*uppercase/], Literal[value=/uppercase.*tracking-\[var\(--track-eyebrow\)\]/]`,
           message:
             "Hand-rolled eyebrow style — use the <Eyebrow> primitive instead of hand-rolling the uppercase and tracking styles. See docs/design/DESIGN-SYSTEM.md.",
-        }
+        },
       ],
     },
   },

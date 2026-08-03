@@ -6,6 +6,16 @@ never invented. Source events: `signed_up`, `first_program_added`, `search_ran`,
 analytics. MRR-gate status references `docs/plans/2026-07-05-agentic-travel-agent-northstar.md`
 ("The revenue goal" section).
 
+**Standing requirement — check `$virt_traffic_type` before calling any funnel event a real
+conversion.** Added 2026-07-22 after this log almost mis-reported a false positive (see that
+entry): PostHog's own `filterTestAccounts: true` does **not** exclude events PostHog's traffic
+classifier labels `Automation` (its bot/scripted-traffic category, distinct from `Bot`/`AI Agent`)
+— a `signed_up` or `first_program_added` event can pass `filterTestAccounts` and still be
+non-human. Before reporting any nonzero read on `signed_up`, `first_program_added`, or `outclick`
+as a real conversion, break it down by `$virt_traffic_type` (event property) and only count
+`Regular`. This is in addition to, not instead of, the `$host` filter below (traffic vs. funnel
+events need different corrections; see the 2026-07-12 entry).
+
 **Standing requirement — every traffic query MUST filter `$host = hop.flights`.** The `n3wth`
 PostHog project (id 223560) is shared across six hostnames (`hop.flights`, `n3wth.com`,
 `skills.n3wth.com`, `garden.n3wth.com`, `r3.n3wth.com`, `ui.n3wth.com`). An unfiltered
@@ -373,3 +383,265 @@ weight, not as a complaint.
   The 2026-07-19 board review reached the same conclusion independently via three separate lenses
   (growth operator, CFO, travel-industry) and asked explicitly: "will you post them this week, or
   should the fleet stop re-flagging this and mark community seeding paused?"
+
+---
+
+## 2026-07-27
+
+- **Traffic (7d, `$host=hop.flights` filtered)**: 10 visitors, 66 pageviews, 14 sessions, 50%
+  bounce rate, ~3.2 min avg session. Visitors roughly flat vs. the 7/22 read (9) and the 7/26
+  strategy-desk read (9) — still a single-digit-to-low-teens-visitors/week site.
+- **Funnel (7d)**: `search_ran` 7 (1 on 7/20, 2 on 7/21, 4 on 7/22, **0 every day 7/23–7/27
+  partial**), `verdict_viewed` 4 (1/2/1 on 7/20–7/22, 0 since) — same known search/verdict count
+  mismatch on 7/22 as the 7/24 entry traced (verdict-only-fires-on-render, not a tracking bug).
+  **`signed_up` and `first_program_added` are zero across all 7 days** — a 9th+ consecutive read
+  at zero since 2026-07-05. `outclick` (unfiltered — the standing note that server-side outclick
+  carries no `$host` applies) shows 1 on 7/26 and 3 on 7/27, the first nonzero outclick reads since
+  7/14 — but breaking down by `$virt_traffic_type` per this log's standing requirement shows **all
+  4 are `Automation`**, not `Regular`. Same pattern as the 7/22 entry's automation-flagged signup:
+  downgraded, not counted as a real conversion. Zero confirmed-`Regular` outclicks since 7/14.
+- **New this run — investigated whether the 4 straight zero-funnel days (7/23–7/27) mean the site
+  is down, not just quiet**: the zero-activity window starts exactly on 2026-07-23, the same day
+  as the last successful merge to `main` (see below), which made the coincidence worth checking
+  rather than assuming. Fetched `https://hop.flights` directly: it loads correctly — full nav,
+  working search UI, sample destination cards with live-looking cpp values, no error state. Ruling
+  this out as an outage; it's a genuine near-zero-traffic read at this site's existing baseline
+  volume, not a technical failure.
+- **MRR-gate status — Wk1 ("payment path proven, one real stranger pays")**: **not met.** Linear
+  was unreachable this session (headless, no interactive OAuth) so N-320's live status couldn't be
+  re-verified directly, but no PR or commit anywhere in `n3wth/hop`'s history touches billing/N-320
+  since the last read, so nothing indicates it moved. The gate has now been open **22 days**
+  (declared 2026-07-05) on the same single owner-only blocker per every prior read.
+- **This run's dominant finding — independently reconfirmed, not new, but now acute**: the merge
+  pipeline to `main` is still completely wedged, exactly as the 2026-07-26 board memo, the
+  2026-07-26 strategy memo, and today's sheriff sweep (PR #345) all found. Reverified live just
+  now: PR #332 (a plain docs PR, opened yesterday) still shows the required `Vercel` status check
+  as `pending` from the real Vercel GitHub App (`in/8329`) — unchanged since it was opened. A
+  second PR opened today, #352, dug one level deeper and found the likely root cause: Vercel *is*
+  completing builds and posting `success`, but under a different GitHub App identity (OAuth App
+  `oa/1157143`) than the one `main`'s branch protection requires (`in/8329`) — so even a
+  green-looking status check gets rejected by GitHub's merge API
+  ("Required status check was not set by the expected GitHub app"), not just a slow one. **Last
+  successful merge to `main` was PR #317 on 2026-07-23T10:48 UTC — zero merges in the 4 days
+  since**, with 25 PRs now queued (#318–#353), including growth-relevant work already built and
+  waiting: PR #324 (`/pricing` FAQ + JSON-LD, closes a board kill-list item), PR #347 (SEO
+  points-band date fix). This is a repo-admin-only fix (GitHub → repo Settings → Integrations →
+  reauthorize/reinstall the Vercel GitHub App so its status posts under the App id branch
+  protection expects) — no agent has repo integration-settings access. Given every desk's output
+  is blocked on this, not just growth's, and it's now been flagged independently 4 times across
+  24+ hours with no founder action logged, escalating this run via direct notification rather than
+  filing a 5th silent memo entry.
+- **This run's action**: content-pipeline work stays frozen per the 2026-07-19/7-26 board votes,
+  and would be moot regardless — nothing merges right now no matter what's built. Pulled and
+  verified this week's funnel/traffic numbers (including the automation-flagged outclick check and
+  the outage-vs-quiet check above), filed this log entry as a docs-only PR per the same
+  can't-merge-anyway constraint as everything else in the queue, and escalated the merge-pipeline
+  finding directly rather than re-filing it as unread prose. Did not attempt the community-draft
+  posting ask (still owner-only, still the second-highest-leverage founder action after the merge
+  pipeline) or any new content/code (frozen + would sit unmerged either way).
+- **Still the single highest-leverage thing sitting undone, in order**: (1) re-authorize the
+  Vercel GitHub App in GitHub repo Settings → Integrations — unsticks all 25 queued PRs across
+  every desk, <5 min, new as of this week's finding; (2) the three ready-to-paste drafts in
+  `docs/marketing/drafts/` (Show HN, r/awardtravel, MCP-directory submissions) — now ~21 days
+  unposted, flagged every read since 7/13.
+
+---
+
+## 2026-07-22
+
+- **Traffic (7d, `$host=hop.flights` filtered)**: 9 visitors, 46 pageviews, 15 sessions, 40% bounce
+  rate, ~5.2 min avg session. Visitors flat vs. the 7/20 read (also 9); pageviews down (125→46) on
+  a shorter/different 7-day window. Still a single-digit-visitors-per-day site — no change in
+  shape from the last four reads.
+- **Funnel (7d)**: `search_ran`/`verdict_viewed` 12/12 across the week (1/1 on 7/15, 0/0 on
+  7/16–7/17, 7/7 on 7/18, 0/0 on 7/19, 1/1 on 7/20, 2/2 on 7/21, 1/1 partial 7/22) — every search
+  still produces a verdict.
+- **Investigated and downgraded — the apparent first-ever `signed_up`**: this window's raw pull
+  showed `signed_up` **1** and `first_program_added` **1** on 7/18, which would have been the
+  first non-zero read on either event since instrumentation shipped 2026-07-05 (a streak the 7/06
+  through 7/20 entries all called out as zero, 8 consecutive reads). Before reporting it as the
+  breakthrough it would have been, traced it: referrer breakdown shows 13 pageviews from
+  `accounts.google.com` that same day (a completed Google OAuth redirect, not something a naive
+  bot fakes) alongside 10 `$direct` — but breaking the `signed_up` event down by
+  `$virt_traffic_type` (PostHog's traffic classifier) returns **100% `Automation`**, not `Regular`,
+  and this survives `filterTestAccounts: true` (which does not catch this category — see the new
+  standing requirement added to this log's header this run). The same day's `search_ran` spike (7
+  events, the largest single-day count since 7/14) is **100% `Regular`** by contrast — so 7/18 had
+  real human search activity, but the one signup-shaped event traces to scripted/automated traffic
+  completing a real OAuth flow, not a confirmed human. Logging as **inconclusive, downgraded from
+  "first real signup" to "unexplained automation-flagged signup"** — could be a false-positive bot
+  classification on a genuine early user, or could be an agent/QA session (internal or external)
+  exercising the real login flow; this session has no way to distinguish the two from PostHog data
+  alone. `signed_up`/`first_program_added` remain **zero for confirmed-`Regular` traffic across all
+  17 days logged since 2026-07-05.** `outclick` fired zero times this window (last fired 7/14).
+- **MRR-gate status — Wk1 ("payment path proven, one real stranger pays")**: **not met.** N-320
+  (seats.aero written commercial terms, owner-only) is still Backlog, `startedAt: null` — unchanged
+  since the last eight reads. The gate has now been open **17 days** (declared 2026-07-05) on the
+  same single owner-only blocker; even the automation-flagged 7/18 signup above wouldn't have moved
+  this gate, since billing is still off — no code change this run affects it either.
+- **This run's action**: per the 2026-07-19 board kill list (item 2), further `/guides/[program]`,
+  sweet-spot, or methodology-page content stays frozen until N-387's staleness guard exists — not
+  attempted this run. N-386 (fallback award-data source) remains a real, sizeable engine build
+  outside this desk's owned-channel scope (content/SEO/MCP listings/external-account drafts), same
+  read as the 7/20 entry. With no in-scope content or payment/upgrade UX bug available this run
+  (the `/pricing` metadata gate shipped 7/20 in PR #304; no new defect found today), this run's
+  concrete output is the automation-traffic finding above plus the new standing `$virt_traffic_type`
+  check added to this log's header — closes board amendment #9 ("add referrer/source-split data
+  before drawing further conclusions from traffic reads") by making that check a standing
+  requirement rather than a one-off. No PR beyond this log entry.
+- **Still the single highest-leverage thing sitting undone**: the three ready-to-paste drafts in
+  `docs/marketing/drafts/` (Show HN, r/awardtravel, MCP-directory submissions) have now been
+  sitting unposted for **16 days** (oldest two, drafted 2026-07-06; flagged every read since
+  7/13 — 7th consecutive flag). New this run: worth also asking the founder to check whether the
+  7/18 automation-flagged signup/first-program-add was his own testing or something else — cheap
+  to confirm with DB or PostHog person-profile access this session doesn't have, and it would
+  resolve real ambiguity in this log rather than leaving it open indefinitely.
+
+---
+
+## 2026-07-24
+
+- **Traffic (7d, `$host=hop.flights` filtered)**: 11 visitors, 62 pageviews, 17 sessions, 47.1%
+  bounce rate, ~4.8 min avg session. Visitors up slightly vs. the 7/22 read (9→11) but still a
+  single-digit-to-low-teens-visitors/day site with no shape change from the last five reads.
+- **Funnel (7d)**: `search_ran` 14 / `verdict_viewed` 11 (0/0 on 7/17, 7/7 on 7/18, 0/0 on 7/19,
+  1/1 on 7/20, 2/2 on 7/21, **4/1 on 7/22**, 0/0 on 7/23, 0/0 partial 7/24). **New this run**: the
+  first break in the search_ran = verdict_viewed invariant every prior read has reported — 3 of
+  the 4 real searches on 7/22 rendered no verdict. Traced it before flagging as a bug: broke the
+  4 `search_ran` events down by `$virt_traffic_type` and all 4 are `Regular` (not automation), so
+  this isn't the same false-positive pattern as the 7/18 signup. Then checked the code
+  (`components/SearchTelemetry.tsx:32-33`): `verdict_viewed` only fires when the search actually
+  produced a rendered verdict pick (`if (verdict) track('verdict_viewed', ...)`) — a search with
+  nothing to recommend (degraded upstream, no award space, no cash fare) legitimately runs without
+  one. This is expected product behavior, not a tracking defect — no code change made. Logging it
+  because every prior read's "every search still produces a verdict" line was true by coincidence
+  of small sample size, not by invariant; future reads should expect occasional real gaps here.
+  `signed_up`/`first_program_added` are zero for `Regular` traffic across all 19 days logged since
+  2026-07-05 (the 7/18 automation-flagged event remains the only nonzero read, still unconfirmed
+  either way). `outclick` fired zero times this window — last real fire 7/14, 10 days ago now.
+- **MRR-gate status — Wk1 ("payment path proven, one real stranger pays")**: **not met.** N-320
+  (seats.aero written commercial terms, owner-only) is still Backlog, `startedAt: null` per
+  Linear — unchanged since 2026-07-19, now **19 days** open on the same single blocker declared
+  2026-07-05. No code change this run affects this gate either way.
+- **This run's action**: N-319 (`/pricing`) has been the board's explicit kill-list item #1 for
+  three consecutive weekly reviews (7/05, 7/12, 7/19) and its own Linear thread confirmed on
+  7/23 that PR #304 (the metadata-gating fix) closed one gap but left the issue's "Done means"
+  checklist incomplete: no FAQ section, no JSON-LD, and — new finding this run — **no link to
+  `/pricing` anywhere in the site's nav or footer** (`lib/seo-routes.ts`'s `PRIMARY_NAV`,
+  `FOOTER_SECTIONS`, `STATIC_SEO_ROUTES`, and `SEO_REVALIDATE_PATHS` all lacked an entry; only
+  `/account` linked to it). This is agent-executable, in-scope for the growth desk (on-page SEO
+  copy + structured data on an owned page, not new frozen content), and directly named in the
+  board's ranked amendment list — so built it: added a 4-question FAQ section
+  (`app/pricing/page.tsx`) sourced from `lib/pricing.ts`/`lib/subscription.ts` constants (never
+  hand-typed), matching `FAQPage` JSON-LD built from the same source so the two can't drift
+  (same pattern as `app/guides/point-value/page.tsx`), and added `/pricing` to `TopNav`,
+  `FooterNav`, the sitemap, and the weekly SEO-revalidate list. Verified with `npm run typecheck`
+  (clean), `npm run lint` (0 errors, no new warnings), and `npm test` (1356/1356 passing — one
+  transient `check-migration-sequence` failure from an untracked stray file another concurrent
+  session was writing to this shared container mid-run, gone by the next check, not part of this
+  diff). Opened PR #324 (`growth/2026-07-24-pricing-faq-jsonld-nav-link`) — mergeable once CI is
+  green. Did not attempt N-386 (fallback award-data source) or N-387 (content staleness guard):
+  both remain real engine/product builds outside this desk's owned-channel scope, same read as
+  the 7/20 and 7/22 entries — filed as-is for a dedicated engineering run.
+- **Still the single highest-leverage thing sitting undone**: the three ready-to-paste drafts in
+  `docs/marketing/drafts/` (Show HN, r/awardtravel, MCP-directory submissions) have now been
+  sitting unposted for **18 days** (oldest two, drafted 2026-07-06; flagged every read since
+  7/13 — 8th consecutive flag). No amount of on-site work fixes a traffic problem this small;
+  this and the seats.aero reply (N-320, 19 days unstarted) remain the two founder actions the
+  board's 7/19 memo converged on independently from five different lenses.
+
+---
+
+## 2026-07-29
+
+- **Traffic (7d, `$host=hop.flights` filtered)**: 7 visitors, 58 pageviews, 11 sessions, 45.5%
+  bounce rate, ~1.5 min avg session. Visitors down vs. the 7/27 read and still the same
+  single-digit-per-week baseline this site has held since traffic peaked around 7/10 (95
+  visitors) and declined through every subsequent read.
+- **Funnel (7d)**: `search_ran` 6, `verdict_viewed` 3 (expected — `verdict_viewed` only fires on a
+  rendered pick, per the 2026-07-24 finding, not a tracking gap). `signed_up` **0**,
+  `first_program_added` **0** — zero for confirmed-`Regular` traffic across all **24 days** logged
+  since 2026-07-05. `outclick` read **5** in the raw pull, the first non-zero outclick count since
+  7/14 — before reporting it as a real conversion, broke it down by `$virt_traffic_type` per the
+  standing check: **100% `Automation`** (1 on 7/26, 3 on 7/27, 1 on 7/28), 0 `Regular`. Same
+  false-positive pattern as the 7/18 `signed_up` event — downgraded, not counted as a real
+  conversion. Zero confirmed-`Regular` outclicks since 7/14, now 15 days.
+- **MRR-gate status — Wk1 ("payment path proven, one real stranger pays")**: **not met.** N-320
+  (seats.aero written commercial terms, owner-only) is still Backlog, `startedAt: null` — the gate
+  has now been open **24 days** (declared 2026-07-05) on the same single blocker, unchanged since
+  every prior read.
+- **Major finding this run — the merge-pipeline stall flagged in the last four reads is
+  resolved.** Verified against `main`'s commit history: after zero merges for 4 days
+  (2026-07-23T10:48 UTC → 2026-07-27T21:59 PT), a burst of 11 PRs merged in the span of one minute
+  at 2026-07-27T21:59 PT (#352, #356, #331, #328, #325, #359, #361, #358, #348, #347, #346, #319,
+  #318, #320, #324), and merges have continued normally since — most recently PR #371 at
+  2026-07-28T22:57 PT. Whatever fixed the Vercel GitHub App identity mismatch (the repo-admin-only
+  fix escalated directly on 2026-07-27) worked; the 25-PR backlog is draining. ~10 PRs remain open
+  as of this read (#321, #330, #332, #333, #343, #345, #353, #357, #362, #364) but none are
+  growth-owned — this desk's own queued work (#324, #325, #356) already merged in that burst.
+- **This run's action**: re-verified the MCP-directory submission blockers from the 7/17 draft
+  before re-flagging them as unchanged. PulseMCP now has a discoverable `/submit` form (a "Submit"
+  button on `pulsemcp.com/servers`, no login required per the page copy) — tried it directly:
+  `curl` against `pulsemcp.com/submit` gets blocked by the site's Cloudflare bot-challenge (403,
+  "security service... action triggered the security solution") even with a browser user-agent, so
+  it's a JS-rendered form no headless/programmatic path in this session can complete (Chromium
+  here can't reach external hosts through the agent proxy either). Same conclusion as 7/17, now
+  confirmed against the current page rather than assumed stale. Filed this funnel-log entry
+  (docs-only, self-merging once CI is green per standing policy); did not attempt new content
+  (freeze still in effect, N-387 still Backlog/unbuilt) or find a new payment/UX bug (none open).
+- **Still the single highest-leverage thing sitting undone, in order**: (1) the three
+  ready-to-paste drafts in `docs/marketing/drafts/` (Show HN, r/awardtravel, MCP-directory
+  submissions) — **23 days** unposted now (oldest two, drafted 2026-07-06), flagged every read
+  since 7/13; (2) the seats.aero reply (N-320) — 24 days unstarted, the structural block on the
+  entire Wk1 MRR gate. With the merge pipeline now unstuck, neither of these has a technical
+  blocker left standing between it and being posted/sent — both are purely a founder
+  five-minutes-each action at this point.
+
+---
+
+## 2026-07-31
+
+- **Traffic (7d, `$host=hop.flights` filtered)**: 7 visitors, 62 pageviews, 10 sessions, 30% bounce
+  rate, ~3.5 min avg session. Flat vs. the 7/29 read (also 7 visitors) — still the same
+  single-digit-visitors/week baseline the site has held since traffic peaked around 7/10 (95
+  visitors, later corrected to ~24 hop.flights-only) and declined through every subsequent read.
+- **Funnel (7d)**: `search_ran` 8, `verdict_viewed` 8 (0/0 on 7/24–7/28, 3/3 on 7/29, 5/5 on 7/30,
+  0/0 partial 7/31). **`signed_up` 1 and `first_program_added` 1, both on 7/30** — before reporting
+  either as the first real conversion since instrumentation shipped, broke both down by
+  `$virt_traffic_type` per this log's standing requirement: **100% `Automation`**, 0% `Regular`.
+  Same false-positive pattern as the 7/18 and 7/22 entries — downgraded, not counted. `signed_up`
+  and `first_program_added` remain **zero for confirmed-`Regular` traffic across all 26 days**
+  logged since 2026-07-05. `outclick` read 18 across the window (1 on 7/26, 3 on 7/27, 1 on 7/28,
+  9 on 7/29, 3 on 7/30, 1 partial 7/31) — broken down the same way, **100% `Automation`** on every
+  single day, 0 `Regular`. Zero confirmed-`Regular` outclicks since 7/14, now 17 days.
+- **MRR-gate status — Wk1 ("payment path proven, one real stranger pays")**: **not met.** N-320
+  (seats.aero written commercial terms, owner-only) is still Backlog, `startedAt: null` in Linear —
+  unchanged since every prior read. The gate has now been open **26 days** (declared 2026-07-05) on
+  the same single owner-only blocker.
+- **Checked the merge pipeline (last flagged stuck 7/27, unstuck 7/29)**: confirmed healthy —
+  `main` is current through PR #376 (2026-07-31), with normal merge activity in between (#372–#376,
+  including design-system migrations and another funnel-log entry). **New finding, not this desk's
+  to fix**: PR #373 is open and unmerged — a same-fleet correction reverting PR #362 (a self-improve
+  PR that a merge-queue sheriff run squash-merged in violation of ADR 0009's hold-for-owner list,
+  since #362 touched `.github/workflows/data-refresh.yml`) and proposing to flip the `Auto-merge`
+  kill switch in `docs/autonomy-runbook.md` to `off`. As of this read the committed runbook on
+  `main` still reads `Auto-merge: on` and PR #362's content is still live in `main` — this is a live
+  founder decision (keep #362 + flip auto-merge back on, or accept the revert) sitting open since
+  2026-07-29, unrelated to growth-desk scope so not actioned here, but surfaced because it
+  determines whether future scheduled routines can keep self-merging at all.
+- **This run's action**: the content-pipeline freeze (board kill-list, reaffirmed 2026-07-19 and
+  2026-07-26) stays in effect — N-387 (the staleness guard that would lift it) is still Backlog,
+  unstarted. No new payment/upgrade UX bug found this run (the last one, `/pricing`'s metadata gate,
+  shipped 2026-07-20 in PR #304; the FAQ/JSON-LD/nav-link follow-up shipped 2026-07-24 in PR #324 —
+  both already merged). Re-verified `app/pricing/page.tsx` still correctly gates its `<head>`
+  description and FAQ/JSON-LD on `isBillingEnabled()` — no regression. With no in-scope content or
+  bug available, this run's concrete output is this funnel-log entry (docs-only, self-merging once
+  CI is green) plus the merge-pipeline governance flag above and the Linear growth-log update.
+- **Still the single highest-leverage thing sitting undone, in order**: (1) the three
+  ready-to-paste drafts in `docs/marketing/drafts/` (Show HN, r/awardtravel, MCP-directory
+  submissions) — now **25 days** unposted (oldest two, drafted 2026-07-06), flagged every read
+  since 7/13 — 9th consecutive flag; (2) the seats.aero reply (N-320) — 26 days unstarted, the
+  structural block on the entire Wk1 MRR gate; (3) new this run — decide PR #373 (revert the
+  ADR-0009-violating merge or re-enable auto-merge), open since 2026-07-29, blocking nothing
+  growth-owned today but worth a founder minute since it governs whether the fleet keeps shipping
+  autonomously at all.

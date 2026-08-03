@@ -107,12 +107,13 @@ export function normalizeTrip(raw: unknown): EscalationTrip {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
   const out: EscalationTrip = {}
   let keys = 0
+  const LONG_FIELDS = new Set(['notes', 'transcript'])
   for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
     if (keys >= 24) break // bound the key count regardless of caller
     if (v == null) continue
     const key = k.slice(0, 60)
     if (typeof v === 'string') {
-      const cap = key === 'notes' ? MAX_NOTE : MAX_FIELD
+      const cap = LONG_FIELDS.has(key) ? MAX_NOTE : MAX_FIELD
       const s = v.trim().slice(0, cap)
       if (s) {
         out[key] = s

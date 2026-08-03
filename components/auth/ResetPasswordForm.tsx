@@ -6,7 +6,7 @@ import { authClient } from '@/lib/auth-client'
 import { Input } from '@/components/ui/Field'
 
 const inputClass =
-  'w-full rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[13.5px] font-semibold text-text outline-none transition-colors focus:border-brand'
+  'no-inner-ring w-full rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[13.5px] font-semibold text-text outline-none transition-colors focus:border-brand'
 
 export default function ResetPasswordForm({ token }: { token: string }) {
   const [password, setPassword] = useState('')

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Card from '@/components/ui/Card'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import EditorialHeader from '@/components/EditorialHeader'
@@ -16,7 +17,7 @@ export const dynamic = 'force-static'
 export const metadata = pageMeta({
   title: 'hop for AI agents (MCP)',
   description:
-    "Give Claude, Cursor, or any MCP client hop's points-vs-cash verdict engine: computed cpp, transfer paths, and sweet spots — never LLM-generated numbers.",
+    "Give Cursor, VS Code, or any MCP client hop's points-vs-cash verdict engine: computed cpp, transfer paths, and sweet spots — never LLM-generated numbers.",
   path: '/mcp',
 })
 
@@ -61,7 +62,7 @@ const TOOLS: Tool[] = [
   },
 ]
 
-const CLAUDE_DESKTOP_CONFIG = `{
+const MCP_CONFIG_JSON = `{
   "mcpServers": {
     "hop": {
       "url": "${MCP_URL}",
@@ -70,18 +71,16 @@ const CLAUDE_DESKTOP_CONFIG = `{
   }
 }`
 
-const CLAUDE_CODE_CMD = `claude mcp add --transport http hop ${MCP_URL} \\\n  --header "Authorization: Bearer <your-hop-token>"`
-
 function ConfigBlock({ label, body }: { label: string; body: string }) {
   return (
-    <div className="mt-3 rounded-[var(--radius-sm)] border border-border bg-sunk px-4 py-3">
+    <Card surface="sunk" radius="sm" className="mt-3 px-4 py-3">
       <div className="text-[11px] font-semibold uppercase tracking-[var(--track-label)] text-text2">
         {label}
       </div>
       <pre className="mt-2 overflow-x-auto whitespace-pre-wrap font-mono text-[12.5px] leading-[1.5] text-text">
         {body}
       </pre>
-    </div>
+    </Card>
   )
 }
 
@@ -112,7 +111,7 @@ export default function McpLandingPage() {
             calls (no Authorization header) work today with caller-supplied
             balances, so a visitor can try this before signing in. */}
         <section className="mx-auto mt-12 max-w-[640px]">
-          <div className="rounded-[var(--radius-lg)] border border-border bg-paper p-6">
+          <Card surface="paper" radius="lg" className="p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-[11px] font-semibold uppercase tracking-[var(--track-label)] text-text2">
@@ -133,13 +132,12 @@ export default function McpLandingPage() {
               .
             </p>
 
-            <ConfigBlock label="claude_desktop_config.json" body={CLAUDE_DESKTOP_CONFIG} />
-            <ConfigBlock label="terminal (Claude Code)" body={CLAUDE_CODE_CMD} />
+            <ConfigBlock label="mcp_config.json" body={MCP_CONFIG_JSON} />
             <p className="mt-3 text-[12px] leading-[1.5] text-text2">
-              Cursor: paste the same JSON into <code className="font-mono">~/.cursor/mcp.json</code>.
-              ChatGPT: add a custom connector with the URL above and a Bearer token.
+              Cursor / VS Code / any MCP client: add the server URL above with an Authorization header
+              (or pass balances directly in tool calls without a token).
             </p>
-          </div>
+          </Card>
 
           <p className="mt-4 text-center text-[13px] text-text3">
             No token: rate-limited per IP to stop abuse, no daily cap tracked. Link a hop token
@@ -156,13 +154,13 @@ export default function McpLandingPage() {
           </h2>
           <div className="mx-auto mt-6 grid max-w-[900px] grid-cols-1 gap-4 sm:grid-cols-2">
             {TOOLS.map((t) => (
-              <div key={t.name} className="rounded-[var(--radius-lg)] border border-border bg-paper p-5">
+              <Card key={t.name} surface="paper" radius="lg" className="p-5">
                 <div className="flex items-center gap-2">
                   <Icon name="settings" size={16} />
                   <code className="font-mono text-[14px] font-semibold text-text">{t.name}</code>
                 </div>
                 <p className="mt-2 text-[13.5px] leading-[1.5] text-text2">{t.description}</p>
-              </div>
+              </Card>
             ))}
           </div>
         </section>

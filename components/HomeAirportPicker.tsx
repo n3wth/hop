@@ -4,6 +4,7 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useTransi
 import { searchAirports, airportByCode } from '@/lib/airports'
 import { saveHomeAirport } from '@/app/actions/prefs'
 import Icon from './Icon'
+import { Input } from '@/components/ui/Field'
 
 // Airport autocomplete + save. Used in the "set your home airport" prompt and in
 // /account settings. On save, calls the server action; reports success/error.
@@ -80,7 +81,7 @@ export default function HomeAirportPicker({
   return (
     <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-start">
       <div ref={ref} className="relative flex-1">
-        <input
+        <Input
           ref={inputRef}
           value={query}
           placeholder="City or airport"
@@ -115,7 +116,7 @@ export default function HomeAirportPicker({
               setOpen(false)
             }
           }}
-          className="w-full rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[15px] font-semibold text-text outline-none transition-colors focus:border-brand"
+          className="bg-surface px-4 py-3 text-[15px]"
         />
         {hasResults && (
           <ul
