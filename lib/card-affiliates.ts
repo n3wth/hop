@@ -15,6 +15,13 @@
 import { canonicalizeProgram } from '@/lib/programs'
 
 export interface CardAffiliate {
+  /**
+   * Stable card id — the canonical program id the card is keyed by (the table
+   * key). Referenced by the first-party outclick redirect
+   * (`/api/go/card/[id]`, see cardOutclickPath) so click tracking survives the
+   * placeholder→network applyUrl swap unchanged.
+   */
+  id: string
   /** Marketing card name, e.g. "United Explorer Card". */
   cardName: string
   /** Issuing bank, e.g. "Chase". */
@@ -34,14 +41,32 @@ export interface CardAffiliate {
   bonusMiles: number
   /** Minimum spend that unlocks the bonus, in USD (omit when there is none). */
   bonusSpend?: number
+  /** Months to hit bonusSpend (omit when there is no spend requirement). */
+  bonusMonths?: number
+  /** Annual fee as a plain string from the issuer's public card page, e.g. "$95". */
+  annualFee: string
   /** One terse line of context — the honest caveat or the standout perk. */
   note: string
 }
 
-// Append the hop tracking param to a base application URL. Kept tiny + pure so
-// the table below reads as plain landing pages; the ref is attached in one place.
+// Render the same 'N points after $X spend in Y months' shape the old MCP
+// local map used to hand-format — computed from bonusMiles/bonusSpend/bonusMonths
+// so callers never format bonus copy themselves. Pure, no I/O.
+export function formatBonus(offer: Pick<CardAffiliate, 'bonusMiles' | 'bonusSpend' | 'bonusMonths'>): string {
+  if (!offer.bonusMiles) return 'No welcome bonus'
+  const points = `${offer.bonusMiles.toLocaleString('en-US')} points`
+  if (!offer.bonusSpend) return points
+  const spend = `$${offer.bonusSpend.toLocaleString('en-US')} spend`
+  if (!offer.bonusMonths) return `${points} after ${spend}`
+  const months = `${offer.bonusMonths} month${offer.bonusMonths === 1 ? '' : 's'}`
+  return `${points} after ${spend} in ${months}`
+}
+
+// Append the affiliate tracking param to a base application URL.
+// Uses NEXT_PUBLIC_CJ_AFFILIATE_TAG env var (fallback to 'hop-card' for dev).
 function ref(url: string): string {
-  return `${url}${url.includes('?') ? '&' : '?'}ref=hop-card`
+  const tag = process.env.NEXT_PUBLIC_CJ_AFFILIATE_TAG ?? 'hop-card'
+  return `${url}${url.includes('?') ? '&' : '?'}ref=${tag}`
 }
 
 // --- Affiliate table --------------------------------------------------------
@@ -49,7 +74,8 @@ function ref(url: string): string {
 // in lib/valuations.ts / lib/destinations.ts. Bonus figures are public,
 // representative offers (vary by promo); refresh alongside the valuations table.
 // Hotel programs are intentionally omitted — hop only verdicts flights.
-const CARDS: Record<string, CardAffiliate> = {
+// (id is injected from the table key below, so it can never drift.)
+const CARD_TABLE: Record<string, Omit<CardAffiliate, 'id'>> = {
   // Transferable bank currencies — the cards that earn the points you transfer out.
   'amex-mr': {
     cardName: 'American Express Gold Card',
@@ -58,6 +84,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '4x dining & U.S. supermarkets',
     bonusMiles: 60000,
     bonusSpend: 6000,
+    bonusMonths: 6,
+    annualFee: '$325',
     note: 'Membership Rewards transfer to Delta, Air France-KLM, Virgin & more.',
   },
   'chase-ur': {
@@ -67,6 +95,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '2x–5x on travel',
     bonusMiles: 60000,
     bonusSpend: 4000,
+    bonusMonths: 3,
+    annualFee: '$95',
     note: 'Ultimate Rewards transfer 1:1 to United, Hyatt, Air Canada & more.',
   },
   'citi-typ': {
@@ -76,6 +106,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '3x travel, dining & groceries',
     bonusMiles: 70000,
     bonusSpend: 4000,
+    bonusMonths: 3,
+    annualFee: '$95',
     note: 'ThankYou points transfer to Turkish, Avianca, Qatar & more.',
   },
   'capital-one': {
@@ -85,6 +117,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '2x everything, 10x hotels',
     bonusMiles: 75000,
     bonusSpend: 4000,
+    bonusMonths: 3,
+    annualFee: '$395',
     note: 'Miles transfer to Air Canada, Avianca, Turkish, Flying Blue & more.',
   },
   bilt: {
@@ -93,6 +127,7 @@ const CARDS: Record<string, CardAffiliate> = {
     applyUrl: ref('https://www.biltrewards.com/card'),
     earnRate: '1x rent (no fee), 3x dining',
     bonusMiles: 0,
+    annualFee: '$0',
     note: 'Earn on rent with no annual fee; transfers to United, Hyatt, Alaska.',
   },
 
@@ -104,6 +139,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '2x United, dining & hotels',
     bonusMiles: 60000,
     bonusSpend: 3000,
+    bonusMonths: 3,
+    annualFee: '$0 first year, then $150',
     note: 'Free checked bag + priority boarding on United flights.',
   },
   delta: {
@@ -113,6 +150,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '2x Delta, dining & groceries',
     bonusMiles: 50000,
     bonusSpend: 2000,
+    bonusMonths: 6,
+    annualFee: '$0 first year, then $150',
     note: 'First checked bag free on Delta flights.',
   },
   american: {
@@ -122,6 +161,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '2x American, dining & gas',
     bonusMiles: 50000,
     bonusSpend: 2500,
+    bonusMonths: 3,
+    annualFee: '$0 first year, then $99',
     note: 'Free checked bag + preferred boarding on American.',
   },
   alaska: {
@@ -131,6 +172,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '3x Alaska, 2x dining',
     bonusMiles: 60000,
     bonusSpend: 3000,
+    bonusMonths: 3,
+    annualFee: '$95',
     note: 'Annual Companion Fare; powers Atmos Rewards redemptions.',
   },
   southwest: {
@@ -140,6 +183,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '2x Southwest, transit & internet',
     bonusMiles: 50000,
     bonusSpend: 1000,
+    bonusMonths: 3,
+    annualFee: '$69',
     note: 'Points count toward the Companion Pass.',
   },
   jetblue: {
@@ -149,6 +194,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '6x JetBlue, 2x dining & groceries',
     bonusMiles: 50000,
     bonusSpend: 1000,
+    bonusMonths: 3,
+    annualFee: '$99',
     note: 'Free first checked bag + 10% points back on redemptions.',
   },
   aeroplan: {
@@ -158,6 +205,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '3x Air Canada, dining & groceries',
     bonusMiles: 50000,
     bonusSpend: 3000,
+    bonusMonths: 3,
+    annualFee: '$95',
     note: 'Free first checked bag on Air Canada flights.',
   },
   'avios-ba': {
@@ -167,6 +216,8 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '3x British Airways, 2x travel',
     bonusMiles: 75000,
     bonusSpend: 5000,
+    bonusMonths: 3,
+    annualFee: '$95',
     note: 'Travel Together ticket after a spend threshold; earns Avios.',
   },
   'virgin-atlantic': {
@@ -176,9 +227,16 @@ const CARDS: Record<string, CardAffiliate> = {
     earnRate: '3x Virgin Atlantic, 1.5x else',
     bonusMiles: 60000,
     bonusSpend: 2000,
+    bonusMonths: 3,
+    annualFee: '$0',
     note: 'Flying Club points; strong on ANA & Delta partner awards.',
   },
 }
+
+// Each entry carries its own table key as `id` — derived, never hand-typed.
+const CARDS: Record<string, CardAffiliate> = Object.fromEntries(
+  Object.entries(CARD_TABLE).map(([id, card]) => [id, { id, ...card }]),
+)
 
 // --- Public API -------------------------------------------------------------
 
@@ -191,6 +249,25 @@ export function cardForProgram(program: string): CardAffiliate | undefined {
   const def = canonicalizeProgram(program)
   if (!def) return undefined
   return CARDS[def.id]
+}
+
+// Direct lookup by card id (the canonical table key). Exact match only — the
+// id comes from a href WE minted (cardOutclickPath), not from free text, so
+// there is nothing to canonicalize. Unknown/empty id → undefined, never throws.
+export function cardById(id: string): CardAffiliate | undefined {
+  if (!id || typeof id !== 'string') return undefined
+  return CARDS[id]
+}
+
+// The CTA's outbound href: the first-party outclick redirect
+// (app/api/go/card/[id]/route.ts) that logs the click and 302s to the card's
+// applyUrl. `program` is optional verdict context (the pick's free-text
+// program), stored with the click — never used as a redirect target. Pure and
+// client-safe; the single source of truth for the path shape.
+export function cardOutclickPath(cardId: string, program?: string): string {
+  const base = `/api/go/card/${encodeURIComponent(cardId)}`
+  const context = (program ?? '').trim()
+  return context ? `${base}?program=${encodeURIComponent(context)}` : base
 }
 
 // The full table (defensive copy) keyed by canonical program id — for menus,

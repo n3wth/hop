@@ -1,6 +1,15 @@
 // SFO → LAX fixtures matching the locked design (docs/design/hop-v9.html).
 // Used when upstreams are unconfigured or for design/dev work. Numbers and
 // copy are lifted directly from the design so the UI renders pixel-faithfully.
+//
+// Semantics (must mirror the live upstreams so the engine math holds):
+//   • cash fixtures are ROUND-TRIP party totals (like Duffel with a return);
+//   • award fixtures are PER-DIRECTION, per-seat (like Seats.aero) — the
+//     engine scales them by seats × legs and computes cpp vs cheapest cash;
+//   • cpp/tier are left undefined here: cpp does not exist without a cash
+//     baseline, and assembleSearch always recomputes it. Never bake a cpp
+//     into a fixture — a stale hand-computed one (the old 5.6 ignored taxes)
+//     is exactly the kind of number that doesn't add up on screen.
 
 import type { Balance, FlightOption } from '@/lib/types'
 import { tier } from '@/lib/cpp'
@@ -47,7 +56,8 @@ export function mockCash(): FlightOption[] {
 export function mockAwards(): FlightOption[] {
   return [
     {
-      // Alaska Atmos — 4,500 mi, ~$11.20 taxes, 5.6¢/pt vs $254 cash. The pick.
+      // Alaska Atmos — 4,500 mi + ~$11.20 taxes per direction. The pick: the
+      // engine prices it 9,000 mi + $22.40 vs $254 RT cash → 2.6¢/pt.
       id: 'mock-award-as',
       kind: 'award',
       airline: 'Alaska Atmos',
@@ -71,13 +81,13 @@ export function mockAwards(): FlightOption[] {
       fareBrand: 'Saver Award',
       miles: 4500,
       taxes: 11.2,
-      cpp: 5.6,
-      tier: tier(5.6),
+      cpp: undefined,
+      tier: tier(undefined),
       youHave: 42766,
       bookingUrl: pointsBookingUrl({ airlineCode: 'AS', program: 'Alaska Atmos Rewards' }),
     },
     {
-      // Southwest — ~6,000 pts, ~4.2¢/pt. Dynamic points pricing.
+      // Southwest — ~6,000 pts per direction. Dynamic points pricing.
       id: 'mock-award-wn',
       kind: 'award',
       airline: 'Southwest',
@@ -98,14 +108,16 @@ export function mockAwards(): FlightOption[] {
       fareBrand: 'Wanna Get Away',
       miles: 6000,
       taxes: 5.6,
-      cpp: 4.2,
-      tier: tier(4.2),
+      cpp: undefined,
+      tier: tier(undefined),
       youHave: 36304,
       bookingUrl: pointsBookingUrl({ airlineCode: 'WN', program: 'Southwest Rapid Rewards' }),
       note: 'Points price varies · check Southwest',
     },
     {
-      // United via Aeroplan — 10,000 mi transfer, 2.5¢/pt.
+      // United via Aeroplan — 6,000 mi per direction (Aeroplan's short-haul
+      // North America band), via transfer. Honest math: ~2.0¢/pt vs the cash
+      // fixture — a real transfer play, not a weak row.
       id: 'mock-transfer-aeroplan',
       kind: 'transfer',
       airline: 'United',
@@ -124,10 +136,10 @@ export function mockAwards(): FlightOption[] {
       aircraft: 'Boeing 737 MAX 9',
       flightNo: 'UA 1701',
       fareBrand: 'Aeroplan Flex',
-      miles: 10000,
+      miles: 6000,
       taxes: 5.6,
-      cpp: 2.5,
-      tier: tier(2.5),
+      cpp: undefined,
+      tier: tier(undefined),
       youHave: 340358,
       transferFrom: [
         { source: 'Amex MR', ratio: '1:1' },
@@ -137,7 +149,7 @@ export function mockAwards(): FlightOption[] {
       note: 'Transfer Amex MR or Chase UR → Aeroplan',
     },
     {
-      // United MileagePlus — 14,100 mi, 1.8¢/pt. Dynamic, weak value.
+      // United MileagePlus — 14,100 mi per direction. Dynamic, weak value.
       id: 'mock-award-ua',
       kind: 'award',
       airline: 'United MileagePlus',
@@ -158,8 +170,8 @@ export function mockAwards(): FlightOption[] {
       fareBrand: 'Dynamic Award',
       miles: 14100,
       taxes: 5.6,
-      cpp: 1.8,
-      tier: tier(1.8),
+      cpp: undefined,
+      tier: tier(undefined),
       youHave: 8540,
       bookingUrl: pointsBookingUrl({ airlineCode: 'UA', program: 'United MileagePlus' }),
       note: 'Dynamic pricing · weak value here',

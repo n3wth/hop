@@ -3,6 +3,8 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { searchAirports, airportByCode } from '@/lib/airports'
 import { useOrigin } from '@/lib/origin-context'
+import Card from './ui/Card'
+import Eyebrow from './ui/Eyebrow'
 
 // Compact "where from" control for the TopNav — a flat pill that states the
 // current origin ("From SFO") and opens a small popover to set or change it.
@@ -85,22 +87,24 @@ export default function OriginSelector() {
         aria-expanded={open}
         aria-label={origin ? `Departure airport: ${origin}. Change` : 'Set your departure airport'}
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk ${
-          open ? 'bg-sunk' : ''
+        className={`hop-ink-border flex items-center rounded-full border px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:border-text2 hover:bg-sunk ${
+          open ? 'hop-ink-border-active bg-sunk' : ''
         }`}
       >
         <span className="tabular-nums">{label}</span>
       </button>
 
       {open && (
-        <div
+        <Card
+          surface="surface"
+          radius="md"
           role="dialog"
           aria-label="Set departure airport"
-          className="absolute right-0 top-[calc(100%+10px)] z-[80] w-[280px] rounded-xl border border-border bg-surface p-3"
+          className="absolute right-0 top-[calc(100%+10px)] z-[80] w-[300px] p-2.5"
         >
-          <span className="mb-2 block text-[10.5px] font-semibold uppercase tracking-[0.12em] text-text2">
+          <Eyebrow className="mb-1.5 block px-1 text-[10.5px]">
             Where from
-          </span>
+          </Eyebrow>
           <input
             ref={inputRef}
             value={query}
@@ -128,7 +132,7 @@ export default function OriginSelector() {
                 commitTyped()
               }
             }}
-            className="w-full rounded-[12px] border border-border bg-paper px-3.5 py-2.5 text-[14px] font-semibold text-text outline-none transition-colors focus:border-brand"
+            className="no-inner-ring w-full rounded-sm border border-border bg-sunk px-3.5 py-2.5 text-[14px] font-semibold text-text outline-none transition-colors placeholder:font-medium placeholder:text-text3 focus:border-brand focus:bg-surface"
           />
 
           {results.length > 0 && (
@@ -137,7 +141,7 @@ export default function OriginSelector() {
               id={listId}
               role="listbox"
               aria-label="Airport suggestions"
-              className="mt-2 max-h-[240px] overflow-auto rounded-[12px] border border-border bg-surface py-1"
+              className="mt-1.5 max-h-[244px] overflow-auto"
             >
               {results.map((a, i) => (
                 <li key={a.code} id={optionId(i)} role="option" aria-selected={i === active}>
@@ -149,7 +153,7 @@ export default function OriginSelector() {
                       e.preventDefault()
                       choose(a.code)
                     }}
-                    className={`flex w-full cursor-pointer items-baseline gap-2.5 px-3.5 py-2 text-left transition-colors ${
+                    className={`flex w-full cursor-pointer items-baseline gap-2.5 rounded-sm px-3 py-2 text-left transition-colors ${
                       i === active ? 'bg-sunk' : 'bg-surface'
                     }`}
                   >
@@ -185,7 +189,7 @@ export default function OriginSelector() {
               </button>
             </div>
           ) : null}
-        </div>
+        </Card>
       )}
     </div>
   )

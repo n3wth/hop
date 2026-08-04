@@ -12,7 +12,10 @@
 // no emojis.
 
 import { useState } from 'react'
+import Link from 'next/link'
 import Icon from './Icon'
+import Card from './ui/Card'
+import Eyebrow from './ui/Eyebrow'
 
 // --- Response shape (mirrors lib/counterfactual.CounterfactualResult) ---------
 
@@ -123,16 +126,13 @@ export default function Counterfactual({
   }
 
   return (
-    <div className="mt-4 rounded-[16px] border border-border bg-surface p-5 sm:p-6">
+    <Card surface="surface" radius="md" className="mt-4 p-5 sm:p-6">
       <div className="flex items-start gap-3">
         <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
-          <Icon name="swap_horiz" size={20} />
+          <Icon name="swap_horiz" size={24} weight="fill" />
         </span>
         <div className="min-w-0">
-          <h3 className="font-display text-[16px] font-semibold tracking-[-0.01em] text-text">
-            What if…
-          </h3>
-          <p className="mt-1 max-w-[58ch] text-[13px] leading-[1.55] text-text2">
+          <p className="max-w-[58ch] text-[14px] leading-[1.5] text-text2">
             A mirror for your portfolio. Ask what a different points stack would unlock — hop
             re-runs its real engine against your balances and shows the trips that open up.
           </p>
@@ -145,7 +145,7 @@ export default function Counterfactual({
           onChange={(e) => setText(e.target.value)}
           placeholder="What if I had 50k more Chase UR?"
           aria-label="Describe a different points portfolio"
-          className="min-w-0 flex-1 rounded-[12px] border border-border bg-paper px-4 py-2.5 text-[14px] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand"
+          className="no-inner-ring min-w-0 flex-1 rounded-[12px] border border-border bg-paper px-4 py-2.5 text-[14px] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand"
         />
         <button
           type="submit"
@@ -175,13 +175,13 @@ export default function Counterfactual({
       </div>
 
       {error ? (
-        <p className="mt-4 rounded-[12px] border border-border bg-sunk px-4 py-2.5 text-[13px] text-text2">
+        <Card surface="sunk" radius="md" className="mt-4 px-4 py-2.5 text-[13px] text-text2" as="p">
           {error}
-        </p>
+        </Card>
       ) : null}
 
       {result ? <ResultPanel result={result} /> : null}
-    </div>
+    </Card>
   )
 }
 
@@ -196,13 +196,13 @@ function ResultPanel({ result }: { result: CounterfactualResult }) {
     <div className="mt-5 border-t border-border pt-5">
       {/* headline — the one-glance financial mirror */}
       <div className="rounded-[14px] bg-brand-light px-5 py-4">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand">
+        <Eyebrow className="text-brand">
           {mutation.label}
-        </div>
+        </Eyebrow>
         {unlockedCount > 0 ? (
           <p className="mt-1.5 font-display text-[18px] font-semibold leading-snug tracking-[-0.01em] text-brand-deep">
             You&apos;d unlock {unlockedCount} {unlockedCount === 1 ? 'trip' : 'trips'} worth about{' '}
-            <span className="tabular-nums">${dollarValue.toLocaleString('en-US')}</span> in cash flights.
+            <span className="hop-num">${dollarValue.toLocaleString('en-US')}</span> in cash flights.
           </p>
         ) : closer.length > 0 ? (
           <p className="mt-1.5 font-display text-[17px] font-semibold leading-snug tracking-[-0.01em] text-brand-deep">
@@ -220,9 +220,9 @@ function ResultPanel({ result }: { result: CounterfactualResult }) {
       {/* unlocked destinations */}
       {unlocked.length > 0 ? (
         <div className="mt-4">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
+          <Eyebrow className="mb-2 block text-text3">
             Newly within reach
-          </div>
+          </Eyebrow>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {unlocked.map((d) => (
               <UnlockedCard key={d.code} d={d} />
@@ -234,9 +234,9 @@ function ResultPanel({ result }: { result: CounterfactualResult }) {
       {/* closer-but-not-there */}
       {closer.length > 0 ? (
         <div className="mt-4">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text3">
+          <Eyebrow className="mb-2 block text-text3">
             Getting closer
-          </div>
+          </Eyebrow>
           <div className="flex flex-col gap-1.5">
             {closer.slice(0, 4).map((d) => (
               <CloserRow key={d.code} d={d} />
@@ -250,11 +250,9 @@ function ResultPanel({ result }: { result: CounterfactualResult }) {
 
 function UnlockedCard({ d }: { d: UnlockedDestination }) {
   return (
-    <a
-      href={`/search?to=${encodeURIComponent(d.code)}`}
-      className="group flex flex-col rounded-[12px] border border-border bg-paper p-3.5 transition-colors hover:border-brand"
-    >
-      <div className="flex items-center justify-between gap-2">
+    <Link href={`/search?to=${encodeURIComponent(d.code)}`}>
+      <Card surface="paper" radius="sm" interactive className="group flex flex-col p-3.5">
+        <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span
             className={`fi fi-${d.countryCode} h-[14px] w-[19px] flex-shrink-0 rounded-[2px]`}
@@ -265,7 +263,7 @@ function UnlockedCard({ d }: { d: UnlockedDestination }) {
           </span>
         </div>
         {d.cpp != null ? (
-          <span className="rounded-full bg-brand-light px-2 py-0.5 font-display text-[11px] font-semibold tabular-nums text-brand">
+          <span className="hop-num rounded-full bg-brand-light px-2 py-0.5 text-[11px] font-semibold text-brand">
             {d.cpp.toFixed(1)}¢
           </span>
         ) : null}
@@ -275,11 +273,12 @@ function UnlockedCard({ d }: { d: UnlockedDestination }) {
           {Math.round(d.milesNeeded / 1000)}k pts
           <span className="ml-1 text-text3">· {d.bestProgram}</span>
         </span>
-        <span className="font-display font-semibold tabular-nums text-text2">
+        <span className="hop-num font-semibold text-text2">
           ${d.cashUsd.toLocaleString('en-US')} cash
         </span>
       </div>
-    </a>
+      </Card>
+    </Link>
   )
 }
 
@@ -288,7 +287,7 @@ function CloserRow({ d }: { d: ImprovedDestination }) {
   return (
     <div className="flex items-baseline justify-between gap-3 rounded-[10px] bg-sunk px-3.5 py-2 text-[13px]">
       <span className="min-w-0 truncate font-medium text-text">{d.city}</span>
-      <span className="flex-shrink-0 tabular-nums text-text3">
+      <span className="hop-num flex-shrink-0 text-text3">
         {gap > 0 ? `${gap.toLocaleString('en-US')} pts short` : 'almost there'}
       </span>
     </div>

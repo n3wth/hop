@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { toNavUser } from '@/lib/nav-user'
 import { auth0 } from '@/lib/auth0'
 import { getUserBalances } from '@/lib/accounts'
 import AppShell from '@/components/AppShell'
@@ -15,14 +16,7 @@ export const metadata = pageMeta({
 export default async function PrivacyPage() {
   const session = await auth0.getSession()
   const su = session?.user
-  const user = su
-    ? {
-        initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
-        name: su.name ?? su.email ?? undefined,
-        email: su.email ?? undefined,
-        picture: su.picture ?? undefined,
-      }
-    : null
+  const user = toNavUser(su)
 
   let pointsTotal: number | undefined
   if (user && su?.sub) {
@@ -36,26 +30,36 @@ export default async function PrivacyPage() {
         eyebrow="Legal"
         title="Privacy Policy"
         intro="This policy explains what data hop collects, why, who we share it with, and the controls you have."
-        lastUpdated="June 29, 2026"
+        lastUpdated="July 5, 2026"
       >
         <h2>Who we are</h2>
         <p>
           hop is operated by <strong>hop Travel, Inc.</strong> For privacy questions, contact{' '}
-          <a href="mailto:privacy@hop.n3wth.com">privacy@hop.n3wth.com</a>.
+          <a href="mailto:privacy@hop.flights">privacy@hop.flights</a>.
         </p>
 
         <h2>What we collect</h2>
         <ul>
           <li>
-            <strong>Account &amp; profile.</strong> When you sign in via Auth0 we store your Auth0
-            user identifier and basic profile fields it provides (such as name, email, and avatar).
+            <strong>Account &amp; profile.</strong> When you sign in with Google we store your
+            name, email, and profile photo.
           </li>
           <li>
             <strong>Home airport.</strong> The home airport you set, used to personalize search.
           </li>
           <li>
-            <strong>Loyalty balances.</strong> Balances you enter manually, and — only if you
-            choose to connect it — balances synced from AwardWallet.
+            <strong>Loyalty balances.</strong> Balances you enter manually; balances hop reads
+            from text you paste or emails you forward to your personal sync address (we store
+            only the extracted program name and balance — never the pasted text or the email);
+            and — only if you choose to connect it — balances synced from AwardWallet.
+          </li>
+          <li>
+            <strong>Loyalty-program logins (optional).</strong> If you choose credential
+            auto-sync, hop stores the username and password for that loyalty program so it can
+            sign in on your behalf and read your balance. Credentials are <strong>encrypted at
+            rest</strong> (AES-256-GCM), are used only to sign in to that program, are never shown
+            back to you (you see a masked username), and can be removed at any time from your{' '}
+            <Link href="/account">account</Link>. hop never stores your bank passwords.
           </li>
           <li>
             <strong>Saved searches.</strong> Searches you save so you can return to them.
@@ -83,10 +87,10 @@ export default async function PrivacyPage() {
         <p>We rely on the following service providers to operate hop:</p>
         <ul>
           <li>
-            <strong>Auth0</strong> — sign-in and identity.
+            <strong>Google</strong> — sign-in (OAuth).
           </li>
           <li>
-            <strong>Supabase</strong> — database storage for your home airport, balances, saved
+            <strong>Neon</strong> — database storage for your home airport, balances, saved
             searches, and bookings.
           </li>
           <li>
@@ -102,6 +106,20 @@ export default async function PrivacyPage() {
             travel-confirmation emails (a tight search). We store only the normalized trip facts
             (destination, month, airline, cabin, whether points were used) — never the emails
             themselves — and you can disconnect and delete them at any time.
+          </li>
+          <li>
+            <strong>AI processing (Vercel AI Gateway / Anthropic)</strong> — when you paste a
+            statement or forward a balance email, its text is sent to an AI model once to read
+            the program names and balances out of it. The text is used only for that extraction;
+            hop keeps the extracted program + balance and discards the rest. Every extracted
+            number is verified against the text you provided before it is saved.
+          </li>
+          <li>
+            <strong>Cloudflare</strong> — receives mail sent to your personal sync address and
+            relays its text to hop for the extraction above; and, if you use credential auto-sync,
+            runs the automated browser session that signs in to your loyalty program to read the
+            balance. The email and the login session are not stored by Cloudflare on hop&rsquo;s
+            behalf.
           </li>
           <li>
             <strong>seats.aero</strong> — award availability data.
@@ -128,12 +146,19 @@ export default async function PrivacyPage() {
         <ul>
           <li>
             <strong>Access and correction.</strong> View and edit your home airport, balances, and
-            saved searches from your <Link href="/account">account</Link>.
+            saved searches from your <Link href="/account">account</Link>. Balances read from a
+            paste or a forwarded email are stored as ordinary program rows you can edit or remove
+            the same way.
           </li>
           <li>
             <strong>Disconnect AwardWallet.</strong> You can revoke the AwardWallet connection at
             any time from your <Link href="/account">account</Link>; we stop syncing balances from
             it.
+          </li>
+          <li>
+            <strong>Remove a saved login.</strong> You can delete any stored loyalty-program login
+            at any time from your <Link href="/account">account</Link>; the encrypted credential
+            is deleted and auto-sync for that program stops.
           </li>
           <li>
             <strong>Disconnect Gmail.</strong> You can revoke Gmail access at any time from your{' '}
@@ -143,21 +168,21 @@ export default async function PrivacyPage() {
           <li>
             <strong>Delete your account.</strong> You can request account deletion from your{' '}
             <Link href="/account">account</Link> or by emailing{' '}
-            <a href="mailto:privacy@hop.n3wth.com">privacy@hop.n3wth.com</a>.
+            <a href="mailto:privacy@hop.flights">privacy@hop.flights</a>.
           </li>
         </ul>
         <p>
           Depending on where you live, you may have additional rights over your personal data. We
           honor applicable requests. To exercise a right, email{' '}
-          <a href="mailto:privacy@hop.n3wth.com">privacy@hop.n3wth.com</a> and we will respond
+          <a href="mailto:privacy@hop.flights">privacy@hop.flights</a> and we will respond
           within 30 days.
         </p>
 
         <h2>Cookies</h2>
         <p>
           hop uses essential cookies needed to sign you in and keep your session active (set by
-          Auth0 and Supabase). We do not run a third-party advertising or cross-site tracking
-          stack.
+          our self-hosted sign-in system). We do not run a third-party advertising or cross-site
+          tracking stack.
         </p>
 
         <h2>Children</h2>
@@ -169,7 +194,7 @@ export default async function PrivacyPage() {
         <h2>Security</h2>
         <p>
           We use reasonable technical and organizational measures to protect your data, and rely on
-          established providers (Auth0, Supabase, Duffel) for sensitive operations. No method of
+          established providers (Google, Neon, Duffel) for sensitive operations. No method of
           storage or transmission is perfectly secure.
         </p>
 
@@ -188,11 +213,11 @@ export default async function PrivacyPage() {
 
         <h2>Contact</h2>
         <p>
-          Email <a href="mailto:privacy@hop.n3wth.com">privacy@hop.n3wth.com</a> with any privacy
+          Email <a href="mailto:privacy@hop.flights">privacy@hop.flights</a> with any privacy
           question or request.
         </p>
       </LegalShell>
-      <div className="mx-auto max-w-[1180px]">
+      <div className="mx-auto max-w-[var(--container-shell)]">
         <SiteFooter />
       </div>
     </AppShell>

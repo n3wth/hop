@@ -1,0 +1,29 @@
+// Minimal, self-contained tsconfig for the Eve runtime — DOCUMENTARY ONLY.
+//
+// eve/ is a separate runtime, deliberately excluded from the Next.js app's
+// tsconfig, ESLint, and `next build` (see eve/README.md). These files are NOT
+// type-checked by hop's toolchain; this config exists so an editor / Eve's own
+// CLI can resolve the directory in isolation.
+//
+// The Eve framework types (the `eve`, `eve/tools`, `eve/schedules`, `eve/context`,
+// `eve/channels` modules) are provided by the `eve` package installed via
+// `npx eve@latest init` + `npm install` inside this directory — NOT by the app's
+// node_modules. The `lib/*` engine is imported with RELATIVE paths from the repo
+// root (e.g. ../../lib/search), not hop's `@/*` alias.
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "types": ["node"]
+  },
+  // Eve's own files plus the hop engine they reach into via relative imports.
+  "include": ["**/*.ts", "../lib/**/*.ts", "../utils/**/*.ts"],
+  "exclude": ["node_modules"]
+}

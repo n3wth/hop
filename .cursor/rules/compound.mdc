@@ -1,0 +1,30 @@
+---
+description: hop compound-engineering operating rules (always on)
+alwaysApply: true
+---
+
+# hop — operating rules for any agent
+
+This project is **Next.js 16 + React 19** — NOT training-data Next. Read the relevant guide in
+`node_modules/next/dist/docs/` before writing framework code.
+
+Work the **compound-engineering loop**: Plan → Work → Review → Compound. Details in `CLAUDE.md`
+and `AGENTS.md`; decisions in `docs/decisions/`; a searchable solved-problems library in
+`docs/solutions/` (grep it before solving something familiar).
+
+Non-negotiable invariants:
+
+- **Numbers are computed, never generated.** Every economic figure (cpp, miles, price, verdict)
+  comes from `lib/*` (the `lib/search.ts#assembleSearch` engine). LLMs narrate; they never invent
+  a number.
+- **Graceful degradation.** Persistence goes through `lib/supabase-helpers.ts#withDb`; clients and
+  DB helpers return `{ok:false}`/fallbacks and never throw.
+- **Flag-gate new seams** (`lib/env.ts`) so they degrade to a clean no-op until configured.
+- **Strict copy voice** (`docs/design/copy-spec.md`): terse, state the number, no marketing slop,
+  no emoji. Flat editorial design — no shadows/gradients/glows.
+
+The `eve/` directory is a separate Vercel Eve runtime, excluded from the Next app's
+typecheck/lint/build — don't add it to the build graph.
+
+**Teach the system, don't just do the task:** capture durable lessons where the next agent finds
+them (a `docs/solutions/` entry, a CLAUDE.md rule, or an ADR).

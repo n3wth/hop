@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
-import { Bricolage_Grotesque, Fraunces } from 'next/font/google'
+import { Bricolage_Grotesque, Fraunces, Geist_Mono } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/next'
 import {
   SITE_URL,
   SITE_NAME,
@@ -7,7 +8,10 @@ import {
   DEFAULT_DESCRIPTION,
   TEAL,
 } from '@/lib/seo'
+import AstryxProviders from '@/components/AstryxProviders'
 import StructuredData from '@/components/StructuredData'
+import ScrollToTop from '@/components/ScrollToTop'
+import PostHogBoot from '@/components/PostHogBoot'
 import './globals.css'
 
 // Display headlines: Bricolage Grotesque via next/font/google — self-hosted, preloaded.
@@ -28,6 +32,15 @@ const fraunces = Fraunces({
   display: 'swap',
 })
 
+// Tabular mono for all numbers, prices, cpp values, and miles counts.
+// Geist Mono's optical geometry reads cleanly at small sizes alongside General Sans.
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-geist-mono',
+  display: 'swap',
+})
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -40,6 +53,18 @@ export const metadata: Metadata = {
   authors: [{ name: 'hop' }],
   creator: SITE_NAME,
   publisher: SITE_NAME,
+  appleWebApp: {
+    capable: true,
+    title: SITE_NAME,
+    // 'default' (not 'black-translucent'): hop is a light-themed app (warm
+    // cream canvas, no dark hero spanning the top of every page) — per Apple's
+    // own guidance and PWA convention, 'black-translucent' (transparent bar,
+    // white icons) is for apps with a dark top-of-viewport; on a light canvas
+    // it renders illegible white-on-cream icons. 'default' (white bar, dark
+    // icons) is the documented, low-risk fit here — see
+    // node_modules/next/dist/docs/.../generate-metadata.md#applewebapp.
+    statusBarStyle: 'default',
+  },
   keywords: [
     'points vs cash',
     'award flights',
@@ -82,11 +107,30 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  // Next's `appleWebApp.capable` only emits the unprefixed
+  // `mobile-web-app-capable` (Chromium's preferred tag, since Next 15 —
+  // github.com/vercel/next.js PR #70272 dropped the Apple-prefixed one to
+  // silence a Chrome DevTools deprecation warning). But Apple's own docs
+  // (Configuring Web Applications: "apple-mobile-web-app-status-bar-style
+  // ... has no effect unless you first specify standalone mode [via
+  // apple-mobile-web-app-capable]") still key iOS standalone/status-bar
+  // behavior off the *prefixed* tag on pre-Safari-26 iOS — its absence is
+  // exactly what makes an installed hop look like a bare Safari tab instead
+  // of a native app shell (vercel/next.js issues #70272, #74248, #74524).
+  // Emit both via `other` (Next's documented custom-meta-tag escape hatch)
+  // so iOS gets the tag it actually keys standalone/status-bar behavior on.
+  other: {
+    'apple-mobile-web-app-capable': 'yes',
+  },
 }
 
 export const viewport: Viewport = {
+  // Single value, not the {media, color}[] form: hop declares colorScheme
+  // 'light' only (no dark theme), so there's no second variant to branch on —
+  // see generate-viewport.md#themecolor for when the array form is needed.
   themeColor: TEAL,
   colorScheme: 'light',
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({
@@ -95,7 +139,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${bricolage.variable} ${fraunces.variable}`}>
+    <html
+      lang="en"
+      data-theme="light"
+      className={`${bricolage.variable} ${fraunces.variable} ${geistMono.variable}`}
+    >
       <head>
         {/* Body/UI: General Sans (Fontshare — not on Google/next-font). */}
         <link rel="preconnect" href="https://api.fontshare.com" />
@@ -105,8 +153,23 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans">
-        <StructuredData />
-        {children}
+        {/* Astryx primitives (Dialog/Sheet, DropdownMenu, Badge, EmptyState,
+            Toast) render through this theme — see lib/astryx-theme.ts and
+            components/AstryxProviders.tsx (a 'use client' boundary; see that
+            file for why it can't be inlined into this Server Component).
+            Light mode only, matching hop's own colorScheme (see `viewport`
+            above). ToastViewport makes useToast() available anywhere in the
+            tree; components/Toast.tsx re-exports it. */}
+        <AstryxProviders>
+          <ScrollToTop />
+          <StructuredData />
+          {children}
+        </AstryxProviders>
+        <Analytics />
+        {/* PostHog product analytics (R0.5) — init + pageviews on every page;
+            AppShell adds identify() for signed-in sessions. No-ops without
+            NEXT_PUBLIC_POSTHOG_KEY. */}
+        <PostHogBoot />
       </body>
     </html>
   )

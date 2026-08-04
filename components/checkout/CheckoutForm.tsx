@@ -12,6 +12,7 @@ import { startPaymentSession, placeOrder, refreshOffer } from '@/app/actions/che
 import Icon from '@/components/Icon'
 import BrandIcon from '@/components/BrandIcon'
 import FarePolicyCard from '@/components/checkout/FarePolicyCard'
+import Button from '@/components/ui/Button'
 
 // Native cash checkout — itinerary summary, passenger details, the Duffel hosted
 // card form, and the pay action. Flat, on-brand. The card form runs in a
@@ -181,7 +182,9 @@ export default function CheckoutForm({
     if (!activeOffer.expiresAt || expired) return null
     const d = new Date(activeOffer.expiresAt)
     if (isNaN(d.getTime())) return null
-    return `Price held until ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+    // Pin UTC like timeOf/dateOf above — a bare toLocaleTimeString formats in the
+    // server tz on SSR and the browser tz on hydration, which trips React #418.
+    return `Price held until ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })}`
   })()
 
   // Watch the held price: when it lapses, surface the expiry state. Re-checks on
@@ -387,10 +390,10 @@ export default function CheckoutForm({
               <div className="text-[12px] text-text3">{activeOffer.route}</div>
             </div>
             <div className="text-right">
-              <div className="text-[10.5px] font-semibold uppercase tracking-[0.06em] text-text3">
+              <div className="text-[10.5px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
                 Total due
               </div>
-              <div className="font-display text-[18px] font-semibold tabular-nums tracking-[-0.01em] text-text">
+              <div className="hop-price text-[18px] text-text">
                 {total}
               </div>
             </div>
@@ -405,18 +408,18 @@ export default function CheckoutForm({
         {expired ? (
           <div
             role="alert"
-            className="mt-6 flex flex-wrap items-center gap-3 rounded-[12px] border border-ok/25 bg-ok-bg px-4 py-3.5 text-[13px] leading-[1.5] text-text"
+            className="mt-6 flex flex-wrap items-center gap-3 rounded-[12px] border border-border bg-sunk px-4 py-3.5 text-[14px] leading-[1.5] text-text"
           >
             <Icon name="schedule" size={16} className="flex-shrink-0 text-text2" />
             <span className="flex-1">The held price lapsed. Refresh to get the latest fare.</span>
-            <button
-              type="button"
+            <Button
+              variant="ink"
+              size="sm"
               onClick={refreshExpiredOffer}
               disabled={refreshing}
-              className="rounded-[9px] border-[1.5px] border-text px-3 py-1.5 text-[12.5px] font-semibold text-text transition-colors hover:bg-text hover:text-white disabled:opacity-60"
             >
               {refreshing ? 'Refreshing…' : 'Refresh price'}
-            </button>
+            </Button>
           </div>
         ) : null}
 
@@ -536,13 +539,13 @@ export default function CheckoutForm({
         >
           <div className="mb-6 flex items-center gap-3 border-b border-hair pb-4">
             <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-brand-light text-brand">
-              <Icon name="lock" size={15} />
+              <Icon name="lock" size={16} />
             </span>
             <h2 className="font-display text-[17px] font-semibold tracking-[-0.01em] text-text">
               Payment
             </h2>
             <span className="ml-auto flex items-center gap-1.5 text-[12px] font-medium text-text3">
-              <Icon name="shield" size={13} className="text-brand" />
+              <Icon name="shield" size={12} className="text-brand" />
               Encrypted
             </span>
           </div>
@@ -580,7 +583,7 @@ export default function CheckoutForm({
           )}
 
           <p className="mt-4 flex items-start gap-1.5 text-[12px] leading-[1.5] text-text3">
-            <Icon name="info" size={13} className="mt-px flex-shrink-0" />
+            <Icon name="info" size={12} className="mt-px flex-shrink-0" />
             <span>
               Card details go straight to Duffel&apos;s PCI-compliant form — hop never sees your
               number. Test mode, so no real charge.
@@ -600,8 +603,27 @@ export default function CheckoutForm({
             role="alert"
             className="mt-5 flex items-start gap-2.5 rounded-[12px] border border-weak/20 bg-weak-bg px-4 py-3.5 text-[13.5px] leading-[1.5] text-weak"
           >
-            <Icon name="error" size={16} className="mt-px flex-shrink-0" />
-            <span>{error}</span>
+            <Icon name="error" size={16} weight="fill" className="mt-px flex-shrink-0" />
+            <span>
+              {error}
+              {/* A lapsed session is recoverable — hand them the door back in,
+                  carrying this exact checkout URL so the offer survives the
+                  round-trip. (This branch only renders client-side, after an
+                  action result, so window is always available.) */}
+              {/sign in/i.test(error) ? (
+                <>
+                  {' '}
+                  <a
+                    href={`/login?returnTo=${encodeURIComponent(
+                      window.location.pathname + window.location.search,
+                    )}`}
+                    className="font-semibold underline underline-offset-2 transition-colors hover:text-text"
+                  >
+                    Sign in to continue
+                  </a>
+                </>
+              ) : null}
+            </span>
           </div>
         ) : null}
 
@@ -614,7 +636,7 @@ export default function CheckoutForm({
           {busy ? (
             <span className="h-[18px] w-[18px] animate-spin rounded-full border-2 border-white/30 border-t-white motion-reduce:animate-none" />
           ) : (
-            <Icon name="lock" size={17} />
+            <Icon name="lock" size={16} />
           )}
           {busy ? stageLabel[stage] : expired ? 'Refresh price' : `Pay ${total}`}
         </button>
@@ -633,7 +655,7 @@ export default function CheckoutForm({
           above the form there). */}
       <aside className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
         <div className="rounded-[18px] border border-border bg-paper p-6">
-          <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-text3">
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
             Your itinerary
           </div>
           <div className="flex items-center gap-3 border-b border-border pb-5 pt-3">
@@ -650,7 +672,7 @@ export default function CheckoutForm({
             {activeOffer.segments.map((s, i) => (
               <div key={i}>
                 {dateOf(s.departingAt) ? (
-                  <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-text3">
+                  <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
                     {dateOf(s.departingAt)}
                   </div>
                 ) : null}
@@ -659,18 +681,18 @@ export default function CheckoutForm({
                     <div className="font-display text-[17px] font-semibold leading-none tracking-[-0.01em] text-text">
                       {s.origin ?? '—'}
                     </div>
-                    <div className="mt-1.5 text-[11px] tabular-nums text-text3">
+                    <div className="hop-num mt-1.5 text-[11px] text-text3">
                       {timeOf(s.departingAt)}
                     </div>
                   </div>
                   <div className="flex flex-1 flex-col items-center">
                     <div className="flex w-full items-center gap-1.5 text-brand">
                       <span className="h-px flex-1 bg-border" />
-                      <Icon name="flight" size={14} className="rotate-90" />
+                      <Icon name="flight" size={16} className="rotate-90" />
                       <span className="h-px flex-1 bg-border" />
                     </div>
                     {s.flightNumber ? (
-                      <span className="mt-1 text-[10px] tabular-nums text-text3">
+                      <span className="hop-num mt-1 text-[10px] text-text3">
                         {s.flightNumber}
                       </span>
                     ) : null}
@@ -679,7 +701,7 @@ export default function CheckoutForm({
                     <div className="font-display text-[17px] font-semibold leading-none tracking-[-0.01em] text-text">
                       {s.destination ?? '—'}
                     </div>
-                    <div className="mt-1.5 text-[11px] tabular-nums text-text3">
+                    <div className="hop-num mt-1.5 text-[11px] text-text3">
                       {timeOf(s.arrivingAt)}
                     </div>
                   </div>
@@ -694,7 +716,7 @@ export default function CheckoutForm({
                 Total due
                 {count > 1 ? <span className="font-normal text-text3"> · {count} travelers</span> : null}
               </span>
-              <span className="font-display text-[22px] font-semibold tabular-nums tracking-[-0.01em] text-text">
+              <span className="hop-price text-[22px] text-text">
                 {total}
               </span>
             </div>
@@ -731,7 +753,7 @@ function Field({
 }) {
   return (
     <label className={`flex flex-col gap-1.5 ${className ?? ''}`}>
-      <span className="text-[12.5px] font-semibold tracking-[0.01em] text-text2">{label}</span>
+      <span className="text-[12.5px] font-semibold tracking-[var(--track-label)] text-text2">{label}</span>
       {children}
     </label>
   )
@@ -773,7 +795,7 @@ function Input({
       min={min}
       max={max}
       onChange={(e) => onChange(e.target.value)}
-      className={`rounded-[11px] border-[1.5px] bg-paper px-3 py-[10px] text-[14.5px] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand ${
+      className={`no-inner-ring rounded-[11px] border-[1.5px] bg-paper px-3 py-[10px] text-[14.5px] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand ${
         invalid ? 'border-weak' : 'border-border'
       }`}
     />
@@ -799,7 +821,7 @@ function Select({
         ref={selectRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full cursor-pointer appearance-none rounded-[11px] border-[1.5px] border-border bg-paper px-3 py-[10px] pr-9 text-[14.5px] text-text outline-none transition-colors focus:border-brand"
+        className="no-inner-ring w-full cursor-pointer appearance-none rounded-[11px] border-[1.5px] border-border bg-paper px-3 py-[10px] pr-9 text-[14.5px] text-text outline-none transition-colors focus:border-brand"
       >
         {options.map(([v, label]) => (
           <option key={v} value={v}>
@@ -809,7 +831,7 @@ function Select({
       </select>
       <Icon
         name="expand_more"
-        size={18}
+        size={16}
         className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-text3"
       />
     </div>

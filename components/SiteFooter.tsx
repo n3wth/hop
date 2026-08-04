@@ -1,50 +1,58 @@
-'use client'
+import Link from 'next/link'
+import FooterNav from './FooterNav'
+import NewsletterForm from './NewsletterForm'
+import { SITE_NAME } from '@/lib/seo'
+import { isNewsletterEnabled } from '@/lib/env'
 
-// Shared site footer — one tight horizontal row: a short line of intent on the
-// left, utility links on the right. Flat, color-only hover, no movement. No
-// stacked columns, no copyright line — keeps it low and clean.
-
-import { usePathname } from 'next/navigation'
-
-const links: { href: string; label: string }[] = [
-  { href: '/search', label: 'Search' },
-  { href: '/deals', label: 'Deals' },
-  // Methodology lives as a #how-hop-decides anchor on /support.
-  { href: '/support#how-hop-decides', label: 'How we value points' },
-  { href: '/privacy', label: 'Privacy' },
-  { href: '/terms', label: 'Terms' },
-]
-
-export default function SiteFooter() {
-  const pathname = usePathname()
-
+// One compact footer, given real editorial weight: a confident wordmark and a
+// standalone value statement (not a caption tucked under the logo), balanced
+// against the nav columns.
+export default function SiteFooter({ flush = false }: { flush?: boolean }) {
   return (
-    <footer className="mt-16 flex flex-col gap-4 border-t border-border pt-6 text-[12.5px] text-text3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="leading-[1.5]">
-        Your personal travel agent that reads your points and tells you the verdict in ¢/pt.
-      </div>
-      <nav aria-label="Footer" className="flex flex-wrap items-center gap-x-6 gap-y-2">
-        {links.map((link) => {
-          // Match on the path portion only (ignore any #anchor) so the support
-          // methodology link still reads active on /support.
-          const linkPath = link.href.split('#')[0]
-          const active = pathname === linkPath
-          return (
-            <a
-              key={link.label}
-              href={link.href}
-              aria-current={active ? 'page' : undefined}
-              className={
-                active
-                  ? 'font-semibold text-text'
-                  : 'text-text2 transition-colors hover:text-text'
-              }
+    <footer
+      role="contentinfo"
+      // hidden below md: on phones the bottom tab bar is the persistent nav, and
+      // a tall footer under it read as redundant chrome (2026-07 mobile pass).
+      className={`relative hidden text-[13px] text-text3 md:block ${
+        flush ? 'rounded-b-[20px] bg-paper lg:rounded-b-[28px]' : 'mt-20 border-t border-border'
+      }`}
+    >
+      {/* Non-flush: no horizontal padding here — <main>'s own gutter (AppShell.tsx)
+          already provides it, matching every other page-content wrapper. Flush:
+          this footer sits inside the same card as ConnectBand (no main gutter
+          reaches inside the card), so it needs ConnectBand's own px-* values to
+          keep both halves' content aligned to the same left/right edge. */}
+      <div
+        className={`mx-auto max-w-[var(--container-shell)] ${
+          flush ? 'px-6 sm:px-10 lg:px-[52px]' : ''
+        }`}
+      >
+        <div className="flex flex-col gap-12 py-14 lg:flex-row lg:items-start lg:justify-between lg:gap-16 lg:py-16">
+          {/* Brand — the statement gets its own line, full display weight */}
+          <div className="flex max-w-[68ch] flex-shrink-0 flex-col text-center lg:text-left">
+            <Link
+              href="/"
+              className="wordmark text-[26px] leading-none text-text transition-colors hover:text-brand"
             >
-              {link.label}
-            </a>
-          )
-        })}
-      </nav>
+              {SITE_NAME}
+            </Link>
+            <p className="mt-4 font-display text-[19px] font-semibold leading-[1.3] tracking-[-0.01em] text-text2">
+              Points vs. cash, priced in ¢/pt —
+              <br />
+              so you always know which one wins.
+            </p>
+            {/* Gated on the same double lock as the route it posts to
+                (HOP_ENABLE_NEWSLETTER AND RESEND_API_KEY) — off means the
+                signup route is a full no-op, so the form must not render (or
+                promise a confirmation email) until both are actually set. */}
+            {isNewsletterEnabled() ? <NewsletterForm /> : null}
+          </div>
+
+          <div className="flex-1 lg:flex lg:justify-end">
+            <FooterNav />
+          </div>
+        </div>
+      </div>
     </footer>
   )
 }

@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import Icon from '@/components/Icon'
 
 // Closing call-to-action — auth-aware. Signed out: connect your points.
@@ -15,18 +16,18 @@ export default function ConnectBand({
 
   return (
     <section
-      className="overflow-hidden rounded-[20px] px-6 py-9 text-hero-cream sm:px-10 sm:py-11 lg:rounded-[28px] lg:px-[52px] lg:py-12"
+      className="px-6 py-9 text-hero-cream sm:px-10 sm:py-11 lg:px-[52px] lg:py-12"
       style={{ background: 'var(--color-brand)' }}
     >
       <div className="flex flex-col items-start gap-7 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-[48ch]">
           {signedIn ? (
             <>
-              <span className="inline-flex items-center gap-2 rounded-full bg-brand-deep px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-mint-bright">
-                <Icon name="check_circle" size={13} />
+              <span className="inline-flex items-center gap-2 rounded-full bg-brand-deep px-3 py-1 text-[11px] font-semibold uppercase tracking-[var(--track-tag)] text-mint-bright">
+                <Icon name="check_circle" size={12} weight="fill" />
                 {programs} {programs === 1 ? 'program' : 'programs'} synced
               </span>
-              <h2 className="mt-4 font-display text-[28px] font-semibold leading-[1.06] tracking-[-0.02em] text-white sm:text-[36px]">
+              <h2 className="mt-4 text-balance font-display text-[28px] font-semibold leading-[1.06] tracking-[-0.02em] text-white sm:text-[36px]">
                 {first ? `Welcome back, ${first}.` : 'Welcome back.'}
                 <br />
                 Where to next?
@@ -38,10 +39,10 @@ export default function ConnectBand({
             </>
           ) : (
             <>
-              <span className="text-[12px] font-semibold uppercase tracking-[0.2em] text-hero-eyebrow">
+              <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-hero-eyebrow">
                 One last thing
               </span>
-              <h2 className="mt-3 font-display text-[28px] font-semibold leading-[1.06] tracking-[-0.02em] text-white sm:text-[36px]">
+              <h2 className="mt-3 text-balance font-display text-[28px] font-semibold leading-[1.06] tracking-[-0.02em] text-white sm:text-[36px]">
                 Connect your points.
                 <br />
                 Get your verdict.
@@ -57,27 +58,27 @@ export default function ConnectBand({
 
         <div className="flex flex-shrink-0 flex-wrap items-center gap-3">
           {signedIn ? (
-            <a
+            <Link
               href="/account"
               className="inline-flex items-center gap-2 rounded-[14px] border border-white/25 px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep"
             >
-              <Icon name="settings" size={18} />
+              <Icon name="settings" size={16} />
               Manage programs
-            </a>
+            </Link>
           ) : (
             <>
               {/* Two distinct doors, not the same URL twice: signup is primary,
-                  sign in is the quieter return path. Both carry returnTo so Auth0
-                  lands the visitor back home. */}
+                  sign in is the quieter return path. Both carry returnTo so the
+                  visitor lands back home after auth. */}
               <a
-                href="/auth/login?screen_hint=signup&returnTo=%2F"
+                href="/login?returnTo=%2F"
                 className="inline-flex items-center gap-2 rounded-[14px] bg-white px-7 py-3.5 text-[15px] font-semibold text-brand-ink transition-colors hover:bg-hero-white-hover"
               >
-                <Icon name="loyalty" size={18} />
+                <Icon name="loyalty" size={16} />
                 Connect your points
               </a>
               <a
-                href="/auth/login?returnTo=%2F"
+                href="/login?returnTo=%2F"
                 className="inline-flex items-center rounded-[14px] border border-white/25 px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep"
               >
                 Sign in

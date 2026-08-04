@@ -1,13 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import HomeAirportPicker from './HomeAirportPicker'
+import Card from './ui/Card'
 
 const DISMISS_KEY = 'hop:home-airport-prompt-dismissed'
 
-// Shown on the signed-in home when the user has no home airport yet. A warm,
-// solid-bunny prompt to set it once — then every search/deal starts from home.
-// Uses the SOLID bunny (favicon-bunny.svg) on a teal chip, not the line mark.
+// Shown on the signed-in home when the user has no home airport yet: a warm
+// prompt to set it once — then every search/deal starts from home. Plain text
+// card, no icon chip — the bunny mark lives in the nav chrome, not on cards.
 export default function HomeAirportPrompt() {
   const [done, setDone] = useState<string | null>(null)
   // Persist dismissal so the prompt stays gone on reload (it's purely a nudge —
@@ -39,13 +41,10 @@ export default function HomeAirportPrompt() {
   if (!ready || dismissed) return null
 
   return (
-    <section className="rounded-[var(--radius-lg)] border border-border bg-surface p-6 sm:p-7">
+    <Card surface="paper" radius="lg" className="p-6 sm:p-8 lg:rounded-[var(--radius-hero)]" as="section">
+      {/* No bunny chip — the mark is nav chrome (header/tab bar), and repeating
+          it as a card avatar read as clutter (2026-07 design feedback). */}
       <div className="flex items-start gap-4">
-        <span className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-[14px] bg-brand text-brand-light">
-          {/* solid bunny mark */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/favicon-bunny.svg" alt="" className="h-7 w-7 [filter:brightness(0)_invert(0.93)_sepia(0.2)_saturate(3)_hue-rotate(120deg)]" />
-        </span>
         <div className="min-w-0 flex-1">
           {done ? (
             <>
@@ -54,12 +53,12 @@ export default function HomeAirportPrompt() {
               </h3>
               <p className="mt-1 text-[13.5px] leading-[1.5] text-text2">
                 Every search and deal now starts from there. Change it anytime in{' '}
-                <a
+                <Link
                   href="/account"
                   className="font-semibold text-brand underline-offset-2 transition-colors hover:text-brand-deep hover:underline"
                 >
                   your account
-                </a>
+                </Link>
                 .
               </p>
             </>
@@ -87,6 +86,6 @@ export default function HomeAirportPrompt() {
           <span className="text-[20px] leading-none">×</span>
         </button>
       </div>
-    </section>
+    </Card>
   )
 }

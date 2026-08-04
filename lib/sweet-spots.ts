@@ -263,6 +263,13 @@ function byValue(a: SweetSpot, b: SweetSpot): number {
   return a.id - b.id
 }
 
+// Public wrapper over byValue — lets other content trees (e.g. the transfer
+// program guides) rank a filtered subset of spots the same way the per-program
+// pages do, without duplicating the cabin/miles ordering rule.
+export function sortSweetSpotsByValue(spots: SweetSpot[]): SweetSpot[] {
+  return [...spots].sort(byValue)
+}
+
 // Group the flat table by program, each program's spots ranked by value.
 // Programs are ordered by how many standout redemptions they carry (most
 // first) — the index leads with the programs that earn the most coverage.

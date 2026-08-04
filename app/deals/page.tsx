@@ -1,15 +1,20 @@
 import { cookies } from 'next/headers'
+import { toNavUser } from '@/lib/nav-user'
 import { topValue, imageQuery } from '@/lib/destinations'
 import { destinationImages } from '@/lib/images'
 import { getUserBalances } from '@/lib/accounts'
+import { getMemoryContext, withoutAvoided, EMPTY_MEMORY_CONTEXT } from '@/lib/memory-context'
 import { getPrefs } from '@/lib/prefs'
 import { auth0 } from '@/lib/auth0'
 import AppShell from '@/components/AppShell'
 import DealCard from '@/components/DealCard'
 import DegradedNote from '@/components/DegradedNote'
 import SiteFooter from '@/components/SiteFooter'
+import EditorialHeader from '@/components/EditorialHeader'
 import Icon from '@/components/Icon'
-import { ORIGIN_STORAGE_KEY } from '@/lib/origin-context'
+import Card from '@/components/ui/Card'
+import Button from '@/components/ui/Button'
+import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import { pageMeta } from '@/lib/seo'
 import { localISO } from '@/lib/dates'
 
@@ -49,7 +54,6 @@ export default async function DealsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const deals = topValue(24)
   const { depart, ret } = defaultDates()
   const params = await searchParams
   const fromParam = normalizeOrigin(params.from)
@@ -59,42 +63,47 @@ export default async function DealsPage({
   const cookieStore = await cookies()
   const cookieOrigin = normalizeOrigin(cookieStore.get(ORIGIN_STORAGE_KEY)?.value)
 
-  // Destination photography and the Auth0 session are independent — resolve
-  // them concurrently. Photos are cached per query (day-long revalidate); null
-  // entries fall back to a solid brand-tint tile in the card.
-  const [photos, session] = await Promise.all([
-    destinationImages(deals.map((d) => imageQuery(d))),
-    auth0.getSession(),
-  ])
+  // M5 — compounding: resolve the session first so the signed-in member's STATED
+  // "avoid" places are dropped from the feed BEFORE we fetch photos for the final
+  // set. Value order (cents-per-point) is preserved, so the "ranked by cents per
+  // point" copy stays true. Degrades to today's exact feed when signed out /
+  // unset. Photos are cached per query (day-long revalidate); null entries fall
+  // back to a solid brand-tint tile in the card.
+  const session = await auth0.getSession()
+  const memory = session?.user?.sub
+    ? await getMemoryContext(session.user.sub)
+    : EMPTY_MEMORY_CONTEXT
+  const deals = withoutAvoided(topValue(24), memory.avoided)
+  const photos = await destinationImages(deals.map((d) => imageQuery(d)))
   const su = session?.user
-  const user = su
-    ? {
-        initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
-        name: su.name ?? su.email ?? undefined,
-        email: su.email ?? undefined,
-        picture: su.picture ?? undefined,
-      }
-    : null
+  const user = toNavUser(su)
 
-  // Header points chip + origin seed. Balances and prefs each degrade on their
-  // own — a balances failure is surfaced (the figure goes stale), a prefs
-  // failure just falls back to the default origin. Neither throws the page.
+  // Header points chip + origin seed. Balances and prefs are independent reads
+  // keyed only on su.sub — fetched together (one round trip instead of two) and
+  // still degrade on their own: a balances failure is surfaced (the figure goes
+  // stale), a prefs failure just falls back to the default origin. Neither
+  // throws the page.
   let pointsTotal: number | undefined
   let homeAirport: string | undefined
   const degraded: string[] = []
   if (user && su?.sub) {
-    try {
+    const [balancesRes, prefsRes] = await Promise.allSettled([
+      getUserBalances(su.sub),
+      getPrefs(su.sub),
+    ])
+    if (balancesRes.status === 'fulfilled') {
       // Unified per-user balances (manual + AwardWallet) for the header chip.
-      const real = await getUserBalances(su.sub)
-      if (real.length > 0) pointsTotal = real.reduce((s, b) => s + b.balance, 0)
-    } catch {
+      if (balancesRes.value.length > 0) {
+        pointsTotal = balancesRes.value.reduce((s, b) => s + b.balance, 0)
+      }
+    } else {
       degraded.push('balances')
     }
-    try {
-      homeAirport = (await getPrefs(su.sub)).homeAirport
-    } catch {
-      // No saved origin → default. Not worth a degraded note.
+    if (prefsRes.status === 'fulfilled') {
+      homeAirport = prefsRes.value.homeAirport
     }
+    // A prefs failure just falls back to the default origin — not worth a
+    // degraded note.
   }
 
   // Origin precedence: explicit ?from= → saved home airport → "where from"
@@ -103,20 +112,14 @@ export default async function DealsPage({
   const hasDeals = deals.length > 0
 
   return (
-    <AppShell user={user} pointsTotal={pointsTotal} hideSearch>
-      <div className="mx-auto max-w-[1180px] xl:max-w-[1340px] 2xl:max-w-[1500px]">
+    <AppShell user={user} pointsTotal={pointsTotal} homeAirport={homeAirport} hideSearch>
+      <div className="mx-auto max-w-[var(--container-shell)]">
         {/* editorial header — centered over the full-width feed */}
-        <header className="mx-auto max-w-[60ch] pt-10 text-center sm:pt-14">
-          <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
-            Sweet spots
-          </span>
-          <h1 className="mx-auto mt-3 max-w-[18ch] text-balance font-display text-[34px] font-semibold leading-[1.05] tracking-[-0.02em] text-text sm:text-[52px]">
-            Where your miles go furthest
-          </h1>
-          <p className="mx-auto mt-4 max-w-[50ch] text-pretty px-2 text-[16px] leading-relaxed text-text2 sm:px-0 sm:text-[17px]">
-            The redemptions where points beat cash by the widest margin, ranked
-            by cents per point. Every one is a route you can book.
-          </p>
+        <EditorialHeader
+          eyebrow="Deals"
+          title="Where your miles go furthest"
+          intro="The redemptions where points beat cash by the widest margin, ranked by cents per point net of typical taxes. Every one is a route you can book — the full program-by-program reference lives in Sweet spots."
+        >
           <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[13px] text-text3">
             <span>
               <b className="font-semibold text-text2">{deals.length}</b> routes
@@ -130,31 +133,32 @@ export default async function DealsPage({
           </div>
 
           <DegradedNote degraded={degraded} />
-        </header>
+        </EditorialHeader>
 
         {/* agent on-ramp — these are great-value routes in the abstract; hop's
             concierge can say which ones YOUR points actually reach. A door into
             /ask so the static feed isn't a dead end. */}
-        <div className="mx-auto mt-7 flex max-w-[640px] flex-col items-center justify-between gap-3 rounded-[var(--radius-lg)] border border-border bg-surface px-5 py-4 text-center sm:flex-row sm:gap-4 sm:text-left">
+        <Card surface="surface" className="mx-auto mt-7 flex max-w-[640px] flex-col items-center justify-between gap-3 px-5 py-4 text-center sm:flex-row sm:gap-4 sm:text-left">
           <div className="flex items-center gap-2.5">
-            <Icon name="lightbulb" size={18} className="flex-shrink-0 text-brand" />
+            <Icon name="lightbulb" size={16} className="flex-shrink-0 text-brand" />
             <span className="text-[14px] leading-[1.5] text-text2">
               <span className="font-semibold text-text">Not sure which fit?</span> Ask hop
               which of these your points can reach.
             </span>
           </div>
-          <a
+          <Button
             href="/ask?q=Which%20of%20these%20sweet%20spots%20fit%20my%20points%3F"
-            className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-[var(--radius)] bg-brand px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep"
+            size="sm"
+            className="flex-shrink-0"
           >
             <Icon name="flight" size={16} />
             Ask hop
-          </a>
-        </div>
+          </Button>
+        </Card>
 
         {/* the feed */}
         {hasDeals ? (
-          <section className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
+          <section className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {deals.map((dest, i) => (
               <DealCard
                 key={dest.code}
@@ -170,18 +174,18 @@ export default async function DealsPage({
         ) : (
           // Defensive: the dataset is static so this shouldn't happen, but never
           // render a bare, dead grid if it ever does.
-          <div className="mt-9 rounded-[var(--radius-lg)] border border-border bg-surface px-6 py-12 text-center">
+          <Card surface="surface" radius="lg" className="mt-9 px-6 py-12 text-center">
             <p className="text-[15px] text-text2">
               No sweet spots to show right now. Ask hop where your points can take you.
             </p>
-          </div>
+          </Card>
         )}
 
         {/* Unsplash attribution (API terms) */}
         <p className="mt-8 text-[12px] text-text3">
           Destination photography via{' '}
           <a
-            href="https://unsplash.com"
+            href="https://unsplash.com/?utm_source=hop&utm_medium=referral"
             target="_blank"
             rel="noopener noreferrer"
             className="underline decoration-border underline-offset-2 hover:text-text2"

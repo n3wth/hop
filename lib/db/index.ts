@@ -10,12 +10,13 @@ import { neon } from '@neondatabase/serverless'
 import { drizzle, type NeonHttpDatabase } from 'drizzle-orm/neon-http'
 import * as schema from './schema'
 
-let cached: NeonHttpDatabase<typeof schema> | null | undefined
+let cached: NeonHttpDatabase<typeof schema> | undefined
 
 export function getDb(): NeonHttpDatabase<typeof schema> | null {
-  if (cached !== undefined) return cached
+  if (cached) return cached
   const url = process.env.DATABASE_URL
-  cached = url ? drizzle(neon(url), { schema }) : null
+  if (!url) return null // not cached — env arriving later in-process still works
+  cached = drizzle(neon(url), { schema })
   return cached
 }
 

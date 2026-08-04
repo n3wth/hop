@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Icon from '@/components/Icon'
+import Card from '@/components/ui/Card'
 import { disconnectGmailHistory, resyncGmailHistory } from '@/app/actions/accounts'
 import type { PastTrip } from '@/lib/travel-history'
 
@@ -47,11 +48,13 @@ export default function GmailHistory({
   enabled,
   connected,
   email,
+  syncFailed,
   trips,
 }: {
   enabled: boolean
   connected: boolean
   email: string | null
+  syncFailed: boolean
   trips: PastTrip[]
 }) {
   const router = useRouter()
@@ -79,35 +82,56 @@ export default function GmailHistory({
       const res = await resyncGmailHistory()
       if (res.ok) {
         if (res.note) setNote(res.note)
-        router.refresh()
-      } else setError(res.error ?? 'Could not sync')
+      } else {
+        setError(res.error ?? 'Could not sync')
+      }
+      // Refresh even on failure — an 'auth-failed' result already flipped the
+      // persistent syncFailed flag server-side; without this the "Reconnect
+      // needed" banner only appears after some UNRELATED navigation, while
+      // this transient inline error is the only thing the user sees now.
+      router.refresh()
     })
   }
 
   // Connected: show the linked inbox + parsed trips + disconnect/resync.
   if (connected) {
     return (
-      <section className="mt-4 overflow-hidden rounded-[16px] border border-border bg-surface">
+      <Card surface="surface" radius="md" className="mt-4 overflow-hidden" as="section">
         <div className="flex items-center justify-between gap-3 px-5 py-3.5 sm:px-6">
-          <span className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-text2">
-            <Icon name="check_circle" size={16} />
+          <span
+            className={`flex min-w-0 items-center gap-2 text-[13px] font-semibold ${
+              syncFailed ? 'text-weak' : 'text-text2'
+            }`}
+          >
+            <Icon name={syncFailed ? 'error' : 'check_circle'} size={16} weight="fill" />
             <span className="truncate">
-              Connected{email ? ` · ${email}` : ''}
+              {syncFailed ? 'Reconnect needed' : 'Connected'}
+              {email ? ` · ${email}` : ''}
               <span className="ml-2 font-normal text-text3">
                 {trips.length} {trips.length === 1 ? 'trip' : 'trips'} learned
               </span>
             </span>
           </span>
           <div className="flex flex-shrink-0 items-center gap-1.5">
-            <button
-              type="button"
-              onClick={resync}
-              disabled={syncing || disconnecting}
-              className="inline-flex items-center gap-1.5 rounded-[10px] px-3 py-2 text-[13px] font-semibold text-brand transition-colors hover:bg-brand-light disabled:opacity-60"
-            >
-              <Icon name="schedule" size={16} />
-              {syncing ? 'Syncing…' : 'Sync'}
-            </button>
+            {syncFailed ? (
+              <a
+                href="/auth/gmail/start"
+                className="inline-flex items-center gap-1.5 rounded-[10px] px-3 py-2 text-[13px] font-semibold text-weak transition-colors hover:bg-weak-bg"
+              >
+                <Icon name="shield" size={16} />
+                Reconnect
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={resync}
+                disabled={syncing || disconnecting}
+                className="inline-flex items-center gap-1.5 rounded-[10px] px-3 py-2 text-[13px] font-semibold text-brand transition-colors hover:bg-brand-light disabled:opacity-60"
+              >
+                <Icon name="refresh" size={16} />
+                {syncing ? 'Syncing…' : 'Sync'}
+              </button>
+            )}
             {confirm.armed ? (
               <>
                 <button
@@ -140,6 +164,12 @@ export default function GmailHistory({
           </div>
         </div>
 
+        {syncFailed ? (
+          <p className="border-t border-border bg-weak-bg px-5 py-2.5 text-[13px] text-weak sm:px-6">
+            hop lost access to this inbox — trips below may be out of date.
+            Reconnect to keep learning from new trips.
+          </p>
+        ) : null}
         {note ? (
           <p
             role="status"
@@ -158,7 +188,7 @@ export default function GmailHistory({
         ) : null}
 
         {trips.length === 0 ? (
-          <p className="border-t border-border px-5 py-3 text-[13px] text-text2 sm:px-6">
+          <p className="border-t border-border px-5 py-3 text-[14px] leading-[1.5] text-text2 sm:px-6">
             No past trips found yet. Try Sync once you have flight or hotel
             confirmations in your inbox.
           </p>
@@ -195,16 +225,16 @@ export default function GmailHistory({
           hop reads only travel-confirmation emails and stores only these trip
           facts — never the email itself. Disconnect deletes them.
         </p>
-      </section>
+      </Card>
     )
   }
 
   // Not connected. If the seam is gated off, keep the calm "coming soon" state.
   return (
-    <div className="mt-4 flex flex-col gap-4 rounded-[16px] border border-border bg-surface px-6 py-7 sm:flex-row sm:items-center sm:justify-between">
+    <Card surface="surface" radius="md" className="mt-4 flex flex-col gap-4 px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-4">
         <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
-          <Icon name="receipt_long" size={22} />
+          <Icon name="receipt_long" size={24} weight="fill" />
         </span>
         <div className="min-w-0">
           <div className="text-[15px] font-semibold text-text">
@@ -223,7 +253,7 @@ export default function GmailHistory({
           href="/auth/gmail/start"
           className="inline-flex flex-shrink-0 items-center gap-2 self-start rounded-[12px] bg-brand px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-brand-deep sm:self-center"
         >
-          <Icon name="shield" size={18} />
+          <Icon name="shield" size={16} />
           Connect Gmail
         </a>
       ) : (
@@ -231,6 +261,6 @@ export default function GmailHistory({
           Connect Gmail (soon)
         </span>
       )}
-    </div>
+    </Card>
   )
 }

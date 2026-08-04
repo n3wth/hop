@@ -1,28 +1,62 @@
+import { ViewTransition } from 'react'
 import type { FlightOption, SearchResult } from '@/lib/types'
-import { POINTS_THRESHOLD_CPP } from '@/lib/search'
+import { POINTS_THRESHOLD_CPP, seatsFor } from '@/lib/search'
 import { formatValue } from '@/lib/cpp'
+import { cityForCode } from '@/lib/airports'
+import { googleCalendarUrl } from '@/lib/calendar-link'
 import Icon from './Icon'
 import Logo from './Logo'
 import BrandIcon from './BrandIcon'
 import SeeTheMath from './SeeTheMath'
 import CountUp from './CountUp'
 import CardAffiliateCTA from './CardAffiliateCTA'
+import WatchThisRoute from './WatchThisRoute'
+import ShareVerdict from './ShareVerdict'
 
 export interface VerdictRailProps {
   result: SearchResult
   /** Destination photo (server-fetched from the pick's destCode). When present
-      it fills the hero behind the boarding pass instead of the bunny mark. */
-  destPhoto?: { url: string; alt: string } | null
+      it fills the hero behind the boarding pass instead of the bunny mark.
+      `credit` (Unsplash attribution, per API terms) is optional only so callers
+      that never pass a photo don't need to fake one — when a photo IS present
+      it always carries a credit (lib/images.ts#DestImage). */
+  destPhoto?: { url: string; alt: string; credit?: { name: string; link: string; source?: string; sourceLink?: string } } | null
+  /** The manifest's destination code (lib/destination-photos.ts) when destPhoto
+      resolved from the curated set (app/search/page.tsx#photoForCode) — shared
+      identity with the home showcase's ShowcaseEntry.code, so wrapping both in
+      <ViewTransition name={`photo-${code}`}> morphs the same photo across the
+      home→/search navigation. Absent for Unsplash long-tail photos (no
+      showcase counterpart to morph from). */
+  destPhotoCode?: string
   /** True only when these balances are the SIGNED-IN user's own (real). Drives
       the ownership voice: "You have the miles" + "Book with X miles" are only
       honest when hop is reading this visitor's connected programs. Signed-out
       (or no real balances) → a value-demonstration framing + sign-in CTA, never
       a claim that the stranger owns the points. */
   hasRealBalances?: boolean
+  /** True when the visitor has a resolved Auth0 session (app/search/page.tsx).
+      Gates "Watch this route" on the pay-cash path: signed-out visitors see a
+      sign-in link instead, since a watch has to belong to someone. */
+  isSignedIn?: boolean
+  /** The search was filtered to nonstop-only (not part of SearchParams — a
+      prefs-model filter applied alongside it). Carried through the sign-in
+      returnTo so the filter survives auth, same as cabin/children/infants. */
+  nonstop?: boolean
+  /** Whether the standing-orders runner is live (lib/env.ts#
+      isStandingOrdersCronLive, resolved server-side). Drives WatchThisRoute's
+      promise copy: off → "alerts go live soon", never a ping we can't send.
+      Defaults false — fail honest when a caller forgets. */
+  watchLive?: boolean
+  /** Whether R1.5 verdict receipts are on (lib/env.ts#isShareReceiptsEnabled,
+      resolved server-side) AND this result is receipt-grade (mirrors
+      lib/shared-verdicts.ts#buildVerdictSnapshot's gate: no degradation).
+      Off (either half) → the share button never renders — no client JS ships
+      for it, and there is no client-side flag to drift from the server one. */
+  shareEnabled?: boolean
 }
 
 function fmt(n: number | undefined): string {
-  return n != null ? n.toLocaleString() : '—'
+  return n != null ? n.toLocaleString('en-US') : '—'
 }
 
 function milesUnit(pick: FlightOption | undefined): string {
@@ -32,7 +66,7 @@ function milesUnit(pick: FlightOption | undefined): string {
 
 // Rebuild the canonical /search URL from the result's params so a cold visitor
 // who hits a points-winning verdict keeps their exact route through sign-in.
-function searchUrlFrom(params: SearchResult['params']): string {
+function searchUrlFrom(params: SearchResult['params'], nonstop?: boolean): string {
   const q = new URLSearchParams({
     from: params.from,
     to: params.to,
@@ -40,56 +74,137 @@ function searchUrlFrom(params: SearchResult['params']): string {
     adults: String(params.adults),
   })
   if (params.return) q.set('return', params.return)
+  // Every filter the visitor actually chose must round-trip through sign-in —
+  // dropping cabin silently reset a business-cabin search back to economy
+  // after auth.
+  if (params.cabin) q.set('cabin', params.cabin)
+  if (params.children) q.set('children', String(params.children))
+  if (params.infants) q.set('infants', String(params.infants))
+  if (nonstop) q.set('nonstop', '1')
   return `/search?${q.toString()}`
 }
 
 // Editorial verdict hero — the magazine cover. Teal plane: headline + factual
 // subline + stat strip on the left; bunny + boarding-pass pick card on the right.
-export default function VerdictRail({ result, destPhoto, hasRealBalances = false }: VerdictRailProps) {
+export default function VerdictRail({
+  result,
+  destPhoto,
+  destPhotoCode,
+  hasRealBalances = false,
+  isSignedIn = false,
+  nonstop,
+  watchLive = false,
+  shareEnabled = false,
+}: VerdictRailProps) {
   const { pick, summary, verdict, cashOption } = result
   const usingPoints = verdict === 'use-points'
   const unit = milesUnit(pick)
   // The ownership voice ("You have the miles", "Book with X miles") is honest
-  // ONLY when these balances are the signed-in user's own. For a signed-out
-  // visitor the points belong to no one we know — so a points-winning verdict is
+  // ONLY when these balances are the signed-in user's own AND the balance
+  // actually covers the pick's (party-scaled) miles. For a signed-out visitor
+  // the points belong to no one we know — so a points-winning verdict is
   // framed as a value demonstration ("Alaska miles are worth X¢ here") with a
-  // sign-in CTA, never a claim that the stranger holds the miles.
-  const owns = usingPoints && hasRealBalances
+  // sign-in CTA, never a claim that the stranger holds the miles. A signed-in
+  // user holding SOME points but fewer than the trip needs gets the same
+  // value framing — "You have the miles" must never be arithmetically false.
+  const covers =
+    pick?.miles != null && pick?.youHave != null ? pick.youHave >= pick.miles : false
+  const owns = usingPoints && hasRealBalances && covers
   // "Book cash" must link to the actual cheapest CASH option — on a pay-cash
   // verdict `pick` may still be a weak award row, so don't use pick.bookingUrl.
   // When points win but we can't claim ownership, the primary CTA routes to
   // sign-in instead of a book deep-link.
   // When points win but we can't claim ownership, route the CTA to sign-in with
   // a returnTo so the visitor lands back on this exact search after auth.
-  const returnTo = encodeURIComponent(searchUrlFrom(result.params))
+  const returnTo = encodeURIComponent(searchUrlFrom(result.params, nonstop))
+  const signInHref = `/auth/login?returnTo=${returnTo}`
+  // A SIGNED-IN user who can't claim ownership (no/insufficient balance in the
+  // pick's program) must never be told to "Sign in" — route them to /account to
+  // add programs instead, carrying returnTo so R1.1's bridge can bring them
+  // back to this exact search.
+  const addProgramsHref = `/account?returnTo=${returnTo}`
   const ctaHref = !usingPoints
     ? (cashOption?.bookingUrl ?? pick?.bookingUrl ?? '#')
     : owns
       ? (pick?.bookingUrl ?? '#')
-      : `/auth/login?returnTo=${returnTo}`
+      : isSignedIn
+        ? addProgramsHref
+        : signInHref
+
+  // Account nudge on the PAY-CASH path. The points path already asks unfinished
+  // visitors to act in its PRIMARY CTA ("Sign in to see if your miles win" /
+  // "Add your programs"), but a pay-cash verdict's primary CTA is just "Book
+  // cash" with no account ask at all — and pay-cash is the large majority of
+  // verdicts, so the sign-up prompt is effectively hidden from most searches.
+  // Surface it as a SECONDARY CTA beside "Book cash" so the honest cash action
+  // still leads. The framing is deliberately NOT "your miles might win here"
+  // (they don't — the cpp is under the bar regardless of balance); it's the
+  // ongoing product value: sign in to track real balances across every search,
+  // or, if already signed in without programs, add them. A fully-onboarded user
+  // (real balances) gets nothing — there's nothing to add and this verdict
+  // wouldn't change.
+  const showAccountNudge = !usingPoints && (!isSignedIn || !hasRealBalances)
+  const accountNudgeHref = isSignedIn ? addProgramsHref : signInHref
+  const accountNudgeLabel = isSignedIn ? 'Add your programs' : 'Track your miles'
+
+  // M6 — first ACTION: turn this trip into a calendar event in one tap (Google
+  // Calendar template, all-day, no OAuth). Carries route + dates + city + cabin
+  // ONLY — never the engine's live cpp/miles/price (those would go stale). null
+  // (→ the affordance hides) when the dates are unusable.
+  const calUrl = googleCalendarUrl({
+    fromCode: result.params.from,
+    toCode: result.params.to,
+    fromCity: cityForCode(result.params.from),
+    toCity: cityForCode(result.params.to),
+    depart: result.params.depart,
+    return: result.params.return,
+    cabin: result.params.cabin,
+  })
 
   const save = summary.saveVsCash ?? 0
   const cpp = summary.bestCpp
   const miles = summary.bestMiles
   const cash = summary.cheapestCash
 
+  // Seat-occupying travelers — MUST be the engine's own seatsFor (the exact
+  // multiplier applied to the figures above), never a re-derivation here.
+  const seats = seatsFor(result.params)
+
+  // Pay-cash path: summary.bestCpp/bestMiles are only set when points win, so
+  // pull the closest award from the ranked options to SHOW the math that failed
+  // the bar — a specific "here's what we checked" reads like an agent's reasoning,
+  // not a shrug. Engine numbers only.
+  const bestAward = !usingPoints
+    ? result.options.find((o) => o.kind !== 'cash' && o.cpp != null && o.miles != null)
+    : undefined
+
   const airlineShort = pick?.airline.split(' ')[0] ?? 'points'
 
   return (
     <section
-      className="mt-[26px] grid grid-cols-1 overflow-hidden rounded-[20px] text-hero-cream lg:grid-cols-[1fr_392px] lg:rounded-[28px]"
+      className="hop-appear mt-[26px] grid grid-cols-1 overflow-hidden rounded-[20px] text-hero-cream lg:grid-cols-[1fr_392px] lg:rounded-[28px]"
       style={{ background: 'var(--color-brand)' }}
     >
       {/* LEFT — the verdict */}
       <div className="px-6 pb-9 pt-8 sm:px-10 lg:px-[52px] lg:pb-[46px] lg:pt-12">
-        <span className="mb-[26px] inline-flex items-center border-b border-white/15 pb-4 text-[12px] font-semibold uppercase tracking-[0.22em] text-[#9fe0d6]">
+        <span className="mb-[26px] inline-flex items-center border-b border-white/15 pb-4 text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-hero-eyebrow">
           Best value
         </span>
 
         {usingPoints ? (
           <>
+            {/* The visual headline splits the sentence across the h1 and the
+                oversized count-up below it, so the h1 carries the FULL verdict
+                sentence as an aria-label and the count-up row is aria-hidden —
+                a screen reader hears one complete sentence, not a fragment
+                followed by an animating number. */}
             <h1
-              className="hop-rise font-display text-[24px] font-semibold leading-[1.05] tracking-[-0.02em] text-white sm:text-[34px] lg:text-[40px]"
+              aria-label={
+                owns
+                  ? `Use your ${airlineShort} ${unit} and save $${fmt(save)} vs cash.`
+                  : `${airlineShort} ${unit} win here — by $${fmt(save)} vs cash.`
+              }
+              className="hop-rise text-balance font-display text-[24px] font-semibold leading-[1.05] tracking-[-0.02em] text-white sm:text-[34px] lg:text-[40px]"
               style={{ ['--hop-delay' as string]: '60ms' }}
             >
               {owns ? (
@@ -104,8 +219,10 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
             </h1>
 
             {/* The hero moment — the dollar value, oversized and confident. The
-                count-up lands here. Tight tracking, tabular for a clean tick. */}
+                count-up lands here. Tight tracking, tabular for a clean tick.
+                aria-hidden: the h1's aria-label already speaks this figure. */}
             <div
+              aria-hidden
               className="hop-rise mt-[10px] flex items-baseline gap-3 sm:mt-3"
               style={{ ['--hop-delay' as string]: '110ms' }}
             >
@@ -115,14 +232,14 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
                 format="usd"
                 delayMs={420}
               />
-              <span className="font-display text-[20px] font-semibold leading-tight tracking-[-0.01em] text-[#9fe0d6] sm:text-[24px]">
+              <span className="font-display text-[20px] font-semibold leading-tight tracking-[-0.01em] text-hero-eyebrow sm:text-[24px]">
                 vs&nbsp;cash
               </span>
             </div>
           </>
         ) : (
           <h1
-            className="hop-rise font-display text-[34px] font-semibold leading-[1.02] tracking-[-0.025em] text-white sm:text-[48px] sm:leading-[1.0] lg:text-[64px] lg:leading-[0.98]"
+            className="hop-rise text-balance font-display text-[34px] font-semibold leading-[1.02] tracking-[-0.025em] text-white sm:text-[48px] sm:leading-[1.0] lg:text-[64px] lg:leading-[0.98]"
             style={{ ['--hop-delay' as string]: '60ms' }}
           >
             Pay <span className="text-gold-soft">cash.</span>
@@ -146,51 +263,134 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
             On this route, {airlineShort} {unit} are worth{' '}
             <b className="font-semibold text-white">{cpp != null ? formatValue(cpp) : '—'}</b>{' '}
             — <b className="font-semibold text-white">{fmt(miles)} {unit}</b> instead of{' '}
-            <b className="font-semibold text-white">${fmt(cash)}</b> cash. Sign in to check your
-            balances and see if your {unit} cover it.
+            <b className="font-semibold text-white">${fmt(cash)}</b> cash.{' '}
+            {isSignedIn
+              ? `Add your programs and hop checks if your ${unit} cover it.`
+              : `Sign in to check your balances and see if your ${unit} cover it.`}
+          </p>
+        ) : bestAward ? (
+          <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-hero-body" style={{ ['--hop-delay' as string]: '140ms' }}>
+            The closest award is{' '}
+            <b className="font-semibold text-white">
+              {fmt(bestAward.miles)} {milesUnit(bestAward)}
+            </b>{' '}
+            on {bestAward.program ?? bestAward.airline} — worth just{' '}
+            <b className="font-semibold text-white">{formatValue(bestAward.cpp!)}</b>, under the{' '}
+            {formatValue(POINTS_THRESHOLD_CPP)} bar where points beat cash. The{' '}
+            <b className="font-semibold text-white">${fmt(cash)}</b> fare is the better buy — your{' '}
+            {milesUnit(bestAward)} will go further somewhere else.
           </p>
         ) : (
           <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-hero-body" style={{ ['--hop-delay' as string]: '140ms' }}>
-            No redemption clears the bar on this route. Cash is{' '}
-            <b className="font-semibold text-white">${fmt(cash)}</b> — keep your points for a trip
-            where they stretch further.
+            No award seats came back for this route and date, so there was nothing to weigh your
+            points against. Cash is <b className="font-semibold text-white">${fmt(cash)}</b> —
+            book it and your points stay put.
           </p>
         )}
 
-        <div className="mt-[34px] flex flex-wrap items-center gap-4">
+        {/* Mobile: CTAs stack full-width (a wrapped pill + ragged widths read as
+            clutter at 375px); sm+ returns to the inline row. "See the math" is
+            the LAST control on purpose — its hop-collapse panel (basis-full,
+            immediately after its trigger inside this same flex-wrap container)
+            expands directly below the row, so nothing sits between the trigger
+            and its panel to visually detach them. */}
+        <div className="mt-7 flex flex-col items-stretch gap-3 sm:mt-[34px] sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
           <a
             href={ctaHref}
-            className="inline-flex items-center gap-[10px] rounded-[14px] bg-white px-7 py-4 text-[16px] font-semibold text-brand-ink transition-colors hover:bg-hero-white-hover"
+            className="inline-flex items-center justify-center gap-[10px] rounded-[14px] bg-white px-7 py-4 text-[16px] font-semibold text-brand-ink transition-colors hover:bg-hero-white-hover"
           >
-            <Icon name="check_circle" size={19} />
+            <Icon name="check_circle" size={20} weight="fill" />
             {!usingPoints
               ? 'Book cash'
               : owns
                 ? `Book with ${airlineShort} ${unit}`
-                : `Sign in to see if your ${unit} win`}
+                : isSignedIn
+                  ? 'Add your programs'
+                  : `Sign in to see if your ${unit} win`}
           </a>
-          {/* See the math — sits to the RIGHT of Book; its panel expands below. */}
+          {/* Account nudge — pay-cash path only (the points path's primary CTA
+              already carries the ask). Secondary treatment so "Book cash" still
+              leads. Carries the same returnTo, so a signed-out visitor lands
+              back on this exact search after auth. */}
+          {showAccountNudge ? (
+            <a
+              href={accountNudgeHref}
+              className="inline-flex items-center justify-center gap-[8px] rounded-[14px] border-[1.5px] border-white/25 px-7 py-4 text-[15px] font-semibold text-white transition-colors hover:border-white/50"
+            >
+              <Icon name="wallet" size={16} />
+              {accountNudgeLabel}
+            </a>
+          ) : null}
+          {/* Add to calendar — the first hop ACTION. Route + dates only; no economics. */}
+          {calUrl ? (
+            <a
+              href={calUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-[8px] rounded-[14px] border-[1.5px] border-white/20 px-7 py-4 text-[15px] font-medium text-hero-body transition-colors hover:border-white/45 hover:text-white"
+            >
+              <Icon name="calendar" size={16} />
+              Add to calendar
+            </a>
+          ) : null}
+          {/* Share this verdict — beside the secondary CTAs, before "See the
+              math" (which must stay last: its hop-collapse panel expands
+              directly below this row). Server-gated only: shareEnabled is
+              already isShareReceiptsEnabled() AND a clean, non-degraded
+              result, so there is no separate client-side flag to drift. */}
+          {shareEnabled ? <ShareVerdict params={result.params} /> : null}
+          {/* See the math — last; its panel expands below the whole row. */}
           {pick ? (
             <SeeTheMath
               pick={pick}
               cheapestCash={cash}
               threshold={POINTS_THRESHOLD_CPP}
               unit={unit}
+              travelers={seats}
             />
           ) : null}
         </div>
 
-        <div className="hop-rise mt-8 flex flex-wrap gap-x-6 gap-y-4 border-t border-white/15 pt-7 sm:gap-10 lg:mt-[42px] lg:pt-[30px]" style={{ ['--hop-delay' as string]: '220ms' }}>
+        {/* Stat strip — a 2×2 grid on phones so the four figures read as a
+            table (flex-wrap gave a ragged 3+1 line); sm+ returns to the flex row. */}
+        <div className="hop-rise mt-7 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-white/15 pt-6 sm:mt-8 sm:flex sm:flex-wrap sm:gap-10 sm:pt-7 lg:mt-[42px] lg:pt-[30px]" style={{ ['--hop-delay' as string]: '220ms' }}>
           <HStat label="You pay" value={fmt(miles)} unit={unit} />
           <HStat label="Value" value={cpp != null ? formatValue(cpp) : '—'} />
           <HStat label="Cash price" value={`$${fmt(cash)}`} />
-          <HStat label="You save" value={`$${fmt(save)}`} accent />
+          {/* The accent stat ticks in LOCKSTEP with the headline (same value,
+              same delay/duration) — one figure moving in two places reads as
+              one system. Only this stat counts; four counters is a slot machine. */}
+          <HStat
+            label="You save"
+            value={usingPoints ? <CountUp value={save} format="usd" delayMs={420} /> : `$${fmt(save)}`}
+            accent
+          />
         </div>
+
+        {seats > 1 ? (
+          <p className="mt-3 text-[12px] font-medium text-hero-label">
+            Totals for {seats} travelers.
+          </p>
+        ) : null}
 
         {/* Affiliate CTA — only on a points-winning verdict, never on cash. Maps
             the winning award's program to the card that earns its currency; renders
             nothing if no card maps. Clearly labelled "Sponsored". */}
         {usingPoints ? <CardAffiliateCTA program={pick?.program} unit={unit} /> : null}
+
+        {/* Watch this route — only on the pay-cash path ("Points don't pay off
+            here"): the clearest, unambiguous use case for a standing order. hop
+            re-runs THIS exact route/date/cabin and pings the day it crosses
+            POINTS_THRESHOLD_CPP. */}
+        {!usingPoints ? (
+          <WatchThisRoute
+            params={result.params}
+            threshold={POINTS_THRESHOLD_CPP}
+            isSignedIn={isSignedIn}
+            signInHref={signInHref}
+            live={watchLive}
+          />
+        ) : null}
       </div>
 
       {/* RIGHT — destination photo filling the panel, boarding-pass pick over it */}
@@ -204,12 +404,20 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
             Falls back to the bunny mark when no photo is available. */}
         {destPhoto ? (
           <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={destPhoto.url}
-              alt={destPhoto.alt}
-              className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-            />
+            {/* Named only for curated photos (destPhotoCode) — shares identity
+                with the home showcase's ViewTransition of the same code, so the
+                browser morphs the SAME photo from the showcase card into this
+                hero instead of cross-fading two unrelated images. Unnamed
+                (undefined) for Unsplash long-tail photos — no showcase
+                counterpart, React auto-assigns an unshared name. */}
+            <ViewTransition name={destPhotoCode ? `photo-${destPhotoCode}` : undefined}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={destPhoto.url}
+                alt={destPhoto.alt}
+                className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+              />
+            </ViewTransition>
             {/* top scrim — a whisper of brand-ink at the very top edge so the
                 photo settles into the teal field instead of reading as a pasted
                 rectangle. Integration, not decoration; the upper photo stays vivid. */}
@@ -231,6 +439,34 @@ export default function VerdictRail({ result, destPhoto, hasRealBalances = false
                   'linear-gradient(to bottom, rgba(7,62,62,0) 0%, rgba(7,62,62,0.58) 52%, rgba(7,62,62,0.9) 100%)',
               }}
             />
+            {/* Unsplash attribution (API terms) — a small solid chip (not a
+                gradient/shadow surface) sitting in the already-scrimmed top
+                corner, above the top scrim so it stays legible. */}
+            {destPhoto.credit ? (
+              <div
+                className="pointer-events-auto absolute right-3 top-3 z-10 max-w-[70%] truncate rounded-full px-2.5 py-1 text-[10px] font-medium text-white/80"
+                style={{ background: 'rgba(7,26,26,0.55)' }}
+              >
+                Photo by{' '}
+                <a
+                  href={`${destPhoto.credit.link}?utm_source=hop&utm_medium=referral`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-white/40 underline-offset-2 hover:text-white"
+                >
+                  {destPhoto.credit.name}
+                </a>{' '}
+                on{' '}
+                <a
+                  href={destPhoto.credit.sourceLink ?? 'https://unsplash.com/?utm_source=hop&utm_medium=referral'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-white/40 underline-offset-2 hover:text-white"
+                >
+                  {destPhoto.credit.source ?? 'Unsplash'}
+                </a>
+              </div>
+            ) : null}
           </>
         ) : (
           <div className="hidden flex-1 place-items-center pt-9 lg:grid">
@@ -255,21 +491,18 @@ function HStat({
   accent,
 }: {
   label: string
-  value: string
+  value: React.ReactNode
   unit?: string
   accent?: boolean
 }) {
   return (
     <div>
-      <div className="mb-[6px] text-[11px] font-semibold uppercase tracking-[0.16em] text-hero-label">
+      <div className="mb-[6px] text-[11px] font-semibold uppercase tracking-[var(--track-label)] text-hero-label">
         {label}
       </div>
-      <div
-        className="font-display text-[27px] font-semibold tracking-[-0.01em] tabular-nums"
-        style={{ color: accent ? '#6ff0d2' : '#fff' }}
-      >
+      <div className={`hop-price text-[27px] ${accent ? 'text-mint-bright' : 'text-white'}`}>
         {value}
-        {unit ? <small className="text-[14px] font-medium text-[#9fe0d6]"> {unit}</small> : null}
+        {unit ? <small className="text-[14px] font-medium text-hero-eyebrow"> {unit}</small> : null}
       </div>
     </div>
   )
@@ -326,7 +559,7 @@ function PickPass({ pick }: { pick: FlightOption }) {
           </div>
         </div>
         {stopLabel === 'nonstop' ? (
-          <span className="flex-shrink-0 rounded-lg bg-brand-light px-[10px] py-[5px] text-[11px] font-semibold uppercase tracking-[0.02em] text-brand">
+          <span className="flex-shrink-0 rounded-lg bg-brand-light px-[10px] py-[5px] text-[11px] font-semibold uppercase tracking-[var(--track-tag)] text-brand">
             Direct
           </span>
         ) : null}
@@ -348,7 +581,7 @@ function PickPass({ pick }: { pick: FlightOption }) {
         <div className="flex flex-1 flex-col items-center gap-[2px]">
           <div className="flex w-full items-center gap-[6px] text-brand">
             <span className="h-px flex-1 bg-border" />
-            <Icon name="flight" size={18} className="rotate-90" />
+            <span aria-hidden className="text-[15px] font-semibold leading-none">→</span>
             <span className="h-px flex-1 bg-border" />
           </div>
           <div className="text-[11px] text-text3">

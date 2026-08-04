@@ -1,8 +1,56 @@
+/* Pre-declares the full cascade-layer order BEFORE any layered stylesheet
+   loads a rule into one of these names — CSS resolves a layer's priority
+   from where its name *first* appears anywhere in the document, so this
+   statement (not the imports below) is what actually fixes the order.
+   Tailwind v4's own `@import "tailwindcss"` internally declares
+   theme/base/components/utilities in this same way; naming them here first
+   means Astryx's astryx-base/astryx-theme layers slot in BETWEEN base and
+   components — below hop's own `components`/`utilities` Tailwind classes
+   (so hop's own styling always wins a conflict, matching
+   node_modules/@astryxdesign/core/src/reset.css's own documented "consumer
+   styles always override Astryx" intent) but with astryx-theme still above
+   astryx-base (lib/astryx-theme.ts's overrides win over Astryx's stock
+   defaults). Same technique as newth-garden's src/app/globals.css.
+   Omitting a name here (this took a full round of screenshot debugging to
+   catch: `reset` was missing in an earlier version of this line, which sent
+   Astryx's reset.css to the *end* of the whole order instead of the front —
+   its zero-specificity `:where()` button reset then unconditionally beat
+   this theme's own button background/color overrides, since cross-layer
+   priority ignores specificity entirely) leaves that layer appended to the
+   *end* of the order instead — which, for astryx-base/astryx-theme, would
+   rank them ABOVE hop's own Tailwind utilities, a real regression risk
+   across every existing hop component, not just the new Astryx ones. */
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
+
 @import "tailwindcss";
+/* Astryx primitives (Dialog/Sheet, DropdownMenu, Badge, EmptyState, Toast —
+   see lib/astryx-theme.ts, components/AstryxProviders.tsx). reset.css is a
+   :where()-scoped (zero-specificity) base reset; astryx.css is the
+   precompiled component stylesheet — WITHOUT it, any Astryx design token
+   this app doesn't explicitly override in lib/astryx-theme.ts (radius-full,
+   the spacing scale, etc.) resolves to nothing instead of Astryx's own
+   documented default (confirmed via a throwaway screenshot harness: a
+   button themed with `borderRadius: 'var(--radius-full)'` rendered with
+   SHARP corners, because --radius-full was never declared anywhere without
+   this import — @astryxdesign/core's own defineTheme() docs promise
+   "everything else inherits from the Astryx defaults", which requires this
+   file to be loaded for that promise to hold). */
+@import '@astryxdesign/core/reset.css';
+@import '@astryxdesign/core/astryx.css';
 @import "flag-icons/css/flag-icons.min.css";
 /* Streamdown renders the concierge's streamed markdown — scan its classes so v4
    doesn't purge them. */
 @source "../node_modules/streamdown/dist/index.js";
+/* v4 auto-detection scans EVERY non-gitignored text file — including agent docs
+   and config comments. A class-SHAPED placeholder there (e.g. a pipe-syntax
+   "one of these" like `tracking-[var(--a|b)]`) compiles into invalid CSS and
+   500s every page in dev. Runtime templates live only in app/ components/ lib/;
+   exclude the doc/tooling trees so prose can never break the build. */
+@source not "../.claude";
+@source not "../.cursor";
+@source not "../.agents";
+@source not "../docs";
+@source not "../eslint.config.mjs";
 
 /* hop design tokens — editorial direction (docs/design/CHOSEN-editorial.html).
    Verdict hero, boarding-pass pick, value-ranked alternatives, dark wallet.
@@ -50,10 +98,13 @@
 
   /* on-teal / dark-wallet text tiers — one contract for copy painted on the
      teal verdict hero and the dark wallet, so component lanes stop hardcoding
-     these hexes. Tuned to read on the teal hero / wallet ink. */
-  --color-hero-body: #c7ece5; /* body copy on teal hero */
-  --color-hero-label: #8fcabf; /* muted labels on teal */
-  --color-hero-eyebrow: #9fd4c8; /* eyebrows / kickers on teal */
+     these hexes. Tuned to read on the teal hero / wallet ink. All three text
+     tiers clear WCAG AA 4.5:1 against --color-brand (guarded by
+     lib/__tests__/contrast.test.ts) — the muted/label tier is as dark as AA
+     allows, so hierarchy comes from weight + tracking, not more dimming. */
+  --color-hero-body: #c7ece5; /* body copy on teal hero (4.8:1 on brand) */
+  --color-hero-label: #c5e7de; /* muted labels on teal (4.6:1 on brand) */
+  --color-hero-eyebrow: #cdebe2; /* eyebrows / kickers on teal (4.8:1 on brand) */
   --color-hero-white-hover: #fffdf6; /* hover-to-white on teal */
   --color-wallet-active: #7be0c6; /* active mint in the dark wallet */
 
@@ -64,9 +115,27 @@
   --color-aa: #c8102e;
   --color-ba: #2a5caa;
 
-  --radius: 12px;
+  /* ── Radius scale — four steps, nothing off-scale ─────────────────────
+     Tailwind v4 namespace note: --radius-sm and --radius-lg live in the stock
+     --radius-* namespace, so they RE-POINT the stock `rounded-sm` (0.25rem →
+     10px) and `rounded-lg` (0.5rem → 20px) utilities. Blessed: in this
+     codebase `rounded-sm`/`rounded-lg` ARE the tokens — identical to
+     `rounded-[var(--radius-sm)]`/`rounded-[var(--radius-lg)]`. See
+     docs/solutions/2026-07-02-tailwind-v4-theme-namespace-overrides.md. */
+  --radius-sm: 10px;
+  --radius: 14px;
   --radius-lg: 20px;
   --radius-hero: 28px;
+
+  /* ── Letter-spacing role tokens ────────────────────────────────────────
+     Deliberately named --track-*, OUTSIDE Tailwind's --tracking-* namespace,
+     so the existing stock tracking-wide/tracking-tight uses keep their stock
+     values and nothing is silently re-pointed. Use at call sites as
+     `tracking-[var(--track-*)]`. Values are the plurality of the 2026-07-02
+     census of hand-rolled tracking-[…] values — do not invent new ones. */
+  --track-eyebrow: 0.12em; /* uppercase kickers / section eyebrows */
+  --track-label: 0.06em; /* small uppercase captions / stat labels */
+  --track-tag: 0.1em; /* chips, tags, badges */
 
   /* Premium easing — single source of truth for everything we animate. */
   --ease-premium: cubic-bezier(0.2, 0, 0, 1);
@@ -74,8 +143,65 @@
   --font-display: var(--font-bricolage), "Bricolage Grotesque", system-ui, sans-serif;
   --font-sans: "General Sans", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-wordmark-stack: var(--font-wordmark), "Fraunces", Georgia, serif;
+  /* Geist Mono — numbers, prices, cpp values, miles. Tabular by default. */
+  --font-mono: var(--font-geist-mono), "Geist Mono", ui-monospace, "JetBrains Mono", monospace;
 
   --spacing-sq: 76px;
+
+  /* ── Spacing scale — 4px base ─────────────────────────────────────────── */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-14: 56px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* ── Typography scale ─────────────────────────────────────────────────── */
+  --text-2xs: 10px;  /* micro labels, version badges */
+  --text-xs: 11px;   /* eyebrows, chip labels, flags */
+  --text-sm: 12px;   /* captions, meta rows */
+  --text-base: 14px; /* body copy (global default) */
+  --text-md: 15px;   /* emphasized body, button labels */
+  --text-lg: 16px;   /* section intros, large labels */
+  --text-xl: 18px;   /* sub-headlines, card titles */
+  --text-2xl: 20px;  /* small display */
+  --text-3xl: 24px;  /* section heads */
+  --text-4xl: 30px;  /* route bar, key numbers */
+  --text-5xl: 40px;  /* verdict sub-head (mobile) */
+  --text-hero: 64px; /* verdict headline */
+}
+
+/* ── Page container widths — single source of truth ──────────────────────
+   Every route wraps its content in `mx-auto max-w-[var(--container-*)]` (the
+   same idiom as `rounded-[var(--radius-lg)]`) instead of a hand-rolled pixel
+   value, so a page and its loading.tsx skeleton can never drift apart, and a
+   new page reuses an existing width instead of inventing one. Pick by content
+   shape, not by route: */
+:root {
+  --container-xs: 680px; /* a single receipt/confirmation card — book/confirmation */
+  --container-sm: 820px; /* one-topic profile/detail reading column — sweet-spots/[program] (account moved to --container-shell + two-column xl grid) */
+  --container-article: 880px; /* long-form single article (pure prose pages) */
+  --container-md: 980px; /* card-led detail/listing — destinations/[city] (prose inside capped at 70ch); sweet-spots index moved to --container-shell */
+  --container-checkout: 1040px; /* form + sticky sidebar — book */
+  --container-app: 1180px; /* legacy boxed width — kept for reference; app surfaces migrated to --container-shell */
+  --container-wide: 1340px; /* legacy wide card-grid bump — superseded by --container-shell */
+  --container-xwide: 1500px; /* legacy widest card-grid bump — superseded by --container-shell */
+  --container-full: 1440px; /* full-bleed centered boundary states — not-found, error */
+  /* The full-width shell (Linear/Airbnb-class): app surfaces (nav, home, search,
+     deals, destinations, /ask chrome) are FLUID below this cap — content fills
+     the viewport minus the shared gutters (px-5 sm:px-8 lg:px-12 xl:px-16) —
+     and center above it. Reading surfaces stay measured on --container-sm
+     (820px) / prose measures; never put long-form text on the shell width. */
+  --container-shell: 1760px;
 }
 
 * {
@@ -93,8 +219,21 @@ body {
   color: var(--color-text);
   font-family: var(--font-sans);
   font-size: 14px;
+  /* Base body weight is MEDIUM (500), not regular. General Sans at 400 reads thin
+     on the cream canvas with antialiasing; 500 gives body + muted copy real
+     presence throughout. Headings (font-display 600/700), numbers (.hop-price
+     600), and explicit font-normal/semibold utilities still win. */
+  font-weight: 500;
   line-height: 1.5;
   font-feature-settings: "ss01" on, "cv01" on;
+  /* Contain the vertical rubber-band so the installed/standalone app doesn't
+     bounce the whole document (the tell of a wrapped web page). Scrollable
+     regions inside still scroll normally. */
+  overscroll-behavior-y: contain;
+  /* Full-bleed layers (hero ambience) stretch to 50vw past center; on
+     classic-scrollbar platforms 100vw overshoots the viewport by the
+     scrollbar width — clip it rather than grow a horizontal scroll. */
+  overflow-x: clip;
 }
 
 /* Paper grain — a whisper-subtle tiled fractal-noise texture baked onto the
@@ -134,35 +273,76 @@ body {
   letter-spacing: -0.02em;
 }
 
-/* Wordmark: Fraunces italic, leaning forward to echo the bunny's leap. */
+/* Wordmark: Bricolage Grotesque, matching the display headings sitewide. */
 .wordmark {
-  font-family: var(--font-wordmark-stack);
-  font-style: italic;
+  font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
-/* ── Entrance micro-interactions ──────────────────────────────────────────
-   Restrained SOLID rise-in (no translucency — transform only). Kept SHORT and
-   low-travel so content reads as instant, not a slow cascade: a 4px settle over
-   ~220ms. Premium, not bouncy. Runs once on initial load.
-   prefers-reduced-motion disables all of it below. */
-@keyframes hop-rise-in {
+/* Number display — Geist Mono with tabular nums so miles, prices, and cpp
+   values never jitter as they update. Used on any element that renders a
+   number users will compare or scan vertically. */
+.hop-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Price / headline number — same mono base but semibold for dollar amounts
+   and large stat figures in the verdict hero and deal cards. */
+.hop-price {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* ── Entrance ──────────────────────────────────────────────────────────────
+   Entrance is intentionally STILL — content appears in place with no on-load
+   movement. (An earlier rise-in translated everything up ~4px on load; it read
+   as the page nudging upward, so it was removed.) `.hop-rise` is kept as an
+   inert class so its many call sites and their inline --hop-delay values don't
+   need touching — it simply has no animation now. The rest of the motion below
+   still honors prefers-reduced-motion. */
+
+/* THE exception to still entrances: the verdict hero. Page furniture appears
+   in place; the ANSWER arrives. One element per page, one shot, opacity + a
+   4px settle — small enough that the page doesn't read as nudging upward.
+   Do not spread this to sections; that's the drift .hop-rise died of. */
+@keyframes hop-appear {
   from {
+    opacity: 0;
     transform: translateY(4px);
   }
   to {
+    opacity: 1;
     transform: translateY(0);
   }
 }
 
-.hop-rise {
-  animation: hop-rise-in 220ms var(--ease-premium) both;
-  /* Compress the per-element stagger so the hero settles together (fast), not as
-     a slow top-to-bottom cascade. Inline --hop-delay values (up to ~300ms) are
-     scaled down here to ~0.4x via the calc, capping the last element well under
-     200ms. */
-  animation-delay: calc(var(--hop-delay, 0ms) * 0.4);
+.hop-appear {
+  animation: hop-appear 560ms var(--ease-premium) both;
+}
+
+/* Confirmation check settle — a one-shot scale-in for the moment an action
+   lands: the booking-confirmed ring, a watch saved, "Copied". Transform-only,
+   overshoots a hair and settles. Apply to the ICON'S wrapper (re-key it to
+   replay), never to text. Reduced-motion falls back to the instant swap. */
+@keyframes hop-check-in {
+  0% {
+    transform: scale(0.5);
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.hop-check-in {
+  animation: hop-check-in 420ms var(--ease-premium) both;
 }
 
 /* Bunny motion is scroll-driven (see FlyingBunny) — it lifts with scroll
@@ -208,7 +388,6 @@ body {
 .hop-float {
   animation: hop-float 4.5s var(--ease-premium) infinite;
 }
-
 /* Value bars grow from 0 to their target width once, on load. The target width
    is supplied inline as --hop-bar-w; the animation eases out to it. */
 @keyframes hop-bar-grow {
@@ -241,53 +420,6 @@ body {
   grid-template-rows: 1fr;
 }
 
-/* ── Destination reel (marquee) ───────────────────────────────────────────
-   A CSS-only auto-scrolling strip of real destination photography. The track
-   holds TWO copies of the same row; translating it by exactly -50% loops
-   seamlessly. Transform-only (no opacity), GPU-friendly. Pauses on hover/focus
-   so a visitor can read a tile. prefers-reduced-motion freezes it to a static,
-   readable row (animation removed below). */
-@keyframes hop-marquee {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(-50%, 0, 0);
-  }
-}
-
-.hop-marquee-track {
-  display: flex;
-  width: max-content;
-  /* Slow, calm drift — barely-moving rather than a restless scroll. Pauses on
-     hover/focus so you can actually look at a tile. */
-  animation: hop-marquee var(--hop-marquee-dur, 140s) linear infinite;
-  will-change: transform;
-}
-.hop-marquee-track:hover,
-.hop-marquee-track:focus-within {
-  animation-play-state: paused;
-}
-
-/* Soft edge masks so tiles fade into the cream canvas at both ends rather than
-   hard-clipping. Mask only (no painted overlay) — keeps the flat look. */
-.hop-marquee-mask {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    #000 8%,
-    #000 92%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    #000 8%,
-    #000 92%,
-    transparent 100%
-  );
-}
-
 /* Shimmer for skeleton placeholders — a soft sheen sweeping across the warm
    cream/sunk surface. Subtle, not garish. */
 @keyframes hop-shimmer {
@@ -312,6 +444,23 @@ body {
     color-mix(in srgb, var(--color-bg) 60%, #fff) 55%,
     transparent
   );
+  animation: hop-shimmer 1.6s ease-in-out infinite;
+}
+
+/* On-dark skeleton variant — placeholders painted on the teal verdict hero and
+   the dark wallet. Same sweep as .hop-skeleton with a white sheen tuned for
+   dark surfaces, so EVERY loading block shimmers, not just the cream ones. */
+.hop-skeleton-dark {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+}
+.hop-skeleton-dark::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16) 55%, transparent);
   animation: hop-shimmer 1.6s ease-in-out infinite;
 }
 
@@ -387,7 +536,6 @@ body {
 .hop-dot:nth-child(3) { animation-delay: 0.36s; }
 
 @media (prefers-reduced-motion: reduce) {
-  .hop-rise,
   .hop-bar,
   .hop-bunny-leap,
   .hop-float {
@@ -395,14 +543,17 @@ body {
     opacity: 1;
     width: var(--hop-bar-w, 0%);
   }
+  .hop-appear,
+  .hop-check-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
   .hop-collapse {
     transition: none;
   }
-  .hop-skeleton::after {
-    animation: none;
-  }
-  /* Reel freezes to a calm, static row — no horizontal drift. */
-  .hop-marquee-track {
+  .hop-skeleton::after,
+  .hop-skeleton-dark::after {
     animation: none;
   }
   .hop-spin,
@@ -415,6 +566,12 @@ body {
     animation: none;
     opacity: 1;
     transform: none;
+  }
+  /* ConciergeHero's cross-fading backdrop rotator (JS already stops advancing
+     the index under reduced motion) — freeze the opacity transition itself too,
+     same belt-and-suspenders reset as every other motion class here. */
+  .hop-rotator img {
+    transition: none;
   }
 }
 
@@ -467,21 +624,192 @@ body {
   margin-top: 0;
 }
 
+/* ── Concierge streamed-markdown prose — .hop-md ─────────────────────────────
+   Streamdown renders the concierge's streamed answer tagged .hop-md (see
+   components/ai-elements/response.tsx, which also sets the base type size + ink
+   color). This scope gives that markdown a tight, editorial rhythm on the warm
+   canvas: paragraph cadence, brand links, display headings, real list markers,
+   and on-brand code / quote / table. Flat, AA, no decorative chrome. */
+.hop-md > :first-child {
+  margin-top: 0;
+}
+.hop-md > :last-child {
+  margin-bottom: 0;
+}
+
+/* Paragraph rhythm — ~0.7em between blocks, calm 1.6 leading. Body inherits the
+   ink set on the .hop-md container (response.tsx); softer copy lives in blockquote. */
+.hop-md p {
+  margin: 0 0 0.7em;
+  line-height: 1.6;
+}
+
+/* Links — brand teal with a quiet token underline that deepens on hover. */
+.hop-md a {
+  color: var(--color-brand);
+  text-decoration: underline;
+  text-decoration-color: var(--color-border);
+  text-underline-offset: 3px;
+  transition: color 0.15s ease;
+}
+.hop-md a:hover {
+  color: var(--color-brand-deep);
+}
+
+/* Headings — display face on the --text-* scale, tight leading. */
+.hop-md h1,
+.hop-md h2,
+.hop-md h3,
+.hop-md h4,
+.hop-md h5,
+.hop-md h6 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--color-text);
+  margin: 1.3em 0 0.5em;
+}
+.hop-md h1 {
+  font-size: var(--text-2xl);
+}
+.hop-md h2 {
+  font-size: var(--text-xl);
+}
+.hop-md h3 {
+  font-size: var(--text-lg);
+}
+.hop-md h4,
+.hop-md h5,
+.hop-md h6 {
+  font-size: var(--text-md);
+}
+
+/* Lists — real markers, comfortable indent, calm row rhythm. */
+.hop-md ul,
+.hop-md ol {
+  margin: 0 0 0.7em;
+  padding-left: 1.3em;
+}
+.hop-md ul {
+  list-style: disc;
+}
+.hop-md ol {
+  list-style: decimal;
+}
+.hop-md li {
+  margin: 0.2em 0;
+  line-height: 1.6;
+}
+.hop-md li::marker {
+  color: var(--color-text3);
+}
+.hop-md li > ul,
+.hop-md li > ol {
+  margin: 0.2em 0 0.3em;
+}
+
+.hop-md strong {
+  font-weight: 600;
+  color: var(--color-text);
+}
+.hop-md em {
+  font-style: italic;
+}
+
+/* Inline code — a small sunk chip, mono, subtly tightened. */
+.hop-md code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--color-sunk);
+  border: 1px solid var(--color-hair);
+  border-radius: 6px;
+  padding: 0.1em 0.36em;
+}
+
+/* Fenced blocks — a flat sunk panel; inner code sheds the inline chip styling. */
+.hop-md pre {
+  margin: 0 0 0.7em;
+  padding: 0.9em 1em;
+  background: var(--color-sunk);
+  border: 1px solid var(--color-hair);
+  border-radius: var(--radius);
+  overflow-x: auto;
+}
+.hop-md pre code {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  font-size: 0.86em;
+}
+
+/* Blockquote — a quiet brand spine, softened copy. */
+.hop-md blockquote {
+  margin: 0 0 0.7em;
+  padding-left: 0.9em;
+  border-left: 2px solid var(--color-brand-light);
+  color: var(--color-text2);
+}
+
+.hop-md hr {
+  border: 0;
+  border-top: 1px solid var(--color-hair);
+  margin: 1.2em 0;
+}
+
+/* Tables — flat hairline grid, sunk header, no fills. */
+.hop-md table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 0.7em;
+  font-size: 0.95em;
+}
+.hop-md th,
+.hop-md td {
+  border: 1px solid var(--color-hair);
+  padding: 0.4em 0.6em;
+  text-align: left;
+}
+.hop-md th {
+  background: var(--color-sunk);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
 /* ── /ask immersive chat surface ──────────────────────────────────────────
    The concierge thread is the PRIMARY surface on /ask: it fills the viewport
    below the sticky TopNav, owns the only scroll region (the message area), and
    pins the composer to the bottom. No nested card-on-bg, no double scrollbar.
-   --hop-nav mirrors the TopNav's expanded height (76px). dvh keeps the mobile
+   --hop-nav mirrors the TopNav's fixed height (72px). dvh keeps the mobile
    browser chrome from clipping the pinned composer. */
 :root {
-  --hop-nav: 76px;
+  --hop-nav: 72px;
 }
 
 /* Single-viewport stage — the concierge fills exactly the space below the nav so
    the page never scrolls vertically: nav (--hop-nav, in flow) + stage = 100dvh.
-   The landing hero sits flush under the nav; the thread scrolls only internally. */
+   The landing hero sits flush under the nav; the thread scrolls only internally.
+   Below md the top nav is hidden and the bottom tab bar (56px + safe area) owns
+   the floor instead, so the stage subtracts THAT — the composer docks above it. */
 .hop-ask-stage {
-  height: calc(100dvh - var(--hop-nav));
+  height: calc(100dvh - 56px - env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) {
+  .hop-ask-stage {
+    height: calc(100dvh - var(--hop-nav));
+  }
+}
+
+/* The ask surface's CHROME frame — the control rail and the docked composer's
+   hairline share the SAME container as the TopNav content (--container-shell),
+   so the concierge's furniture aligns with the header above it (controls sit
+   under the avatar, the dock hairline spans the shell width). One integrated
+   surface, not a narrow column floating inside wider chrome. */
+.hop-ask-frame {
+  width: 100%;
+  max-width: var(--container-shell);
+  margin-inline: auto;
 }
 
 /* A calm reading measure for the thread — centered within the full-bleed stage
@@ -515,5 +843,182 @@ body {
   .hop-ask-stage {
     /* still full-height; nothing animates here, but keep parity with the
        project-wide reduced-motion contract. */
+  }
+}
+
+/* ── Outlined nav pills ───────────────────────────────────────────────────
+   Origin selector, admin shield, and points chip in the top nav: border
+   derived from the pill's own text color (currentColor) at low opacity
+   instead of the flat --color-border hairline token, so the outline reads
+   as intentional against any background — including the ambient-tinted
+   hero and photo cards under the glass nav, not just the plain cream canvas
+   --color-border was tuned for. Text colors are unchanged; the border stays
+   quieter than the label (30% vs. full-strength text). */
+.hop-ink-border {
+  border-color: color-mix(in srgb, currentColor 30%, transparent);
+}
+
+/* Open/active state needs to beat .hop-ink-border on specificity, not just
+   cascade order (Tailwind's plain `border-text2` utility ties with
+   `.hop-ink-border` at 0,1,0, and source order isn't a safe way to decide a
+   tie) — so this pairs with `.hop-ink-border` on the same element for 0,2,0. */
+.hop-ink-border.hop-ink-border-active {
+  border-color: var(--color-text2);
+}
+
+/* ── Glass nav surfaces ───────────────────────────────────────────────────
+   Shared translucent-background treatment for the sticky top nav (once
+   scrolled) and the fixed bottom tab bar — approved for nav chrome only,
+   everywhere else the flat-editorial no-shadow/gradient/glow rule stands.
+   The actual blur (backdrop-filter / -webkit-backdrop-filter) is applied
+   inline by each component, not here: Lightning CSS's prefix-dedup pass
+   silently drops the unprefixed `backdrop-filter` declaration when both
+   live in one compiled rule, so blur is set as an inline style to guarantee
+   both land in the DOM (same reasoning the pre-existing scroll-glass TopNav
+   style already followed). Background alone still degrades correctly here:
+   opaque cream for browsers without backdrop-filter support and for
+   prefers-reduced-transparency, so text never sits on unpredictable content
+   without a backdrop — any residual inline blur is invisible behind a fully
+   opaque background regardless. */
+.hop-glass-surface {
+  background: color-mix(in srgb, var(--color-bg) 75%, transparent);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .hop-glass-surface {
+    background: var(--color-bg);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .hop-glass-surface {
+    background: var(--color-bg);
+  }
+}
+
+/* ── Bottom tab bar (phone-only) ──────────────────────────────────────────
+   Mobile-first fixed navigation bar. Sits above the safe-area inset to clear
+   notches and home indicator. Hidden on /ask (concierge owns the bottom).
+   Restrained settle transition on active state. */
+@keyframes hop-tab-active {
+  from {
+    transform: scale(0.95);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.hop-tab-active {
+  animation: hop-tab-active 180ms var(--ease-premium) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hop-tab-active {
+    animation: none;
+  }
+}
+
+/* ── View Transitions API — quiet cross-route fade ───────────────────────────
+   Next 16 experimental flag enables ::view-transition pseudo-elements. The root
+   animation is opacity-only (flat law), ~180ms, premium easing. Degrades to
+   instant in unsupported browsers (no JS fallback needed). */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 180ms;
+  animation-timing-function: var(--ease-premium);
+}
+
+::view-transition-old(root) {
+  animation-name: hop-view-fade-out;
+}
+
+::view-transition-new(root) {
+  animation-name: hop-view-fade-in;
+}
+
+@keyframes hop-view-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes hop-view-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ── Tactile press feedback ──────────────────────────────────────────────────
+   A 0.97 scale squeeze on active (90ms) for every interactive control. Phones
+   get the full haptic feel; desktops get a visual cue. The universal tap-
+   highlight is removed globally (see below). */
+.hop-press {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.hop-press:active {
+  transform: scale(0.97);
+  transition: transform 90ms var(--ease-premium);
+}
+
+/* Softer scale (0.985) for large card tap targets — the press gesture feels
+   less aggressive on spacious, high-hit-area components. */
+.hop-press-card {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.hop-press-card:active {
+  transform: scale(0.985);
+  transition: transform 90ms var(--ease-premium);
+}
+
+/* ── Remove mobile tap-highlight app-wide ────────────────────────────────────
+   Flat law: no chrome, no highlights. The .hop-press classes above set it
+   explicitly, but this global rule covers every link/button/[role=button]. */
+:where(a, button, [role=button]) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+
+/* ── Reduced motion: disable all tactile + view-transition animations ────────
+   Collapsed .hop-press to no scale, no transition. View transitions frozen —
+   the wildcard selectors cover every NAMED transition (e.g. the home→/search
+   photo morph, `photo-${code}`), not just the root cross-fade: ::group is the
+   pseudo that animates a named element's position/size (the actual "morph"),
+   so without it reduced-motion would still slide/scale the photo even with
+   old/new's opacity animation removed. */
+@media (prefers-reduced-motion: reduce) {
+  .hop-press:active,
+  .hop-press-card:active {
+    transform: none;
+    transition: none;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+
+  /* Streamed-text word fade (streamdown `animated`) applies inline animation
+     styles per word — force them inert so streamed answers appear instantly. */
+  .hop-md * {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 }

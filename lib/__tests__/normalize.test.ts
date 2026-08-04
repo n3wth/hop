@@ -8,8 +8,9 @@ import {
   isPointsAccount,
   getBalances,
 } from '@/lib/awardwallet'
-import { pointsBookingUrl, cashBookingUrl } from '@/lib/booking'
+import { pointsBookingUrl, cashBookingUrl, kiwiSearchUrl } from '@/lib/booking'
 import { mockCash, mockAwards, mockBalances } from '@/lib/mock'
+import { cacheClearMemory } from '@/lib/cache'
 
 const PARAMS: SearchParams = {
   from: 'SFO',
@@ -25,6 +26,9 @@ afterEach(() => {
   process.env = { ...ORIGINAL_ENV }
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
+  // searchCash caches by params (lib/duffel.ts) — clear the in-memory cache so
+  // one test's cached result can't swallow the next test's stubbed fetch.
+  cacheClearMemory()
 })
 
 describe('duffel normalizer', () => {
@@ -143,7 +147,7 @@ describe('duffel normalizer', () => {
     )
     vi.stubGlobal('fetch', fetchSpy)
     await searchCash(params)
-    const init = fetchSpy.mock.calls[0][1] as RequestInit
+    const init = (fetchSpy.mock.calls[0] as unknown[])[1] as RequestInit
     return JSON.parse(init.body as string).data
   }
 
@@ -476,6 +480,86 @@ describe('awardwallet normalizer', () => {
     expect(headers['X-Authentication']).toBe('test-key')
     expect(headers['Authorization']).toBeUndefined()
   })
+
+  it('returns {ok:false} on a non-2xx response, without throwing', async () => {
+    process.env.AWARDWALLET_API_KEY = 'test-key'
+    process.env.AWARDWALLET_USER_ID = '597319'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response('', { status: 403 }))),
+    )
+    const result = await getBalances()
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('AwardWallet responded 403')
+  })
+
+  it('returns {ok:false} on an aborted/timed-out request', async () => {
+    process.env.AWARDWALLET_API_KEY = 'test-key'
+    process.env.AWARDWALLET_USER_ID = '597319'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => {
+        const err = new Error('The operation was aborted')
+        err.name = 'AbortError'
+        return Promise.reject(err)
+      }),
+    )
+    const result = await getBalances()
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('AwardWallet request timed out')
+  })
+
+  it('returns {ok:false} (does not throw) on malformed JSON', async () => {
+    process.env.AWARDWALLET_API_KEY = 'test-key'
+    process.env.AWARDWALLET_USER_ID = '597319'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response('not json{', { status: 200 }))),
+    )
+    const result = await getBalances()
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('AwardWallet request failed')
+  })
+
+  it('uses the explicit per-user id over the env global when both are present', async () => {
+    process.env.AWARDWALLET_API_KEY = 'test-key'
+    process.env.AWARDWALLET_USER_ID = 'env-global-id'
+    const fetchSpy = vi.fn((input: RequestInfo | URL) => {
+      void input
+      return Promise.resolve(new Response(JSON.stringify({ accounts: [] }), { status: 200 }))
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await getBalances('per-user-id')
+    expect(result.ok).toBe(true)
+
+    const url = fetchSpy.mock.calls[0][0] as string
+    expect(url).toContain('per-user-id')
+    expect(url).not.toContain('env-global-id')
+  })
+
+  it('falls back to the env global id when no per-user id is supplied', async () => {
+    process.env.AWARDWALLET_API_KEY = 'test-key'
+    process.env.AWARDWALLET_USER_ID = 'env-global-id'
+    const fetchSpy = vi.fn((input: RequestInfo | URL) => {
+      void input
+      return Promise.resolve(new Response(JSON.stringify({ accounts: [] }), { status: 200 }))
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await getBalances()
+    expect(result.ok).toBe(true)
+
+    const url = fetchSpy.mock.calls[0][0] as string
+    expect(url).toContain('env-global-id')
+  })
+
+  it('returns {ok:false} when a per-user id is blank and no env fallback exists', async () => {
+    process.env.AWARDWALLET_API_KEY = 'test-key'
+    delete process.env.AWARDWALLET_USER_ID
+    const result = await getBalances('   ')
+    expect(result.ok).toBe(false)
+  })
 })
 
 describe('booking urls', () => {
@@ -487,11 +571,23 @@ describe('booking urls', () => {
   })
 
   it('builds a round-trip Kiwi deep-link', () => {
-    const url = cashBookingUrl(PARAMS)
+    const url = kiwiSearchUrl(PARAMS)
     expect(url).toContain('kiwi.com')
     expect(url).toContain('SFO/LAX/2026-07-09')
     expect(url).toContain('LAX/SFO/2026-07-12')
     expect(url).toContain('adults=1')
+  })
+
+  it('wraps the cash CTA in the /api/go/kiwi outclick redirect (R0.6)', () => {
+    const url = cashBookingUrl(PARAMS)
+    expect(url.startsWith('/api/go/kiwi?')).toBe(true)
+    const query = new URL(url, 'http://localhost').searchParams
+    // The redirect destination is the tp.media attribution wrapper whose ?u=
+    // is the Kiwi deep-link — attribution must not depend on the client tag.
+    const destination = new URL(query.get('to')!)
+    expect(destination.hostname).toBe('tp.media')
+    expect(destination.searchParams.get('u')).toBe(kiwiSearchUrl(PARAMS))
+    expect(query.get('route')).toBe('SFO-LAX')
   })
 
   it('defaults sensibly for an unknown program/airline', () => {
@@ -509,25 +605,27 @@ describe('mock fixtures', () => {
     expect(cash[0].roundTrip).toBe(true)
   })
 
-  it('mockAwards returns four options with the design cpp values', () => {
+  it('mockAwards never bakes a cpp — the engine computes it vs live cash', () => {
     const awards = mockAwards()
     expect(awards).toHaveLength(4)
     const byCode = Object.fromEntries(awards.map((a) => [a.id, a]))
     expect(byCode['mock-award-as'].miles).toBe(4500)
-    expect(byCode['mock-award-as'].cpp).toBe(5.6)
-    expect(byCode['mock-award-as'].tier).toBe('green')
-    expect(byCode['mock-award-wn'].cpp).toBe(4.2)
+    // cpp does not exist without a cash baseline: fixtures leave it undefined
+    // and assembleSearch computes it (a stale hand-baked 5.6 once shipped).
+    for (const a of awards) expect(a.cpp).toBeUndefined()
+    expect(byCode['mock-award-as'].tier).toBe('muted')
     expect(byCode['mock-transfer-aeroplan'].kind).toBe('transfer')
-    expect(byCode['mock-transfer-aeroplan'].miles).toBe(10000)
+    expect(byCode['mock-transfer-aeroplan'].miles).toBe(6000)
     expect(byCode['mock-transfer-aeroplan'].transferFrom).toHaveLength(2)
     expect(byCode['mock-award-ua'].miles).toBe(14100)
-    expect(byCode['mock-award-ua'].cpp).toBe(1.8)
   })
 
   it('every mock option carries a tier and bookingUrl', () => {
     for (const opt of [...mockCash(), ...mockAwards()]) {
       expect(opt.tier).toBeDefined()
-      expect(opt.bookingUrl).toMatch(/^https?:\/\//)
+      // Awards deep-link out (absolute); cash goes through the first-party
+      // /api/go/kiwi outclick wrapper (same-origin path) since R0.6.
+      expect(opt.bookingUrl).toMatch(/^(https?:\/\/|\/api\/go\/kiwi\?)/)
     }
   })
 

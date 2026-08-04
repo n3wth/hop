@@ -2,17 +2,16 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
+import BrandIcon from '@/components/BrandIcon'
 import { pageMeta, absoluteUrl } from '@/lib/seo'
-import {
-  allPrograms,
-  programBySlug,
-  VERIFY_CAVEAT,
-  type Cabin,
-  type Program,
-  type SweetSpot,
-} from '@/lib/sweet-spots'
+import { allPrograms, VERIFY_CAVEAT, type Cabin, type Program, type SweetSpot } from '@/lib/sweet-spots'
+import { getProgramBySlug } from '@/lib/sweet-spots-live'
+import { canonicalizeProgram } from '@/lib/programs'
 
-// Prerender one page per program; nothing else is valid.
+// Prerender one page per program; nothing else is valid. Static params come
+// from the STATIC table only (never the DB) — a draft can only add spots to
+// an existing program, never introduce a new one, so build-time route
+// generation doesn't need the drafts queue. See lib/sweet-spot-drafts.ts.
 export const dynamic = 'force-static'
 export const dynamicParams = false
 
@@ -26,7 +25,7 @@ export async function generateMetadata({
   params: Promise<{ program: string }>
 }) {
   const { program: slug } = await params
-  const program = programBySlug(slug)
+  const program = await getProgramBySlug(slug)
   if (!program) return {}
   const count = program.spots.length
   return pageMeta({
@@ -81,7 +80,7 @@ export default async function ProgramSweetSpotsPage({
   params: Promise<{ program: string }>
 }) {
   const { program: slug } = await params
-  const program = programBySlug(slug)
+  const program = await getProgramBySlug(slug)
   if (!program) notFound()
 
   const jsonLd = buildProgramJsonLd(program)
@@ -94,7 +93,7 @@ export default async function ProgramSweetSpotsPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div className="mx-auto max-w-[820px]">
+      <div className="mx-auto max-w-[var(--container-sm)]">
         {/* breadcrumb back to the index */}
         <nav aria-label="Breadcrumb" className="pt-8 text-[13px] text-text3">
           <Link href="/sweet-spots" className="font-semibold text-brand hover:text-brand-deep">
@@ -106,18 +105,27 @@ export default async function ProgramSweetSpotsPage({
           <span className="text-text2">{program.name}</span>
         </nav>
 
-        {/* header */}
-        <header className="mt-6 max-w-[60ch]">
-          <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
-            {program.spots.length} {program.spots.length === 1 ? 'redemption' : 'redemptions'}
-          </span>
-          <h1 className="mt-3 text-balance font-display text-[32px] font-semibold leading-[1.06] tracking-[-0.02em] text-text sm:text-[46px]">
-            Best uses of {program.name} miles
-          </h1>
-          <p className="mt-4 max-w-[52ch] text-pretty text-[16px] leading-relaxed text-text2 sm:text-[17px]">
-            The redemptions where {program.name} beats cash by the widest margin —
-            premium cabins first.
-          </p>
+        {/* header — the same brand mark the reader saw on the /sweet-spots
+            shelf tile, just at the header size class
+            (experience-heuristics.md #16) */}
+        <header className="mt-6 flex max-w-[60ch] items-start gap-4">
+          <BrandIcon
+            code={canonicalizeProgram(program.name)?.code}
+            name={program.name}
+            size={72}
+          />
+          <div className="min-w-0">
+            <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
+              {program.spots.length} {program.spots.length === 1 ? 'redemption' : 'redemptions'}
+            </span>
+            <h1 className="mt-3 text-balance font-display text-[32px] font-semibold leading-[1.06] tracking-[-0.02em] text-text sm:text-[46px]">
+              Best uses of {program.name} miles
+            </h1>
+            <p className="mt-4 max-w-[52ch] text-pretty text-[16px] leading-relaxed text-text2 sm:text-[17px]">
+              The redemptions where {program.name} beats cash by the widest margin —
+              premium cabins first.
+            </p>
+          </div>
         </header>
 
         {/* the redemption rows — flat editorial, one per spot */}
@@ -132,14 +140,14 @@ export default async function ProgramSweetSpotsPage({
                       {s.route}
                     </h2>
                     <span
-                      className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em]"
+                      className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[var(--track-label)]"
                       style={{ background: chip.bg, color: chip.fg, borderColor: chip.bd }}
                     >
                       {s.cabin}
                     </span>
                     {s.confidence === 'med' && (
                       <span
-                        className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em]"
+                        className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[var(--track-label)]"
                         style={{
                           background: 'var(--color-ok-bg)',
                           color: 'var(--color-ok)',
@@ -151,7 +159,7 @@ export default async function ProgramSweetSpotsPage({
                     )}
                   </div>
                   {s.metal && (
-                    <p className="mt-1 text-[13px] font-semibold uppercase tracking-[0.06em] text-text3">
+                    <p className="mt-1 text-[13px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
                       on {s.metal} metal
                     </p>
                   )}
@@ -162,7 +170,7 @@ export default async function ProgramSweetSpotsPage({
 
                 {/* the figure — typical one-way miles */}
                 <div className="flex-shrink-0 sm:text-right">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text3">
+                  <div className="text-[10px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
                     ~Miles one-way
                   </div>
                   <div className="mt-1 font-display text-[24px] font-semibold leading-none tabular-nums text-text">
@@ -175,7 +183,7 @@ export default async function ProgramSweetSpotsPage({
         </section>
 
         {/* accuracy caveat */}
-        <p className="mt-7 rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[13px] leading-relaxed text-text3">
+        <p className="mt-7 rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[14px] leading-relaxed text-text3">
           {VERIFY_CAVEAT}
         </p>
 
@@ -192,7 +200,9 @@ export default async function ProgramSweetSpotsPage({
             Destination guides
           </Link>
         </div>
+      </div>
 
+      <div className="mx-auto max-w-[var(--container-shell)]">
         <SiteFooter />
       </div>
     </AppShell>

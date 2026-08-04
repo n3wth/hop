@@ -1,9 +1,11 @@
 ---
 title: "feat: hop — flight points-vs-cash optimizer web app"
 type: feat
-status: active
+status: superseded
 date: 2026-06-28
 ---
+
+> Superseded by [docs/plans/2026-07-03-critical-review-roadmap.md](2026-07-03-critical-review-roadmap.md).
 
 # feat: hop — flight points-vs-cash optimizer web app
 

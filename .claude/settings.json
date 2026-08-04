@@ -1,0 +1,35 @@
+{
+  "model": "sonnet",
+  "disableClaudeAiConnectors": true,
+  "permissions": {
+    "allow": [
+      "Bash(npm test:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run check:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx vitest run:*)",
+      "Bash(npx tsc --noEmit:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git merge-base:*)",
+      "Bash(scripts/shoot.sh:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c '[ -f \"$CLAUDE_PROJECT_DIR/scripts/hooks/guard-main-commit.sh\" ] && exec bash \"$CLAUDE_PROJECT_DIR/scripts/hooks/guard-main-commit.sh\" || echo \"guard-main-commit.sh missing from this checkout (likely forked before it was added) - run: git checkout origin/main -- scripts/hooks/\" >&2'",
+            "timeout": 10,
+            "statusMessage": "Checking branch guard"
+          }
+        ]
+      }
+    ]
+  }
+}

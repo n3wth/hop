@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
+import EditorialHeader from '@/components/EditorialHeader'
 import { pageMeta } from '@/lib/seo'
 import { destinations, topValue, imageQuery } from '@/lib/destinations'
 import { destinationImages } from '@/lib/images'
@@ -24,19 +25,13 @@ export default async function DestinationsIndexPage() {
 
   return (
     <AppShell user={null} hideSearch>
-      <div className="mx-auto max-w-[1180px] xl:max-w-[1340px]">
+      <div className="mx-auto max-w-[var(--container-shell)]">
         {/* editorial header */}
-        <header className="mx-auto max-w-[60ch] pt-10 text-center sm:pt-14">
-          <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
-            Destination guides
-          </span>
-          <h1 className="mx-auto mt-3 max-w-[18ch] text-balance font-display text-[34px] font-semibold leading-[1.05] tracking-[-0.02em] text-text sm:text-[52px]">
-            Where your points can take you
-          </h1>
-          <p className="mx-auto mt-4 max-w-[50ch] text-pretty px-2 text-[16px] leading-relaxed text-text2 sm:px-0 sm:text-[17px]">
-            The vibe, the best time to go, and the points play that gets you
-            there — for every place worth the miles. Ranked by value.
-          </p>
+        <EditorialHeader
+          eyebrow="Destination guides"
+          title="Where your points can take you"
+          intro="The vibe, the best time to go, and the points play that gets you there — for every place worth the miles. Ranked by value."
+        >
           <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[13px] text-text3">
             <span>
               <b className="font-semibold text-text2">{ranked.length}</b> destinations
@@ -44,10 +39,10 @@ export default async function DestinationsIndexPage() {
             <span className="hidden sm:inline">·</span>
             <span>best value first</span>
           </div>
-        </header>
+        </EditorialHeader>
 
         {/* the grid */}
-        <section className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
+        <section className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {ranked.map((dest) => (
             <DestinationGuideCard key={dest.code} dest={dest} photo={photos[imageQuery(dest)]} />
           ))}
@@ -71,7 +66,7 @@ export default async function DestinationsIndexPage() {
         <p className="mt-6 text-[12px] text-text3">
           Destination photography via{' '}
           <a
-            href="https://unsplash.com"
+            href="https://unsplash.com/?utm_source=hop&utm_medium=referral"
             target="_blank"
             rel="noopener noreferrer"
             className="underline decoration-border underline-offset-2 hover:text-text2"

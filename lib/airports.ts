@@ -1,95 +1,28 @@
-// Bundled airport list for autocomplete — major global hubs. No external dep.
-// Enough to cover the vast majority of real searches; extend as needed.
+// Bundled airport list for autocomplete — every airport worldwide with a real
+// IATA code (large/medium/small, ~8.8k), sourced from OurAirports' public-domain
+// dataset (https://ourairports.com/data/, CC0) and baked in at build time so
+// lookups are instant and offline — no external dep, no per-keystroke network
+// call. The raw [code, city, name, country, size] tuples live in
+// airports-data.json to keep this file's logic readable; `size` is OurAirports'
+// large/medium/small classification (3/2/1), used ONLY to break ties in
+// searchAirports so major hubs surface first — it never excludes an airport.
+
+import rawAirports from './airports-data.json'
 
 export interface Airport {
   code: string // IATA
   city: string
   name: string
   country: string
+  /** Relative size tier (3 large / 2 medium / 1 small) — ranking signal only. */
+  size: number
 }
 
-export const AIRPORTS: Airport[] = [
-  // US
-  { code: 'SFO', city: 'San Francisco', name: 'San Francisco Intl', country: 'US' },
-  { code: 'LAX', city: 'Los Angeles', name: 'Los Angeles Intl', country: 'US' },
-  { code: 'JFK', city: 'New York', name: 'John F. Kennedy Intl', country: 'US' },
-  { code: 'EWR', city: 'Newark', name: 'Newark Liberty Intl', country: 'US' },
-  { code: 'LGA', city: 'New York', name: 'LaGuardia', country: 'US' },
-  { code: 'ORD', city: 'Chicago', name: "O'Hare Intl", country: 'US' },
-  { code: 'MDW', city: 'Chicago', name: 'Midway Intl', country: 'US' },
-  { code: 'SEA', city: 'Seattle', name: 'Seattle–Tacoma Intl', country: 'US' },
-  { code: 'DEN', city: 'Denver', name: 'Denver Intl', country: 'US' },
-  { code: 'BOS', city: 'Boston', name: 'Logan Intl', country: 'US' },
-  { code: 'ATL', city: 'Atlanta', name: 'Hartsfield–Jackson', country: 'US' },
-  { code: 'MIA', city: 'Miami', name: 'Miami Intl', country: 'US' },
-  { code: 'FLL', city: 'Fort Lauderdale', name: 'Fort Lauderdale–Hollywood', country: 'US' },
-  { code: 'DFW', city: 'Dallas', name: 'Dallas/Fort Worth Intl', country: 'US' },
-  { code: 'DAL', city: 'Dallas', name: 'Love Field', country: 'US' },
-  { code: 'IAH', city: 'Houston', name: 'George Bush Intercontinental', country: 'US' },
-  { code: 'LAS', city: 'Las Vegas', name: 'Harry Reid Intl', country: 'US' },
-  { code: 'PHX', city: 'Phoenix', name: 'Sky Harbor Intl', country: 'US' },
-  { code: 'SAN', city: 'San Diego', name: 'San Diego Intl', country: 'US' },
-  { code: 'PDX', city: 'Portland', name: 'Portland Intl', country: 'US' },
-  { code: 'SLC', city: 'Salt Lake City', name: 'Salt Lake City Intl', country: 'US' },
-  { code: 'MSP', city: 'Minneapolis', name: 'Minneapolis–St. Paul', country: 'US' },
-  { code: 'DTW', city: 'Detroit', name: 'Detroit Metro', country: 'US' },
-  { code: 'PHL', city: 'Philadelphia', name: 'Philadelphia Intl', country: 'US' },
-  { code: 'CLT', city: 'Charlotte', name: 'Charlotte Douglas', country: 'US' },
-  { code: 'AUS', city: 'Austin', name: 'Austin–Bergstrom', country: 'US' },
-  { code: 'BNA', city: 'Nashville', name: 'Nashville Intl', country: 'US' },
-  { code: 'DCA', city: 'Washington', name: 'Reagan National', country: 'US' },
-  { code: 'IAD', city: 'Washington', name: 'Dulles Intl', country: 'US' },
-  { code: 'HNL', city: 'Honolulu', name: 'Daniel K. Inouye Intl', country: 'US' },
-  { code: 'OGG', city: 'Maui', name: 'Kahului', country: 'US' },
-  { code: 'ANC', city: 'Anchorage', name: 'Ted Stevens Intl', country: 'US' },
-  { code: 'OAK', city: 'Oakland', name: 'Oakland Intl', country: 'US' },
-  { code: 'SJC', city: 'San Jose', name: 'Norman Y. Mineta', country: 'US' },
-  { code: 'MCO', city: 'Orlando', name: 'Orlando Intl', country: 'US' },
-  { code: 'TPA', city: 'Tampa', name: 'Tampa Intl', country: 'US' },
-  // Canada
-  { code: 'YYZ', city: 'Toronto', name: 'Pearson Intl', country: 'CA' },
-  { code: 'YVR', city: 'Vancouver', name: 'Vancouver Intl', country: 'CA' },
-  { code: 'YUL', city: 'Montreal', name: 'Trudeau Intl', country: 'CA' },
-  { code: 'YYC', city: 'Calgary', name: 'Calgary Intl', country: 'CA' },
-  // Europe
-  { code: 'LHR', city: 'London', name: 'Heathrow', country: 'GB' },
-  { code: 'LGW', city: 'London', name: 'Gatwick', country: 'GB' },
-  { code: 'CDG', city: 'Paris', name: 'Charles de Gaulle', country: 'FR' },
-  { code: 'AMS', city: 'Amsterdam', name: 'Schiphol', country: 'NL' },
-  { code: 'FRA', city: 'Frankfurt', name: 'Frankfurt am Main', country: 'DE' },
-  { code: 'MUC', city: 'Munich', name: 'Munich', country: 'DE' },
-  { code: 'MAD', city: 'Madrid', name: 'Barajas', country: 'ES' },
-  { code: 'BCN', city: 'Barcelona', name: 'El Prat', country: 'ES' },
-  { code: 'FCO', city: 'Rome', name: 'Fiumicino', country: 'IT' },
-  { code: 'ZRH', city: 'Zurich', name: 'Zurich', country: 'CH' },
-  { code: 'DUB', city: 'Dublin', name: 'Dublin', country: 'IE' },
-  { code: 'LIS', city: 'Lisbon', name: 'Humberto Delgado', country: 'PT' },
-  { code: 'CPH', city: 'Copenhagen', name: 'Kastrup', country: 'DK' },
-  { code: 'IST', city: 'Istanbul', name: 'Istanbul', country: 'TR' },
-  // Middle East
-  { code: 'DXB', city: 'Dubai', name: 'Dubai Intl', country: 'AE' },
-  { code: 'DOH', city: 'Doha', name: 'Hamad Intl', country: 'QA' },
-  // Asia-Pacific
-  { code: 'NRT', city: 'Tokyo', name: 'Narita Intl', country: 'JP' },
-  { code: 'HND', city: 'Tokyo', name: 'Haneda', country: 'JP' },
-  { code: 'ICN', city: 'Seoul', name: 'Incheon Intl', country: 'KR' },
-  { code: 'HKG', city: 'Hong Kong', name: 'Hong Kong Intl', country: 'HK' },
-  { code: 'SIN', city: 'Singapore', name: 'Changi', country: 'SG' },
-  { code: 'BKK', city: 'Bangkok', name: 'Suvarnabhumi', country: 'TH' },
-  { code: 'SYD', city: 'Sydney', name: 'Kingsford Smith', country: 'AU' },
-  { code: 'MEL', city: 'Melbourne', name: 'Melbourne', country: 'AU' },
-  { code: 'AKL', city: 'Auckland', name: 'Auckland', country: 'NZ' },
-  { code: 'DEL', city: 'Delhi', name: 'Indira Gandhi Intl', country: 'IN' },
-  { code: 'BOM', city: 'Mumbai', name: 'Chhatrapati Shivaji', country: 'IN' },
-  { code: 'PEK', city: 'Beijing', name: 'Capital Intl', country: 'CN' },
-  { code: 'PVG', city: 'Shanghai', name: 'Pudong Intl', country: 'CN' },
-  // Latin America
-  { code: 'MEX', city: 'Mexico City', name: 'Benito Juárez', country: 'MX' },
-  { code: 'CUN', city: 'Cancún', name: 'Cancún Intl', country: 'MX' },
-  { code: 'GRU', city: 'São Paulo', name: 'Guarulhos', country: 'BR' },
-  { code: 'BOG', city: 'Bogotá', name: 'El Dorado', country: 'CO' },
-  { code: 'SCL', city: 'Santiago', name: 'Arturo Merino Benítez', country: 'CL' },
-]
+type RawAirport = [code: string, city: string, name: string, country: string, size: number]
+
+export const AIRPORTS: Airport[] = (rawAirports as RawAirport[]).map(
+  ([code, city, name, country, size]) => ({ code, city, name, country, size }),
+)
 
 const byCode = new Map(AIRPORTS.map((a) => [a.code, a]))
 
@@ -97,10 +30,46 @@ export function airportByCode(code: string): Airport | undefined {
   return byCode.get(code.toUpperCase())
 }
 
-// Rank: exact code > code prefix > city prefix > city/name substring.
+// Passenger-traffic ordering for the ~100 busiest hop-relevant hubs, in rough
+// descending order of annual passengers (ACI World / published 2024 airport
+// traffic figures; order is approximate beyond the top ~30). Display-ordering
+// signal ONLY: it decides which airports surface first in pickers — it never
+// excludes an airport and feeds no economics. Unlisted airports rank after
+// every listed one (then size tier, then code, as before).
+const HUB_ORDER = [
+  // global top ~50 by total passengers
+  'ATL', 'DXB', 'DFW', 'HND', 'LHR', 'DEN', 'IST', 'ORD', 'DEL', 'CDG',
+  'LAX', 'CAN', 'ICN', 'JFK', 'PVG', 'AMS', 'SIN', 'MAD', 'CLT', 'MCO',
+  'LAS', 'PEK', 'MIA', 'BKK', 'SZX', 'FRA', 'BCN', 'CGK', 'SEA', 'IAH',
+  'KUL', 'EWR', 'FCO', 'SFO', 'MEX', 'HKG', 'PHX', 'NRT', 'GRU', 'BOS',
+  'MUC', 'LGW', 'SYD', 'YYZ', 'BOM', 'DOH', 'JED', 'MNL', 'SGN', 'TFU',
+  // remaining US majors, rough traffic order
+  'MSP', 'DTW', 'PHL', 'SLC', 'DCA', 'IAD', 'FLL', 'BWI', 'TPA', 'SAN',
+  'AUS', 'BNA', 'MDW', 'LGA', 'HNL', 'PDX', 'STL', 'RDU', 'SJC', 'SMF',
+  'MSY', 'SJU', 'DAL', 'HOU', 'OAK', 'SNA', 'MCI', 'RSW', 'CLE', 'IND',
+  'PIT', 'CVG', 'CMH', 'SAT', 'ANC', 'ABQ', 'JAX', 'BUF', 'ONT', 'BUR',
+  // key international hubs travelers actually fly from/to
+  'TPE', 'KIX', 'ZRH', 'VIE', 'CPH', 'OSL', 'ARN', 'HEL', 'DUB', 'LIS',
+  'ATH', 'MXP', 'BER', 'BRU', 'TLV', 'AUH', 'RUH', 'CAI', 'JNB', 'ADD',
+  'YVR', 'YUL', 'YYC', 'CUN', 'GDL', 'MTY', 'PTY', 'BOG', 'LIM', 'SCL',
+  'EZE', 'GIG', 'AKL', 'MEL', 'BNE', 'PER', 'DPS', 'HKT', 'BLR', 'HYD',
+]
+const HUB_RANK = new Map(HUB_ORDER.map((code, i) => [code, i]))
+const rankOf = (a: Airport) => HUB_RANK.get(a.code) ?? HUB_ORDER.length
+
+// Rank: exact code > code prefix > city prefix > city/name substring > code
+// substring. Within an equal match tier, busier airports (HUB_ORDER traffic
+// ranking) sort first — typing "chicago" surfaces ORD before MDW — then the
+// larger airport (OurAirports' large/medium/small classification), so ranked
+// hubs never lose to an alphabetically-earlier peer. Remaining ties break
+// alphabetically by code for a stable, predictable order. An empty query
+// returns the busiest hubs, not the alphabetically-first large airports.
 export function searchAirports(query: string, limit = 6): Airport[] {
   const q = query.trim().toLowerCase()
-  if (!q) return AIRPORTS.slice(0, limit)
+  if (!q)
+    return [...AIRPORTS]
+      .sort((a, b) => rankOf(a) - rankOf(b) || b.size - a.size || a.code.localeCompare(b.code))
+      .slice(0, limit)
   const scored = AIRPORTS.map((a) => {
     const code = a.code.toLowerCase()
     const city = a.city.toLowerCase()
@@ -115,7 +84,10 @@ export function searchAirports(query: string, limit = 6): Airport[] {
     return { a, score }
   })
     .filter((s) => s.score >= 0)
-    .sort((x, y) => y.score - x.score)
+    .sort(
+      (x, y) =>
+        y.score - x.score || rankOf(x.a) - rankOf(y.a) || y.a.size - x.a.size || x.a.code.localeCompare(y.a.code),
+    )
   return scored.slice(0, limit).map((s) => s.a)
 }
 

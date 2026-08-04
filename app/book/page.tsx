@@ -1,13 +1,19 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { toNavUser } from '@/lib/nav-user'
 import { auth0 } from '@/lib/auth0'
 import { isCheckoutEnabled } from '@/lib/env'
 import { getCheckoutOffer, freshOfferForRoute } from '@/lib/duffel-orders'
 import { pointsBookingUrl } from '@/lib/booking'
+import { loginHrefFor } from '@/lib/safe-return'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import Icon, { type IconName } from '@/components/Icon'
 import CheckoutForm from '@/components/checkout/CheckoutForm'
+import FareCheckSkeleton from '@/components/checkout/FareCheckSkeleton'
+import Button from '@/components/ui/Button'
 
 // Private, transactional page — keep it out of the index. (template adds "· hop".)
 export const metadata: Metadata = {
@@ -39,18 +45,14 @@ export default async function BookPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
+  // Read the query BEFORE the auth gate: the offer + route params are the
+  // whole booking context, and the login round-trip must carry them back here.
+  const q = await searchParams
   const session = await auth0.getSession()
-  if (!session) redirect('/auth/login?returnTo=/book')
+  if (!session) redirect(loginHrefFor('/book', q))
 
   const su = session.user
-  const user = {
-    initial: (su.name ?? su.email ?? 'U').trim().charAt(0).toUpperCase(),
-    name: su.name ?? undefined,
-    email: su.email ?? undefined,
-    picture: su.picture ?? undefined,
-  }
-
-  const q = await searchParams
+  const user = toNavUser(su)
   const str = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)
   const offerId = str(q.offer)
   const route = {
@@ -65,23 +67,15 @@ export default async function BookPage({
 
   return (
     <AppShell user={user} hideSearch>
-      <div className="mx-auto max-w-[1040px] pb-4 pt-8 sm:pt-12">
+      <div className="mx-auto max-w-[var(--container-checkout)] pb-4 pt-8 sm:pt-12">
         {backHref ? (
-          <a
+          <Link
             href={backHref}
             className="mb-5 inline-flex items-center gap-1.5 text-[13.5px] font-medium text-text2 transition-colors hover:text-text"
           >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 -960 960 960"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path d="m313-440 196 196q12 12 11.5 28T508-188q-12 11-28 11.5T452-188L188-452q-6-6-8.5-13t-2.5-15q0-8 2.5-15t8.5-13l264-264q12-12 28.5-11.5T508-771q11 12 11.5 28T508-715L313-520h447q17 0 28.5 11.5T800-480q0 17-11.5 28.5T760-440H313Z" />
-            </svg>
+            <Icon name="arrow_left" size={16} />
             Back to results
-          </a>
+          </Link>
         ) : null}
         {!isCheckoutEnabled() ? (
           <Notice
@@ -97,12 +91,22 @@ export default async function BookPage({
             cta={{ href: '/search', label: 'Find a flight' }}
           />
         ) : (
-          <OfferGate
-            offerId={offerId}
-            route={hasRoute ? (route as { from: string; to: string; depart: string; return?: string; adults?: number }) : undefined}
-            email={su.email ?? undefined}
-            name={su.name ?? undefined}
-          />
+          // OfferGate re-prices the offer server-side (a genuine Duffel round
+          // trip) before it knows whether it'll render the small Notice card
+          // or the full CheckoutForm. Isolating it in its own Suspense means
+          // that uncertainty is scoped to just this region — the shell above
+          // (back link, AppShell nav) streams immediately instead of the
+          // whole page blocking on Duffel, and the loading state shown here
+          // (FareCheckSkeleton) matches app/book/loading.tsx exactly, so
+          // there's one continuous skeleton rather than two different guesses.
+          <Suspense fallback={<FareCheckSkeleton />}>
+            <OfferGate
+              offerId={offerId}
+              route={hasRoute ? (route as { from: string; to: string; depart: string; return?: string; adults?: number }) : undefined}
+              email={su.email ?? undefined}
+              name={su.name ?? undefined}
+            />
+          </Suspense>
         )}
         <SiteFooter />
       </div>
@@ -177,7 +181,7 @@ function Notice({
     <div className="mx-auto mt-2 max-w-[560px]">
       <div className="flex items-start gap-4 rounded-[18px] border border-border bg-surface px-4 py-6 sm:px-7 sm:py-7">
         <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
-          <Icon name={icon} size={22} />
+          <Icon name={icon} size={24} weight="fill" />
         </span>
         <div className="min-w-0">
           <div className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
@@ -185,15 +189,17 @@ function Notice({
           </div>
           <p className="mt-1.5 max-w-[54ch] text-[14px] leading-[1.55] text-text2">{body}</p>
           {cta ? (
-            <a
-              href={cta.href}
-              {...(/^https?:/.test(cta.href)
-                ? { target: '_blank', rel: 'noopener noreferrer' }
-                : {})}
-              className="mt-5 inline-flex items-center gap-2 rounded-[11px] border-[1.5px] border-text bg-transparent px-4 py-[9px] text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
-            >
-              {cta.label}
-            </a>
+            <div className="mt-5">
+              <Button
+                variant="ink"
+                href={cta.href}
+                {...(/^https?:/.test(cta.href)
+                  ? { native: true, target: '_blank', rel: 'noopener noreferrer' }
+                  : {})}
+              >
+                {cta.label}
+              </Button>
+            </div>
           ) : null}
         </div>
       </div>
