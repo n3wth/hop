@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHeader'
+import Card from '@/components/ui/Card'
+import Eyebrow from '@/components/ui/Eyebrow'
 import type { ImprovementFinding } from '@/lib/improvement-findings'
 import type { SupportTicket } from '@/lib/support-tickets'
 import type { AdminMcpTokenRow, AdminMcpCallerRow } from '@/lib/admin-mcp'
@@ -75,7 +77,7 @@ export default function AgentActivity({
           ) : (
             <div className="flex flex-col gap-2">
               {findings.map((f) => (
-                <div key={f.id} className="rounded-[12px] border border-border bg-paper px-3 py-2.5">
+                <Card key={f.id} surface="paper" radius="md" className="px-3 py-2.5">
                   <div className="flex items-baseline justify-between gap-3">
                     <div className="min-w-0 truncate text-[13px] font-semibold text-text">{f.title}</div>
                     <span className="flex-shrink-0 text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
@@ -94,7 +96,7 @@ export default function AgentActivity({
                     ) : null}
                     {f.lastSeenAt ? <span>last seen {fmtDate(f.lastSeenAt)}</span> : null}
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -110,12 +112,12 @@ export default function AgentActivity({
               .filter((t) => t.repliedAt)
               .slice(0, 5)
               .map((t) => (
-                <div key={t.id} className="rounded-[12px] border border-border bg-paper px-3 py-2.5">
+                <Card key={t.id} surface="paper" radius="md" className="px-3 py-2.5">
                   <div className="truncate text-[13px] font-semibold text-text">{t.fromEmail}</div>
                   <div className="truncate text-[12px] text-text3">
                     replied {fmtDate(t.repliedAt)} · {t.subject || '(no subject)'}
                   </div>
-                </div>
+                </Card>
               ))}
           </div>
         </Section>
@@ -159,9 +161,11 @@ export default function AgentActivity({
           ) : (
             <div className="flex flex-col gap-1.5">
               {mcpCallers.slice(0, 10).map((c, i) => (
-                <div
+                <Card
                   key={`${c.userId ?? 'unlinked'}-${i}`}
-                  className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3 py-2"
+                  surface="paper"
+                  radius="sm"
+                  className="flex items-center justify-between gap-3 px-3 py-2"
                 >
                   <span className="truncate text-[12.5px] font-semibold text-text">
                     {c.email ?? 'Unlinked / stateless'}
@@ -169,7 +173,7 @@ export default function AgentActivity({
                   <span className="flex-shrink-0 text-[12px] text-text3">
                     {c.callCount} call{c.callCount === 1 ? '' : 's'}
                   </span>
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -183,9 +187,11 @@ export default function AgentActivity({
           ) : (
             <div className="flex flex-col gap-1.5">
               {mcpTokens.slice(0, 10).map((t, i) => (
-                <div
+                <Card
                   key={`${t.email}-${t.lastFour}-${i}`}
-                  className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3 py-2"
+                  surface="paper"
+                  radius="sm"
+                  className="flex items-center justify-between gap-3 px-3 py-2"
                 >
                   <div className="min-w-0">
                     <div className="truncate text-[12.5px] font-semibold text-text">
@@ -199,7 +205,7 @@ export default function AgentActivity({
                     <br />
                     <span className="text-text3">no cap configured yet</span>
                   </span>
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -212,7 +218,7 @@ export default function AgentActivity({
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-8">
-      <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">{title}</h2>
+      <Eyebrow as="h2" className="font-bold text-brand">{title}</Eyebrow>
       <div className="mt-3">{children}</div>
     </section>
   )
@@ -228,10 +234,10 @@ function Empty({ children }: { children: ReactNode }) {
 
 function Tile({ value, label }: { value: number; label: string }) {
   return (
-    <div className="rounded-[14px] border border-border bg-paper p-4">
+    <Card surface="paper" radius="md" className="p-4">
       <div className="hop-num text-[22px] font-semibold text-text">{value}</div>
       <div className="mt-1 text-[12.5px] text-text3">{label}</div>
-    </div>
+    </Card>
   )
 }
 
