@@ -6,6 +6,7 @@ import { safeReturnTo } from '@/lib/safe-return'
 import { isGoogleAuthEnabled, isEmailPasswordAuthEnabled, isPasskeyEnabled } from '@/lib/env'
 import Logo from '@/components/Logo'
 import Icon from '@/components/Icon'
+import Eyebrow from '@/components/ui/Eyebrow'
 import GoogleSignIn from '@/components/auth/GoogleSignIn'
 import EmailPasswordForm from '@/components/auth/EmailPasswordForm'
 import PasskeyButton from '@/components/auth/PasskeyButton'
@@ -46,9 +47,9 @@ export default async function LoginPage({
         </Link>
 
         <div className="relative z-10 max-w-[420px]">
-          <p className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-hero-eyebrow">
+          <Eyebrow as="p" onDark>
             Points or cash
-          </p>
+          </Eyebrow>
           <h2 className="mt-4 text-balance font-display text-[40px] font-semibold leading-[1.06] tracking-[-0.02em] text-white xl:text-[46px]">
             Know which one wins before you book.
           </h2>
@@ -118,9 +119,9 @@ export default async function LoginPage({
 
               <div className="my-6 flex items-center gap-3">
                 <div className="h-px flex-1 bg-border" />
-                <span className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
+                <Eyebrow>
                   or
-                </span>
+                </Eyebrow>
                 <div className="h-px flex-1 bg-border" />
               </div>
 

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Icon from '@/components/Icon'
+import Card from '@/components/ui/Card'
 import { disconnectGmailHistory, resyncGmailHistory } from '@/app/actions/accounts'
 import type { PastTrip } from '@/lib/travel-history'
 
@@ -95,7 +96,7 @@ export default function GmailHistory({
   // Connected: show the linked inbox + parsed trips + disconnect/resync.
   if (connected) {
     return (
-      <section className="mt-4 overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
+      <Card surface="surface" radius="md" className="mt-4 overflow-hidden" as="section">
         <div className="flex items-center justify-between gap-3 px-5 py-3.5 sm:px-6">
           <span
             className={`flex min-w-0 items-center gap-2 text-[13px] font-semibold ${
@@ -224,13 +225,13 @@ export default function GmailHistory({
           hop reads only travel-confirmation emails and stores only these trip
           facts — never the email itself. Disconnect deletes them.
         </p>
-      </section>
+      </Card>
     )
   }
 
   // Not connected. If the seam is gated off, keep the calm "coming soon" state.
   return (
-    <div className="mt-4 flex flex-col gap-4 rounded-[var(--radius)] border border-border bg-surface px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
+    <Card surface="surface" radius="md" className="mt-4 flex flex-col gap-4 px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-4">
         <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
           <Icon name="receipt_long" size={24} weight="fill" />
@@ -260,6 +261,6 @@ export default function GmailHistory({
           Connect Gmail (soon)
         </span>
       )}
-    </div>
+    </Card>
   )
 }

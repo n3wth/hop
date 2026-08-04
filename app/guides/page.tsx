@@ -3,6 +3,7 @@ import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import EditorialHeader from '@/components/EditorialHeader'
 import BrandIcon from '@/components/BrandIcon'
+import Card from '@/components/ui/Card'
 import { pageMeta } from '@/lib/seo'
 import { VERIFY_CAVEAT } from '@/lib/sweet-spots'
 import { programGuides } from '@/lib/program-guides'
@@ -48,43 +49,50 @@ export default function ProgramGuidesIndexPage() {
               <Link
                 key={g.slug}
                 href={`/guides/${g.slug}`}
-                className="group flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-6 transition-colors duration-200 ease-[var(--ease-premium)] hover:border-brand"
+                className="group flex flex-col focus:outline-none"
               >
-                <div className="flex items-center gap-3">
-                  <BrandIcon code={g.code} name={g.name} size={48} />
-                  <div className="flex min-w-0 flex-1 items-baseline justify-between gap-3">
-                    <h2 className="font-display text-[20px] font-semibold leading-tight tracking-[-0.01em] text-text">
-                      {g.name}
-                    </h2>
-                    <span className="flex-shrink-0 text-[13px] font-semibold text-text3">
-                      {g.partners.length} partners
+                <Card
+                  surface="paper"
+                  radius="lg"
+                  interactive
+                  className="flex flex-1 flex-col p-6 duration-200 ease-[var(--ease-premium)]"
+                >
+                  <div className="flex items-center gap-3">
+                    <BrandIcon code={g.code} name={g.name} size={48} />
+                    <div className="flex min-w-0 flex-1 items-baseline justify-between gap-3">
+                      <h2 className="font-display text-[20px] font-semibold leading-tight tracking-[-0.01em] text-text">
+                        {g.name}
+                      </h2>
+                      <span className="flex-shrink-0 text-[13px] font-semibold text-text3">
+                        {g.partners.length} partners
+                      </span>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-[14px] leading-snug text-text2">
+                    Best transfer: <span className="font-semibold text-text">{top.name}</span> at{' '}
+                    {top.ratio} — {top.baselineCpp.toFixed(2)}¢ baseline.
+                  </p>
+                  <div className="mt-auto flex items-center justify-between gap-3 pt-5">
+                    <span className="text-[14px] font-semibold text-text transition-colors group-hover:text-brand">
+                      See {g.name} transfer partners
+                    </span>
+                    <span
+                      aria-hidden
+                      className="flex-shrink-0 text-[15px] font-semibold text-text3 transition-colors group-hover:text-brand"
+                    >
+                      →
                     </span>
                   </div>
-                </div>
-                <p className="mt-3 text-[14px] leading-snug text-text2">
-                  Best transfer: <span className="font-semibold text-text">{top.name}</span> at{' '}
-                  {top.ratio} — {top.baselineCpp.toFixed(2)}¢ baseline.
-                </p>
-                <div className="mt-auto flex items-center justify-between gap-3 pt-5">
-                  <span className="text-[14px] font-semibold text-text transition-colors group-hover:text-brand">
-                    See {g.name} transfer partners
-                  </span>
-                  <span
-                    aria-hidden
-                    className="flex-shrink-0 text-[15px] font-semibold text-text3 transition-colors group-hover:text-brand"
-                  >
-                    →
-                  </span>
-                </div>
+                </Card>
               </Link>
             )
           })}
         </section>
 
-        <p className="mt-8 rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[14px] leading-relaxed text-text3">
+        <Card surface="surface" radius="md" as="p" className="mt-8 px-4 py-3 text-[14px] leading-relaxed text-text3">
           {VERIFY_CAVEAT} Baseline cpp figures are typical published valuations (lib/valuations.ts),
           not a live quote.
-        </p>
+        </Card>
 
         <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[14px]">
           <span className="text-text3">Keep exploring:</span>

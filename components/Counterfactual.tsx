@@ -175,9 +175,9 @@ export default function Counterfactual({
       </div>
 
       {error ? (
-        <p className="mt-4 rounded-[12px] border border-border bg-sunk px-4 py-2.5 text-[13px] text-text2">
+        <Card surface="sunk" radius="md" className="mt-4 px-4 py-2.5 text-[13px] text-text2" as="p">
           {error}
-        </p>
+        </Card>
       ) : null}
 
       {result ? <ResultPanel result={result} /> : null}

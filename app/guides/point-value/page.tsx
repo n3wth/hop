@@ -3,6 +3,7 @@ import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import EditorialHeader from '@/components/EditorialHeader'
 import BrandIcon from '@/components/BrandIcon'
+import Card from '@/components/ui/Card'
 import { pageMeta, absoluteUrl } from '@/lib/seo'
 import { cpp, tier, formatValue, GREEN_TIER_CPP, AMBER_TIER_CPP, POINTS_THRESHOLD_CPP } from '@/lib/cpp'
 import { listValuations, WALLET_VALUE_CAVEAT } from '@/lib/valuations'
@@ -143,7 +144,7 @@ export default function PointValuePage() {
           </p>
 
           {exampleCpp !== undefined && (
-            <div className="mt-5 rounded-[var(--radius-lg)] border border-border bg-paper p-5 sm:p-6">
+            <Card surface="paper" radius="lg" className="mt-5 p-5 sm:p-6">
               <div className="text-[12px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
                 Worked example
               </div>
@@ -162,7 +163,7 @@ export default function PointValuePage() {
                 (${EXAMPLE_CASH} − ${EXAMPLE_TAXES_LABEL}) × 100 ÷ {EXAMPLE_MILES.toLocaleString('en-US')} ={' '}
                 {formatValue(exampleCpp)}
               </p>
-            </div>
+            </Card>
           )}
         </section>
 
@@ -234,9 +235,9 @@ export default function PointValuePage() {
               </div>
             ))}
           </div>
-          <p className="mt-4 rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[14px] leading-relaxed text-text3">
+          <Card surface="surface" className="mt-4 px-4 py-3 text-[14px] leading-relaxed text-text3">
             {WALLET_VALUE_CAVEAT}
-          </p>
+          </Card>
         </section>
 
         {/* how this differs from a static blog chart */}
