@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHeader'
+import Card from '@/components/ui/Card'
+import Eyebrow from '@/components/ui/Eyebrow'
 import type { BillingOverview } from '@/lib/admin-billing'
 
 interface Props {
@@ -89,9 +91,11 @@ export default function BillingConsole({ overview, billingEnabled }: Props) {
         ) : (
           <div className="flex flex-col gap-2">
             {overview.recent.map((s, i) => (
-              <div
+              <Card
                 key={`${s.email}-${i}`}
-                className="flex flex-col gap-1 rounded-[var(--radius-sm)] border border-border bg-paper px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+                surface="paper"
+                radius="sm"
+                className="flex flex-col gap-1 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
               >
                 <div className="min-w-0">
                   <div className="truncate text-[13.5px] font-semibold text-text">{s.email}</div>
@@ -105,7 +109,7 @@ export default function BillingConsole({ overview, billingEnabled }: Props) {
                     <span>renews {fmtDate(s.currentPeriodEnd)}</span>
                   )}
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         )}
@@ -147,7 +151,7 @@ function StatusPill({ status }: { status: string }) {
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-8">
-      <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">{title}</h2>
+      <Eyebrow as="h2" className="font-bold text-brand">{title}</Eyebrow>
       <div className="mt-3">{children}</div>
     </section>
   )
@@ -163,11 +167,11 @@ function Empty({ children }: { children: ReactNode }) {
 
 function Tile({ value, label, sub }: { value: string; label: string; sub?: string }) {
   return (
-    <div className="rounded-[14px] border border-border bg-paper p-4">
+    <Card surface="paper" radius="md" className="p-4">
       <div className="hop-num text-[20px] font-semibold text-text">{value}</div>
       <div className="mt-1 text-[12.5px] text-text3">{label}</div>
       {sub ? <div className="mt-0.5 text-[11px] text-text3">{sub}</div> : null}
-    </div>
+    </Card>
   )
 }
 
