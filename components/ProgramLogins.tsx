@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react'
 import type { CredentialRow } from '@/lib/credential-vault'
 import { addProgramLogin, removeProgramLogin } from '@/app/actions/credentials'
 import { canonicalizeProgram, programById } from '@/lib/programs'
+import Card from './ui/Card'
 import BrandIcon from './BrandIcon'
 import ProgramPicker from './ProgramPicker'
 import Icon from './Icon'
@@ -39,7 +40,7 @@ export default function ProgramLogins({
   autosyncLive: boolean
 }) {
   return (
-    <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
+    <Card as="section" surface="surface" className="overflow-hidden">
       <div className="px-5 py-4 sm:px-6">
         <div className="text-[14px] font-semibold text-text">Auto-sync with your login</div>
         <p className="mt-0.5 text-[14px] leading-[1.5] text-text2">
@@ -62,7 +63,7 @@ export default function ProgramLogins({
       ) : null}
 
       <AddLoginForm hasRows={logins.length > 0} />
-    </section>
+    </Card>
   )
 }
 
