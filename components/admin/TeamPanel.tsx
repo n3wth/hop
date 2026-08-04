@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHeader'
 import TeamAvatar from '@/components/admin/TeamAvatar'
+import Card from '@/components/ui/Card'
+import Eyebrow from '@/components/ui/Eyebrow'
 import { formatNextRun, type TeamCard } from '@/lib/admin-team'
 import type { MarketingDraft } from '@/lib/admin-marketing'
 import type { OpenItem } from '@/lib/linear-client'
@@ -52,15 +54,15 @@ export default function TeamPanel({ cards, githubConfigured, now, drafts, openIt
 
 function PanelHeading({ children }: { children: ReactNode }) {
   return (
-    <h2 className="text-[10.5px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">
+    <Eyebrow as="h2" className="font-bold text-brand">
       {children}
-    </h2>
+    </Eyebrow>
   )
 }
 
 function DraftsSection({ drafts }: { drafts: MarketingDraft[] }) {
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-paper p-4">
+    <Card surface="paper" radius="md" className="p-4">
       <PanelHeading>Drafts awaiting review</PanelHeading>
       <p className="mt-1 text-[12px] text-text3">
         Ready-to-paste drafts for channels Omar has no posting credentials for.
@@ -93,13 +95,13 @@ function DraftsSection({ drafts }: { drafts: MarketingDraft[] }) {
           ))}
         </div>
       )}
-    </div>
+    </Card>
   )
 }
 
 function OpenItemsSection({ items, linearConfigured }: { items: OpenItem[] | null; linearConfigured: boolean }) {
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-paper p-4">
+    <Card surface="paper" radius="md" className="p-4">
       <PanelHeading>Open items</PanelHeading>
       <p className="mt-1 text-[12px] text-text3">The desks&rsquo; standing coordination threads in Linear.</p>
       {items === null ? (
@@ -130,7 +132,7 @@ function OpenItemsSection({ items, linearConfigured }: { items: OpenItem[] | nul
           ))}
         </div>
       )}
-    </div>
+    </Card>
   )
 }
 
@@ -146,7 +148,7 @@ function TeamMemberCard({
   const { member, work, waitingOn, nextRunAt } = card
 
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-paper p-4">
+    <Card surface="paper" radius="md" className="p-4">
       <div className="flex items-center gap-3">
         <TeamAvatar animal={member.animal} size={48} />
         <div className="min-w-0">
@@ -212,15 +214,15 @@ function TeamMemberCard({
       <div className="mt-3 border-t border-hair pt-2.5 text-[11.5px] text-text3">
         {member.scheduleHuman} · reports via {member.reportsVia}
       </div>
-    </div>
+    </Card>
   )
 }
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <div className="mb-1.5 mt-3.5 text-[10.5px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">
+    <Eyebrow as="div" className="mb-1.5 mt-3.5 font-bold text-brand">
       {children}
-    </div>
+    </Eyebrow>
   )
 }
 
