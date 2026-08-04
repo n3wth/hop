@@ -148,3 +148,61 @@ One 5-line note per run. Figures come only from the repo's own signals (business
   (`docs/plans/2026-07-05-agentic-travel-agent-northstar.md`) — with `signed_up` still reading
   zero across three funnel-log reads per the board memo, a confirmed subscriber count (even zero)
   is now the single most useful thing this desk could report and cannot get to on its own.
+
+## 2026-07-28 (run 7 — answered pricing question; sent but never merged, see run 8)
+
+- Sent and answered Oliver's 2026-07-15 reply ("did the board choose new pricing") directly
+  in-thread: no, $49/yr stands, the discussed $99/yr raise is blocked-on-billing per the
+  2026-07-19 board memo, not in progress. MRR still ~$0/unknown, same structural gap (no
+  `DATABASE_URL`/Stripe access). Outreach unchanged, both items still sent/unanswered. Flagged
+  the merge-pipeline stall (stuck since 2026-07-23) as financially material.
+- **This entry's own file changes never reached `main`** — `docs/finance/budget.md` +
+  `docs/finance/ledger.md` sat in draft PR #364 for a week, itself caught by the 2026-08-02 board
+  memo as an instance of the same merge-pipeline problem the entry warned about. Content
+  reconstructed here from the sent email (`finance-hop@agentmail.to` thread, 2026-07-28) since
+  the original PR diff isn't merged as of this run.
+
+## 2026-08-04 (run 8 — outreach approval-log backfilled, PR #364 un-stuck, MRR deadline is tomorrow)
+
+- **MRR**: still ~$0/unknown. Same structural gap as all 7 prior runs — no `DATABASE_URL` or
+  Stripe read access this session either. The 2026-08-02 board memo (5 independent lenses)
+  reports `signed_up` at zero for confirmed non-automated traffic across 28+ days, and flags that
+  the plan's own math already called organic $10k-in-30-days unreachable — not merely at risk.
+  Standing ask unchanged: founder-reported subscriber count (even zero) or read-only DB/Stripe
+  access.
+- **Known burn**: unchanged, ~$75/mo infra (`DEFAULT_INFRA_COST_MONTHLY_USD` still 75), LLM spend
+  still unmeasured (`llmCostUsd` still hardcoded `null`, per the board memo's amendment #14, now
+  carried 4+ weeks). Budget stays approved at ~$125/mo, no new reply from Oliver on the envelope.
+- **Outreach queue**: `outreach.md` re-checked — both items (seats.aero, AwardWallet) still
+  `status: sent`, no reply from either. **seats.aero is now 29+ days unanswered** per the board
+  memo (gate 4/4 on billing legitimacy, business plan §3.1) — no new `approved-to-send` items
+  this run, nothing new sent. Backfilled `outreach.md`'s approval-log per the 2026-08-02 board
+  memo's ranked amendment #8: neither of the two 2026-07-06 sends has a standalone founder
+  approval email on record — only a general budget approval that predates them; corrected the
+  file to say so plainly instead of implying an approval that doesn't exist (see `outreach.md`
+  for the full reconstruction). Not walking either send back — both are low-risk, reversible
+  inquiry emails inside this desk's standing outreach mandate, and Oliver hasn't objected in 7
+  replies since.
+- **Process fix this run**: run 7's PR (#364) had sat open/draft for a week — caught directly by
+  the board's 2026-08-02 kill-list item 4 ("stop opening new finance PRs while #364 sits
+  unmerged"). Marked it ready-for-review this run (content was already reviewed clean by the
+  merge-sheriff sweep on 2026-07-29; it was blocked only on draft status plus the recurring
+  Vercel-check stall). Did not merge it directly — that's the normal CI/merge-sheriff path, now
+  apparently unstuck again (5 unrelated PRs merged today, 2026-08-04 09:16-10:56 UTC). This run's
+  own changes land in a fresh PR off current `main` rather than stacking on #364, per the
+  worktree-quickstart convention; the two PRs touch mostly-disjoint sections of the same files and
+  should merge in either order without real conflict.
+- **Board context (not this desk's call, flagging because it's financially material)**: the
+  2026-08-02 board memo independently confirms the merge pipeline has stalled a *third* time
+  (zero merges 2026-07-31 21:09 UTC → 2026-08-02, since apparently recovered), that
+  `HOP_ENABLE_BILLING` remains on against the unlicensed seats.aero feed for a 5th week, and that
+  `docs/ops-runbook.md` now contradicts itself on whether the R0.2 "one real purchase" gate has
+  ever passed (2026-07-04 table: "still owed"; a 2026-07-27 edit: "Passed" — no ledger entry from
+  this desk, across all 8 runs, supports either claim independently). None of these are this
+  desk's decision to make; restating them here because "have we ever actually gotten paid" is a
+  finance question even when the fix isn't a finance action.
+- **Tomorrow**: the founder's own 2026-08-05 $10k MRR northstar target lapses. Per the board memo,
+  three consecutive board reviews (7/19, 7/26, 8/02) have asked Oliver to explicitly reset or
+  reaffirm it and logged no answer either way. This desk has nothing new to add beyond restating
+  the same standing ask a fourth time: an explicit decision either way, from Oliver, is the one
+  input no agent run can substitute for.
