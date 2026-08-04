@@ -13,6 +13,7 @@ import {
 import { markAllAlertsSeen } from '@/lib/standing-order-alerts'
 import { validateDraft } from '@/lib/standing-orders-model'
 import { getUserTier, ALERT_LIMITS } from '@/lib/subscription'
+import { isBillingEnabled } from '@/lib/env'
 
 // Server Actions for the signed-in user's standing orders. Every action is gated
 // by the Auth0 session and scoped to session.user.sub so one user can never touch
@@ -44,9 +45,15 @@ async function alertCapBlock(userId: string): Promise<Result | null> {
   if (!Number.isFinite(limit)) return null
   const active = await countActiveStandingOrders(userId)
   if (active >= limit) {
+    // COUPLING: components/WatchThisRoute.tsx detects this limit state via the
+    // /alert limit/i regex — keep the "alert limit" substring (or update that
+    // regex in the same change). The number is ALERT_LIMITS[tier], never a
+    // hardcoded 3. Only point at Account once there's something to buy there.
     return {
       ok: false,
-      error: `You're at the ${limit}-alert limit on the free plan. Upgrade to add more alerts.`,
+      error: isBillingEnabled()
+        ? `You're at the ${limit}-alert limit on the free plan. Upgrade in Account to add more.`
+        : `You're at the ${limit}-alert limit on the free plan. Upgrade to add more alerts.`,
     }
   }
   return null

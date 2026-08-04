@@ -11,6 +11,7 @@ import { z } from 'zod'
 import { computeCpp, topValue } from '@/lib/destinations'
 import { priceTrip, type PriceTripBalance } from '@/lib/concierge-tools'
 import { assembleSearch, verdictSummary } from '@/lib/search'
+import { clampTravelDates } from '@/lib/travel-dates'
 import { canonicalizeProgram, programById, listTransferablePrograms } from '@/lib/programs'
 import { partnersOf, transfersTo, effectiveBalanceFor } from '@/lib/transfers'
 import { cardForProgram, formatBonus } from '@/lib/card-affiliates'
@@ -72,6 +73,18 @@ export const verdictSchema = {
   depart: z.string().describe('Departure date, ISO "YYYY-MM-DD".'),
   return: z.string().optional().describe('Return date, ISO "YYYY-MM-DD" (round trip).'),
   adults: z.number().int().min(1).optional().describe('Number of adults (default 1).'),
+  children: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe('Seated children — they count toward the party-total pricing (default 0).'),
+  infants: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe('Lap infants — no seat, excluded from pricing (default 0).'),
   balances: balanceInputSchema.optional(),
 }
 
@@ -88,15 +101,24 @@ export async function runVerdict(args: {
   depart: string
   return?: string
   adults?: number
+  children?: number
+  infants?: number
   balances?: BalanceInput
 }) {
+  // MCP callers are LLMs too — clamp past/malformed dates like /api/search
+  // (year-less "August" resolved into a past year 422s Duffel every time).
+  const dates = clampTravelDates(args.depart, args.return)
   return verdictSummary(
     {
       from: args.from.trim().toUpperCase(),
       to: args.to.trim().toUpperCase(),
-      depart: args.depart,
-      return: args.return,
+      depart: dates.depart,
+      return: dates.return,
       adults: Math.max(1, args.adults ?? 1),
+      // Party size drives the engine's total-cost scaling (lib/search.seatsFor)
+      // — omitting these silently priced a family as a solo traveler.
+      ...(args.children ? { children: Math.max(0, args.children) } : {}),
+      ...(args.infants ? { infants: Math.max(0, args.infants) } : {}),
     },
     toBalances(args.balances),
   )

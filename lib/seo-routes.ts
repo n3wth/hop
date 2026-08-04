@@ -4,7 +4,7 @@ import type { MetadataRoute } from 'next'
 // datasets. The sitemap reads it as lastModified so crawlers see a real refresh
 // without churning on every unrelated deploy. After bumping, the weekly SEO cron
 // (or a manual GET /api/cron/revalidate-seo) invalidates cached pages.
-export const CONTENT_LAST_MODIFIED = '2026-06-30'
+export const CONTENT_LAST_MODIFIED = '2026-07-15'
 
 type ChangeFrequency = NonNullable<MetadataRoute.Sitemap[number]['changeFrequency']>
 
@@ -22,10 +22,18 @@ export const STATIC_SEO_ROUTES: StaticSeoRoute[] = [
   { path: '/deals', changeFrequency: 'daily', priority: 0.8 },
   { path: '/destinations', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/sweet-spots', changeFrequency: 'weekly', priority: 0.7 },
+  { path: '/guides', changeFrequency: 'weekly', priority: 0.7 },
+  { path: '/guides/point-value', changeFrequency: 'weekly', priority: 0.6 },
+  { path: '/guides/points-101', changeFrequency: 'weekly', priority: 0.6 },
+  { path: '/points', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/ask', changeFrequency: 'weekly', priority: 0.7 },
+  { path: '/pricing', changeFrequency: 'weekly', priority: 0.6 },
+  { path: '/mcp', changeFrequency: 'monthly', priority: 0.5 },
+  { path: '/stats', changeFrequency: 'weekly', priority: 0.4 },
   { path: '/support', changeFrequency: 'monthly', priority: 0.4 },
   { path: '/privacy', changeFrequency: 'yearly', priority: 0.3 },
   { path: '/terms', changeFrequency: 'yearly', priority: 0.3 },
+  { path: '/credits', changeFrequency: 'yearly', priority: 0.2 },
 ]
 
 export interface NavLink {
@@ -38,6 +46,7 @@ export const PRIMARY_NAV: NavLink[] = [
   { href: '/search', label: 'Search' },
   { href: '/deals', label: 'Deals' },
   { href: '/ask', label: 'Ask' },
+  { href: '/pricing', label: 'Pricing' },
 ]
 
 export interface FooterSection {
@@ -55,13 +64,17 @@ export const FOOTER_SECTIONS: FooterSection[] = [
       { href: '/deals', label: 'Deals' },
       { href: '/destinations', label: 'Destination guides' },
       { href: '/sweet-spots', label: 'Sweet spots' },
+      { href: '/guides', label: 'Program guides' },
       { href: '/ask', label: 'Ask hop' },
+      { href: '/mcp', label: 'Use hop from your AI agent' },
+      { href: '/pricing', label: 'Pricing' },
     ],
   },
   {
     title: 'Learn',
     links: [
-      { href: '/support#how-hop-decides', label: 'How we value points' },
+      { href: '/guides/points-101', label: 'New to points? Start here' },
+      { href: '/guides/point-value', label: 'How we value points' },
       { href: '/support', label: 'Support' },
     ],
   },
@@ -70,6 +83,7 @@ export const FOOTER_SECTIONS: FooterSection[] = [
     links: [
       { href: '/privacy', label: 'Privacy' },
       { href: '/terms', label: 'Terms' },
+      { href: '/credits', label: 'Photo credits' },
     ],
   },
 ]
@@ -82,7 +96,12 @@ export const SEO_REVALIDATE_PATHS: string[] = [
   '/deals',
   '/destinations',
   '/sweet-spots',
+  '/guides',
+  '/guides/point-value',
+  '/guides/points-101',
   '/ask',
+  '/pricing',
+  '/mcp',
   '/support',
   '/privacy',
   '/terms',

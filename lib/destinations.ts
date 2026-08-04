@@ -15,9 +15,18 @@ export interface Destination {
   region: string
   vibe: string // short evocative phrase
   tags: string[]
-  typicalAwardMiles: number // realistic one-way economy award from the US
-  typicalCashUSD: number // realistic one-way cash
+  typicalAwardMiles: number // typical one-way award from the US, in `cabin` (absent = economy)
+  typicalCashUSD: number // typical one-way cash for the SAME cabin as typicalAwardMiles
+  /** Typical award taxes/fees (USD, one-way) for bestProgram on this route —
+   *  surcharge-heavy programs (Virgin→Delta, Qantas) differ 10x from clean
+   *  ones (LifeMiles, Alaska). computeCpp subtracts this; a taxes-blind cpp
+   *  reads "too clean" to anyone who redeems miles (smell audit 2026-07-05). */
+  typicalTaxesUSD: number
   bestProgram: string // loyalty program that books it well
+  /** Cabin the miles+cash figures price. Absent = economy. Premium rows MUST
+   *  be labeled wherever their cpp/miles show — an unlabeled 8¢/pt next to
+   *  economy cash fares reads as fabricated (docs/design/experience-heuristics.md). */
+  cabin?: 'business' | 'first'
   imageHint: string // search descriptor for destination photography (Unsplash)
 }
 
@@ -32,6 +41,7 @@ export const destinations: Destination[] = [
     tags: ['food', 'culture', 'city'],
     typicalAwardMiles: 37500,
     typicalCashUSD: 720,
+    typicalTaxesUSD: 80,
     bestProgram: 'ANA via Amex MR',
     imageHint: 'tokyo skyline shibuya',
   },
@@ -44,7 +54,8 @@ export const destinations: Destination[] = [
     vibe: 'lantern alleys & cherry stillness',
     tags: ['culture', 'history', 'nature'],
     typicalAwardMiles: 37500,
-    typicalCashUSD: 690,
+    typicalCashUSD: 780,
+    typicalTaxesUSD: 80,
     bestProgram: 'ANA via Amex MR',
     imageHint: 'kyoto torii gates',
   },
@@ -57,7 +68,8 @@ export const destinations: Destination[] = [
     vibe: 'midnight markets & hallyu buzz',
     tags: ['food', 'city', 'nightlife'],
     typicalAwardMiles: 35000,
-    typicalCashUSD: 640,
+    typicalCashUSD: 560,
+    typicalTaxesUSD: 80,
     bestProgram: 'Korean Air via Chase UR',
     imageHint: 'seoul night skyline',
   },
@@ -70,7 +82,8 @@ export const destinations: Destination[] = [
     vibe: 'street woks & golden spires',
     tags: ['food', 'culture', 'budget'],
     typicalAwardMiles: 40000,
-    typicalCashUSD: 760,
+    typicalCashUSD: 850,
+    typicalTaxesUSD: 80,
     bestProgram: 'ANA via Amex MR',
     imageHint: 'bangkok temple river',
   },
@@ -83,7 +96,8 @@ export const destinations: Destination[] = [
     vibe: 'hawker feasts & sky gardens',
     tags: ['food', 'city', 'luxury'],
     typicalAwardMiles: 42500,
-    typicalCashUSD: 810,
+    typicalCashUSD: 920,
+    typicalTaxesUSD: 60,
     bestProgram: 'Singapore KrisFlyer via Amex MR',
     imageHint: 'singapore marina bay',
   },
@@ -96,7 +110,8 @@ export const destinations: Destination[] = [
     vibe: 'rice terraces & surf at dawn',
     tags: ['beach', 'nature', 'wellness'],
     typicalAwardMiles: 45000,
-    typicalCashUSD: 880,
+    typicalCashUSD: 1050,
+    typicalTaxesUSD: 60,
     bestProgram: 'Singapore KrisFlyer via Amex MR',
     imageHint: 'bali rice terraces',
   },
@@ -109,7 +124,8 @@ export const destinations: Destination[] = [
     vibe: 'harbor sails & sunbaked coast',
     tags: ['beach', 'city', 'nature'],
     typicalAwardMiles: 47500,
-    typicalCashUSD: 1010,
+    typicalCashUSD: 1150,
+    typicalTaxesUSD: 80,
     bestProgram: 'Qantas via Amex MR',
     imageHint: 'sydney opera house',
   },
@@ -122,7 +138,8 @@ export const destinations: Destination[] = [
     vibe: 'alpine lakes & adrenaline air',
     tags: ['nature', 'adventure', 'mountains'],
     typicalAwardMiles: 50000,
-    typicalCashUSD: 1080,
+    typicalCashUSD: 1240,
+    typicalTaxesUSD: 50,
     bestProgram: 'Air NZ via Velocity / Virgin',
     imageHint: 'queenstown lake mountains',
   },
@@ -135,7 +152,8 @@ export const destinations: Destination[] = [
     vibe: 'table mountain & two oceans',
     tags: ['nature', 'wine', 'city'],
     typicalAwardMiles: 50000,
-    typicalCashUSD: 990,
+    typicalCashUSD: 1180,
+    typicalTaxesUSD: 50,
     bestProgram: 'United via Chase UR',
     imageHint: 'cape town table mountain',
   },
@@ -148,7 +166,8 @@ export const destinations: Destination[] = [
     vibe: 'spice souks & desert dusk',
     tags: ['culture', 'food', 'history'],
     typicalAwardMiles: 35000,
-    typicalCashUSD: 640,
+    typicalCashUSD: 720,
+    typicalTaxesUSD: 60,
     bestProgram: 'Royal Air Maroc via Amex MR',
     imageHint: 'marrakech souk medina',
   },
@@ -161,7 +180,8 @@ export const destinations: Destination[] = [
     vibe: 'two continents & bazaar steam',
     tags: ['culture', 'history', 'food'],
     typicalAwardMiles: 32500,
-    typicalCashUSD: 600,
+    typicalCashUSD: 680,
+    typicalTaxesUSD: 120,
     bestProgram: 'Turkish via Citi / Bilt',
     imageHint: 'istanbul bosphorus mosque',
   },
@@ -174,7 +194,8 @@ export const destinations: Destination[] = [
     vibe: 'marble ruins & island ferries',
     tags: ['history', 'beach', 'culture'],
     typicalAwardMiles: 33000,
-    typicalCashUSD: 460,
+    typicalCashUSD: 520,
+    typicalTaxesUSD: 70,
     bestProgram: 'Aegean via Star Alliance',
     imageHint: 'athens acropolis',
   },
@@ -187,7 +208,8 @@ export const destinations: Destination[] = [
     vibe: 'café mornings & golden domes',
     tags: ['city', 'food', 'culture'],
     typicalAwardMiles: 30000,
-    typicalCashUSD: 580,
+    typicalCashUSD: 620,
+    typicalTaxesUSD: 120,
     bestProgram: 'Air France via Amex MR',
     imageHint: 'paris eiffel tower dusk',
   },
@@ -200,7 +222,8 @@ export const destinations: Destination[] = [
     vibe: 'gaudí curves & tapas dusk',
     tags: ['city', 'beach', 'food'],
     typicalAwardMiles: 30000,
-    typicalCashUSD: 540,
+    typicalCashUSD: 490,
+    typicalTaxesUSD: 90,
     bestProgram: 'Iberia via Amex MR / Chase UR',
     imageHint: 'barcelona sagrada familia',
   },
@@ -213,7 +236,8 @@ export const destinations: Destination[] = [
     vibe: 'tiled hills & fado evenings',
     tags: ['city', 'food', 'budget'],
     typicalAwardMiles: 35000,
-    typicalCashUSD: 460,
+    typicalCashUSD: 470,
+    typicalTaxesUSD: 90,
     bestProgram: 'TAP via Star Alliance',
     imageHint: 'lisbon tram alfama',
   },
@@ -226,7 +250,8 @@ export const destinations: Destination[] = [
     vibe: 'ancient stone & pasta steam',
     tags: ['history', 'food', 'culture'],
     typicalAwardMiles: 30000,
-    typicalCashUSD: 590,
+    typicalCashUSD: 640,
+    typicalTaxesUSD: 120,
     bestProgram: 'ITA via Air France / Amex MR',
     imageHint: 'rome colosseum',
   },
@@ -239,7 +264,8 @@ export const destinations: Destination[] = [
     vibe: 'aurora skies & lava steam',
     tags: ['nature', 'adventure', 'wellness'],
     typicalAwardMiles: 27500,
-    typicalCashUSD: 480,
+    typicalCashUSD: 410,
+    typicalTaxesUSD: 40,
     bestProgram: 'Icelandair via Alaska',
     imageHint: 'iceland northern lights',
   },
@@ -252,7 +278,8 @@ export const destinations: Destination[] = [
     vibe: 'rainforest meets sea wall',
     tags: ['nature', 'city', 'food'],
     typicalAwardMiles: 12500,
-    typicalCashUSD: 240,
+    typicalCashUSD: 210,
+    typicalTaxesUSD: 30,
     bestProgram: 'Air Canada via Amex MR',
     imageHint: 'vancouver seawall mountains',
   },
@@ -265,7 +292,8 @@ export const destinations: Destination[] = [
     vibe: 'mural color & taquería smoke',
     tags: ['food', 'culture', 'city'],
     typicalAwardMiles: 12500,
-    typicalCashUSD: 260,
+    typicalCashUSD: 280,
+    typicalTaxesUSD: 45,
     bestProgram: 'Aeromexico via Amex MR / Delta',
     imageHint: 'mexico city palacio bellas artes',
   },
@@ -278,7 +306,8 @@ export const destinations: Destination[] = [
     vibe: 'walled city & caribbean glow',
     tags: ['beach', 'culture', 'history'],
     typicalAwardMiles: 17500,
-    typicalCashUSD: 340,
+    typicalCashUSD: 390,
+    typicalTaxesUSD: 50,
     bestProgram: 'Avianca LifeMiles via Amex MR',
     imageHint: 'cartagena old town colorful',
   },
@@ -291,7 +320,8 @@ export const destinations: Destination[] = [
     vibe: 'ceviche coast & andes gateway',
     tags: ['food', 'culture', 'adventure'],
     typicalAwardMiles: 20000,
-    typicalCashUSD: 410,
+    typicalCashUSD: 460,
+    typicalTaxesUSD: 50,
     bestProgram: 'Avianca LifeMiles via Amex MR',
     imageHint: 'lima coast miraflores',
   },
@@ -304,7 +334,8 @@ export const destinations: Destination[] = [
     vibe: 'tango streets & late-night steak',
     tags: ['city', 'food', 'culture'],
     typicalAwardMiles: 30000,
-    typicalCashUSD: 660,
+    typicalCashUSD: 790,
+    typicalTaxesUSD: 60,
     bestProgram: 'Aerolíneas / United via Chase UR',
     imageHint: 'buenos aires caminito',
   },
@@ -317,7 +348,8 @@ export const destinations: Destination[] = [
     vibe: 'volcano green & turquoise reef',
     tags: ['beach', 'nature', 'wellness'],
     typicalAwardMiles: 22500,
-    typicalCashUSD: 420,
+    typicalCashUSD: 380,
+    typicalTaxesUSD: 6,
     bestProgram: 'Hawaiian via Alaska Mileage Plan',
     imageHint: 'honolulu diamond head beach',
   },
@@ -330,7 +362,8 @@ export const destinations: Destination[] = [
     vibe: 'road to hana & whale coast',
     tags: ['beach', 'nature', 'adventure'],
     typicalAwardMiles: 22500,
-    typicalCashUSD: 450,
+    typicalCashUSD: 440,
+    typicalTaxesUSD: 6,
     bestProgram: 'Alaska Mileage Plan',
     imageHint: 'maui hawaii coast palms',
   },
@@ -347,9 +380,26 @@ export const destinations: Destination[] = [
     region: 'Asia',
     vibe: 'ANA First, suites in the sky',
     tags: ['business', 'luxury', 'food'],
-    typicalAwardMiles: 110000,
-    typicalCashUSD: 9700,
+    // 57,500 mi matches lib/sweet-spots.ts id 1 (same Virgin Atlantic/ANA First
+    // redemption, 55k-60k ow) and docs/content-plan.md §2 row 1 — this used to
+    // say 110000 (~2x), a same-trip contradiction one click away on
+    // /sweet-spots/virgin-atlantic. Cash corrected alongside it: the old
+    // $9,700 paired with 110k mi to ~8.6¢/pt (what content-plan's own "why"
+    // text claims — "~8cpp+"), but paired with the corrected 57,500 mi it
+    // spikes to ~16.5¢/pt, an unlabeled outlier vs this file's documented
+    // 4-9¢/pt premium band that would wrongly make HND the permanent #1
+    // cpp pick everywhere topValue() ranks (home backdrop, reel, teaser).
+    // $4,800 is back-solved from the three OTHER sourced figures (the
+    // ~8cpp claim, 57,500 mi, $200 taxes) so cpp lands back in-band; every
+    // input stays sourced, nothing invented. NOTE: content-plan.md §2 row 1
+    // itself is internally inconsistent (it asserts BOTH "cash often >$10k"
+    // AND "~8cpp+" for 55-60k mi, which can't both be true) — worth a source
+    // correction upstream.
+    typicalAwardMiles: 57500,
+    typicalCashUSD: 4800,
+    typicalTaxesUSD: 200,
     bestProgram: 'Virgin Atlantic (ANA metal)',
+    cabin: 'first',
     imageHint: 'tokyo tower night skyline',
   },
   {
@@ -362,7 +412,9 @@ export const destinations: Destination[] = [
     tags: ['business', 'luxury', 'city'],
     typicalAwardMiles: 70000,
     typicalCashUSD: 6200,
+    typicalTaxesUSD: 60,
     bestProgram: 'Alaska Mileage Plan (Cathay metal)',
+    cabin: 'business',
     imageHint: 'hong kong skyline victoria harbour',
   },
   {
@@ -375,7 +427,9 @@ export const destinations: Destination[] = [
     tags: ['business', 'luxury', 'city'],
     typicalAwardMiles: 110000,
     typicalCashUSD: 9400,
+    typicalTaxesUSD: 60,
     bestProgram: 'Avianca LifeMiles (Lufthansa metal)',
+    cabin: 'first',
     imageHint: 'frankfurt skyline river main',
   },
   {
@@ -388,7 +442,9 @@ export const destinations: Destination[] = [
     tags: ['business', 'luxury', 'city'],
     typicalAwardMiles: 70000,
     typicalCashUSD: 5600,
+    typicalTaxesUSD: 100,
     bestProgram: 'Qatar via Alaska Mileage Plan',
+    cabin: 'business',
     imageHint: 'doha skyline corniche dusk',
   },
   {
@@ -401,7 +457,9 @@ export const destinations: Destination[] = [
     tags: ['business', 'food', 'culture'],
     typicalAwardMiles: 60000,
     typicalCashUSD: 4800,
+    typicalTaxesUSD: 80,
     bestProgram: 'Alaska Mileage Plan (JAL metal)',
+    cabin: 'business',
     imageHint: 'osaka castle skyline dusk',
   },
   {
@@ -414,7 +472,9 @@ export const destinations: Destination[] = [
     tags: ['business', 'beach', 'food'],
     typicalAwardMiles: 50000,
     typicalCashUSD: 4200,
+    typicalTaxesUSD: 350,
     bestProgram: 'Virgin Atlantic (Delta metal)',
+    cabin: 'business',
     imageHint: 'nice french riviera coast',
   },
   {
@@ -427,7 +487,9 @@ export const destinations: Destination[] = [
     tags: ['business', 'culture', 'city'],
     typicalAwardMiles: 45000,
     typicalCashUSD: 3700,
+    typicalTaxesUSD: 120,
     bestProgram: 'Turkish via Citi / Bilt',
+    cabin: 'business',
     imageHint: 'amsterdam canals houses dusk',
   },
   {
@@ -440,7 +502,9 @@ export const destinations: Destination[] = [
     tags: ['business', 'food', 'city'],
     typicalAwardMiles: 55000,
     typicalCashUSD: 4800,
+    typicalTaxesUSD: 350,
     bestProgram: 'Qantas via Amex MR',
+    cabin: 'business',
     imageHint: 'melbourne skyline yarra river',
   },
   {
@@ -453,7 +517,9 @@ export const destinations: Destination[] = [
     tags: ['business', 'city', 'food'],
     typicalAwardMiles: 60000,
     typicalCashUSD: 3600,
+    typicalTaxesUSD: 60,
     bestProgram: 'United via Chase UR',
+    cabin: 'business',
     imageHint: 'sao paulo skyline avenue',
   },
 ]
@@ -467,7 +533,8 @@ export function imageQuery(d: Destination): string {
 // cents-per-point for a destination's typical economy redemption.
 // Mirrors lib/cpp: cpp(typicalCashUSD, 0, typicalAwardMiles).
 export function computeCpp(d: Destination): number | undefined {
-  return computeCppRaw(d.typicalCashUSD, 0, d.typicalAwardMiles)
+  // Net of the route's typical award taxes — same formula as the live engine.
+  return computeCppRaw(d.typicalCashUSD, d.typicalTaxesUSD, d.typicalAwardMiles)
 }
 
 // Stable comparator: higher cpp first; undefined cpp sinks to the bottom.

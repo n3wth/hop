@@ -1,5 +1,10 @@
 # eve/ — hop's proactive travel agent (Vercel Eve)
 
+> **FROZEN — spec only. Do not extend until deployment is scheduled.**
+> Per the kill/freeze list in
+> [`docs/plans/2026-07-03-critical-review-roadmap.md`](../docs/plans/2026-07-03-critical-review-roadmap.md).
+> This scaffold is deployed nowhere; treat it as a design artifact, not a live runtime.
+
 This directory is hop's always-on travel agent, built on [Vercel Eve](https://vercel.com/eve)
 ("Next.js for agents"). It is the **runtime + channel + memory** that the deterministic verdict
 engine in `lib/*` has always lacked: Eve runs hop's own engine on a schedule against each user's
@@ -68,6 +73,6 @@ eve dev                    # local Eve dev server: schedules, channels, tools, s
 Eve resolves the model via Vercel AI Gateway and runs on Vercel Workflows + Sandbox + Connect.
 Local dev needs the AI Gateway credential and the same hop env the engine reads
 (`lib/env.ts` is lazy, so importing a `lib/*` client never throws — but live `assembleSearch` wants
-`DUFFEL_API_KEY` + `SEATSAERO_API_KEY`, and email delivery wants `RESEND_API_KEY` (`isEmailEnabled()`);
+`DUFFEL_API_KEY_LIVE` + `SEATS_AERO_API_KEY`, and email delivery wants `RESEND_API_KEY` (`isEmailEnabled()`);
 absent those, the engine degrades per-section and `sendAlertEmail` is a clean no-op).
 Use `MOCK=1` to drive the engine from fixtures without upstream keys.

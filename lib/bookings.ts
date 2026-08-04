@@ -1,9 +1,9 @@
 import { withDb } from '@/lib/supabase-helpers'
 import type { Booking, CheckoutOffer, OrderResult } from '@/lib/types'
 
-// Booking persistence in Supabase via the service-role client (server-only).
-// Identity is Auth0, so every query is scoped by user_id in code. All functions
-// degrade gracefully — never throw to the page.
+// Booking persistence via withDb to Neon (lib/supabase-helpers.ts, server-only).
+// Identity is Better Auth's user.id, so every query is scoped by user_id in
+// code. All functions degrade gracefully — never throw to the page.
 
 const TABLE = 'hop_bookings'
 
@@ -23,7 +23,7 @@ function snapshotDate(offer: CheckoutOffer): string | undefined {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
-// Persist a successful order, keyed by the Auth0 user sub. Returns the new row
+// Persist a successful order, keyed by the Better Auth user.id. Returns the new row
 // id, or null on any failure (the confirmation page still renders from the
 // order result — persistence is best-effort).
 export async function saveBooking(

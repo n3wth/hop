@@ -26,7 +26,7 @@ export default defineTool({
     userId: z
       .string()
       .optional()
-      .describe("Auth0 sub. When present, prices against the user's real balances."),
+      .describe("Better Auth user.id. When present, prices against the user's real balances."),
   }),
   async execute({ code, userId }) {
     // Map the shared Balance model to priceTrip's narrower input.

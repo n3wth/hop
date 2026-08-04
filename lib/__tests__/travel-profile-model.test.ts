@@ -44,6 +44,16 @@ describe('validateProfile() — clamps + rejects unknown fields', () => {
     expect(out.dietary).toEqual(['vegan', 'gluten-free'])
   })
 
+  it('accepts fallbackCabin (enum-gated) and preferredAirlines (cleaned list)', () => {
+    const out = validateProfile({
+      fallbackCabin: 'Premium',
+      preferredAirlines: ['  Alaska Airlines ', 'alaska airlines', 42],
+    })
+    expect(out.fallbackCabin).toBe('premium')
+    expect(out.preferredAirlines).toEqual(['Alaska Airlines'])
+    expect(validateProfile({ fallbackCabin: 'spaceship' }).fallbackCabin).toBeUndefined()
+  })
+
   it('caps list length at 12', () => {
     const many = Array.from({ length: 30 }, (_, i) => `place-${i}`)
     expect(validateProfile({ lovedDestinations: many }).lovedDestinations).toHaveLength(12)
@@ -68,6 +78,18 @@ describe('mergeProfile() — scalars overwrite, lists union', () => {
     const base: TravelProfile = { dietary: ['vegan'] }
     mergeProfile(base, { dietary: ['kosher'] })
     expect(base.dietary).toEqual(['vegan'])
+  })
+
+  it('overwrites fallbackCabin and unions preferredAirlines', () => {
+    const merged = mergeProfile(
+      { cabin: 'first', fallbackCabin: 'economy', preferredAirlines: ['Alaska Airlines'] },
+      { fallbackCabin: 'premium', preferredAirlines: ['JAL'] },
+    )
+    expect(merged.fallbackCabin).toBe('premium')
+    expect(merged.preferredAirlines).toEqual(['Alaska Airlines', 'JAL'])
+    // The stated hierarchy survives into the prompt summary.
+    expect(profileSummary(merged)).toContain('Preferred cabin: first (falls back to premium)')
+    expect(profileSummary(merged)).toContain('Prefers to fly: Alaska Airlines, JAL')
   })
 })
 

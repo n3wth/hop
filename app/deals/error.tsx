@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import Logo from '@/components/Logo'
 import Icon from '@/components/Icon'
+import Button from '@/components/ui/Button'
 
 // /deals route error boundary. The feed is built from a static dataset, so the
 // page rarely throws — this catches the surrounding failures (session, balance
@@ -35,7 +36,7 @@ export default function DealsError({
       </div>
 
       <h1
-        className="hop-rise mt-7 font-display text-[34px] font-semibold tracking-[-0.02em] text-text"
+        className="hop-rise mt-7 text-balance font-display text-[34px] font-semibold tracking-[-0.02em] text-text"
         style={{ ['--hop-delay' as string]: '100ms' }}
       >
         The sweet spots didn&apos;t load.
@@ -50,31 +51,21 @@ export default function DealsError({
       </p>
 
       <div className="hop-rise mt-8 flex flex-wrap items-center justify-center gap-3" style={{ ['--hop-delay' as string]: '220ms' }}>
-        <button
-          type="button"
-          onClick={() => retry()}
-          className="inline-flex items-center gap-[9px] rounded-[14px] bg-brand px-7 py-[15px] text-[15px] font-semibold text-white transition-colors hover:bg-brand-deep"
-        >
-          <Icon name="swap_horiz" size={18} />
+        <Button onClick={() => retry()}>
+          <Icon name="refresh" size={16} />
           Try again
-        </button>
-        <Link
-          href="/ask"
-          className="inline-flex items-center gap-[9px] rounded-[14px] border border-border bg-surface px-7 py-[15px] text-[15px] font-semibold text-text transition-colors hover:bg-sunk"
-        >
-          <Icon name="flight" size={18} />
+        </Button>
+        <Button href="/ask" variant="secondary">
+          <Icon name="flight" size={16} />
           Ask hop
-        </Link>
-        <Link
-          href="/"
-          className="inline-flex items-center rounded-[14px] border border-border bg-surface px-7 py-[15px] text-[15px] font-semibold text-text transition-colors hover:bg-sunk"
-        >
+        </Button>
+        <Button href="/" variant="secondary">
           Go home
-        </Link>
+        </Button>
       </div>
 
       {error.digest ? (
-        <p className="mt-6 text-[12px] tracking-[0.04em] text-text3">
+        <p className="mt-6 text-[12px] tracking-[var(--track-label)] text-text3">
           Reference: {error.digest}
         </p>
       ) : null}

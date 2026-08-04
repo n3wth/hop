@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import Eyebrow from './ui/Eyebrow'
 
 interface EditorialHeaderProps {
   eyebrow: string
@@ -26,9 +27,7 @@ export default function EditorialHeader({
 }: EditorialHeaderProps) {
   return (
     <header className="mx-auto max-w-[60ch] pt-10 text-center sm:pt-14">
-      <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-brand">
-        {eyebrow}
-      </span>
+      <Eyebrow className="text-[12px] text-brand">{eyebrow}</Eyebrow>
       <h1
         className={`mx-auto mt-3 ${titleMaxW} text-balance font-display text-[34px] font-semibold leading-[1.05] tracking-[-0.02em] text-text sm:text-[52px]`}
       >

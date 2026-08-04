@@ -13,11 +13,17 @@
 import { revalidatePath } from 'next/cache'
 import { auth0 } from '@/lib/auth0'
 import { getProfile, setProfile } from '@/lib/travel-profile'
+import {
+  confirmInferredFact,
+  dismissInferredFact,
+  type InferredActionResult,
+} from '@/lib/inferred-facts'
 import type { TravelProfile } from '@/lib/travel-profile-model'
 import type { MemoryKind } from '@/lib/memory-view'
 
 // Map a list kind → the profile field holding its entries.
 const LIST_FIELDS: Partial<Record<MemoryKind, keyof TravelProfile>> = {
+  preferredAirlines: 'preferredAirlines',
   dietary: 'dietary',
   accessibility: 'accessibility',
   lovedDestinations: 'lovedDestinations',
@@ -28,6 +34,7 @@ const SCALAR_FIELDS: Partial<Record<MemoryKind, keyof TravelProfile>> = {
   vacationDays: 'vacationDays',
   travelParty: 'travelParty',
   cabin: 'cabin',
+  fallbackCabin: 'fallbackCabin',
 }
 
 export interface ForgetResult {
@@ -70,4 +77,23 @@ export async function forgetFact(kind: MemoryKind, entry?: string): Promise<Forg
   const ok = await setProfile(sub, next)
   if (ok) revalidatePath('/account')
   return { ok }
+}
+
+// Confirm an inferred "hop noticed …" suggestion → promote it into the stated
+// profile and mark it confirmed. Auth0-scoped; no-op when signed out.
+export async function confirmInference(id: string): Promise<InferredActionResult> {
+  const sub = (await auth0.getSession())?.user?.sub
+  if (!sub) return { ok: false }
+  const res = await confirmInferredFact(sub, id)
+  if (res.ok) revalidatePath('/account')
+  return res
+}
+
+// Dismiss an inferred suggestion → mark rejected so it's never re-proposed.
+export async function dismissInference(id: string): Promise<InferredActionResult> {
+  const sub = (await auth0.getSession())?.user?.sub
+  if (!sub) return { ok: false }
+  const res = await dismissInferredFact(sub, id)
+  if (res.ok) revalidatePath('/account')
+  return res
 }

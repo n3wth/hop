@@ -1,0 +1,10 @@
+name = "hop-balance-sync"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+# HOP_BALANCE_INGEST_SECRET is set via `wrangler secret put HOP_BALANCE_INGEST_SECRET`
+# — never committed here, never stored in this file or in git.
+
+[vars]
+# The deployed app's ingest endpoint. Override per environment as needed.
+HOP_BALANCE_INGEST_URL = "https://hop.flights/api/balance-sync/ingest"

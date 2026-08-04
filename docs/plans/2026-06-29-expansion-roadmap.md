@@ -116,9 +116,20 @@ does this. Every expansion must preserve the invariant: every number is computed
 | **Point.me** | 30+, 150+ airlines | No | No | No | Yes ($200/pax) |
 | **Seats.aero** | 25+ | No | No | Yes (paid) | No |
 | **Flightpoints MCP** | 40+ | No | Yes (search only) | No | No |
+| **Gondola** | hotels-first | Hotel cpp only | No | No | No |
+| **Points Path** | Google Flights overlay | Generic value arrow (balance-blind) | No | No | No |
+| **Hopper** | none — can't take miles as payment | No (cash timing prediction) | No | Price watch (cash) | No |
+| **iMean.ai / AI-planner wave** | none ("loyalty integration is light") | No (LLM-generated, hallucination-prone) | They're the *callers* | No | Chat planner |
 | **hop** | Seats.aero + Duffel | **Yes** | **Yes (verdict+econ)** | Planned | /ask (AI) |
 
 hop's gap: alerts, subscription, card affiliates. Those three close the monetization gap while the verdict moat widens.
+
+Rows added 2026-07-02 from the verified competitive-positioning research (see
+`docs/plans/2026-07-02-competitive-positioning.md`): Hopper is a *different-question* neighbor
+(cash-fare timing; no points), the AI-planner wave is a *channel* for the MCP server, and
+Gondola/Points Path are the nearest single-axis analogs (balances-without-flights-verdicts and
+verdicts-without-balances, respectively). No player found combines balances + deterministic
+verdicts + agent-native distribution.
 
 ---
 

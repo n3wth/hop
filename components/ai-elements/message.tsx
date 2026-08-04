@@ -27,7 +27,7 @@ export function MessageContent({ children, className = '', ...props }: MessageCo
       className={
         'flex w-fit min-w-0 max-w-full flex-col gap-2.5 text-[15px] ' +
         // User: right-aligned bubble with rounded corners (flat top-right = tail)
-        'group-[.is-user]:max-w-[80%] group-[.is-user]:rounded-[22px] group-[.is-user]:rounded-tr-[5px] group-[.is-user]:bg-brand-tint group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:text-text ' +
+        'group-[.is-user]:max-w-[80%] group-[.is-user]:rounded-[var(--radius-lg)] group-[.is-user]:rounded-tr-[6px] group-[.is-user]:bg-brand-tint group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:text-text ' +
         // Assistant: full-width open prose
         'group-[.is-assistant]:w-full ' +
         className

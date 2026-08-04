@@ -1,3 +1,4 @@
+import Card from '@/components/ui/Card'
 import { MONTH_ABBR, type MonthlyNormals, type Seasonality } from '@/lib/climate'
 
 // A flat 12-month temperature ribbon. Bar height encodes the month's mean temp
@@ -22,7 +23,7 @@ export default function ClimateStrip({
 
   return (
     <figure className="mt-5">
-      <div className="flex items-end gap-1.5 rounded-[var(--radius)] border border-border bg-paper px-3 pb-3 pt-4">
+      <Card surface="paper" className="flex items-end gap-1.5 px-3 pb-3 pt-4">
         {normals.tempF.map((t, i) => {
           // 24–100% of the track, so even the coolest month reads as a bar.
           const h = t == null ? 10 : 24 + 76 * ((t - tmin) / span)
@@ -41,13 +42,13 @@ export default function ClimateStrip({
                   aria-hidden
                 />
               </div>
-              <span className="text-[10px] font-semibold uppercase tracking-[0.02em] text-text3">
+              <span className="text-[10px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
                 {MONTH_ABBR[i].charAt(0)}
               </span>
             </div>
           )
         })}
-      </div>
+      </Card>
       <figcaption className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] text-text3">
         <span className="inline-flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-[2px]" style={{ background: 'var(--color-brand)' }} aria-hidden />

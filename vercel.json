@@ -7,6 +7,38 @@
     {
       "path": "/api/cron/revalidate-seo",
       "schedule": "0 6 * * 0"
+    },
+    {
+      "path": "/api/cron/valuation-sync",
+      "schedule": "30 13 * * *"
+    },
+    {
+      "path": "/api/cron/sync-stripe",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/business-digest",
+      "schedule": "7 14 * * 1"
+    },
+    {
+      "path": "/api/cron/health-sentinel",
+      "schedule": "17 11 * * *"
+    },
+    {
+      "path": "/api/cron/balance-autosync",
+      "schedule": "45 9 * * *"
+    },
+    {
+      "path": "/api/cron/sweet-spot-candidates",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/awardwallet-sync",
+      "schedule": "20 */6 * * *"
+    },
+    {
+      "path": "/api/cron/newsletter-digest",
+      "schedule": "0 13 * * 1"
     }
   ]
 }

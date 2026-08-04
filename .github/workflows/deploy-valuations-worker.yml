@@ -1,0 +1,46 @@
+name: Deploy valuations worker
+
+# DISABLED (2026-07-04): GitHub Actions billing is broken on this account (see
+# ci.yml). Deploy manually instead: `cd cloudflare/valuations-worker && npx
+# wrangler deploy` (see its README). To re-enable auto-deploy: restore the
+# push/pull_request path triggers below.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-valuations-worker
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cloudflare/valuations-worker
+    steps:
+      - uses: actions/checkout@v4
+
+      # wrangler 4.x requires Node >= 22 (run 1 failed on node 20 with
+      # "Wrangler requires at least Node.js v22.0.0").
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: cloudflare/valuations-worker/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # Requires the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID repo
+      # secrets to be added manually in GitHub settings (Settings > Secrets
+      # and variables > Actions) before this workflow can succeed. That is
+      # expected on first setup — not a bug.
+      - name: Deploy to Cloudflare
+        if: github.event_name == 'push'
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

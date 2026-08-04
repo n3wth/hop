@@ -5,6 +5,7 @@ import type { ApiResult, FlightOption, SearchParams } from '@/lib/types'
 import { env, hasEnv } from '@/lib/env'
 import { cpp, tier } from '@/lib/cpp'
 import { cashBookingUrl } from '@/lib/booking'
+import { cacheGet, cacheSet } from './cache'
 
 const DUFFEL_BASE = 'https://api.duffel.com'
 const DUFFEL_VERSION = 'v2'
@@ -140,6 +141,11 @@ export async function searchCash(params: SearchParams): Promise<ApiResult<Flight
     return { ok: false, reason: 'Duffel API key not configured' }
   }
 
+  const cacheKey = `hop:search:cash:${params.from.toUpperCase()}:${params.to.toUpperCase()}:${params.depart}:${params.return || 'one-way'}:${params.cabin || 'economy'}:${params.adults || 1}:${params.children || 0}:${params.infants || 0}`
+
+  const cached = await cacheGet<ApiResult<FlightOption[]>>(cacheKey)
+  if (cached !== null && cached.ok) return cached
+
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
 
@@ -179,7 +185,9 @@ export async function searchCash(params: SearchParams): Promise<ApiResult<Flight
     const json = (await res.json()) as DuffelOfferRequestResponse
     const offers = json.data?.offers ?? []
     const options = offers.map((offer, i) => normalizeDuffelOffer(offer, params, i))
-    return { ok: true, data: options }
+    const result: ApiResult<FlightOption[]> = { ok: true, data: options }
+    await cacheSet(cacheKey, result, 300)
+    return result
   } catch (err) {
     const reason =
       err instanceof Error && err.name === 'AbortError'

@@ -64,8 +64,9 @@ describe('assembleSearch — MOCK path', () => {
   it('saveVsCash is rounded to a whole dollar', async () => {
     const result = await assembleSearch(PARAMS)
 
-    // cheapestCash 254 - Alaska taxes 11.2 = 242.8 → 243
-    expect(result.summary.saveVsCash).toBe(243)
+    // ROUND TRIP: Alaska taxes are per direction (11.2 × 2 legs = 22.4).
+    // cheapestCash 254 − 22.4 = 231.6 → 232
+    expect(result.summary.saveVsCash).toBe(232)
     expect(Number.isInteger(result.summary.saveVsCash)).toBe(true)
   })
 

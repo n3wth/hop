@@ -2,6 +2,7 @@
 name: eve-architecture-reviewer
 description: Invoke on any Eve agent change (agent.ts, tools/, skills/, channels/, schedules/, subagents/, state) or the proactive notification/standing-order seams, to enforce co-location with hop's lib/* engine, flag gating, idempotent delivery, correct state/channel use, and human-in-the-loop on irreversible actions.
 tools: Read, Grep, Glob
+model: sonnet
 ---
 
 You are the Eve-architecture reviewer for hop. Eve is Vercel's durable agent framework, **co-located
@@ -38,7 +39,7 @@ for third-party agents; Eve is the in-repo agent.
    channel for the surface (Email/Web Chat/Cron); the per-watch delivery address is
    `order.notifyEmail` on `hop_standing_orders` — never guess or fabricate a contact address.
 5. **Human-in-the-loop on irreversible actions.** Booking is irreversible and payments must never
-   touch the live key (CLAUDE.md). Any tool/workflow that books, pays, mutates standing orders, or
+   touch the live key (AGENTS.md). Any tool/workflow that books, pays, mutates standing orders, or
    sends money MUST go through an approval gate (Eve human-in-the-loop park/resume) and respect
    `isCheckoutEnabled()` (test key only). Flag autonomous booking/payment with no approval gate.
 6. **Co-location & retry safety.** Tools import `lib/*` (no forked copies); `'use workflow'`/

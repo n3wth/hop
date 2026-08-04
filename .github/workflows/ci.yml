@@ -1,0 +1,97 @@
+name: CI
+
+# DISABLED (2026-07-04): GitHub Actions is refusing to start jobs on this
+# account ("recent account payments have failed or your spending limit needs
+# to be increased"), so every PR showed a red X that had nothing to do with
+# the code. Until billing is fixed the pre-ship gate is `npm run check` +
+# `npm run build` locally (docs/ops-runbook.md) plus the Vercel build check
+# on every PR. To re-enable: restore the pull_request/push triggers below.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Markdown can't break the build — and the autonomy loop (ADR 0009,
+      # docs/autonomy-runbook.md) produces frequent .md-only PRs (run logs,
+      # runbook amendments, plans, ADRs). Skip install/check/build for those
+      # so the required check goes green in seconds instead of minutes. Any
+      # non-.md file in the diff → full gate. Pushes to main always run full.
+      - name: Detect markdown-only diff
+        id: docs
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch origin "$BASE_SHA" --depth=1 --quiet
+          CHANGED=$(git diff --name-only "$BASE_SHA" HEAD)
+          echo "changed files:"; echo "$CHANGED"
+          if [ -n "$CHANGED" ] && ! echo "$CHANGED" | grep -qvE '\.md$'; then
+            echo "only=true" >> "$GITHUB_OUTPUT"
+            echo "Markdown-only diff — skipping install/check/build."
+          else
+            echo "only=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.docs.outputs.only != 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.docs.outputs.only != 'true'
+        run: npm ci
+
+      # Restore Next's compiler cache so unchanged code isn't rebuilt.
+      # https://nextjs.org/docs/pages/guides/ci-build-caching
+      - uses: actions/cache@v4
+        if: steps.docs.outputs.only != 'true'
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('package-lock.json') }}-
+
+      # Same gate as local `npm run check`: lint + typecheck + tests.
+      # Everything runs keyless — lib/env.ts is lazy and every seam degrades.
+      - name: Lint, typecheck, test
+        if: steps.docs.outputs.only != 'true'
+        run: npm run check
+
+      - name: Build
+        if: steps.docs.outputs.only != 'true'
+        run: npm run build
+
+  stale-base-check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      # main moves fast here (parallel agent sessions merge roughly every
+      # 20-30min) — a PR left open too long can merge cleanly while silently
+      # missing very recent changes. This doesn't block merging by itself,
+      # it's a visible signal the branch needs a rebase/merge before landing.
+      - name: Check PR is based on a recent commit
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          MAX_BEHIND: 20
+        run: |
+          git fetch origin "$BASE_REF" --quiet
+          BEHIND=$(git rev-list --count HEAD..FETCH_HEAD)
+          echo "PR head is $BEHIND commit(s) behind origin/$BASE_REF"
+          if [ "$BEHIND" -gt "$MAX_BEHIND" ]; then
+            echo "::error::This PR is $BEHIND commits behind $BASE_REF (max: $MAX_BEHIND). Rebase or merge latest $BASE_REF before merging — otherwise this may land conflicting with very recent work."
+            exit 1
+          fi

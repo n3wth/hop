@@ -66,6 +66,7 @@ export interface A2UIEconomics {
   country: string
   milesNeeded: number
   cashUsd: number
+  taxesUsd: number
   cpp: number | undefined
   bestProgram: string
   youHave: number | undefined
@@ -85,6 +86,10 @@ export interface VerdictCardBlock {
   fitsDays?: number
   // Personalization: surfaced when the user flies a premium cabin.
   cabin?: string
+  // Stamped server-side (personalizeBlocks) when the observed-outcomes seam is on
+  // for a signed-in user → the client shows a "Not for me" dismiss that records
+  // the pass. NEVER model-authored (validateBlock ignores it). Absent = no dismiss.
+  dismissable?: boolean
   // Stamped server-side from price_trip. Never trust a model-supplied value.
   econ?: A2UIEconomics
 }
@@ -480,6 +485,7 @@ function econFromPriceTrip(res: PriceTripResult): A2UIEconomics {
     country: res.country,
     milesNeeded: res.milesNeeded,
     cashUsd: res.cashUsd,
+    taxesUsd: res.taxesUsd,
     cpp: res.cpp,
     bestProgram: res.bestProgram,
     youHave: res.youHave,
@@ -609,12 +615,18 @@ export function a2uiGuidance(
 // emitted. Same question → different blocks per profile/history:
 //   • drops verdict_card.fitsDays/cabin annotations the model can't justify
 //     (no vacation_days known → no "fits N days"; non-premium cabin → no cabin),
+//   • stamps verdict_card.dismissable when canDismiss (observed-outcomes seam on),
 //   • drops connect_gmail when history IS connected (nothing to invite),
 //   • keeps everything else. Pure: returns new blocks, never mutates inputs.
+//
+// `canDismiss` gates the "Not for me" affordance server-side (where env is
+// readable) so it ships dark by default — the client renders it only when the
+// server stamps dismissable, and the recording action re-checks the flag + auth.
 export function personalizeBlocks(
   blocks: A2UIBlock[],
   profile: TravelProfile | undefined,
   hasHistory: boolean,
+  canDismiss = false,
 ): A2UIBlock[] {
   const out: A2UIBlock[] = []
   for (const b of blocks) {
@@ -641,6 +653,9 @@ export function personalizeBlocks(
       } else if (next.cabin) {
         next.cabin = profile!.cabin!
       }
+      // Stamp the dismiss affordance only when the seam is live (server-gated).
+      if (canDismiss) next.dismissable = true
+      else delete next.dismissable
       out.push(next)
       continue
     }

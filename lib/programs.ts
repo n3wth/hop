@@ -155,7 +155,7 @@ export const PROGRAMS: ProgramDef[] = [
   {
     id: 'flying-blue',
     name: 'Air France-KLM Flying Blue',
-    aliases: ['flying blue', 'air france', 'klm', 'air france klm', 'airfrance', 'af', 'kl'],
+    aliases: ['flying blue', 'flyingblue', 'flying-blue', 'air france', 'klm', 'air france klm', 'airfrance', 'af', 'kl'],
     code: 'AF',
     kind: 'airline',
     transferable: false,

@@ -13,6 +13,14 @@ each in its own context, **in parallel**, then merges their findings.
 Optional scope: **$ARGUMENTS** (a base ref). If empty, review the working diff plus the current
 branch's commits.
 
+## 0. Prefer the saved workflow (ADR 0006)
+
+If the harness has the **Workflow tool**, do not orchestrate by hand — the dispatch below is
+already encoded deterministically, with an adversarial-verification stage the manual path
+lacks: `Workflow({ name: 'review-parallel', args: { base: $ARGUMENTS || 'main' } })`
+(`.claude/workflows/review-parallel.js`). When it completes, take its merged `p1/p2/p3` result
+straight to step 4. Steps 1–3 are the **manual fallback** for harnesses without the tool.
+
 ## 1. Capture the diff once
 
 Determine the change set so every reviewer judges the same thing:
@@ -49,10 +57,10 @@ the diff scope and the list of changed files. The roster:
   graceful no-op, deliveries don't double-send (dedupe on the `lastNotifiedOffer` fingerprint via
   `lib/email.ts#sendAlertEmail`), state/channels used correctly, human-in-the-loop on irreversible
   actions. Run on `eve/*` and notification/standing-order changes.
-- **security-reviewer** — `user_id` scoping on every `withDb` query (service-role bypasses RLS; no
-  RLS safety net), `hop_` tokens hashed not plaintext, no secrets in logs/responses/client bundles,
-  lazy env via `lib/env.ts`, route/cron authz. Run on auth, tokens, DB queries, env, routes,
-  MCP/agent endpoints, client components.
+- **security-reviewer** — `user_id` scoping on every `withDb` query (Neon/Drizzle, no RLS safety
+  net — scoping is enforced entirely in code), `hop_` tokens hashed not plaintext, no secrets in
+  logs/responses/client bundles, lazy env via `lib/env.ts`, route/cron authz. Run on auth, tokens,
+  DB queries, env, routes, MCP/agent endpoints, client components.
 
 Skip a reviewer only if the diff plainly cannot trigger its domain (say which you skipped and why).
 When in doubt, run it — reviewers are cheap and return **no findings** when clean.

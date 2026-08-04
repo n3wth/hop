@@ -4,7 +4,7 @@
 // never decides economics. The engine (lib/counterfactual.runCounterfactual) owns
 // every number.
 //
-// Strategy mirrors lib/prefs-parser: a deterministic REGEX fallback runs first
+// Strategy (shared with lib/standing-orders-parser): a deterministic REGEX fallback runs first
 // (cheap, offline, the floor we trust) and handles the common cases
 // ("what if I had 50k more Chase UR", "what if I held Alaska instead of Delta").
 // When the AI Gateway is configured it may WIDEN coverage for phrasings the regex

@@ -61,3 +61,12 @@ of these decisions automatically (e.g. `engine-invariant-reviewer` guards ADR 00
 | [0002](0002-engine-is-source-of-truth.md) | The engine is the source of truth; LLMs only narrate | Accepted |
 | [0003](0003-notification-delivery-abstraction.md) | Gated, idempotent notification delivery layer | Accepted |
 | [0004](0004-compound-engineering-operating-model.md) | Compound-engineering operating model | Accepted |
+| [0005](0005-observed-point-valuation-sync.md) | Observed point-valuation sync | Accepted |
+| [0006](0006-deterministic-orchestration-workflows.md) | Deterministic multi-agent orchestration lives in `.claude/workflows/` | Accepted |
+| [0007](0007-self-improvement-loops.md) | Self-improvement loops | Accepted |
+| [0008](0008-docs-canon-in-git-work-state-in-linear.md) | Documentation canon lives in git; Linear owns work state | Accepted |
+| [0009](0009-tiered-autonomous-merge.md) | Tiered autonomous merge | Accepted |
+| [0010](0010-single-rules-file-agents-md.md) | Single rules file: AGENTS.md is canon, CLAUDE.md imports it | Accepted |
+| [0011](0011-platform-stack-rationale.md) | Platform stack: Vercel + Neon + Better Auth + Drizzle + Upstash | Accepted |
+| [0012](0012-claude-design-component-library-sync.md) | hop's component primitives are synced to a claude.ai/design project | Accepted |
+| [0013](0013-mobile-client-is-a-thin-engine-consumer.md) | The mobile client is a thin engine consumer, never its own engine | Accepted |

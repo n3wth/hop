@@ -30,7 +30,7 @@ export default defineTool({
   description:
     "Deliver a standing-order crossing to the user by email, once. Only call this on a real crossing whose numbers came from the engine (verdict/price_trip). It is gated (a clean no-op until RESEND_API_KEY is configured) and never throws. You do NOT pass any numbers: the email is rendered deterministically from `pick` (the engine's FlightOption). Pass the watch's notify email as `to` and the crossing's stable fingerprint so re-runs stay traceable. Returns {ok:true} or {ok:false, reason: unconfigured | invalid-recipient | send-failed}.",
   inputSchema: z.object({
-    userId: z.string().describe('Auth0 sub of the recipient (owner of the watch).'),
+    userId: z.string().describe('Better Auth user.id of the recipient (owner of the watch).'),
     to: z.string().describe("The watch's notify email (hop_standing_orders.notifyEmail)."),
     alertId: z.string().describe('The durable alert id (hop_standing_order_alerts.id) to mark delivered on success.'),
     route: z.string().describe('Display route, e.g. "SFO → NRT".'),

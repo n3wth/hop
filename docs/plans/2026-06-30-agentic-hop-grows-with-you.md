@@ -8,6 +8,28 @@
 
 ---
 
+## Status (living)
+
+The **memory spine + the resolver are shipped** and on `main`:
+
+- **M1 — glass box** ✅ (#76) — `/account` "What hop knows about you"; reversible stated facts.
+- **M2 — durable conversation memory** ✅ (#86) — `hop_conversation_summary`, rolling summaries. *(dark)*
+- **M3 — inferred facts** ✅ (#90) — `hop_inferred_facts`, "hop noticed…" confirm/dismiss. *(dark)*
+- **M4 — observed outcomes** ✅ (#93) — `hop_memory_outcomes`, "Not for me" → "hop observed…". *(dark)*
+- **M5 — compounding** ✅ (#95) — `lib/memory-context.ts` (THE resolver) + `withoutAvoided`: the
+  home + `/deals` drop stated-avoided places (value order preserved). The avoid-drop is **live**
+  (stated profile, no flag); the resolver reads the gated axes when enabled.
+
+M2–M4 ship **dark** (flag-gated). To turn them on (migrations + flags + verification), see
+[`docs/enabling-agentic-memory.md`](../enabling-agentic-memory.md).
+
+**Next (decision-gated — needs product direction):** M6 (first real action — Add-to-Calendar /
+Watch-this) and M7 (draft trip + hotel cost). These orchestrate connected MCP servers /
+deep-links and add prominent action affordances, so the *where* (which surface, which dates) and
+*how* (OAuth vs calendar deep-link/.ics) want a human call before building.
+
+---
+
 ## 1. Vision
 
 Today hop answers one sharp question — *points or cash?* — brilliantly, but it has a goldfish memory and no hands. It remembers only what you literally typed into `save_profile_fact`, its 40-turn thread (`lib/conversations.ts`, `MAX_MESSAGES = 40`) silently rolls off, the Gmail learning seam is gated dark, and nothing it observes — a booked trip, an ignored standing-order alert, the fact you ask about Tokyo every session — ever feeds back into the next answer. And when hop reaches a verdict, all it can do is *tell* you; it can't put the trip on your calendar, draft the itinerary, or watch it for you without you wiring a form.

@@ -36,7 +36,7 @@ export default defineTool({
     userId: z
       .string()
       .optional()
-      .describe("Auth0 sub. When present, resolves the user's real balances via getUserBalances."),
+      .describe("Better Auth user.id. When present, resolves the user's real balances via getUserBalances."),
     prefs: z
       .record(z.string(), z.unknown())
       .optional()
