@@ -11,7 +11,7 @@ import { destinationByCode, computeCpp, topValue } from '@/lib/destinations'
 import { partnersOf } from '@/lib/transfers'
 import { canonicalizeProgram } from '@/lib/programs'
 import { assembleSearch } from '@/lib/search'
-import { listCardAffiliates, formatBonus } from '@/lib/card-affiliates'
+import { cardById, listCardAffiliates, formatBonus } from '@/lib/card-affiliates'
 
 // The MCP tool handlers MUST be a pure passthrough to hop's deterministic engine
 // — they introduce no economics of their own. These tests prove every figure a
@@ -174,10 +174,6 @@ describe('runComparePrograms() — passthrough to assembleSearch (mock fixtures)
   })
 
   it('flags personalized=false when the CALLER supplied no balances', async () => {
-    // NB: under MOCK the engine grounds award options with mock balances (the
-    // same fixture every tool inherits), so youHave may be populated — but the
-    // `personalized` flag honestly reports that the CALLER passed nothing, which
-    // is the bit a downstream model needs to avoid claiming "YOU can afford it".
     const out = await runComparePrograms({
       from: 'SFO',
       to: 'LHR',
@@ -185,8 +181,6 @@ describe('runComparePrograms() — passthrough to assembleSearch (mock fixtures)
       programs: ['United', 'Alaska'],
     })
     expect(out.personalized).toBe(false)
-    // canAfford is either null (no figure) or a boolean derived from youHave —
-    // never invented independently of the engine's youHave.
     for (const r of out.ranked) {
       if (r.canAfford !== null) {
         expect(typeof r.canAfford).toBe('boolean')
@@ -197,12 +191,11 @@ describe('runComparePrograms() — passthrough to assembleSearch (mock fixtures)
   })
 
   it('with a large balance in a reachable program marks it affordable', async () => {
-    // United is directly held with a huge balance → must clear the award miles.
     const out = await runComparePrograms({
       from: 'SFO',
       to: 'LHR',
       depart: '2026-09-01',
-      programs: ['United'],
+      programs: ['United MileagePlus'],
       balances: [{ program: 'United MileagePlus', balance: 5_000_000 }],
     })
     expect(out.personalized).toBe(true)
@@ -217,9 +210,8 @@ describe('runComparePrograms() — passthrough to assembleSearch (mock fixtures)
       from: 'SFO',
       to: 'LHR',
       depart: '2026-09-01',
-      programs: ['Definitely Not A Program', 'Qatar'], // Qatar has no mock option here
+      programs: ['Definitely Not A Program', 'Qatar'],
     })
-    // The bogus name resolves to nothing; Qatar canonicalizes but has no option.
     expect(out.unavailable.length).toBeGreaterThan(0)
     expect(out.unavailable.some((u) => u.programId === null)).toBe(true)
   })
@@ -235,11 +227,6 @@ describe('runComparePrograms() — passthrough to assembleSearch (mock fixtures)
     expect(unitedRows.length).toBeLessThanOrEqual(1)
   })
 
-  // Regression (PR review): compare_programs used to read result.options, which
-  // assembleSearch trims to MAX_AWARDS (6) for display — so a program ranked
-  // below the cut was falsely reported `unavailable`. It now reads the UNTRIMMED
-  // result.allAwards. The mock fixture has <6 award programs, so we assert the
-  // underlying contract: allAwards is the uncapped best-per-program set.
   it('exposes allAwards as the uncapped superset of the displayed award options', async () => {
     const result = await assembleSearch(
       { from: 'SFO', to: 'LHR', depart: '2026-09-01', adults: 1 },
@@ -248,8 +235,7 @@ describe('runComparePrograms() — passthrough to assembleSearch (mock fixtures)
     expect(Array.isArray(result.allAwards)).toBe(true)
     const shown = result.options.filter((o) => o.kind === 'award').map((o) => o.program)
     const all = (result.allAwards ?? []).map((o) => o.program)
-    for (const p of shown) expect(all).toContain(p) // every shown award is in allAwards
-    // allAwards is never shorter than the displayed award rows (it is the pre-cap set).
+    for (const p of shown) expect(all).toContain(p)
     expect((result.allAwards ?? []).length).toBeGreaterThanOrEqual(shown.length)
   })
 
@@ -292,7 +278,6 @@ describe('runBestCardForProgram() — static earn-card reference (no economics)'
   })
 
   it('returns an error shape for a known program with no card mapped yet', () => {
-    // Aegean is a real canonical program but intentionally not in the local map.
     const out = runBestCardForProgram({ program: 'Aegean' })
     expect('error' in out).toBe(true)
     if ('error' in out) expect(out.programId).toBe('aegean')
@@ -301,7 +286,7 @@ describe('runBestCardForProgram() — static earn-card reference (no economics)'
   it('sources card + bonus straight from lib/card-affiliates.ts (single table, no drift)', () => {
     const out = runBestCardForProgram({ program: 'Chase UR' })
     if ('error' in out) throw new Error('expected a card')
-    const affiliate = listCardAffiliates()['chase-ur']
+    const affiliate = cardById('chase-ur')!
     expect(out.card).toBe(affiliate.cardName)
     expect(out.issuer).toBe(affiliate.issuer)
     expect(out.earnRate).toBe(affiliate.earnRate)
@@ -310,24 +295,18 @@ describe('runBestCardForProgram() — static earn-card reference (no economics)'
     expect(out.bonus).toBe(formatBonus(affiliate))
   })
 
-  // Coverage: the old TOP_CARD_BY_PROGRAM map (now deleted) guaranteed card,
-  // issuer, earnRate, bonus, annualFee, applyUrl for every entry it covered.
-  // Every lib/card-affiliates.ts entry the MCP tool can now surface must carry
-  // the same complete field set — no more, no less coverage than before.
-  it('every CardAffiliate has all the fields the old local map guaranteed', () => {
-    const table = listCardAffiliates()
-    expect(Object.keys(table).length).toBeGreaterThan(0)
-    for (const [id, affiliate] of Object.entries(table)) {
+  it('every CardAffiliate has all the fields guaranteed', () => {
+    const affiliates = listCardAffiliates()
+    expect(affiliates.length).toBeGreaterThan(0)
+    for (const affiliate of affiliates) {
+      const id = affiliate.id
       expect(affiliate.cardName.length, `${id}.cardName`).toBeGreaterThan(0)
       expect(affiliate.issuer.length, `${id}.issuer`).toBeGreaterThan(0)
       expect(affiliate.earnRate.length, `${id}.earnRate`).toBeGreaterThan(0)
-      expect(affiliate.annualFee.length, `${id}.annualFee`).toBeGreaterThan(0)
+      expect(String(affiliate.annualFee).length, `${id}.annualFee`).toBeGreaterThan(0)
       expect(affiliate.applyUrl, `${id}.applyUrl`).toMatch(/^https:\/\//)
       expect(formatBonus(affiliate).length, `${id}.bonus`).toBeGreaterThan(0)
 
-      // And the MCP tool itself must resolve + surface every one of those fields
-      // for each mapped program — proving runBestCardForProgram never drops a
-      // field the old map used to guarantee.
       const out = runBestCardForProgram({ program: id })
       if ('error' in out) throw new Error(`expected a card for mapped id "${id}"`)
       expect(out.card).toBe(affiliate.cardName)

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { resetSyncAddress } from '@/app/actions/sync-address'
 import BrandIcon from './BrandIcon'
+import Card from './ui/Card'
 import Icon from './Icon'
 
 // "Sync from a paste" — the paste rail of the balance-sync seam (flag-gated;
@@ -125,7 +126,7 @@ export default function BalanceSyncPaste({ syncAddress }: { syncAddress: string 
   }
 
   return (
-    <section className="rounded-[var(--radius)] border border-border bg-surface px-5 py-4 sm:px-6">
+    <Card as="section" surface="surface" className="px-5 py-4 sm:px-6">
       <div className="text-[14px] font-semibold text-text">Sync from a paste</div>
       <p className="mt-0.5 text-[14px] leading-[1.5] text-text2">
         Paste a statement email or your account page — hop reads the balances and
@@ -243,6 +244,6 @@ export default function BalanceSyncPaste({ syncAddress }: { syncAddress: string 
           <span className="ml-1.5 text-[12px] text-text3">if it&apos;s ever shared or leaked.</span>
         </div>
       ) : null}
-    </section>
+    </Card>
   )
 }

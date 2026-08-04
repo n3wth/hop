@@ -82,6 +82,23 @@ re-verified the caveat above was *still* true several hours after the board's ow
 picking up this playbook's priority order should check current PR-merge status before assuming a
 later-ranked item is actually reachable.
 
+**Ownership order made fully explicit (2026-08-02), with a new caveat about "resolved" claims:**
+to remove any remaining ambiguity — **the board (`docs/board/`, weekly, Sunday 13:00 UTC) is the
+periodic deep, adversarial check; the strategy desk (`docs/strategy/`, Marcus, Sunday 15:00 UTC) is
+the weekly tracker that adopts the board's ranking by default.** When the two conflict, the
+board's latest ranked amendment list wins, full stop — this has been true since 2026-07-12 and
+this note changes nothing about the rule itself, only states it as a standalone sentence so a
+future reader doesn't have to reconstruct it from three separate weekly notes.
+
+The caveat: the 2026-08-02 board memo (`docs/board/2026-08-02-board-memo.md`) found that the
+board's *own* prior-week PR (#333, the 2026-07-26 memo) asserted inside its own body that it had
+"gets merged with `main`" while remaining open, draft, and unmerged a full 7 days later — a false
+done-claim the board process produced about itself. **Do not treat a board or strategy memo's own
+prose as proof its content reached `main`** — check `git log`/`gh pr view` for the actual file
+before citing "this week's board memo says X" as settled. The ownership-order rule above still
+holds; what changed is that "the board's ranked list wins" now explicitly means the *merged*
+ranked list, not a draft PR's claimed one.
+
 **Ongoing priority ownership (from 2026-07-06):** the board memo above was a one-time review; the
 strategy desk (Marcus, `docs/team/routines.md`) now owns re-ranking priority on a weekly cadence
 via `docs/strategy/<date>-weekly-strategy.md`. Once Marcus has run at least once, his latest file
