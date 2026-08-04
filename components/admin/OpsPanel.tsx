@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHeader'
+import Card from '@/components/ui/Card'
+import Eyebrow from '@/components/ui/Eyebrow'
 import type { PreflightRow, PreflightStatus } from '@/lib/admin-ops'
 import type { DegradationEventRow } from '@/lib/degradation-telemetry'
 import type { ValuationOverride } from '@/lib/valuation-overrides'
@@ -45,16 +47,18 @@ export default function OpsPanel({
       <Section title="Preflight">
         <div className="flex flex-col gap-2">
           {preflight.map((row) => (
-            <div
+            <Card
               key={row.seam}
-              className="flex flex-col gap-1 rounded-[var(--radius-sm)] border border-border bg-paper px-3.5 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+              surface="paper"
+              radius="sm"
+              className="flex flex-col gap-1 px-3.5 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
             >
               <div className="flex items-center gap-2.5">
                 <StatusPill status={row.status} />
                 <span className="text-[13px] font-semibold text-text">{row.seam}</span>
               </div>
               <span className="text-[12px] text-text3 sm:text-right">{row.detail}</span>
-            </div>
+            </Card>
           ))}
         </div>
       </Section>
@@ -77,16 +81,18 @@ export default function OpsPanel({
               ) : (
                 <div className="flex flex-col gap-1.5">
                   {recentOutclicks.map((c, i) => (
-                    <div
+                    <Card
                       key={`${c.createdAt}-${i}`}
-                      className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3 py-2"
+                      surface="paper"
+                      radius="sm"
+                      className="flex items-center justify-between gap-3 px-3 py-2"
                     >
                       <span className="text-[12.5px] font-semibold text-text">
                         {c.kind} · {c.target}
                         {c.program ? <span className="font-normal text-text3"> · {c.program}</span> : null}
                       </span>
                       <span className="flex-shrink-0 text-[11.5px] text-text3">{fmtDate(c.createdAt)}</span>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               )}
@@ -106,9 +112,11 @@ export default function OpsPanel({
           ) : (
             <div className="flex flex-col gap-1.5">
               {degradationEvents.map((e, i) => (
-                <div
+                <Card
                   key={`${e.createdAt}-${i}`}
-                  className="rounded-[var(--radius-sm)] border border-border bg-paper px-3 py-2"
+                  surface="paper"
+                  radius="sm"
+                  className="px-3 py-2"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-[12.5px] font-semibold text-text">
@@ -118,7 +126,7 @@ export default function OpsPanel({
                     <span className="flex-shrink-0 text-[11.5px] text-text3">{fmtDate(e.createdAt)}</span>
                   </div>
                   {e.reason ? <div className="mt-0.5 text-[12px] text-text2">{e.reason}</div> : null}
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -137,16 +145,18 @@ export default function OpsPanel({
                 .slice()
                 .sort((a, b) => b.sampleSize - a.sampleSize)
                 .map((o) => (
-                  <div
+                  <Card
                     key={o.programId}
-                    className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3 py-2"
+                    surface="paper"
+                    radius="sm"
+                    className="flex items-center justify-between gap-3 px-3 py-2"
                   >
                     <span className="text-[12.5px] font-semibold text-text">{o.programId}</span>
                     <span className="text-[12px] text-text3">
                       {o.cpp.toFixed(2)}¢ · {o.sampleSize} samples
                       {o.sampleSize >= 20 ? ' · live' : ' · below gate'}
                     </span>
-                  </div>
+                  </Card>
                 ))}
             </div>
           )}
@@ -158,9 +168,11 @@ export default function OpsPanel({
           ) : (
             <div className="flex flex-col gap-1.5">
               {watches.map((w) => (
-                <div
+                <Card
                   key={w.id}
-                  className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3 py-2"
+                  surface="paper"
+                  radius="sm"
+                  className="flex items-center justify-between gap-3 px-3 py-2"
                 >
                   <span className="text-[12.5px] font-semibold text-text">
                     {w.params.from} → {w.params.to}
@@ -172,7 +184,7 @@ export default function OpsPanel({
                   <span className="flex-shrink-0 text-[11.5px] text-text3">
                     {w.notifyEmail ? 'email' : 'in-app only'}
                   </span>
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -185,7 +197,7 @@ export default function OpsPanel({
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-8">
-      <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">{title}</h2>
+      <Eyebrow as="h2" className="font-bold text-brand">{title}</Eyebrow>
       <div className="mt-3">{children}</div>
     </section>
   )
@@ -201,10 +213,10 @@ function Empty({ children }: { children: ReactNode }) {
 
 function MiniStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-paper p-3.5">
+    <Card surface="paper" radius="md" className="p-3.5">
       <div className="hop-num text-[20px] font-semibold text-text">{value}</div>
       <div className="mt-0.5 text-[12px] text-text3">{label}</div>
-    </div>
+    </Card>
   )
 }
 

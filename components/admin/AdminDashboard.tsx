@@ -11,6 +11,8 @@ import { CRON_JOBS } from '@/lib/health-checks'
 import { analyzeAdminHealth, analyzeAdminFindings } from '@/app/actions/admin-analysis'
 import AnalyzeButton from '@/components/admin/AnalyzeButton'
 import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHeader'
+import Card from '@/components/ui/Card'
+import Eyebrow from '@/components/ui/Eyebrow'
 
 interface Props {
   ownerEmail: string
@@ -203,7 +205,7 @@ function SectionLink({ href, label }: { href: string; label: string }) {
 
 function UnitEconomicsPanel({ economics }: { economics: UnitEconomics }) {
   return (
-    <div className="rounded-[14px] border border-border bg-paper p-4 sm:p-5">
+    <Card surface="paper" radius="md" className="p-4 sm:p-5">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MoneyStat
           label="Est. MRR"
@@ -227,7 +229,7 @@ function UnitEconomicsPanel({ economics }: { economics: UnitEconomics }) {
           sub={economics.llmCostUsd === null ? 'MRR − infra (LLM omitted)' : undefined}
         />
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -237,7 +239,7 @@ function OutclicksCard({ economics }: { economics: UnitEconomics }) {
     : null
 
   return (
-    <div className="rounded-[14px] border border-border bg-paper p-4 sm:p-5">
+    <Card surface="paper" radius="md" className="p-4 sm:p-5">
       <h3 className="text-[12px] font-semibold text-text2">Outclicks by kind · 7 days</h3>
       <p className="mt-0.5 text-[11.5px] text-text3">All affiliate kinds — the This week tile above is card outclicks only.</p>
       {kinds === null ? (
@@ -263,13 +265,13 @@ function OutclicksCard({ economics }: { economics: UnitEconomics }) {
       <Link href="/admin/ops" className="mt-2 inline-block text-[12px] font-semibold text-text2 transition-colors hover:text-text">
         Ops ledger →
       </Link>
-    </div>
+    </Card>
   )
 }
 
 function BookingPipelineCard({ economics }: { economics: UnitEconomics }) {
   return (
-    <div className="rounded-[14px] border border-border bg-paper p-4 sm:p-5">
+    <Card surface="paper" radius="md" className="p-4 sm:p-5">
       <h3 className="text-[12px] font-semibold text-text2">Booking pipeline</h3>
       <p className="mt-0.5 text-[11.5px] text-text3">Current backlog, all-time — not scoped to this week.</p>
       {economics.escalationsNew === null ? (
@@ -289,7 +291,7 @@ function BookingPipelineCard({ economics }: { economics: UnitEconomics }) {
       <Link href="/admin/support" className="mt-2 inline-block text-[12px] font-semibold text-text2 transition-colors hover:text-text">
         Inbox →
       </Link>
-    </div>
+    </Card>
   )
 }
 
@@ -328,7 +330,7 @@ function MoneyStat({
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-8">
-      <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">{title}</h2>
+      <Eyebrow as="h2" className="font-bold text-brand">{title}</Eyebrow>
       <div className="mt-3">{children}</div>
     </section>
   )
@@ -418,12 +420,14 @@ function Stat({
   )
   if (href) {
     return (
-      <Link href={href} className="block rounded-[14px] border border-border bg-paper p-4 transition-colors hover:bg-sunk">
-        {inner}
+      <Link href={href} className="block">
+        <Card surface="paper" radius="md" className="p-4 transition-colors hover:bg-sunk">
+          {inner}
+        </Card>
       </Link>
     )
   }
-  return <div className="rounded-[14px] border border-border bg-paper p-4">{inner}</div>
+  return <Card surface="paper" radius="md" className="p-4">{inner}</Card>
 }
 
 type Tone = 'good' | 'ok' | 'weak' | 'muted'
@@ -450,13 +454,13 @@ function heartbeatStatus(
 function HeartbeatRow({ spec, heartbeat }: { spec: (typeof CRON_JOBS)[number]; heartbeat: CronHeartbeat | null }) {
   const status = heartbeatStatus(spec, heartbeat)
   return (
-    <div className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3.5 py-2.5">
+    <Card surface="paper" radius="sm" className="flex items-center justify-between gap-3 px-3.5 py-2.5">
       <div className="flex items-center gap-2.5">
         <span className={`h-2 w-2 flex-shrink-0 rounded-full ${TONE_CLASS[status.tone]}`} aria-hidden />
         <span className="text-[13px] font-semibold text-text">{spec.job}</span>
       </div>
       <span className="text-[12px] text-text3">{status.label}</span>
-    </div>
+    </Card>
   )
 }
 
@@ -475,15 +479,17 @@ function DegradationList({ degradation }: { degradation: DegradationWindowCounts
         const mean = degradation.priorWeekDailyMean[source] ?? 0
         const elevated = last24h > 0 && last24h > mean * 2 + 2
         return (
-          <div
+          <Card
             key={source}
-            className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3.5 py-2.5"
+            surface="paper"
+            radius="sm"
+            className="flex items-center justify-between gap-3 px-3.5 py-2.5"
           >
             <span className="text-[13px] font-semibold text-text">{source}</span>
             <span className={`text-[12px] ${elevated ? 'text-warn' : 'text-text3'}`}>
               {last24h} today · {mean.toFixed(1)}/day baseline
             </span>
-          </div>
+          </Card>
         )
       })}
     </div>
@@ -493,7 +499,7 @@ function DegradationList({ degradation }: { degradation: DegradationWindowCounts
 function FindingRow({ finding }: { finding: ImprovementFinding }) {
   const tone: Tone = finding.severity === 'p1' ? 'weak' : 'ok'
   return (
-    <div className="rounded-[14px] border border-border bg-paper p-4">
+    <Card surface="paper" radius="md" className="p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span
@@ -513,7 +519,7 @@ function FindingRow({ finding }: { finding: ImprovementFinding }) {
       <div className="mt-2 text-[11.5px] text-text3">
         first seen {fmtDate(finding.firstSeenAt) || 'unknown'} · last seen {fmtDate(finding.lastSeenAt) || 'unknown'}
       </div>
-    </div>
+    </Card>
   )
 }
 

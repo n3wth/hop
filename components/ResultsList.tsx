@@ -48,34 +48,33 @@ export default function ResultsList({ result, travelers = 1 }: ResultsListProps)
   const hasCards = !isEmpty && others.length > 0
   // "All expanded" reflects the toolbar's aria-expanded — true only when every
   // card is open; toggling then collapses all, otherwise expands all.
-  const allOpen = hasCards && others.every((o) => openIds.has(o.id))
+  const allExpanded = hasCards && openIds.size === others.length
 
-  function toggleAll() {
-    setOpenIds(allOpen ? new Set() : new Set(others.map((o) => o.id)))
+  const toggleAll = () => {
+    if (allExpanded) {
+      setOpenIds(new Set())
+    } else {
+      setOpenIds(new Set(others.map((o) => o.id)))
+    }
   }
 
   return (
-    <section>
-      {/* Section head — ONE row sharing a single ink underline: title left,
-          expand/collapse toolbar right, both bottom-aligned on the same border
-          so they can't drift apart at 375. (Inlined rather than SectionHead so
-          the toolbar lives INSIDE the underlined row.) Dropped entirely when
-          there are no alternative cards — no other ways to show. */}
+    <div className="w-full">
+      {/* Toolbar — shown only when there are alternative options */}
       {hasCards ? (
-        <div className="mb-[22px] mt-14 flex items-end justify-between gap-4 border-b-[1.5px] border-text pb-4">
-          <h2 className="font-display text-[21px] font-semibold tracking-[-0.01em] text-text sm:text-[24px]">
-            Other ways to fly
-          </h2>
+        <div className="flex items-center justify-between border-b border-border/80 pb-[12px]">
+          <h2 className="text-[14px] font-semibold text-text">Other ways to fly</h2>
           <button
             type="button"
             onClick={toggleAll}
-            aria-expanded={allOpen}
-            className="mb-[2px] flex flex-shrink-0 items-center gap-1.5 text-[13px] font-semibold text-text2 transition-colors hover:text-text"
+            className="flex items-center gap-[4px] text-[13px] font-medium text-text2 hover:text-text transition-colors"
+            aria-expanded={allExpanded}
           >
-            {allOpen ? 'Collapse all' : 'Expand all'}
+            <span>{allExpanded ? 'Collapse all' : 'Expand all'}</span>
             <span
-              className="transition-transform duration-300 motion-reduce:transition-none"
-              style={{ transform: allOpen ? 'rotate(180deg)' : 'none' }}
+              className={`inline-block transition-transform duration-200 ${
+                allExpanded ? 'rotate-180' : ''
+              }`}
             >
               <Icon name="expand_more" size={16} />
             </span>
@@ -122,6 +121,6 @@ export default function ResultsList({ result, travelers = 1 }: ResultsListProps)
           ) : null}
         </>
       )}
-    </section>
+    </div>
   )
 }
