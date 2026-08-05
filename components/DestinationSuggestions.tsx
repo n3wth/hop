@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Destination } from '@/lib/destinations'
 import { computeCpp } from '@/lib/destinations'
 import { TierChip } from '@/components/ui/TierChip'
+import Card from '@/components/ui/Card'
 
 export interface DestinationSuggestionsProps {
   destinations: Destination[]
@@ -73,33 +74,36 @@ export default function DestinationSuggestions({
           const value = computeCpp(dest)
           const href = `/search?from=${fromCode}&to=${dest.code}&depart=${depart}&return=${ret}&adults=1`
           return (
-            <Link
-              key={dest.code}
-              href={href}
-              className="group flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-5 text-left transition-colors hover:border-brand"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2">
-                  <span
-                    aria-hidden
-                    className={`fi fi-${dest.countryCode} h-[13px] w-[18px] flex-shrink-0 rounded-[2px]`}
-                  />
-                  <span className="truncate font-display text-[17px] font-semibold text-text">
-                    {dest.city}
+            <Link key={dest.code} href={href} className="group block h-full">
+              <Card
+                surface="paper"
+                radius="lg"
+                interactive
+                className="flex flex-col h-full p-5 text-left"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span
+                      aria-hidden
+                      className={`fi fi-${dest.countryCode} h-[13px] w-[18px] flex-shrink-0 rounded-[2px]`}
+                    />
+                    <span className="truncate font-display text-[17px] font-semibold text-text">
+                      {dest.city}
+                    </span>
+                  </div>
+                  {value !== undefined ? <TierChip cpp={value} /> : null}
+                </div>
+                <p className="mt-2 text-[13px] text-text3">
+                  {fromCode} → {dest.code} · {compactMiles(dest.typicalAwardMiles)} mi
+                  {dest.cabin ? ` · ${dest.cabin}` : ''}
+                </p>
+                <div className="mt-auto flex items-center justify-between gap-3 pt-4 text-[13px]">
+                  <span className="text-text2">vs. {money(dest.typicalCashUSD)} cash</span>
+                  <span className="font-semibold text-text transition-colors group-hover:text-brand">
+                    See it →
                   </span>
                 </div>
-                {value !== undefined ? <TierChip cpp={value} /> : null}
-              </div>
-              <p className="mt-2 text-[13px] text-text3">
-                {fromCode} → {dest.code} · {compactMiles(dest.typicalAwardMiles)} mi
-                {dest.cabin ? ` · ${dest.cabin}` : ''}
-              </p>
-              <div className="mt-auto flex items-center justify-between gap-3 pt-4 text-[13px]">
-                <span className="text-text2">vs. {money(dest.typicalCashUSD)} cash</span>
-                <span className="font-semibold text-text transition-colors group-hover:text-brand">
-                  See it →
-                </span>
-              </div>
+              </Card>
             </Link>
           )
         })}
