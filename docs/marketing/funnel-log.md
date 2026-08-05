@@ -691,3 +691,62 @@ weight, not as a complaint.
   structural block on the entire Wk1 MRR gate; (3) PR #373 (decide: revert the ADR-0009-violating
   merge, or re-enable auto-merge) — open 5 days now since 2026-07-29, still undecided, still
   governs whether the fleet keeps shipping autonomously at all.
+
+---
+
+## 2026-08-05 — the declared 30-day MRR window has closed
+
+- **Traffic (7d, `$host=hop.flights` filtered)**: 12 visitors, 58 pageviews, 16 sessions, 50%
+  bounce rate, ~2.1 min avg session. In line with the 7/29–8/3 band (7–10 visitors) — still the
+  same single-digit-to-low-teens-visitors/week baseline the site has held since traffic peaked
+  around 7/10 (95 visitors, later corrected to ~24 hop.flights-only) and declined through every
+  read since.
+- **Funnel (7d)**: `search_ran`/`verdict_viewed` 11/11 (3/3 on 7/29, 5/5 on 7/30, 0/0 on 7/31–8/3,
+  3/3 on 8/4, 0/0 partial 8/5) — real search activity continues at the same low weekly volume as
+  every read since 7/17. `signed_up` **1** and `first_program_added` **1**, both on 7/30 — same
+  single pair already investigated and downgraded in the 7/31 entry (this is a 7-day rolling
+  window re-showing the same 7/30 events, not a new occurrence). Broke both down by
+  `$virt_traffic_type` again to confirm: **100% `Automation`**, 0% `Regular` — unchanged from the
+  7/31 read. `outclick` read 22 across the window (9 on 7/29, 3 on 7/30, 8 on 7/31, 0 on 8/1–8/2, 1
+  on 8/3, 1 on 8/4) — broken down the same way, **100% `Automation`** on every day with any count, 0
+  `Regular`. `signed_up`/`first_program_added` remain **zero for confirmed-`Regular` traffic across
+  all 31 days** logged since 2026-07-05. Confirmed-`Regular` `outclick`s: zero since 7/14, now 22
+  days.
+- **MRR-gate status — Wk1 ("payment path proven, one real stranger pays")**: **not met.** N-320
+  (seats.aero written commercial terms, owner-only) is still Backlog, `startedAt: null` in Linear —
+  unchanged since every prior read (11th consecutive read at this exact status). The gate has now
+  been open **31 days** on the same single owner-only blocker.
+- **The north-star doc's declared 30-day window closed yesterday.** `docs/plans/2026-07-05-agentic-
+  travel-agent-northstar.md` states the target as "$10k+ MRR within 30 days" of 2026-07-05 —
+  2026-07-05 + 30 days = **2026-08-04**, i.e. as of today the Wk4 "honest read" checkpoint is no
+  longer a future milestone, it is now. Stated plainly against that doc's own three Wk4 outcomes
+  ("$10k = triumph. $1–3k = real business forming... <$250 with launch executed = the board's
+  kill-criteria question is live"): **realized MRR is $0**, because `HOP_ENABLE_BILLING` has never
+  been flipped on — nobody has ever been able to pay hop anything, at any point in the 31 days,
+  because Wk1's gate (N-320, the seats.aero commercial-terms email) never started. This isn't the
+  "<$250 with launch executed" case either — the launch was never executed: the three ready-to-paste
+  external-account drafts (Show HN, r/awardtravel, MCP-directory submissions) have sat unposted the
+  entire 31 days, so the board's kill-criteria question was never actually tested against a real
+  launch. The honest read is narrower than the doc's own worst case anticipated: this is 31 days of
+  a **structurally un-started** experiment, not a **failed** one — every lever the plan named
+  (billing, launch posts, MCP directory listings) remains where it was on day one, blocked on the
+  same two founder-only actions this log has flagged every read since 7/13 (posting the drafts) and
+  since 7/19 (the seats.aero email). No code, content, or growth-desk action this session or any
+  prior one closes either gap — both require the founder's own account/judgment, not agent capacity.
+- **This run's action**: re-verified there is no new payment/upgrade UX bug from the latest
+  design-system migration wave (11 PRs since the 8/3 read, #391–#404 — Eyebrow/Card primitive
+  migrations across auth headers, admin consoles, standing orders, and destination components).
+  Spot-checked the auth-path diff specifically (`components/auth/EmailPasswordForm.tsx`,
+  `ForgotPasswordForm.tsx`): both changes only delete an `inputClass` constant left dead after an
+  earlier migration to the `Input` primitive — no logic or markup change. Content-pipeline freeze
+  (N-387, still Backlog/unstarted) stays in effect. Filed this funnel-log entry (docs-only,
+  self-merging once CI is green) plus the Linear growth-log update. Given the structural nature of
+  the finding above (not a new bug or content gap, but the declared success window itself elapsing
+  at $0), escalated directly via notification this run rather than only recording it as an 11th
+  quiet log entry.
+- **Still the single highest-leverage thing sitting undone, in order, unchanged in kind for 4+
+  weeks**: (1) the three ready-to-paste drafts in `docs/marketing/drafts/` — now **30 days**
+  unposted, flagged every read since 7/13 — 11th consecutive flag; (2) the seats.aero reply
+  (N-320) — 31 days unstarted, the structural block on the entire Wk1 MRR gate and, transitively,
+  on every later gate; (3) PR #373 (decide: revert the ADR-0009-violating merge, or re-enable
+  auto-merge) — open 7 days now since 2026-07-29, still undecided per the last read.
