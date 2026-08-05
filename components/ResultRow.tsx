@@ -178,7 +178,7 @@ const ResultRow = memo(function ResultRow({
         }`}
       >
         <div className="overflow-hidden">
-          <div className="rounded-[12px] border border-border bg-paper p-[18px] text-[13px]">
+          <Card surface="paper" className="p-[18px] text-[13px]">
             {/* Flight segment summary */}
             <div className="space-y-[8px]">
               <div className="flex items-center justify-between text-text">
@@ -230,7 +230,7 @@ const ResultRow = memo(function ResultRow({
                 <Icon name="swap_horiz" size={16} className={option.kind === 'transfer' ? '' : 'hidden'} />
               </Button>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </article>

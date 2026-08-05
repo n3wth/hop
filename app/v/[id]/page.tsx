@@ -5,6 +5,8 @@ import BrandIcon from '@/components/BrandIcon'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import Button from '@/components/ui/Button'
+import Card from '@/components/ui/Card'
+import Eyebrow from '@/components/ui/Eyebrow'
 import { pageMeta } from '@/lib/seo'
 import { formatValue } from '@/lib/cpp'
 import { isShareReceiptsEnabled } from '@/lib/env'
@@ -106,10 +108,8 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           <Logo size={44} className="text-brand" />
         </Link>
 
-        <div className="rounded-[20px] border border-border bg-paper px-6 py-8 sm:px-9 sm:py-10">
-          <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
-            The verdict
-          </span>
+        <Card surface="paper" radius="lg" className="px-6 py-8 sm:px-9 sm:py-10">
+          <Eyebrow className="text-[12px]">The verdict</Eyebrow>
 
           {usingPoints ? (
             <h1 className="mt-3 text-balance font-display text-[28px] font-semibold leading-[1.1] tracking-[-0.02em] text-text sm:text-[34px]">
@@ -171,7 +171,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           <Button href={runItYourselfUrl(snap)} className="mt-6">
             Run this route yourself
           </Button>
-        </div>
+        </Card>
 
         <div className="mt-6 text-center text-[12.5px] leading-[1.6] text-text3">
           <p>hop compares cash, miles, and transfer partners in one search.</p>
