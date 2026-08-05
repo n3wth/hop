@@ -124,6 +124,7 @@ export default function ProgramPicker({
       {showList ? (
         <Card
           surface="paper"
+          as="ul"
           id={listId}
           role="listbox"
           aria-label="Programs"

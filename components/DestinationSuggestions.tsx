@@ -74,12 +74,13 @@ export default function DestinationSuggestions({
           const value = computeCpp(dest)
           const href = `/search?from=${fromCode}&to=${dest.code}&depart=${depart}&return=${ret}&adults=1`
           return (
-            <Card
-              key={dest.code}
-              surface="paper"
-              className="group flex flex-col p-5 text-left transition-colors hover:border-brand"
-            >
-              <Link href={href}>
+            <Link key={dest.code} href={href} className="group block h-full">
+              <Card
+                surface="paper"
+                radius="lg"
+                interactive
+                className="flex flex-col h-full p-5 text-left"
+              >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
                     <span
@@ -102,8 +103,8 @@ export default function DestinationSuggestions({
                     See it →
                   </span>
                 </div>
-              </Link>
-            </Card>
+              </Card>
+            </Link>
           )
         })}
       </div>
