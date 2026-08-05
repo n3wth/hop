@@ -5,9 +5,6 @@ import Link from 'next/link'
 import { authClient } from '@/lib/auth-client'
 import { Input } from '@/components/ui/Field'
 
-const inputClass =
-  'no-inner-ring w-full rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[13.5px] font-semibold text-text outline-none transition-colors focus:border-brand'
-
 // Email/password sign-in and sign-up, one component toggled by mode (fields are
 // identical — only the submit action + confirmation copy differ). Because
 // lib/auth.ts sets requireEmailVerification: true, a successful sign-up does

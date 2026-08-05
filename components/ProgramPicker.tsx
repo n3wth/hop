@@ -3,6 +3,7 @@
 import { useId, useMemo, useRef, useState } from 'react'
 import { listPrograms, type ProgramDef, type ProgramKind } from '@/lib/programs'
 import BrandIcon from './BrandIcon'
+import Card from './ui/Card'
 
 // Smart program picker — a free-text combobox over the canonical registry
 // (lib/programs.ts). Typing filters by name AND aliases, so "amex", "membership
@@ -121,11 +122,13 @@ export default function ProgramPicker({
         }`}
       />
       {showList ? (
-        <ul
+        <Card
+          surface="paper"
+          as="ul"
           id={listId}
           role="listbox"
           aria-label="Programs"
-          className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 max-h-[280px] overflow-auto rounded-[12px] border border-border bg-paper py-1"
+          className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 max-h-[280px] overflow-auto py-1"
         >
           {matches.map((p, i) => (
             <li
@@ -153,14 +156,15 @@ export default function ProgramPicker({
               </span>
             </li>
           ))}
-        </ul>
+        </Card>
       ) : showNoMatch ? (
-        <div
+        <Card
+          surface="paper"
           role="status"
-          className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 rounded-[12px] border border-border bg-paper px-3 py-2.5 text-[12.5px] text-text2"
+          className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 px-3 py-2.5 text-[12.5px] text-text2"
         >
           No saved program matches — we&apos;ll add it as typed.
-        </div>
+        </Card>
       ) : null}
     </div>
   )
