@@ -4,7 +4,7 @@ export interface CardProps extends React.HTMLAttributes<HTMLElement> {
   surface?: 'paper' | 'surface' | 'sunk'
   radius?: 'sm' | 'md' | 'lg'
   interactive?: boolean
-  as?: 'div' | 'section' | 'article' | 'li' | 'p'
+  as?: 'div' | 'section' | 'article' | 'li' | 'p' | 'ul' | 'ol'
   children: React.ReactNode
 }
 

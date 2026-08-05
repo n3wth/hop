@@ -4,9 +4,6 @@ import { useState } from 'react'
 import { authClient } from '@/lib/auth-client'
 import { Input } from '@/components/ui/Field'
 
-const inputClass =
-  'no-inner-ring w-full rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[13.5px] font-semibold text-text outline-none transition-colors focus:border-brand'
-
 export default function ForgotPasswordForm() {
   const [email, setEmail] = useState('')
   const [pending, setPending] = useState(false)
