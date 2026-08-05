@@ -210,7 +210,7 @@ export default function MemoryKnows({
 
   if (groups.length === 0 && !noticedBlock && !observedBlock) {
     return (
-      <div className="rounded-[var(--radius)] border border-dashed border-border bg-paper px-5 py-7 text-center">
+      <Card surface="paper" className="border-dashed px-5 py-7 text-center">
         <span className="grid mx-auto h-10 w-10 place-items-center rounded-full bg-brand-light text-brand">
           <Icon name="lightbulb" size={24} weight="fill" />
         </span>
@@ -221,7 +221,7 @@ export default function MemoryKnows({
           </a>{' '}
           — &ldquo;I fly business, love Lisbon, never suggest Cancun&rdquo; — and it&apos;ll remember it here.
         </p>
-      </div>
+      </Card>
     )
   }
 
