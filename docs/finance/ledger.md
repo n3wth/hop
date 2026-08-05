@@ -148,3 +148,47 @@ One 5-line note per run. Figures come only from the repo's own signals (business
   (`docs/plans/2026-07-05-agentic-travel-agent-northstar.md`) — with `signed_up` still reading
   zero across three funnel-log reads per the board memo, a confirmed subscriber count (even zero)
   is now the single most useful thing this desk could report and cannot get to on its own.
+
+## 2026-07-28 (run 7 — 2-week gap; merge pipeline down company-wide; northstar deadline in 8 days)
+
+- **MRR**: still $0/unknown. Same structural gap as all 6 prior runs — `DATABASE_URL` unset in
+  this session, confirmed again. `docs/marketing/funnel-log.md`'s 2026-07-27 entry independently
+  confirms `signed_up` and `first_program_added` have read zero for confirmed-`Regular` traffic
+  across every day logged since instrumentation shipped 2026-07-05 (23 days now) — the one
+  automation-flagged event on 7/18 was traced to a bot/scripted-traffic classifier tag, not a real
+  signup. No new subscriber-count signal has arrived from Oliver or from DB/Stripe access since
+  the run-6 escalation.
+- **Known burn**: unchanged, ~$75/mo infra (`DEFAULT_INFRA_COST_MONTHLY_USD` still 75 in
+  `lib/unit-economics.ts`) + unmeasured LLM spend (`llmCostUsd` still hardcoded `null`, per the
+  2026-07-19 board memo's amendment #8, unresolved 2+ weeks). Budget stays approved at ~$125/mo
+  (`budget.md`), no envelope change this run.
+- **Oliver's reply processed**: a 2026-07-15 reply ("did the board choose new pricing") sat
+  unprocessed for this run's 2-week gap (last run 2026-07-14). Answered directly by email and
+  logged in `budget.md`: no new price was chosen — launch price is unchanged at $49/yr; a
+  possible future $99/yr raise is explicitly blocked-on-billing per the 2026-07-19 board memo, not
+  "in progress." No budget-envelope change.
+- **Outreach queue**: `outreach.md` re-checked — both items (seats.aero, AwardWallet) still
+  `status: sent`, no reply from either address at this inbox. Per the 2026-07-27 funnel-log entry,
+  the seats.aero commercial-terms email is now **22+ days** unanswered — the single hardest
+  blocker on the billing gate (business-plan §3.1 gate 4, still "Pending / Blocked" per
+  `docs/ops-runbook.md`). No new `approved-to-send` items this run, nothing sent.
+- **Opportunity hunt**: still paused per `README.md` step 3 (paused 2026-07-14). Neither resume
+  condition has been met — no DB/Stripe subscriber count from Oliver, no read-only DB access
+  granted to this desk. Not resuming this run; flagging again rather than silently re-running the
+  credit hunt against explicit prior feedback.
+- **Material finding, adjacent to finance but too consequential to omit**: the repo's merge
+  pipeline to `main` has been **completely wedged since PR #317 merged 2026-07-23T10:48 UTC** — a
+  GitHub App identity mismatch on the required `Vercel` status check (root-caused in open PR #352;
+  fix is repo-admin-only: GitHub → repo Settings → Integrations → reauthorize the Vercel GitHub
+  App). As of this run, **25+ PRs are queued unmerged**, including growth-relevant work already
+  built and waiting (`/pricing` FAQ/JSON-LD, an SEO date fix). This has been independently flagged
+  4+ times since 2026-07-26 (board memo, strategy memo, growth funnel-log, a dedicated sheriff
+  sweep in PR #345) with no founder action logged yet. Financial relevance: any revenue-lever work
+  a desk ships this week cannot reach production until this clears, regardless of merit.
+- **Northstar timeline is now acute, not just slow**: the founder's own $10k MRR by 2026-08-05
+  target (`docs/plans/2026-07-05-agentic-travel-agent-northstar.md`) is **8 days away**. N-320
+  (seats.aero) — the single blocker gating both billing and the fallback-award-source moat
+  question — has not moved in 22+ days. The 2026-07-19 board memo's ranked amendment #15 asked
+  Oliver to explicitly decide whether to reset the Aug-5 target given this; no reply logged yet.
+  Restating that ask in this run's memo rather than letting the desk quietly keep planning around
+  a target that may already be structurally unreachable.

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import type { AirlineStatus } from '@/lib/travel-profile-model'
 import { saveAirlineStatuses } from '@/app/actions/prefs'
+import Card from './ui/Card'
 import ProgramPicker from './ProgramPicker'
 import Icon from './Icon'
 
@@ -91,7 +92,7 @@ export default function AirlineStatusManager({
 
   return (
     <div className="mt-4 flex flex-col gap-4">
-      <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
+      <Card as="section" surface="surface" className="overflow-hidden">
         {statuses.length > 0 ? (
           <ul>
             {statuses.map((s, i) => (
@@ -119,10 +120,10 @@ export default function AirlineStatusManager({
           </div>
         )}
         <AddStatusForm hasRows={statuses.length > 0} busy={pending} onAdd={addRow} />
-      </section>
+      </Card>
 
       {openSuggestions.length > 0 ? (
-        <div className="rounded-[var(--radius)] border border-border bg-surface px-5 py-4 sm:px-6">
+        <Card surface="surface" className="px-5 py-4 sm:px-6">
           <div className="text-[13px] font-semibold text-text2">From your synced accounts</div>
           <p className="mt-0.5 text-[12.5px] text-text3">
             hop spotted these in AwardWallet — tap to add, then edit if needed.
@@ -141,7 +142,7 @@ export default function AirlineStatusManager({
               </button>
             ))}
           </div>
-        </div>
+        </Card>
       ) : null}
 
       {error ? (
