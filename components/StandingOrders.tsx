@@ -38,10 +38,10 @@ export default function StandingOrders({
     <div className="mt-4 flex flex-col gap-4">
       <WatchComposer />
       {!cronLive ? (
-        <p className="rounded-[12px] border border-border bg-sunk px-4 py-2.5 text-[12.5px] font-medium text-text2">
+        <Card surface="sunk" as="p" className="px-4 py-2.5 text-[12.5px] font-medium text-text2">
           Watches are saved, but automatic re-checks aren&apos;t live yet. hop will
           start running them on a schedule once the watcher is switched on.
-        </p>
+        </Card>
       ) : null}
       <WatchList orders={orders} />
       <AlertsList alerts={alerts} unseen={unseen} />
