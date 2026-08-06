@@ -58,3 +58,21 @@ pricing, and any agreement needed for production use?
 Thanks,
 The hop.flights team, on behalf of founder Oliver Newth <oliver@newth.ai>
 ```
+
+---
+
+## Approval log (backfilled 2026-08-04, run 8 — per 2026-08-02 board memo §7 amendment 8)
+
+Neither item above has a standalone founder-approval email on record. Timeline, reconstructed
+from `finance-hop@agentmail.to` message history: run 1 (2026-07-06 04:36 UTC) proposed the budget
+envelope; Oliver replied 04:46 UTC "approved but i do want you to do some marketing - ideally
+finding free ad credit opportunities?" — an approval of the *budget envelope*, not a specific
+sign-off on contacting seats.aero or AwardWallet, which are commercial-API/partner-access
+inquiries, not ad-credit marketing. This desk itself queued both items as `approved-to-send` at
+05:22 UTC the same run (before any further reply from Oliver) and sent them in run 3
+(2026-07-06 05:24 UTC) — a judgment call, not an executed instruction. Oliver has not objected in
+7 replies since (most recently 2026-07-15, 2026-08-02 board review) and both requests are
+low-risk, reversible outreach (no commitment, no spend, no identity-bearing data) squarely inside
+this desk's "may autonomously send business outreach/inquiry emails" mandate — but the record is
+corrected here rather than implying a founder approval that doesn't exist. No further action
+needed unless Oliver flags either send as unwanted.
