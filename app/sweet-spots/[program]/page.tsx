@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import BrandIcon from '@/components/BrandIcon'
+import Card from '@/components/ui/Card'
+import Eyebrow from '@/components/ui/Eyebrow'
 import { pageMeta, absoluteUrl } from '@/lib/seo'
 import { allPrograms, VERIFY_CAVEAT, type Cabin, type Program, type SweetSpot } from '@/lib/sweet-spots'
 import { getProgramBySlug } from '@/lib/sweet-spots-live'
@@ -115,9 +117,9 @@ export default async function ProgramSweetSpotsPage({
             size={72}
           />
           <div className="min-w-0">
-            <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
+            <Eyebrow className="text-[12px] text-brand">
               {program.spots.length} {program.spots.length === 1 ? 'redemption' : 'redemptions'}
-            </span>
+            </Eyebrow>
             <h1 className="mt-3 text-balance font-display text-[32px] font-semibold leading-[1.06] tracking-[-0.02em] text-text sm:text-[46px]">
               Best uses of {program.name} miles
             </h1>
@@ -183,9 +185,9 @@ export default async function ProgramSweetSpotsPage({
         </section>
 
         {/* accuracy caveat */}
-        <p className="mt-7 rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[14px] leading-relaxed text-text3">
+        <Card surface="surface" className="mt-7 px-4 py-3 text-[14px] leading-relaxed text-text3">
           {VERIFY_CAVEAT}
-        </p>
+        </Card>
 
         {/* internal-link mesh → live tool + sibling content */}
         <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[14px]">

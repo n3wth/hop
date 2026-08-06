@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import Icon from './Icon'
+import Card from './ui/Card'
+import Eyebrow from './ui/Eyebrow'
 import type { ApiTokenInfo } from '@/lib/api-tokens'
 
 // "Use hop from your LLM (MCP)" — mint/rename/revoke a hop API token, pick your
@@ -74,15 +76,13 @@ function ConfigBlock({
   copyLabel: string
 }) {
   return (
-    <div className="mt-3 rounded-[12px] border border-border bg-sunk px-4 py-3">
+    <Card surface="sunk" className="mt-3 px-4 py-3">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-[11px] font-semibold uppercase tracking-[var(--track-label)] text-text2">
-          {label}
-        </div>
+        <Eyebrow className="text-text2">{label}</Eyebrow>
         <CopyButton value={copyValue} label={copyLabel} />
       </div>
       <pre className="mt-2 overflow-x-auto font-mono text-[12.5px] leading-[1.5] text-text">{body}</pre>
-    </div>
+    </Card>
   )
 }
 

@@ -12,6 +12,7 @@ import CountUp from './CountUp'
 import CardAffiliateCTA from './CardAffiliateCTA'
 import WatchThisRoute from './WatchThisRoute'
 import ShareVerdict from './ShareVerdict'
+import Eyebrow from './ui/Eyebrow'
 
 export interface VerdictRailProps {
   result: SearchResult
@@ -187,9 +188,9 @@ export default function VerdictRail({
     >
       {/* LEFT — the verdict */}
       <div className="px-6 pb-9 pt-8 sm:px-10 lg:px-[52px] lg:pb-[46px] lg:pt-12">
-        <span className="mb-[26px] inline-flex items-center border-b border-white/15 pb-4 text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-hero-eyebrow">
+        <Eyebrow onDark className="mb-[26px] inline-flex items-center border-b border-white/15 pb-4 text-[12px]">
           Best value
-        </span>
+        </Eyebrow>
 
         {usingPoints ? (
           <>

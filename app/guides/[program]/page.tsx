@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import BrandIcon from '@/components/BrandIcon'
+import Card from '@/components/ui/Card'
+import Eyebrow from '@/components/ui/Eyebrow'
 import { pageMeta, absoluteUrl } from '@/lib/seo'
 import { VERIFY_CAVEAT } from '@/lib/sweet-spots'
 import { WALLET_VALUE_CAVEAT } from '@/lib/valuations'
@@ -96,9 +98,9 @@ export default async function ProgramGuidePage({
         <header className="mt-6 flex max-w-[60ch] items-start gap-4">
           <BrandIcon code={guide.code} name={guide.name} size={72} />
           <div className="min-w-0">
-            <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
+            <Eyebrow className="text-[12px] text-brand">
               {guide.partners.length} transfer {guide.partners.length === 1 ? 'partner' : 'partners'}
-            </span>
+            </Eyebrow>
             <h1 className="mt-3 text-balance font-display text-[32px] font-semibold leading-[1.06] tracking-[-0.02em] text-text sm:text-[46px]">
               Best use of {guide.name} points
             </h1>
@@ -165,9 +167,9 @@ export default async function ProgramGuidePage({
           ))}
         </section>
 
-        <p className="mt-7 rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[14px] leading-relaxed text-text3">
+        <Card surface="surface" className="mt-7 px-4 py-3 text-[14px] leading-relaxed text-text3">
           {WALLET_VALUE_CAVEAT} {VERIFY_CAVEAT}
-        </p>
+        </Card>
 
         <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[14px]">
           <span className="text-text3">Next:</span>
