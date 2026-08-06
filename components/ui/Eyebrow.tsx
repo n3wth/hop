@@ -3,7 +3,7 @@ import React from 'react'
 export interface EyebrowProps extends React.HTMLAttributes<HTMLElement> {
   children: React.ReactNode
   onDark?: boolean
-  as?: 'span' | 'div'
+  as?: 'span' | 'div' | 'h2' | 'h3' | 'h4' | 'p' | 'label'
 }
 
 export default function Eyebrow({

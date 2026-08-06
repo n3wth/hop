@@ -1,8 +1,8 @@
 import Link from 'next/link'
 import type { Destination } from '@/lib/destinations'
 import { computeCpp } from '@/lib/destinations'
-import { tier, formatValue } from '@/lib/cpp'
-import type { CppTier } from '@/lib/types'
+import { TierChip } from '@/components/ui/TierChip'
+import Card from '@/components/ui/Card'
 
 export interface DestinationSuggestionsProps {
   destinations: Destination[]
@@ -27,14 +27,6 @@ export interface DestinationSuggestionsProps {
   totalPoints?: number
   isSignedIn: boolean
 }
-
-// cpp tier → chip palette. Mirrors DealCard's CHIP map.
-const CHIP: Record<CppTier, { bg: string; fg: string; bd: string }> = {
-  green: { bg: 'var(--color-good-bg)', fg: 'var(--color-good)', bd: 'var(--color-brand-mint-deep)' },
-  amber: { bg: 'var(--color-ok-bg)', fg: 'var(--color-ok)', bd: 'var(--color-gold-soft)' },
-  muted: { bg: 'var(--color-sunk)', fg: 'var(--color-text3)', bd: 'var(--color-border)' },
-}
-const TIER_WORD: Record<CppTier, string> = { green: 'strong value', amber: 'fair value', muted: 'low value' }
 
 // 37500 → "37.5K", 12500 → "12.5K".
 function compactMiles(n: number): string {
@@ -80,45 +72,38 @@ export default function DestinationSuggestions({
       <div className="mt-[18px] grid grid-cols-1 gap-[14px] sm:grid-cols-2 lg:grid-cols-4">
         {destinations.map((dest) => {
           const value = computeCpp(dest)
-          const t = tier(value)
-          const chip = CHIP[t]
           const href = `/search?from=${fromCode}&to=${dest.code}&depart=${depart}&return=${ret}&adults=1`
           return (
-            <Link
-              key={dest.code}
-              href={href}
-              className="group flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-5 text-left transition-colors hover:border-brand"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2">
-                  <span
-                    aria-hidden
-                    className={`fi fi-${dest.countryCode} h-[13px] w-[18px] flex-shrink-0 rounded-[2px]`}
-                  />
-                  <span className="truncate font-display text-[17px] font-semibold text-text">
-                    {dest.city}
+            <Link key={dest.code} href={href} className="group block h-full">
+              <Card
+                surface="paper"
+                radius="lg"
+                interactive
+                className="flex flex-col h-full p-5 text-left"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span
+                      aria-hidden
+                      className={`fi fi-${dest.countryCode} h-[13px] w-[18px] flex-shrink-0 rounded-[2px]`}
+                    />
+                    <span className="truncate font-display text-[17px] font-semibold text-text">
+                      {dest.city}
+                    </span>
+                  </div>
+                  {value !== undefined ? <TierChip cpp={value} /> : null}
+                </div>
+                <p className="mt-2 text-[13px] text-text3">
+                  {fromCode} → {dest.code} · {compactMiles(dest.typicalAwardMiles)} mi
+                  {dest.cabin ? ` · ${dest.cabin}` : ''}
+                </p>
+                <div className="mt-auto flex items-center justify-between gap-3 pt-4 text-[13px]">
+                  <span className="text-text2">vs. {money(dest.typicalCashUSD)} cash</span>
+                  <span className="font-semibold text-text transition-colors group-hover:text-brand">
+                    See it →
                   </span>
                 </div>
-                {value !== undefined ? (
-                  <span
-                    className="flex-shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold"
-                    style={{ background: chip.bg, borderColor: chip.bd, color: chip.fg }}
-                    aria-label={`${value.toFixed(1)} cents per point — ${TIER_WORD[t]}`}
-                  >
-                    {formatValue(value)}
-                  </span>
-                ) : null}
-              </div>
-              <p className="mt-2 text-[13px] text-text3">
-                {fromCode} → {dest.code} · {compactMiles(dest.typicalAwardMiles)} mi
-                {dest.cabin ? ` · ${dest.cabin}` : ''}
-              </p>
-              <div className="mt-auto flex items-center justify-between gap-3 pt-4 text-[13px]">
-                <span className="text-text2">vs. {money(dest.typicalCashUSD)} cash</span>
-                <span className="font-semibold text-text transition-colors group-hover:text-brand">
-                  See it →
-                </span>
-              </div>
+              </Card>
             </Link>
           )
         })}

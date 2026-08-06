@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import HomeAirportPicker from './HomeAirportPicker'
+import Card from './ui/Card'
 
 const DISMISS_KEY = 'hop:home-airport-prompt-dismissed'
 
@@ -40,7 +41,7 @@ export default function HomeAirportPrompt() {
   if (!ready || dismissed) return null
 
   return (
-    <section className="rounded-[var(--radius-lg)] lg:rounded-[var(--radius-hero)] border border-border bg-paper p-6 sm:p-8">
+    <Card surface="paper" radius="lg" className="p-6 sm:p-8 lg:rounded-[var(--radius-hero)]" as="section">
       {/* No bunny chip — the mark is nav chrome (header/tab bar), and repeating
           it as a card avatar read as clutter (2026-07 design feedback). */}
       <div className="flex items-start gap-4">
@@ -85,6 +86,6 @@ export default function HomeAirportPrompt() {
           <span className="text-[20px] leading-none">×</span>
         </button>
       </div>
-    </section>
+    </Card>
   )
 }

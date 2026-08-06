@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import Card from '../../components/ui/Card'
@@ -186,10 +186,10 @@ describe('Field primitive', () => {
     const html = renderToStaticMarkup(
       React.createElement(
         Select,
-        {},
-        React.createElement('option', { value: 'a' }, 'Option A')
+        { options: [['a', 'Option A']] }
       )
     )
     expect(html).toContain('appearance-none')
+    expect(html).toContain('Option A')
   })
 })

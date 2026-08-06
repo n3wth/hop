@@ -30,3 +30,19 @@ line stands until a specific paid channel is proposed and approved.
   only recommends and drafts.
 - When Oliver replies with an approval, rejection, or counter-figure, update the table above
   and add a row to the approval log with the date and what changed.
+
+## Pricing question, answered (2026-07-28)
+
+Oliver asked (email reply, 2026-07-15 04:20 UTC, sat unprocessed until this run) "did the board
+choose new pricing" — no envelope or spend implication, so no change to the table above, but
+recorded here since it's a standing pricing-status question:
+
+**No new price has been chosen.** Launch price is unchanged at `PRO_PRICE_YEARLY_USD = 49`
+(`lib/pricing.ts`), annual-only, monthly at `$9.99` configured in Stripe but hidden from the UI.
+The board has discussed a possible future **$99/yr raise gate**, but it is explicitly
+**blocked-on-billing by construction**: one of its three conditions (alerts firing reliably for
+60+ days) cannot even start its clock while `HOP_ENABLE_BILLING` stays off pending the seats.aero
+commercial-terms reply (N-320, unanswered 22+ days as of this run). The 2026-07-19 board memo's
+ranked amendment #10 explicitly voted to **stop describing the $99/yr raise as "in progress"** in
+any tracking doc and mark it plainly blocked instead — so the honest answer is "no decision, and
+it structurally can't be decided yet."

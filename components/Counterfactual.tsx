@@ -14,6 +14,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Icon from './Icon'
+import Card from './ui/Card'
+import Eyebrow from './ui/Eyebrow'
 
 // --- Response shape (mirrors lib/counterfactual.CounterfactualResult) ---------
 
@@ -124,7 +126,7 @@ export default function Counterfactual({
   }
 
   return (
-    <div className="mt-4 rounded-[var(--radius)] border border-border bg-surface p-5 sm:p-6">
+    <Card surface="surface" radius="md" className="mt-4 p-5 sm:p-6">
       <div className="flex items-start gap-3">
         <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
           <Icon name="swap_horiz" size={24} weight="fill" />
@@ -173,13 +175,13 @@ export default function Counterfactual({
       </div>
 
       {error ? (
-        <p className="mt-4 rounded-[12px] border border-border bg-sunk px-4 py-2.5 text-[13px] text-text2">
+        <Card surface="sunk" radius="md" className="mt-4 px-4 py-2.5 text-[13px] text-text2" as="p">
           {error}
-        </p>
+        </Card>
       ) : null}
 
       {result ? <ResultPanel result={result} /> : null}
-    </div>
+    </Card>
   )
 }
 
@@ -194,9 +196,9 @@ function ResultPanel({ result }: { result: CounterfactualResult }) {
     <div className="mt-5 border-t border-border pt-5">
       {/* headline — the one-glance financial mirror */}
       <div className="rounded-[14px] bg-brand-light px-5 py-4">
-        <div className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
+        <Eyebrow className="text-brand">
           {mutation.label}
-        </div>
+        </Eyebrow>
         {unlockedCount > 0 ? (
           <p className="mt-1.5 font-display text-[18px] font-semibold leading-snug tracking-[-0.01em] text-brand-deep">
             You&apos;d unlock {unlockedCount} {unlockedCount === 1 ? 'trip' : 'trips'} worth about{' '}
@@ -218,9 +220,9 @@ function ResultPanel({ result }: { result: CounterfactualResult }) {
       {/* unlocked destinations */}
       {unlocked.length > 0 ? (
         <div className="mt-4">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
+          <Eyebrow className="mb-2 block text-text3">
             Newly within reach
-          </div>
+          </Eyebrow>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {unlocked.map((d) => (
               <UnlockedCard key={d.code} d={d} />
@@ -232,9 +234,9 @@ function ResultPanel({ result }: { result: CounterfactualResult }) {
       {/* closer-but-not-there */}
       {closer.length > 0 ? (
         <div className="mt-4">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
+          <Eyebrow className="mb-2 block text-text3">
             Getting closer
-          </div>
+          </Eyebrow>
           <div className="flex flex-col gap-1.5">
             {closer.slice(0, 4).map((d) => (
               <CloserRow key={d.code} d={d} />
@@ -248,11 +250,9 @@ function ResultPanel({ result }: { result: CounterfactualResult }) {
 
 function UnlockedCard({ d }: { d: UnlockedDestination }) {
   return (
-    <Link
-      href={`/search?to=${encodeURIComponent(d.code)}`}
-      className="group flex flex-col rounded-[12px] border border-border bg-paper p-3.5 transition-colors hover:border-brand"
-    >
-      <div className="flex items-center justify-between gap-2">
+    <Link href={`/search?to=${encodeURIComponent(d.code)}`}>
+      <Card surface="paper" radius="sm" interactive className="group flex flex-col p-3.5">
+        <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span
             className={`fi fi-${d.countryCode} h-[14px] w-[19px] flex-shrink-0 rounded-[2px]`}
@@ -277,6 +277,7 @@ function UnlockedCard({ d }: { d: UnlockedDestination }) {
           ${d.cashUsd.toLocaleString('en-US')} cash
         </span>
       </div>
+      </Card>
     </Link>
   )
 }

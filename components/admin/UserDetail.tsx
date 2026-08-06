@@ -1,5 +1,7 @@
 import type { AdminUserDetail } from '@/lib/admin-users'
 import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHeader'
+import Card from '@/components/ui/Card'
+import Eyebrow from '@/components/ui/Eyebrow'
 
 interface Props {
   detail: AdminUserDetail
@@ -66,13 +68,15 @@ export default function UserDetail({ detail }: Props) {
         ) : (
           <div className="flex flex-col gap-2">
             {detail.balances.map((b) => (
-              <div
+              <Card
                 key={b.id}
-                className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3.5 py-2.5"
+                surface="paper"
+                radius="sm"
+                className="flex items-center justify-between gap-3 px-3.5 py-2.5"
               >
                 <span className="text-[13px] font-semibold text-text">{b.program}</span>
                 <span className="hop-num text-[13px] text-text2">{b.balance.toLocaleString('en-US')} pts</span>
-              </div>
+              </Card>
             ))}
           </div>
         )}
@@ -84,7 +88,7 @@ export default function UserDetail({ detail }: Props) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mt-8">
-      <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">{title}</h2>
+      <Eyebrow as="h2" className="font-bold text-brand">{title}</Eyebrow>
       <div className="mt-3">{children}</div>
     </section>
   )
@@ -92,10 +96,10 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[14px] border border-border bg-paper p-4">
+    <Card surface="paper" radius="md" className="p-4">
       <div className="text-[13px] font-semibold text-text">{value}</div>
       <div className="mt-1 text-[12px] text-text3">{label}</div>
-    </div>
+    </Card>
   )
 }
 

@@ -2,6 +2,8 @@
 
 import { useState, type ReactNode } from 'react'
 import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHeader'
+import Card from '@/components/ui/Card'
+import Eyebrow from '@/components/ui/Eyebrow'
 import type { SupportTicket } from '@/lib/support-tickets'
 import type { Escalation, EscalationStatus } from '@/lib/escalation'
 import {
@@ -61,7 +63,7 @@ export default function SupportConsole({
       <div className="mt-8 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
         <section className="mt-8">
           <div className="flex items-baseline justify-between gap-3">
-            <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">Tickets</h2>
+            <Eyebrow as="h2" className="font-bold text-brand">Tickets</Eyebrow>
             {tickets !== null && tickets.length > 0 ? (
               <ListFilterToggle
                 value={ticketFilter}
@@ -87,9 +89,9 @@ export default function SupportConsole({
 
         <section className="mt-10 lg:mt-8">
           <div className="flex items-baseline justify-between gap-3">
-            <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">
+            <Eyebrow as="h2" className="font-bold text-brand">
               Booking requests
-            </h2>
+            </Eyebrow>
             {escalations !== null && escalations.length > 0 ? (
               <ListFilterToggle
                 value={escalationFilter}
@@ -229,7 +231,7 @@ function TicketCard({ ticket }: { ticket: SupportTicket }) {
   )
 
   return (
-    <div className="rounded-[14px] border border-border bg-paper p-4">
+    <Card surface="paper" radius="md" className="p-4">
       <div className="flex items-baseline justify-between gap-3">
         <span className="truncate text-[14px] font-semibold text-text">{ticket.fromEmail}</span>
         <span className="flex-shrink-0 text-[11.5px] text-text3">{fmtDate(ticket.createdAt)}</span>
@@ -291,7 +293,7 @@ function TicketCard({ ticket }: { ticket: SupportTicket }) {
           </div>
         </div>
       )}
-    </div>
+    </Card>
   )
 }
 
@@ -317,7 +319,7 @@ function EscalationCard({ esc }: { esc: Escalation }) {
   }
 
   return (
-    <div className="rounded-[14px] border border-border bg-paper p-4">
+    <Card surface="paper" radius="md" className="p-4">
       <div className="flex items-baseline justify-between gap-3">
         <span className="truncate text-[14px] font-semibold text-text">{esc.email}</span>
         <span className="flex-shrink-0 text-[11.5px] text-text3">{fmtDate(esc.createdAt)}</span>
@@ -346,7 +348,7 @@ function EscalationCard({ esc }: { esc: Escalation }) {
         </button>
         {err ? <span className="text-[11.5px] text-weak">{err}</span> : null}
       </div>
-    </div>
+    </Card>
   )
 }
 

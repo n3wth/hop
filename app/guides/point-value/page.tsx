@@ -3,6 +3,7 @@ import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import EditorialHeader from '@/components/EditorialHeader'
 import BrandIcon from '@/components/BrandIcon'
+import Card from '@/components/ui/Card'
 import { pageMeta, absoluteUrl } from '@/lib/seo'
 import { cpp, tier, formatValue, GREEN_TIER_CPP, AMBER_TIER_CPP, POINTS_THRESHOLD_CPP } from '@/lib/cpp'
 import { listValuations, WALLET_VALUE_CAVEAT } from '@/lib/valuations'
@@ -23,13 +24,7 @@ export const metadata = pageMeta({
   path: '/guides/point-value',
 })
 
-// tier -> chip palette. Mirrors the TIER_CHIP convention in
-// app/points/[amount]/page.tsx and DealCard.
-const TIER_CHIP: Record<CppTier, { bg: string; fg: string; bd: string }> = {
-  green: { bg: 'var(--color-good-bg)', fg: 'var(--color-good)', bd: 'var(--color-brand-mint-deep)' },
-  amber: { bg: 'var(--color-ok-bg)', fg: 'var(--color-ok)', bd: 'var(--color-gold-soft)' },
-  muted: { bg: 'var(--color-sunk)', fg: 'var(--color-text3)', bd: 'var(--color-border)' },
-}
+import { TierChip } from '@/components/ui/TierChip'
 
 // The canonical worked example (docs/design/copy-spec.md, lib/mock.ts): SFO->LAX
 // round trip, cash $254, Alaska saver 9,000 miles + $22.40 taxes -> 2.6cpp. Run
@@ -149,7 +144,7 @@ export default function PointValuePage() {
           </p>
 
           {exampleCpp !== undefined && (
-            <div className="mt-5 rounded-[var(--radius-lg)] border border-border bg-paper p-5 sm:p-6">
+            <Card surface="paper" radius="lg" className="mt-5 p-5 sm:p-6">
               <div className="text-[12px] font-semibold uppercase tracking-[var(--track-label)] text-text3">
                 Worked example
               </div>
@@ -162,22 +157,13 @@ export default function PointValuePage() {
                 <span className="font-display text-[34px] font-semibold leading-none tabular-nums text-text">
                   {formatValue(exampleCpp)}
                 </span>
-                <span
-                  className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[var(--track-label)]"
-                  style={{
-                    background: TIER_CHIP[tier(exampleCpp)].bg,
-                    color: TIER_CHIP[tier(exampleCpp)].fg,
-                    borderColor: TIER_CHIP[tier(exampleCpp)].bd,
-                  }}
-                >
-                  {tier(exampleCpp)}
-                </span>
+                <TierChip cpp={exampleCpp} />
               </div>
               <p className="mt-2 text-[13px] text-text3">
                 (${EXAMPLE_CASH} − ${EXAMPLE_TAXES_LABEL}) × 100 ÷ {EXAMPLE_MILES.toLocaleString('en-US')} ={' '}
                 {formatValue(exampleCpp)}
               </p>
-            </div>
+            </Card>
           )}
         </section>
 
@@ -194,12 +180,7 @@ export default function PointValuePage() {
           <div className="mt-5 divide-y divide-hair border-y border-border">
             <div className="flex items-center justify-between gap-4 py-3.5">
               <div>
-                <span
-                  className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[var(--track-label)]"
-                  style={{ background: TIER_CHIP.green.bg, color: TIER_CHIP.green.fg, borderColor: TIER_CHIP.green.bd }}
-                >
-                  green
-                </span>
+                <TierChip cpp={GREEN_TIER_CPP} />
                 <span className="ml-3 text-[14.5px] text-text2">Strong value — book with points.</span>
               </div>
               <span className="flex-shrink-0 font-display text-[16px] font-semibold tabular-nums text-text">
@@ -208,12 +189,7 @@ export default function PointValuePage() {
             </div>
             <div className="flex items-center justify-between gap-4 py-3.5">
               <div>
-                <span
-                  className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[var(--track-label)]"
-                  style={{ background: TIER_CHIP.amber.bg, color: TIER_CHIP.amber.fg, borderColor: TIER_CHIP.amber.bd }}
-                >
-                  amber
-                </span>
+                <TierChip cpp={AMBER_TIER_CPP} />
                 <span className="ml-3 text-[14.5px] text-text2">Fair value — fine, not great.</span>
               </div>
               <span className="flex-shrink-0 font-display text-[16px] font-semibold tabular-nums text-text">
@@ -222,12 +198,7 @@ export default function PointValuePage() {
             </div>
             <div className="flex items-center justify-between gap-4 py-3.5">
               <div>
-                <span
-                  className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[var(--track-label)]"
-                  style={{ background: TIER_CHIP.muted.bg, color: TIER_CHIP.muted.fg, borderColor: TIER_CHIP.muted.bd }}
-                >
-                  muted
-                </span>
+                <TierChip cpp={0} />
                 <span className="ml-3 text-[14.5px] text-text2">Weak value — pay cash instead.</span>
               </div>
               <span className="flex-shrink-0 font-display text-[16px] font-semibold tabular-nums text-text">
@@ -260,18 +231,13 @@ export default function PointValuePage() {
                   <BrandIcon code={row.code} name={row.name} size={28} />
                   <span className="truncate text-[14.5px] font-medium text-text">{row.name}</span>
                 </div>
-                <span
-                  className="flex-shrink-0 rounded-full border px-2.5 py-0.5 text-[13px] font-semibold tabular-nums"
-                  style={{ background: TIER_CHIP[row.t].bg, color: TIER_CHIP[row.t].fg, borderColor: TIER_CHIP[row.t].bd }}
-                >
-                  {row.value.toFixed(2)}¢
-                </span>
+                <TierChip cpp={row.value} />
               </div>
             ))}
           </div>
-          <p className="mt-4 rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[14px] leading-relaxed text-text3">
+          <Card surface="surface" className="mt-4 px-4 py-3 text-[14px] leading-relaxed text-text3">
             {WALLET_VALUE_CAVEAT}
-          </p>
+          </Card>
         </section>
 
         {/* how this differs from a static blog chart */}

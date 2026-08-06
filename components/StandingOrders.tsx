@@ -10,6 +10,7 @@ import {
   removeWatch,
   clearAlertBadge,
 } from '@/app/actions/standing-orders'
+import Card from './ui/Card'
 import BrandIcon from './BrandIcon'
 import Icon from './Icon'
 import { useToast } from './Toast'
@@ -37,10 +38,10 @@ export default function StandingOrders({
     <div className="mt-4 flex flex-col gap-4">
       <WatchComposer />
       {!cronLive ? (
-        <p className="rounded-[12px] border border-border bg-sunk px-4 py-2.5 text-[12.5px] font-medium text-text2">
+        <Card surface="sunk" as="p" className="px-4 py-2.5 text-[12.5px] font-medium text-text2">
           Watches are saved, but automatic re-checks aren&apos;t live yet. hop will
           start running them on a schedule once the watcher is switched on.
-        </p>
+        </Card>
       ) : null}
       <WatchList orders={orders} />
       <AlertsList alerts={alerts} unseen={unseen} />
@@ -100,7 +101,7 @@ function WatchComposer() {
   }
 
   return (
-    <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
+    <Card as="section" surface="surface" className="overflow-hidden">
       <div className="flex items-start gap-4 px-5 py-5 sm:px-6">
         <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
           <Icon name="notifications" size={24} weight="fill" />
@@ -153,7 +154,7 @@ function WatchComposer() {
           ) : null}
         </div>
       </div>
-    </section>
+    </Card>
   )
 }
 
@@ -162,7 +163,7 @@ function WatchComposer() {
 function WatchList({ orders }: { orders: StandingOrder[] }) {
   if (orders.length === 0) {
     return (
-      <div className="flex items-start gap-4 rounded-[var(--radius)] border border-border bg-surface px-6 py-6">
+      <Card surface="surface" className="flex items-start gap-4 px-6 py-6">
         <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
           <Icon name="search" size={24} weight="fill" />
         </span>
@@ -173,17 +174,17 @@ function WatchList({ orders }: { orders: StandingOrder[] }) {
             it when points beat cash on your terms.
           </p>
         </div>
-      </div>
+      </Card>
     )
   }
   return (
-    <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
+    <Card as="section" surface="surface" className="overflow-hidden">
       <ul>
         {orders.map((o, i) => (
           <WatchRow key={o.id} order={o} first={i === 0} />
         ))}
       </ul>
-    </section>
+    </Card>
   )
 }
 

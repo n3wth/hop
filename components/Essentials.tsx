@@ -1,4 +1,5 @@
 import { essentials, dollarSignal, fxAsOf } from '@/lib/place-info'
+import Eyebrow from '@/components/ui/Eyebrow'
 
 // Real, looked-up facts for a destination — currency, language, local time —
 // plus a computed "how far your dollar goes" line. All from the committed
@@ -13,7 +14,7 @@ export default function Essentials({ code }: { code: string }) {
 
   return (
     <section className="mt-8">
-      <h2 className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">Essentials</h2>
+      <Eyebrow as="h2">Essentials</Eyebrow>
       <dl className="mt-4 grid grid-cols-3 gap-4">
         {e.currency && (
           <div>

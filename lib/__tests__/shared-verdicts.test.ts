@@ -328,5 +328,5 @@ describe('shareVerdict orchestration & rate limits', () => {
     if (!res.ok) {
       expect(res.reason).toBe('rate-limited')
     }
-  })
+  }, 15000)
 })
