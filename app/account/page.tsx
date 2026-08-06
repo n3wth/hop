@@ -28,6 +28,8 @@ import ProgramLogins from '@/components/ProgramLogins'
 import { getTravelHistory } from '@/lib/travel-history'
 import { isGmailConnected } from '@/lib/travel-history-sync'
 import AppShell from '@/components/AppShell'
+import Card from '@/components/ui/Card'
+import Eyebrow from '@/components/ui/Eyebrow'
 import Icon from '@/components/Icon'
 import SiteFooter from '@/components/SiteFooter'
 import ProgramsManager from '@/components/ProgramsManager'
@@ -292,9 +294,7 @@ export default async function AccountPage({
               />
             </span>
             <div className="min-w-0 flex-1">
-              <div className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-hero-eyebrow">
-                Your account
-              </div>
+              <Eyebrow onDark>Your account</Eyebrow>
               <h1 className="mt-1 truncate font-display text-[26px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[30px]">
                 {name}
               </h1>
@@ -346,9 +346,7 @@ export default async function AccountPage({
             What hop knows about you: the programs you hold and where you've
             flown. These describe your identity, so they sit together. */}
         <div>
-        <div className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
-          Your travel profile
-        </div>
+        <Eyebrow>Your travel profile</Eyebrow>
 
         {/* what hop knows — the glass box over the durable travel_profile. The
             trust foundation for hop's growing memory: see + forget what it holds. */}
@@ -462,9 +460,7 @@ export default async function AccountPage({
         {/* ── GROUP 2 — WHAT HOP DOES FOR YOU ────────────────────────────────
             The active tools: watch a route, or ask what a different stack would
             unlock. A larger gap above encodes the group break. */}
-        <div className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
-          What hop does for you
-        </div>
+        <Eyebrow>What hop does for you</Eyebrow>
 
         {/* standing orders — the verdict that watches */}
         <section id="watches" className="mt-6 scroll-mt-24">
@@ -562,12 +558,9 @@ export default async function AccountPage({
             Power-user plumbing. Collapsed by default so the heavy config block
             doesn't dominate the page for the common visitor (color-only summary,
             no motion — flat-design safe). */}
-        <div
-          id="developers"
-          className="mt-14 scroll-mt-24 text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3"
-        >
+        <Eyebrow id="developers" as="div" className="mt-14 scroll-mt-24">
           Developers
-        </div>
+        </Eyebrow>
 
         {/* MCP access tokens (collapsed) */}
         <section id="mcp" className="mt-6 scroll-mt-24">
