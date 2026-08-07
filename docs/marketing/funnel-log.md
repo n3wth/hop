@@ -750,3 +750,62 @@ weight, not as a complaint.
   (N-320) — 31 days unstarted, the structural block on the entire Wk1 MRR gate and, transitively,
   on every later gate; (3) PR #373 (decide: revert the ADR-0009-violating merge, or re-enable
   auto-merge) — open 7 days now since 2026-07-29, still undecided per the last read.
+
+---
+
+## 2026-08-07
+
+- **Traffic (7d, `$host=hop.flights` filtered)**: 14 visitors, 65 pageviews, 20 sessions, 40%
+  bounce rate, ~4.5 min avg session. Up slightly vs. the 8/5 read (12 visitors) but still the same
+  single-digit-to-low-teens-visitors/week baseline the site has held since traffic peaked around
+  7/10 (95 visitors, later corrected to ~24 hop.flights-only) and declined through every read
+  since — 33 days now at this baseline.
+- **Funnel (7d)**: `search_ran`/`verdict_viewed` 9/9 (0/0 on 7/31–8/3, 3/3 on 8/4, 0/0 on 8/5, 3/3
+  on 8/6, 3/3 partial 8/7) — broken down by `$virt_traffic_type` per the standing check, all 9 are
+  **100% `Regular`**, consistent with the 8/5 read. **`signed_up` 1, on 8/5** — a third distinct
+  automation-flagged date (after 7/18 and 7/30, both previously investigated and downgraded):
+  broke it down the same way and it is **100% `Automation`**, 0% `Regular`, so not counted as a
+  real conversion, same pattern as every prior nonzero `signed_up` read since instrumentation
+  shipped. `first_program_added` **0**. `signed_up`/`first_program_added` remain **zero for
+  confirmed-`Regular` traffic across all 33 days** logged since 2026-07-05. `outclick` read 23
+  across the window (8 on 7/31, 1 on 8/3, 1 on 8/4, 11 on 8/6, 2 partial 8/7) — broken down the
+  same way, **100% `Automation`** on every day with any count, 0 `Regular`. Confirmed-`Regular`
+  `outclick`s: zero since 7/14, now 24 days.
+- **MRR-gate status — Wk1 ("payment path proven, one real stranger pays")**: **not met.** N-320
+  (seats.aero written commercial terms, owner-only) is still Backlog, `startedAt: null` in Linear —
+  unchanged since every prior read (12th consecutive read at this exact status). The gate has now
+  been open **33 days** on the same single owner-only blocker, three days past the north-star
+  doc's declared 30-day window (closed 2026-08-04 at $0, per the 8/5 entry).
+- **Merge pipeline**: last merge to `main` was `#402` at 2026-08-06T16:49 UTC (~22.5h before this
+  run) — quiet, not stuck; only one open PR carried over, #373 (the ADR-0009-violation revert /
+  auto-merge kill-switch decision), now **9 days** open with no founder action, unchanged since the
+  8/5 read.
+- **This run's action — a fourth, previously-unexplored MCP directory path, actually completable
+  from the repo**: the 7/17 and 7/29 reads tried the three directories named in
+  `docs/board/2026-07-12-board-memo.md`/`docs/agent-playbook.md` (Smithery, PulseMCP, mcp.so) and
+  found all three gated behind an interactive account login this session can't complete. This run
+  checked PulseMCP's current submission page again (per the standing periodic-reverify pattern) and
+  found it now points at **the Official MCP Registry** (`registry.modelcontextprotocol.io`,
+  the `modelcontextprotocol/registry` project) as the real intake. That registry documents a
+  **GitHub Actions OIDC publish mode** (`mcp-publisher login github-oidc`, confirmed from the
+  project's own `cmd/publisher/README.md`) — the workflow's own Actions identity proves ownership
+  of the `io.github.n3wth/hop` namespace, no personal founder credential required. Built
+  `server.json` (name/description/tool-surface copy sourced verbatim from the already-shipped,
+  already-reviewed `/mcp` page — nothing invented for the listing) and
+  `.github/workflows/publish-mcp-registry.yml` (publishes on every `server.json` change to `main`,
+  so the listing goes live automatically the moment this merges). Verified with `npm run check`
+  from a fresh worktree: lint 0 errors, typecheck clean, 1406/1406 tests passing (one transient
+  `check-migration-sequence` failure from a stray file a concurrent session was writing to this
+  shared container mid-run, gone on re-run — not part of this diff, same pattern as the 8/3 entry).
+  **Opened as PR #409, explicitly held for founder review/merge, not self-merged** — it touches
+  `.github/workflows/**`, on ADR 0009's hold-for-owner list with no exceptions. The exact CLI
+  flags are confirmed from the tool's own docs but this session could not dry-run the publish
+  against the live registry, so first-run CI output is worth a glance after merge. Content-pipeline
+  freeze (N-387, still Backlog/unstarted) stays in effect — no new `/guides`/sweet-spot/methodology
+  pages attempted.
+- **Still the single highest-leverage things sitting undone, in order**: (1) the three
+  ready-to-paste drafts in `docs/marketing/drafts/` — now **32 days** unposted, flagged every read
+  since 7/13 — 12th consecutive flag; (2) the seats.aero reply (N-320) — 33 days unstarted, the
+  structural block on the entire Wk1 MRR gate; (3) PR #373 — 9 days undecided; (4) new this run —
+  **PR #409 (MCP registry listing)**, lower-friction than the other three (no external account,
+  just review + merge), self-activates the moment it's merged.
