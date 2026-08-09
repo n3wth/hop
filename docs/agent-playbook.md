@@ -31,11 +31,18 @@
 
 ## The goal
 
-**$10k+ MRR by 2026-08-05** (declared 2026-07-05; the "$10k-MRR-within-30-days" target in
-`docs/plans/2026-07-05-agentic-travel-agent-northstar.md`, whose "The revenue goal" section also
-sets the weekly gates — Wk2/Wk4 checkpoints — every desk works against). Where the two disagree
-on priority, the board's amendment list in the latest `docs/board/<date>-board-memo.md` overrides
-this playbook's own §9 ordering.
+**Expired, not live — corrected 2026-08-09.** The original target here was "$10k+ MRR by
+2026-08-05" (declared 2026-07-05, the "$10k-MRR-within-30-days" target in
+`docs/plans/2026-07-05-agentic-travel-agent-northstar.md`). That date has passed: realized MRR is
+$0, per every ledger/funnel-log read through 2026-08-09 — `HOP_ENABLE_BILLING`'s Wk1 gate (N-320,
+seats.aero written commercial terms) never started, so nobody has ever been able to pay hop
+anything at any point in the 30-day window. Three consecutive board memos (7/19, 7/26, 8/02) asked
+the founder to explicitly reset or reaffirm this target; no answer is logged either way as of this
+edit. **Do not treat "$10k by 2026-08-05" as a live planning input** — it is a missed, unrenewed
+target, not a current goal. Until the founder sets a new number, work against the board's latest
+ranked amendment list (below) rather than a dollar/date figure. Where the board and this
+playbook's own §9 ordering disagree on priority, the board's amendment list in the latest
+`docs/board/<date>-board-memo.md` overrides this playbook's own §9 ordering.
 
 **Ownership order, explicit (from 2026-07-12):** the board (`docs/board/`, weekly, Sunday
 13:00 UTC) is the periodic deep, adversarial check; the strategy desk (`docs/strategy/`, Marcus,
@@ -119,6 +126,14 @@ near-term agent-executable move (not a founder-gated one) once merges resume.
 strategy desk (Marcus, `docs/team/routines.md`) now owns re-ranking priority on a weekly cadence
 via `docs/strategy/<date>-weekly-strategy.md`. Once Marcus has run at least once, his latest file
 is the current priority order — see the pointer at the top of §9.
+
+**Retro-desk deference, made explicit (2026-08-09):** the weekly retro desk (Bob, §9/§10 below)
+does not re-derive its own priority ranking — it defers to the strategy desk's latest merged
+ranking (which itself defers to the latest merged board memo, per the ownership order above) and
+spends its own analysis on what shipped/broke since the last retro, not on re-ranking what's next.
+If a retro's "Open threads" section and the latest `docs/strategy/<date>-weekly-strategy.md` ever
+disagree on priority, the strategy file wins — update the retro's pointer to match, don't average
+the two.
 
 ## Reliability practices
 
@@ -426,29 +441,29 @@ in this file's git history; not repeated here to keep this section scoped to its
 
 ## 10. Open threads
 
-**Priority ranking pointer (updated 2026-08-03):** per this run's instructions, adopt the
-strategy desk's latest ranking from `docs/strategy/` as-is. **The latest file actually merged
-into `docs/strategy/` is still 2026-07-19** — the same one the last retro cited. The strategy
-desk has run at least once more since (`strategy/2026-08-02`, PR #384) and the board twice more
-(`board/2026-07-26` PR #333, `board/2026-08-02` PR #383), but **none of those three PRs have
-merged** — all three are still open drafts (see the new "stuck desk-memo PRs" thread below), so
-their content isn't live on `main` and isn't "latest" in the sense that matters (a ranking nobody
-can read from the merged doc tree isn't actionable). The 2026-07-19 board's ranked list (adopted
-as-is by the 2026-07-19 strategy review) remains the operative one; this run re-verified each
-item against current code/docs rather than re-deriving a new ranking:
+**Priority ranking pointer (updated 2026-08-09 by the strategy desk):** the current priority order
+is `docs/strategy/2026-08-09-weekly-strategy.md`, which adopts `docs/board/2026-08-09-board-memo.md`
+§7's ranked list as-is (verified independently this run against live GitHub/Linear/PostHog state,
+not trusted from the memo's prose — both docs exist only as unmerged draft PRs, #411 and this
+retro/strategy PR respectively, as of this run; per the 2026-08-02 caveat, treat them as current
+once merged and re-verify before citing further out). Top 5, unchanged from the board's own order:
 
-1. ~~Gate `app/pricing/page.tsx`'s `metadata` export via `generateMetadata()` behind
-   `isBillingEnabled()`~~ **Done** — PR #304 (closed last retro).
-2. ~~Resolve N-319 (`/pricing`) fully~~ **Done this run** — FAQ + JSON-LD shipped, gated on
-   `isBillingEnabled()` (see §9). Drop from this list.
-3. Start the fallback award-data-source prototype — **still zero code**, confirmed by this run's
-   grep (no file matching `fallback`/`FallbackAward` anywhere under `lib/`). **[agents-can-execute]**.
-4. Build the content staleness/"verified as of" guard before any further content ships — **still
-   unbuilt**, freeze held for a second straight two-week window with no new violation (see §9).
-   **[agents-can-execute]**.
-5. Reopen Linear N-370 ("board review" perpetual thread, marked Done 6 seconds after creation) and
-   fix whatever board-routine step closes it — **not verified this run**, no Linear access from
-   this session. **[agents-can-execute]**, needs Linear-connector access.
+1. Resolve PR #373 (revert the ADR-0009 violation / decide `Auto-merge` on-off) — 11 days open.
+   **[needs-founder]**.
+2. Merge or close PR #409 (MCP registry listing) — a smaller competitor (Gondola MCP) already
+   holds a live slot on the same registry hop's PR would register into; every day unmerged is a
+   day later. **[needs-founder]**.
+3. Reply to seats.aero (N-320) or flip `HOP_ENABLE_BILLING` off — 34 days silent.
+   **[needs-founder]**.
+4. Correct this file's "## The goal" section below — the 2026-08-05 MRR target expired 4+ days ago
+   at $0 realized revenue and is still stated above as live. **[agents-can-execute]**.
+5. Ship the observed-cpp public page (dedupe N-395/N-396 first) — the "is `HOP_ENABLE_VALUATION_SYNC`
+   live" question is now definitively resolved (production `curl` confirms 14/34 verified programs);
+   nothing blocks shipping. **[agents-can-execute]**.
+
+Full ranked list (items 6-15) is in `docs/strategy/2026-08-09-weekly-strategy.md` §(d) — carried
+forward from the board's own list unchanged; this week's strategy review found no new evidence to
+reorder them.
 
 **Separately (§5 Kill list, not a ranked amendment)**: no further `/mcp` page polish until at
 least one MCP-directory submission lands — **still open**, drafts only
