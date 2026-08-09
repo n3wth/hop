@@ -16,6 +16,7 @@ import {
   type HealthCheckInputs,
 } from '@/lib/health-checks'
 import { MIN_SAMPLES_TO_TRUST } from '@/lib/valuations-live'
+import { MAX_CPP, MIN_CPP } from '@/lib/valuations'
 import vercelConfig from '@/vercel.json'
 
 // The detectors are PURE: inputs are handed in, `now` is handed in, zero env.
@@ -348,6 +349,39 @@ describe('D5 valuation drift', () => {
   it('null valuations input → unknown (a dead table must not resolve drift findings)', () => {
     const r = reportOf({ valuations: null }, 'valuation-drift')
     expect(r.status).toBe('unknown')
+  })
+
+  it('an override pinned to MAX_CPP reads as saturated, not a precise drift percentage', () => {
+    const r = reportOf(
+      {
+        valuations: {
+          baseline: { 'avios-ba': 1.4 },
+          overrides: [{ programId: 'avios-ba', cpp: MAX_CPP, sampleSize: 35 }],
+        },
+      },
+      'valuation-drift',
+    )
+    expect(r.findings).toHaveLength(1)
+    expect(r.findings[0].fingerprint).toBe('valuation-drift:avios-ba')
+    expect(r.findings[0].title).toContain('saturated')
+    // The exact (censored) drift percentage is never published as a fact.
+    expect(r.findings[0].body).not.toContain('257')
+    // A saturated value is never verified healthy, so it can never resolve.
+    expect(r.clearedSubjects).toHaveLength(0)
+  })
+
+  it('an override pinned to MIN_CPP also reads as saturated', () => {
+    const r = reportOf(
+      {
+        valuations: {
+          baseline: { hilton: 0.35 },
+          overrides: [{ programId: 'hilton', cpp: MIN_CPP, sampleSize: 30 }],
+        },
+      },
+      'valuation-drift',
+    )
+    expect(r.findings).toHaveLength(1)
+    expect(r.findings[0].title).toContain('saturated')
   })
 })
 

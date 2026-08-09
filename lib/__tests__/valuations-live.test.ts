@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { listValuations, MIN_CPP, MAX_CPP } from '@/lib/valuations'
+import { listValuations, MAX_CPP } from '@/lib/valuations'
 import { PROGRAMS } from '@/lib/programs'
 
 // getValuationOverrides is DB-backed; mock it directly so these tests exercise
@@ -92,16 +92,28 @@ describe('getLiveValuations() — applies a trusted, fresh override', () => {
     }
   })
 
-  it('clamps an out-of-band cpp into the sane MIN_CPP..MAX_CPP band', async () => {
+  it('distrusts a saturated override (pinned to a clamp band edge) and falls back to baseline', async () => {
+    // An out-of-band trimmed mean is a saturated clamp artifact, not a
+    // measurement — the concierge must never ground on it.
     getValuationOverridesMock.mockResolvedValue([
-      { programId: 'delta', cpp: 999, sampleSize: 50, asOf: daysAgo(1) },
-      { programId: 'hilton', cpp: -5, sampleSize: 50, asOf: daysAgo(1) },
+      { programId: 'delta', cpp: 999, sampleSize: 50, asOf: daysAgo(1) }, // clamps to MAX_CPP
+      { programId: 'hilton', cpp: -5, sampleSize: 50, asOf: daysAgo(1) }, // clamps to MIN_CPP
+      { programId: 'avios-ba', cpp: MAX_CPP, sampleSize: 35, asOf: daysAgo(1) }, // already at the edge
     ])
     const live = await getLiveValuations()
-    expect(live['delta'].cpp).toBe(MAX_CPP)
-    expect(live['hilton'].cpp).toBe(MIN_CPP)
+    for (const id of ['delta', 'hilton', 'avios-ba']) {
+      expect(live[id].isLive).toBe(false)
+      expect(live[id].cpp).toBe(listValuations()[id])
+    }
+  })
+
+  it('trusts an override that sits just inside the band', async () => {
+    getValuationOverridesMock.mockResolvedValue([
+      { programId: 'delta', cpp: MAX_CPP - 0.01, sampleSize: 50, asOf: daysAgo(1) },
+    ])
+    const live = await getLiveValuations()
     expect(live['delta'].isLive).toBe(true)
-    expect(live['hilton'].isLive).toBe(true)
+    expect(live['delta'].cpp).toBe(MAX_CPP - 0.01)
   })
 
   it('rejects a non-finite cpp override entirely (falls back to baseline)', async () => {

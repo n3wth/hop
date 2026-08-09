@@ -88,6 +88,9 @@ describe('recordCppObservations() — enabled', () => {
       { programId: 'delta', cpp: -1 }, // negative cpp
       { programId: 'delta', cpp: NaN }, // non-finite
       { programId: 'delta', cpp: Infinity }, // non-finite
+      { programId: 'delta', cpp: 0.29 }, // below MIN_CPP band floor
+      { programId: 'delta', cpp: 5.01 }, // above MAX_CPP band ceiling
+      { programId: 'delta', cpp: 99 }, // wildly out of band
       { cpp: 2 }, // missing programId
       { programId: 123, cpp: 2 }, // wrong type
     ]
@@ -101,6 +104,26 @@ describe('recordCppObservations() — enabled', () => {
     const body = JSON.parse(init.body as string)
     expect(body.samples).toHaveLength(50)
     expect(body.samples.every((s: CppObservation) => s.cpp > 0 && s.programId)).toBe(true)
+  })
+
+  it('rejects out-of-band cpp so a clamp downstream never saturates the mean', async () => {
+    enableSync()
+    const fetchSpy = vi.fn(() => Promise.resolve(new Response('{}', { status: 200 })))
+    vi.stubGlobal('fetch', fetchSpy)
+
+    // Band edges (MIN_CPP 0.3, MAX_CPP 5.0) are accepted; just outside is dropped.
+    recordCppObservations([
+      { programId: 'avios-ba', cpp: 0.3 }, // MIN_CPP edge — kept
+      { programId: 'avios-ba', cpp: 5.0 }, // MAX_CPP edge — kept
+      { programId: 'avios-ba', cpp: 0.1 }, // below floor — dropped
+      { programId: 'avios-ba', cpp: 12.5 }, // above ceiling — dropped
+    ])
+    await flush()
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    const [, init] = fetchSpy.mock.calls[0] as unknown as [string, RequestInit]
+    const body = JSON.parse(init.body as string)
+    expect(body.samples.map((s: CppObservation) => s.cpp)).toEqual([0.3, 5.0])
   })
 
   it('no-ops on an empty or non-array samples argument', async () => {

@@ -66,8 +66,11 @@ async function isAuthorized(request: Request, env: Env): Promise<boolean> {
   return timingSafeEqual(providedHash, expectedHash)
 }
 
-function isFinitePositiveNumber(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && value > 0
+// Accept only a cpp inside the sane band. Clamping the aggregate afterwards
+// hides an out-of-band input rather than dropping it, so the trimmed mean can
+// saturate at MIN_CPP/MAX_CPP — reject the bad input here instead.
+function isInBandCpp(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= MIN_CPP && value <= MAX_CPP
 }
 
 function parseSamples(body: unknown): Sample[] {
@@ -80,7 +83,7 @@ function parseSamples(body: unknown): Sample[] {
     if (typeof entry !== 'object' || entry === null) continue
     const { programId, cpp, cashCents, miles } = entry as Record<string, unknown>
     if (typeof programId !== 'string' || programId.trim() === '') continue
-    if (!isFinitePositiveNumber(cpp)) continue
+    if (!isInBandCpp(cpp)) continue
     valid.push({
       programId,
       cpp,

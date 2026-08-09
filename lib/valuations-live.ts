@@ -31,7 +31,13 @@ function isFresh(asOf: string): boolean {
 function isTrusted(o: ValuationOverride): boolean {
   if (o.sampleSize < MIN_SAMPLES_TO_TRUST) return false
   if (!isFresh(o.asOf)) return false
-  if (clampCpp(o.cpp) === null) return false
+  const clamped = clampCpp(o.cpp)
+  if (clamped === null) return false
+  // A value pinned to a band edge is a saturated clamp artifact, not a
+  // measurement — the real trimmed mean was at or past the edge and got
+  // censored, so we do not know its true value. Never ground the concierge on
+  // it; fall back to the static baseline instead.
+  if (clamped >= MAX_CPP || clamped <= MIN_CPP) return false
   if (!programById(o.programId)) return false
   return true
 }
