@@ -120,6 +120,23 @@ strategy desk (Marcus, `docs/team/routines.md`) now owns re-ranking priority on 
 via `docs/strategy/<date>-weekly-strategy.md`. Once Marcus has run at least once, his latest file
 is the current priority order — see the pointer at the top of §9.
 
+**Ownership order made maximally explicit (2026-08-09), no remaining ambiguity:** the board
+(`docs/board/`) is the periodic deep, adversarial check that verifies whether the org actually
+executed on prior amendments; the strategy desk (`docs/strategy/`, Marcus) is the weekly tracker
+that adopts the board's ranking by default and layers in fresh market/competitive read between
+board cycles. **This is a strict precedence order, not two equal inputs to average:** when a
+merged board memo and a merged strategy note disagree on what to prioritize, the board's latest
+ranked amendment list wins, in full, every time — the strategy desk should adopt it as-is (as it
+has done correctly every week since 2026-07-12) rather than re-rank independently. Use the
+strategy desk's own ranking only for questions the current board memo doesn't address, or in the
+gap before a new board memo has merged. Both desks are still bound by the caveat added
+2026-08-02: **"the board's/strategy desk's ranked list" means the version merged to `main`**, not
+a memo's own prose claiming to be current — verify with `git log`/`gh pr view` before treating
+either as settled. The 2026-08-09 board memo (`docs/board/2026-08-09-board-memo.md`) is itself an
+instance of this precedence working as designed: it found the org executing on roughly 1 of 15 of
+the prior week's board amendments while spending real merge volume on work the board had twice
+voted to freeze — exactly the follow-through check this ownership order exists to make possible.
+
 ## Reliability practices
 
 Plain-language ground rules for running this as an unattended agent fleet. Where a
