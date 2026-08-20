@@ -22,9 +22,9 @@ from the root.
 - `app/`, `components/`, `lib/`, `public/` — the application
 - `docs/design/` — the design source of truth: `CHOSEN-editorial.html` (canonical visual
   reference), `copy-spec.md` (strict copy voice), logo assets
-- `docs/plans/` — implementation plans. **`2026-07-04-business-plan.md` is the adopted business
-  plan + sequencing source of truth — start there (and the Linear `hop` project it mirrors) when
-  deciding what to build next.**
+- `docs/plans/` — implementation plans. **`2026-07-04-business-plan.md` is the adopted
+  business plan** (positioning, pricing, gates). **`2026-08-20-path-to-first-dollar.md`
+  sequences the next 90 days** — start there when deciding what to build next.
 - `docs/decisions/` — **ADRs**: the load-bearing architectural decisions. Read the relevant one
   before changing a decided area.
 - `docs/solutions/` — **searchable solved-problems library** (YAML frontmatter). Grep here before
@@ -105,16 +105,23 @@ git -C <main-checkout> worktree remove /tmp/<name>   # after merge
 
 # What to build next
 
-**`docs/plans/2026-07-04-business-plan.md` is the adopted business plan and the sequencing
-source of truth.** It sets pricing, revenue gates, and the phase order; its §11 is the pickup
-protocol for agents. The work queue is mirrored in Linear (team `n3wth`, project
-[hop](https://linear.app/newth/project/hop-9365da373b9a)): take the highest-priority open issue
-in the lowest open phase, respect its `blockedBy` relations and the plan's hard gates (e.g.
-billing does not flip until the four §3.1 gates pass), and follow the issue's embedded
-continuation prompt. Items marked **owner** are human-only — flag them, don't attempt them.
-The **ambition layer above it** is `docs/plans/2026-07-05-media-engine-to-1m.md` (M-series,
-`M#` Linear issues): the audience/media engine toward $1M/mo. R0.x correctness still outranks
-everything; M-items never jump that queue.
+**`docs/plans/2026-07-04-business-plan.md` is the adopted business plan** — positioning,
+pricing, revenue streams, and the four §3.1 billing gates. **Sequencing for the next 90 days
+is `docs/plans/2026-08-20-path-to-first-dollar.md`.** Pickup: **FD-copy** (stop calling
+observations "live bookings") then **FD-fallback** (N-386 failover — does *not* pass the
+seats.aero written-terms gate). Skip shipped July 4 B1–B4 epics and design-system callsites.
+Items marked **owner** (A-terms, A-hn, A-mcp PR #409, A-gov PR #373, A-cards, R3.4) are
+human-only — flag them, don't attempt them.
+
+The work queue is mirrored in Linear (team `n3wth`, project
+[hop](https://linear.app/newth/project/hop-9365da373b9a)). If Linear disagrees with the
+first-dollar pickup rule, the first-dollar plan wins for 90 days. Billing is not
+*legitimate* until the four §3.1 gates pass (gate ④ = written seats.aero terms); the
+billing *flag* being ON does not satisfy that.
+The **ambition layer** is `docs/plans/2026-07-05-media-engine-to-1m.md` (M-series). It does
+not jump the first-dollar queue. The 2026-07-05 "$10k MRR in 30 days" target expired
+2026-08-05 at $0 and is not a planning input. Company-scale (MCP listing + one B2B
+conversation) runs **in parallel** with consumer first-dollar, not after a Floor chase.
 
 **Autonomous sessions** (Claude Code routines, delegated agents): `docs/autonomy-runbook.md`
 governs your run — queue rules, the merge policy (ADR 0009: merge only when CI is green,

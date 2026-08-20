@@ -40,9 +40,11 @@ recorded here since it's a standing pricing-status question:
 **No new price has been chosen.** Launch price is unchanged at `PRO_PRICE_YEARLY_USD = 49`
 (`lib/pricing.ts`), annual-only, monthly at `$9.99` configured in Stripe but hidden from the UI.
 The board has discussed a possible future **$99/yr raise gate**, but it is explicitly
-**blocked-on-billing by construction**: one of its three conditions (alerts firing reliably for
-60+ days) cannot even start its clock while `HOP_ENABLE_BILLING` stays off pending the seats.aero
-commercial-terms reply (N-320, unanswered 22+ days as of this run). The 2026-07-19 board memo's
-ranked amendment #10 explicitly voted to **stop describing the $99/yr raise as "in progress"** in
-any tracking doc and mark it plainly blocked instead — so the honest answer is "no decision, and
-it structurally can't be decided yet."
+**blocked-on-billing by construction**. Correction 2026-08-20: `docs/ops-runbook.md` reports
+the `HOP_ENABLE_BILLING` *flag* as ON; this file previously said the flag was "off." Those
+are not the same question as legitimacy. The raise clock cannot start while (1) paying-subscriber
+count is unknown and (2) seats.aero written terms (N-320, inquiry sent 2026-07-06) plus a
+fallback award source are unmet — see `docs/plans/2026-08-20-path-to-first-dollar.md`. The
+2026-07-19 board memo's ranked amendment #10 voted to **stop describing the $99/yr raise as
+"in progress"**; that still holds. Honest answer: no new price, and the raise structurally
+cannot be decided yet.

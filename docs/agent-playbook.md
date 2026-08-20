@@ -31,20 +31,28 @@
 
 ## The goal
 
-**$10k+ MRR by 2026-08-05** (declared 2026-07-05; the "$10k-MRR-within-30-days" target in
-`docs/plans/2026-07-05-agentic-travel-agent-northstar.md`, whose "The revenue goal" section also
-sets the weekly gates — Wk2/Wk4 checkpoints — every desk works against). Where the two disagree
-on priority, the board's amendment list in the latest `docs/board/<date>-board-memo.md` overrides
-this playbook's own §9 ordering.
+**One attributed consumer dollar** (Travelpayouts commission or a *legitimate* Stripe charge)
+**and, in parallel, MCP listing + one B2B conversation.** Operating plan:
+`docs/plans/2026-08-20-path-to-first-dollar.md`. The July 4 Floor (~15–25 Pro/year covering
+infra) is a default-alive readout, not the 90-day company target. Pricing, streams, and
+billing gates still live in `docs/plans/2026-07-04-business-plan.md`.
 
-**Ownership order, explicit (from 2026-07-12):** the board (`docs/board/`, weekly, Sunday
-13:00 UTC) is the periodic deep, adversarial check; the strategy desk (`docs/strategy/`, Marcus,
-Sunday 15:00 UTC) is the weekly tracker. **When the two conflict, the latest board memo's
-amendment list wins** — the board's job is explicitly to check whether the org followed through
-on prior amendments, so its ranking is the more authoritative, harder-won one. Adopt the latest
-board memo's amendment list as-is; fall back to the strategy desk's ranking only for priority
-questions the current board memo doesn't address, and fall back further to re-deriving from the
-business plan's own sequencing only if neither review exists yet.
+The 2026-07-05 north-star target of **$10k+ MRR by 2026-08-05** expired on that date at $0
+realized revenue, without the launch posts or licensed billing the north-star's own Wk1/Wk2
+gates required. It is historical — recorded in
+`docs/plans/2026-07-05-agentic-travel-agent-northstar.md` §The revenue goal — not a live desk
+target. Do not plan sprints against it.
+
+Where this playbook's §9 ordering disagrees with the first-dollar plan
+(`docs/plans/2026-08-20-path-to-first-dollar.md`) or the board's latest *merged* amendment
+list (`docs/board/`), **the first-dollar plan wins for 90 days**, then the merged board list,
+then this playbook. Do not re-derive a $10k-MRR sprint from this file's historical retro notes.
+
+**Ownership order, explicit (from 2026-07-12, amended 2026-08-20):** for 90 days the
+first-dollar addendum outranks board and strategy on *what to build next*. Board vs strategy
+when the addendum is silent: the latest **merged** board memo's amendment list wins over
+strategy. Do not fall back to re-deriving a sprint from the expired $10k target or from
+shipped July 4 B1–B4 epics.
 
 **Known scheduling bug (flagged 2026-07-12, still not fixed as of 2026-07-19 — 2nd week
 running):** the board's cron (`0 13 * * 0`) fires two hours before the strategy desk's
@@ -471,9 +479,10 @@ Further down the board's §7 list, re-verified this run:
   either way this run. **[agents-can-execute]**.
 - **#11–#15 — the five `[needs-founder]` items** (reply to seats.aero / decide on billing, post
   the 3 ready-to-paste community drafts, fix GitHub Actions billing, grant the finance desk
-  DB/Stripe read access, decide whether to reset the Aug-5 $10k MRR target) — **all still open**;
-  the Aug-5 target is now **2 days away** as of this retro with the Wk1 gate still unmet — see the
-  `[needs-founder]` list below.
+  DB/Stripe read access; the Aug-5 $10k MRR target listed here is **historical** — it expired
+  2026-08-05 at $0; live goal is `docs/plans/2026-08-20-path-to-first-dollar.md`) — **all still
+  open as of this 2026-08-03 retro**; the Aug-5 target was then **2 days away** with the Wk1
+  gate still unmet — see the `[needs-founder]` list below.
 
 **New this run — critical, needs a founder decision within days:** PR #373 (revert PR #362 / flip
 the `Auto-merge` kill switch — see §9) has sat open and unmerged for **5 days**, despite being
@@ -566,10 +575,10 @@ above), so this is discipline, not a guardrail. Violation count stands at 3 tota
 - **Grant the finance desk read-only DB/Stripe access, or explicitly pause it** — carried forward
   unverified this run; as of the last retro the desk had been silent since 2026-07-14 with no
   DB-verified subscriber count.
-- **Decide explicitly whether to reset the 2026-08-05 $10k MRR target** — **2 days remain as of
-  this retro (2026-08-03)** and N-320 (the seats.aero decision above) has not moved. Not a call
-  any desk should make by quietly re-planning around a target that may already be dead — and with
-  2 days left, this is no longer a "next week" decision.
+- **Decide explicitly whether to reset the 2026-08-05 $10k MRR target** — **historical note from
+  the 2026-08-03 retro (2 days then remained).** The date has since passed at $0. Live target is
+  `docs/plans/2026-08-20-path-to-first-dollar.md`. Not a call any desk should make by quietly
+  re-planning around a dead number.
 
 Things that are known, tracked, and waiting on a specific owner — check here before re-filing
 something that's already known. Mirrored into Linear (team `n3wth`, project

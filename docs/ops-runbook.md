@@ -27,7 +27,7 @@ Live state is visible at a glance on `/admin/ops` (owner-only preflight table).
 | Valuation sync (`HOP_ENABLE_VALUATION_SYNC`) | **ON.** Worker deployed at `https://hop-valuations.newth.workers.dev` (D1 schema applied, 6h cron); all three Vercel vars set. Programs go live per-program at ≥20 samples. |
 | Standing-order alerts (`STANDING_ORDERS_CRON_ENABLED`) | **ON.** `RESEND_API_KEY` set; hop.flights DKIM + SPF **verified** in Resend (the "Receiving MX" record stays failed by design — inbound mail is Cloudflare Email Routing). |
 | Product analytics | `NEXT_PUBLIC_POSTHOG_KEY`/host set; the five funnel events ship as of PR #167. |
-| Billing (`HOP_ENABLE_BILLING`) | **ON** (Stripe keys + webhook secret set). Still owed: one real test purchase end-to-end. |
+| Billing (`HOP_ENABLE_BILLING`) | **Reported ON** (Stripe keys + webhook secret set). **Paying-subscriber count: unknown** — no in-repo Stripe/DB read has ever confirmed a live charge. **Legitimacy gate unmet:** seats.aero written commercial terms (R3.1) still unanswered (inquiry sent 2026-07-06). See `docs/plans/2026-08-20-path-to-first-dollar.md`. |
 | Checkout (`HOP_ENABLE_CHECKOUT`) | Set with `DUFFEL_API_KEY_TEST` (test-only by design). |
 | Gmail travel-history (`HOP_ENABLE_GMAIL_HISTORY`) | **OFF.** Code + UI are complete but un-provisioned — no `GOOGLE_OAUTH_CLIENT_ID/SECRET` set, and `gmail.readonly` is a Google restricted scope requiring OAuth verification before wide rollout (owner-only testing until then). See the Gmail section below. |
 | `MOCK` | Removed from production env (live upstreams). |
@@ -389,11 +389,11 @@ aliases win when set). Point a Stripe webhook at `/api/webhooks/stripe`.
 **Turn off:** unset `HOP_ENABLE_BILLING` — /account hides billing, checkout and
 webhook routes refuse softly (`{ok:false}`/503), alert-cap copy reverts.
 
-**Gate status (business-plan.md §3.1 — all four required before enabling billing):**
-1. Multi-pax cpp fixed (R0.1) — **Passed**
-2. Single tested Stripe lane with real purchase (R0.2) — **Passed**
-3. Alerts firing reliably (R0.4 + R1.3) — **Passed**
-4. seats.aero written commercial terms (R3.1) — **Pending / Blocked** (awaiting commercial response or fallback award source)
+**Gate status (business-plan.md §3.1 — all four required before billing is *legitimate*):**
+1. Multi-pax cpp fixed (R0.1) — **Passed** (code)
+2. Single tested Stripe lane with real purchase (R0.2) — **Unknown.** This file previously said both "still owed" (current-state table, 2026-07-04) and "Passed" (this list, 2026-07-27 edit). No finance-ledger entry supports either claim. Founder (or a session with Stripe/DB read) must write one sentence of truth; until then do not treat R0.2 as done.
+3. Alerts firing reliably (R0.4 + R1.3) — **Passed** (cron + DKIM on)
+4. seats.aero written commercial terms (R3.1) — **Pending / Blocked** (inquiry sent 2026-07-06; 45 days unanswered as of 2026-08-20). Fallback award source (N-386) is still zero code. This gate is unmet even if the billing *flag* is on.
 
 ## Resend webhooks (deliverability / suppression list)
 

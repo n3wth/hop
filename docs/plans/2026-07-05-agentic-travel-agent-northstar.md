@@ -1,9 +1,11 @@
 # hop as a true AI-first personal travel agent — the north-star plan
 
-Adopted 2026-07-05. This is the vision + sequencing document for hop's evolution from "a search
+Adopted 2026-07-05. This is the **product vision** for hop's evolution from "a search
 tool with AI features" into **an agent that owns your travel outcomes**. It extends (does not
-replace) `2026-07-04-business-plan.md`; where they conflict on sequencing, the business plan's
-revenue gates win. Written for any reader — human or agent — with terms defined as they appear.
+replace) `2026-07-04-business-plan.md`. Where they conflict on revenue gates, the business
+plan wins. Where they conflict on *what to build this week*,
+`2026-08-20-path-to-first-dollar.md` wins for 90 days. The $10k-MRR-in-30-days figure below
+is historical.
 
 ## What "AI-first agentic" means here, concretely
 
@@ -98,6 +100,13 @@ Weekly retro (Bob) re-ranks this table against reality; the board memo's amendme
 (docs/board/) may reorder it — revenue gates from the business plan always win ties.
 
 ## The revenue goal — $10k+ MRR within 1 month (declared 2026-07-05)
+
+> **Expired.** The 30-day window closed 2026-08-05 at $0 realized revenue. The launch posts and
+> licensed-billing Wk1/Wk2 gates were never executed, so this was an un-started experiment, not a
+> failed one. Live operating target:
+> [`docs/plans/2026-08-20-path-to-first-dollar.md`](2026-08-20-path-to-first-dollar.md)
+> (one attributed dollar, then the July 4 Floor). The product vision in this file (P1–P5) is
+> unchanged; do not plan sprints against the dollar figure below.
 
 The founder's stated target. Stated honestly: at $49/yr (≈$4.08/mo recognized), $10k MRR means
 **~2,450 paying subscribers in 30 days, starting from 1 user** — that is far outside what any

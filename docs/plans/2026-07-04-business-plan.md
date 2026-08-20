@@ -1,21 +1,23 @@
 # 2026-07-04 — The hop business plan: from working engine to profitable company
 
-> Plan. Status: **adopted operating plan.**
-> TL;DR: hop has a genuinely differentiated product (real balances × deterministic points-vs-cash
-> economics × agent-native distribution — no competitor has all three) and $0 revenue because every
-> monetization rail is one wire short. This plan sets the positioning, pricing, cost model, and
-> go-to-market; adopts the 2026-07-03 critical-review roadmap (R0.1–R3.5) as the execution
-> backbone; adds four business-layer epics (B1–B4); and mirrors everything into Linear so any LLM
-> agent can pick up the next open item with zero re-discovery.
+> Plan. Status: **adopted operating plan** for positioning, pricing, streams, and billing
+> gates. **Sequencing for the next 90 days is `2026-08-20-path-to-first-dollar.md`.**
+> TL;DR: hop has a genuinely differentiated product (real balances × deterministic
+> points-vs-cash economics × agent-native distribution). Monetization rails that were "one
+> wire short" on 2026-07-04 are largely wired; verified revenue is still $0 because
+> distribution and seats.aero written terms never landed. This plan still sets positioning,
+> pricing ($49/yr), cost model, and the four hard billing gates. It does not tell you what
+> to build this week.
 
-**How this doc relates to the others**: this is the *umbrella*. Money math, pricing, GTM, and
-sequencing gates live here. `docs/plans/2026-07-03-critical-review-roadmap.md` remains the
-execution detail for R-items; the individual `docs/plans/*` docs remain the implementation specs;
-`docs/plans/2026-07-02-competitive-positioning.md` remains the positioning source. Nothing here
-contradicts them — it sequences and prices them.
+**How this doc relates to the others**: this is the *umbrella* for money math, pricing, and
+gates. `docs/plans/2026-08-20-path-to-first-dollar.md` sequences the next 90 days.
+`docs/plans/2026-07-03-critical-review-roadmap.md` remains the execution detail for R-items;
+the individual `docs/plans/*` docs remain the implementation specs;
+`docs/plans/2026-07-02-competitive-positioning.md` remains the positioning source.
 
-**North-star extension**: see `2026-07-05-agentic-travel-agent-northstar.md` (agentic
-personal-travel-agent vision + $10k-MRR-in-30-days goal + weekly gates).
+**North-star extension**: see `2026-07-05-agentic-travel-agent-northstar.md` for the agentic
+product vision (P1–P5). Its $10k-MRR-in-30-days goal expired 2026-08-05 at $0 and is not a
+desk target.
 
 **Tracker**: Linear team `n3wth`, project [hop](https://linear.app/newth/project/hop-9365da373b9a).
 Every epic below exists as a Linear issue (`R#.#` / `B#` title prefixes, phase milestones).
@@ -264,3 +266,25 @@ in a PR comment or the weekly digest rather than attempting them.
 - Compound: when Phase 0 lands, re-run the six-lens review per the roadmap's Part 3 and append
   a dated addendum here with actuals vs the §5 scenarios. When billing flips, capture the
   deploy-order lessons into `docs/solutions/`.
+
+---
+
+## 13. Addendum — 2026-08-20 (actuals vs §5; sequencing moved)
+
+Phase 0 code is on `main`. Verified revenue is still $0. hop.flights traffic is ~10–14
+visitors/week with zero confirmed-`Regular` conversion since instrumentation shipped
+(2026-07-05). The north-star "$10k MRR in 30 days" window closed 2026-08-05 without a launch
+being executed. B1–B4 from §7 are largely shipped; the remaining bind is distribution, seats.aero
+terms (R3.1 / N-320, email sent 2026-07-06, unanswered), and founder-gated PRs — not missing
+Stripe/pricing/quota code.
+
+**Sequencing for the next 90 days lives in
+`docs/plans/2026-08-20-path-to-first-dollar.md`.** This file still owns positioning, pricing
+($49/yr), the five streams, the four §3.1 billing gates, and the Floor/Base/Upside scenario
+shapes. Do not re-derive those. Do not treat the expired $10k target as a desk goal.
+
+Against §5: the Floor (~$1k/yr, break-even side project) is the honest *consumer* near-term
+readout if a launch actually happens — not the 90-day company goal. Base and Upside have not
+started, because the distribution events they assume never ran. The agent/B2B layer (Upside)
+runs **in parallel** per the 2026-08-20 addendum (MCP listing + one R3.4 conversation), not
+after Floor. The month-6 checkpoint (~2026-12-04) still stands.
