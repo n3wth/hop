@@ -9,7 +9,8 @@ here to find the canonical home for anything; each area below owns its own detai
 |---|---|
 | [`agent-playbook.md`](agent-playbook.md) | The operating judgment for any agent working here — the loop, invariants, design canon, taste-call protocol. Read first if you're a smaller model. |
 | [`plans/2026-07-04-business-plan.md`](plans/2026-07-04-business-plan.md) | **The adopted business plan** — positioning, pricing, gates, execution roadmap. Still owns those decisions. |
-| [`plans/2026-08-20-path-to-first-dollar.md`](plans/2026-08-20-path-to-first-dollar.md) | **90-day operating addendum** — one attributed consumer dollar + parallel MCP/B2B. Floor is a readout, not the company target. |
+| [`plans/2026-08-20-path-to-first-dollar.md`](plans/2026-08-20-path-to-first-dollar.md) | **90-day operating addendum** — one attributed consumer dollar + parallel MCP/B2B. Floor is a readout, not the company target. Gate ④ amended 2026-08-21 (won't-buy seats.aero). |
+| [`plans/2026-08-21-replace-seatsaero.md`](plans/2026-08-21-replace-seatsaero.md) | **Award-data replacement** — chart-cpp then first-party live search. ADR 0014. This is N-386 re-specified (not failover). |
 | [`autonomy-runbook.md`](autonomy-runbook.md) | Rules for autonomous sessions: queue, merge policy (ADR 0009), guardrails, compound step. |
 | [`ops-runbook.md`](ops-runbook.md) | How to turn production capabilities on/off (flags, crons, secrets, billing, checkout). |
 | [`meta/`](meta/README.md) | The agentic development process as portable, stack-agnostic patterns — worktrees, PR pipeline, machine review, tiered auto-merge, runbook, memory, self-healing. |
@@ -28,7 +29,8 @@ here to find the canonical home for anything; each area below owns its own detai
 | Path | Purpose | Update cadence |
 |---|---|---|
 | [`plans/2026-07-03-critical-review-roadmap.md`](plans/2026-07-03-critical-review-roadmap.md) | Execution detail for the R0–R3 roadmap items the business plan sequences. | When items land |
-| [`plans/2026-08-20-path-to-first-dollar.md`](plans/2026-08-20-path-to-first-dollar.md) | 90-day operating addendum: one attributed consumer dollar + parallel MCP/B2B. Sequencing until the next dated addendum. | When A-terms / A-hn / A-mcp fire, or at the 90-day kill check |
+| [`plans/2026-08-20-path-to-first-dollar.md`](plans/2026-08-20-path-to-first-dollar.md) | 90-day operating addendum: one attributed consumer dollar + parallel MCP/B2B. Sequencing until the next dated addendum. Gate ④ = seats.aero off paid path (2026-08-21). | When A-terms / A-hn / A-mcp fire, or at the 90-day kill check |
+| [`plans/2026-08-21-replace-seatsaero.md`](plans/2026-08-21-replace-seatsaero.md) | First-party award quotes: chart-cpp (legitimacy) then live search (quality). | When FD-charts / FD-live land, or coverage tables refresh |
 | [`plans/2026-07-05-media-engine-to-1m.md`](plans/2026-07-05-media-engine-to-1m.md) | **The ambition layer** — M-series media/audience epics toward $1M/mo; mirrors to Linear `M#` issues. | Monthly checkpoint (§6) or when a stream is killed |
 | [`growth-hypothesis.md`](growth-hypothesis.md) | Forward-looking growth/business hypothesis for a funded agent-team month. | When strategy is revisited |
 | [`content-plan.md`](content-plan.md) | Content strategy, sweet-spots seed data, SEO direction, concierge prompt seeds. | Quarterly, plus major market changes |

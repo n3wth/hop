@@ -33,7 +33,9 @@
 
 **One attributed consumer dollar** (Travelpayouts commission or a *legitimate* Stripe charge)
 **and, in parallel, MCP listing + one B2B conversation.** Operating plan:
-`docs/plans/2026-08-20-path-to-first-dollar.md`. The July 4 Floor (~15–25 Pro/year covering
+`docs/plans/2026-08-20-path-to-first-dollar.md`. Award-data: won't-buy seats.aero
+(`docs/plans/2026-08-21-replace-seatsaero.md`, ADR 0014) — gate ④ is Partner API off the
+paid path via chart-cpp, not a license letter. The July 4 Floor (~15–25 Pro/year covering
 infra) is a default-alive readout, not the 90-day company target. Pricing, streams, and
 billing gates still live in `docs/plans/2026-07-04-business-plan.md`.
 
@@ -568,10 +570,9 @@ above), so this is discipline, not a guardrail. Violation count stands at 3 tota
 - Confirm the configured Stripe keys are TEST mode, or hard-stop live charges and public
   pricing until business-plan.md §3.1's gates close.
 - Pre-approve the drafted community replies before they go out.
-- **Reply to seats.aero (N-320) or explicitly decide to flip `HOP_ENABLE_BILLING` off** — per the
-  2026-07-31 funnel-log read, still `status: Backlog`/`startedAt: null` in Linear, **26 days
-  unanswered** as of that read (29 per the 2026-08-03 draft); this is the single blocker gating
-  both the Wk1 MRR gate and the fallback-award-source prioritization question.
+- **Reply to seats.aero (N-320)** — **closed 2026-08-21 as won't-buy.** Remaining founder
+  action is billing off until FD-charts, or FD-charts in production + Partner API off.
+  See `docs/plans/2026-08-21-replace-seatsaero.md`. Do not re-send the commercial-terms email.
 - **Grant the finance desk read-only DB/Stripe access, or explicitly pause it** — carried forward
   unverified this run; as of the last retro the desk had been silent since 2026-07-14 with no
   DB-verified subscriber count.
@@ -644,8 +645,9 @@ something that's already known. Mirrored into Linear (team `n3wth`, project
   #288, #293 all shipped ahead of it); the freeze held for a second straight window with no new
   violation, so this is the highest-leverage next pickup before the next content PR risks a
   fourth.
-- Prototype the seats.aero fallback award-data source behind `degraded[]` — board's #3, still
-  zero lines of code, confirmed by grep this run.
+- Prototype first-party award quotes (chart-cpp, **not** seats.aero-primary failover) —
+  board's old #3, re-specified 2026-08-21 as **FD-charts**. Spec:
+  `docs/plans/2026-08-21-replace-seatsaero.md`. Pickup after FD-copy.
 - Reopen Linear N-370 and fix whatever board-routine step closes it seconds after creation —
   board's #5, needs Linear-connector access to verify/fix.
 - Cron ordering (#6) and the funnel-log referrer split / $99/yr de-tracking status (#9, #10) —

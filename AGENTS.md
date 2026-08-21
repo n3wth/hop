@@ -24,7 +24,8 @@ from the root.
   reference), `copy-spec.md` (strict copy voice), logo assets
 - `docs/plans/` — implementation plans. **`2026-07-04-business-plan.md` is the adopted
   business plan** (positioning, pricing, gates). **`2026-08-20-path-to-first-dollar.md`
-  sequences the next 90 days** — start there when deciding what to build next.
+  sequences the next 90 days**; **`2026-08-21-replace-seatsaero.md`** is the award-data
+  replacement (gate ④). Start there when deciding what to build next.
 - `docs/decisions/` — **ADRs**: the load-bearing architectural decisions. Read the relevant one
   before changing a decided area.
 - `docs/solutions/` — **searchable solved-problems library** (YAML frontmatter). Grep here before
@@ -108,16 +109,18 @@ git -C <main-checkout> worktree remove /tmp/<name>   # after merge
 **`docs/plans/2026-07-04-business-plan.md` is the adopted business plan** — positioning,
 pricing, revenue streams, and the four §3.1 billing gates. **Sequencing for the next 90 days
 is `docs/plans/2026-08-20-path-to-first-dollar.md`.** Pickup: **FD-copy** (stop calling
-observations "live bookings") then **FD-fallback** (N-386 failover — does *not* pass the
-seats.aero written-terms gate). Skip shipped July 4 B1–B4 epics and design-system callsites.
-Items marked **owner** (A-terms, A-hn, A-mcp PR #409, A-gov PR #373, A-cards, R3.4) are
-human-only — flag them, don't attempt them.
+observations "live bookings") then **FD-charts** (chart-cpp replacement — N-386
+re-specified; this is gate ④). Then **FD-live** only after seats.aero is off Production.
+Skip shipped July 4 B1–B4 epics, design-system callsites, and seats.aero-primary failover.
+Items marked **owner** (A-terms remaining env flip, A-hn, A-mcp PR #409, A-gov PR #373,
+A-cards, R3.4) are human-only — flag them, don't attempt them.
 
 The work queue is mirrored in Linear (team `n3wth`, project
 [hop](https://linear.app/newth/project/hop-9365da373b9a)). If Linear disagrees with the
 first-dollar pickup rule, the first-dollar plan wins for 90 days. Billing is not
-*legitimate* until the four §3.1 gates pass (gate ④ = written seats.aero terms); the
-billing *flag* being ON does not satisfy that.
+*legitimate* until the four §3.1 gates pass (gate ④ = seats.aero off the paid path,
+ADR 0014); the billing *flag* being ON does not satisfy that. Spec:
+`docs/plans/2026-08-21-replace-seatsaero.md`.
 The **ambition layer** is `docs/plans/2026-07-05-media-engine-to-1m.md` (M-series). It does
 not jump the first-dollar queue. The 2026-07-05 "$10k MRR in 30 days" target expired
 2026-08-05 at $0 and is not a planning input. Company-scale (MCP listing + one B2B

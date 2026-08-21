@@ -36,19 +36,20 @@ founder-gated. Building more of the product (or polishing it) cannot substitute.
 Write an operating addendum — `docs/plans/2026-08-20-path-to-first-dollar.md` — that:
 
 - Keeps the July 4 plan's positioning, $49/yr price, streams, and four billing gates
-  (gate ④ = written seats.aero terms; a failover stub does not pass it).
+  (gate ④ amended 2026-08-21: seats.aero **off** the paid path, not a letter; ADR 0014).
 - Replaces sequencing: A-terms before any public launch; A-hn for a possible Kiwi
   commission; A-mcp + R3.4 in parallel (not after Floor); agents do FD-copy then
-  FD-fallback.
+  FD-charts (N-386 replacement), then FD-live after the Partner API is gone.
 - Strikes the expired $10k target from `docs/agent-playbook.md` and banners the north-star
   revenue section as historical.
 - Marks R0.2 **Unknown** instead of picking a side of the ops-runbook contradiction.
 
 ## How this compounds
 
-- **FD-fallback is N-386 idle de-risking, not a license.** A failover client that keeps
-  seats.aero as primary does not pass July 4 gate ④ (written terms). "We wait" while
-  `HOP_ENABLE_BILLING` stays ON is not a pass.
+- **FD-charts is N-386 replacement, not failover.** A client that keeps seats.aero as
+  primary does not pass gate ④. "We wait" while `HOP_ENABLE_BILLING` stays ON **and**
+  the Partner API is still the paid path is not a pass. Won't-buy is
+  `docs/plans/2026-08-21-replace-seatsaero.md`.
 - Grep `first-dollar` / `distribution-not-product` before writing another business or
   monetization plan.
 - Reviewer check for future agents: if a plan claims hop will earn money, it must name the

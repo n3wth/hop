@@ -3,11 +3,13 @@
 > Plan. Status: **adopted operating addendum** (this PR). Does not replace the 2026-07-04
 > business plan. TL;DR: hop's engine and monetization rails are built; verified revenue is
 > still $0 because almost nobody has been asked to visit, and nobody has been asked to pay
-> on a *licensed* product. The next experiment is distribution plus a real license decision —
-> not more features, and not a claim that the product is proven at 14 visitors/week. Near-term
-> consumer readout: **one attributed dollar** (a Travelpayouts *commission* or a legitimate
-> Stripe charge). Company-scale path, run in parallel, not after Floor: MCP listing + one
-> B2B conversation. The expired "$10k MRR in 30 days" target is not a planning input.
+> on a *licensed* product. The next experiment is distribution plus taking seats.aero **off**
+> the paid path (founder 2026-08-21: won't-buy the commercial license — see
+> `2026-08-21-replace-seatsaero.md` / ADR 0014). Not more features, and not a claim that the
+> product is proven at 14 visitors/week. Near-term consumer readout: **one attributed dollar**
+> (a Travelpayouts *commission* or a legitimate Stripe charge). Company-scale path, run in
+> parallel, not after Floor: MCP listing + one B2B conversation. The expired "$10k MRR in
+> 30 days" target is not a planning input.
 
 **How this doc relates to the others.** `docs/plans/2026-07-04-business-plan.md` remains the
 umbrella for positioning, pricing (`PRO_PRICE_YEARLY_USD = 49`), the five streams, and the
@@ -23,9 +25,9 @@ declared date 2026-08-05 at $0** and is historical.
 |---|---|
 | **Billing flag ON** | `HOP_ENABLE_BILLING` + Stripe keys, as reported in `docs/ops-runbook.md` |
 | **R0.2 unknown** | No in-repo Stripe/DB read has confirmed a live or test purchase |
-| **Billing legitimate** | All four July 4 §3.1 gates. Gate ④ is **written seats.aero terms**, not a failover stub. Unmet. A Pro charge before this is evidence of the plan violating itself, not of a business |
+| **Billing legitimate** | All four July 4 §3.1 gates. Gate ④ (amended 2026-08-21, ADR 0014): seats.aero is **not queried** on the commercial/paid search path. Chart-cpp at honest-copy parity is enough; a failover that keeps seats.aero primary is not. Unmet until FD-charts ships and the Production key/flag is off. A Pro charge on the unlicensed feed is evidence of the plan violating itself, not of a business |
 | **July 4 B1–B4** | Pricing page, MCP quotas, unit-economics panel, ops runbook — largely *shipped* |
-| **FD-copy / FD-fallback** | This addendum's agent idle work. Never called `B1`/`B2` |
+| **FD-copy / FD-charts / FD-live** | This addendum's agent idle work. Never called `B1`/`B2`. FD-fallback (failover) is retired |
 
 ---
 
@@ -49,7 +51,7 @@ are now wired. The money still is not.
 | Card affiliate | Placeholder `applyUrl`s | **Unchanged.** `ref()` still appends `?ref=hop-card` (or `NEXT_PUBLIC_CJ_AFFILIATE_TAG`). No CJ/Impact network links | `lib/card-affiliates.ts:107-109` |
 | Alerts | Cron dark, DKIM unverified | **Infra on** (cron + hop.flights DKIM/SPF). **Unobserved on real paying users** — the $99 raise clock has not started | ops-runbook current-state table |
 | Observed cpp | Gated, inert | **Live.** Production `GET https://hop.flights/api/stats` on 2026-08-20 returned `{"verifiedPrograms":14,"totalPrograms":34,"degradation24h":{"cash":0,"awards":0}}`. `/stats` shows the count; signed-in `LiveValuationShelf` shows per-program cpp but labels `sampleSize` as "live bookings" (those are `assembleSearch` observations, not bookings) | live curl; `app/stats/page.tsx`; `components/landing/LiveValuationShelf.tsx:24` |
-| Fallback award source | Named as R3.1 parallel work | **Zero code.** No fallback-award client under `lib/`. Linear N-386 is the prototype (failover). N-320 is written terms. Do not conflate | repo grep 2026-08-20 |
+| Fallback award source | Named as R3.1 parallel work | **Zero code** as of 2026-08-20. **Re-specified 2026-08-21:** N-320 is **won't-buy**; N-386 is **replacement** (chart-cpp, then first-party live search), not silent failover. Plan: `2026-08-21-replace-seatsaero.md` | repo grep 2026-08-20; founder decision 2026-08-21 |
 | MCP directory listing | Unbuilt | **PR #409 open** (Official MCP Registry via GitHub OIDC), ADR 0009 hold-for-owner. Gondola already holds `ai.gondola/gondola` on the same registry | GitHub PR #409; gondola.ai/mcp |
 | Community launch | Not started | Three drafts in `docs/marketing/drafts/` unposted since 2026-07-06 / 2026-07-17. They still pitch a world this plan's §3 retires — rewrite before posting | draft files |
 
@@ -116,10 +118,11 @@ From the 2026-07-04 plan, still load-bearing:
   ① R0.1 multi-pax — Passed (code), unobserved on live multi-pax.
   ② R0.2 one tested Stripe purchase — **Unknown**.
   ③ alerts firing — Passed (infra), unobserved on paying users.
-  ④ seats.aero **written commercial terms** — unmet (email sent 2026-07-06, 45 days
-  unanswered). A fallback prototype that keeps seats.aero as primary does **not** pass
-  this gate. The flag is already ON; these gates now constrain *keep-on / legitimacy*,
-  not "whether to write the env var for the first time."
+  ④ seats.aero **off the commercial/paid search path** (amended 2026-08-21, ADR 0014) —
+  unmet until chart-cpp is production and the Partner API is not called. Founder will
+  not buy the commercial license. A fallback that keeps seats.aero as primary still
+  does **not** pass. The billing flag is already ON; these gates constrain *keep-on /
+  legitimacy*, not "whether to write the env var for the first time."
 - **Break-even**: ~15–25 Pro/year, **or** ~6–12 card approvals/year, **or** one B2B
   pilot. 15 Pro at $49/yr ≈ $61/mo recognized — inside ~$75 infra only if LLM cost stays
   near zero; 25 Pro ≈ $102/mo is actually default-alive. Consumer subscriptions alone
@@ -136,12 +139,12 @@ From the 2026-07-04 plan, still load-bearing:
 | Claim | Status | Replace with |
 |---|---|---|
 | "$10k+ MRR by 2026-08-05" | **Expired 2026-08-05 at $0.** The north-star doc itself called organic $10k in 30 days "far outside what any comparable tool has done." | Consumer readout: one attributed dollar. Company-scale: MCP + one B2B conversation, in parallel |
-| "All R-items are open" (July 4 §7) | False. R0.1–R0.5, R1.x slices, July 4 B1–B4 (caveats in §1.1) are code-complete | Queue is license + distribution + N-386 failover, not Phase 0 |
+| "All R-items are open" (July 4 §7) | False. R0.1–R0.5, R1.x slices, July 4 B1–B4 (caveats in §1.1) are code-complete | Queue is seats.aero-off-paid-path (FD-charts) + distribution, not Phase 0 |
 | "hop is first-mover in agent-native award search" | **False as of early August.** Gondola MCP is on the Official MCP Registry, PulseMCP, and Smithery; anonymous search; hotels + flights + cars; cpp inline | Remaining MCP edge: **stateful balances + first-party observed flight cpp**, not "we have an MCP" |
 | "Balance-aware search is the differentiator" | **Table stakes.** point.me My Points, PointsYeah Wallet, Award Travel Finder | Do not pitch "we know your balance" as unique |
 | July 4 B1–B4 as the next build | Mostly shipped | Do not rebuild pricing/quotas/runbook |
 | `/stats` as the missing observed-cpp page | Count surface is live (14/34). Per-program public table is not | Fix "live bookings" copy (FD-copy). Park a public per-program table until Regular `verdict_viewed` volume exists |
-| "A failover client unblocks billing legitimacy" | **False.** Gate ④ is written terms. Failover with seats.aero still primary is availability, not a license | FD-fallback is N-386 idle de-risking. Paid path still needs terms *or* fallback-at-parity with seats.aero **off** the commercial search |
+| "A failover client unblocks billing legitimacy" | **False.** Gate ④ is seats.aero **off** the paid path (won't-buy, 2026-08-21). Failover with seats.aero still primary is availability, not a license | **FD-charts** (N-386 re-specified) is the legitimacy ticket. Live first-party search is quality, later |
 
 Competitive prices, still the right comps: PointsYeah Premium ~$99.99/yr, point.me Standard
 ~$129/yr / Premium ~$260/yr. hop at $49/yr remains an honest early price. That only matters
@@ -156,16 +159,18 @@ Three things bind. A fourth is self-inflicted.
 1. **Distribution.** ~14 hop.flights visitors/week; three launch drafts unposted for 45
    days. SEO pages exist; they are not being pointed at. Activation cannot be measured
    until Regular volume exists.
-2. **Data rights.** Award availability is still seats.aero. Their published terms prohibit
-   commercial API use without written permission. The inquiry is 45 days old. Billing flag
-   is reported ON. Public `/pricing` + that flag + an unlicensed competing feed is a
-   present-tense identity risk for a brand whose claim is "hard gates, computed numbers."
+2. **Data rights.** Award availability is still seats.aero **today**. Founder 2026-08-21:
+   will not buy commercial terms. Gate ④ is now "off the paid path," not "wait for a
+   letter." Until FD-charts is in production and the Partner API is not called, billing
+   flag ON + public `/pricing` is still a present-tense identity risk for a brand whose
+   claim is "hard gates, computed numbers." Plan: `2026-08-21-replace-seatsaero.md`.
 3. **Founder action.** Highest-leverage remaining items are identity-bearing or
-   hold-for-owner (ADR 0009): seats.aero decision, posting under his name, merging
-   `.github/workflows/**` (PR #409), deciding PR #373, CJ/Impact applications, Stripe/DB
-   read. Agent cycles cannot substitute.
-4. **Priority discipline.** Unblocked agent work that actually de-risks (N-386 failover;
-   "live bookings" copy) sat while design-system callsite migrations merged.
+   hold-for-owner (ADR 0009): take seats.aero off Production (or flip billing off until
+   FD-charts lands), posting under his name, merging `.github/workflows/**` (PR #409),
+   deciding PR #373, CJ/Impact applications, Stripe/DB read. Agent cycles cannot substitute.
+4. **Priority discipline.** Unblocked agent work that actually de-risks (FD-charts;
+   "live bookings" copy) sat while design-system callsite migrations merged. N-386 as
+   *failover* is retired; do not build that shape.
 
 ---
 
@@ -207,11 +212,12 @@ which does **not** wait on a consumer dollar.
 
 Do not post Show HN / r/awardtravel while billing is ON and gate ④ is unmet. The 2026-07-06
 Show HN draft names "Seats.aero (live award space)" as a production upstream — that is a
-public notice to the landlord.
+public notice to the landlord. Rewrite it against chart-cpp (or live, if Stage B beat the
+post) before sending.
 
 | ID | Action | Done means |
 |---|---|---|
-| **A-terms** | Seats.aero (N-320) | One of: (1) written commercial terms on file, (2) `HOP_ENABLE_BILLING` flipped **off** until terms or fallback-at-parity with seats.aero off the paid path. **"We wait" while the flag stays ON is not a pass.** Record the decision in `docs/ops-runbook.md` §Billing |
+| **A-terms** | Seats.aero (N-320) | **Won't-buy** (2026-08-21). Remaining: (1) `HOP_ENABLE_BILLING` flipped **off** until FD-charts is production and seats.aero is not queried, **or** (2) FD-charts in production + Production key/flag off, billing may stay on. **"We wait" while the flag stays ON and the Partner API is still the paid path is not a pass.** Record in `docs/ops-runbook.md` §Billing |
 | **A-stripe** | One sentence of Stripe truth | "Zero paying subscribers" **or** "N test-mode" **or** "N live" in ops-runbook + finance ledger. Ends R0.2 *unknown*, not a docs contradiction (already marked Unknown) |
 | **A-gov** | Merge or close [PR #373](https://github.com/n3wth/hop/pull/373) | `Auto-merge:` line in `docs/autonomy-runbook.md` matches a recorded decision. Governance, not revenue |
 | **A-cards** | Submit CJ/Impact applications (July 4 §3.2 / R3.3) | Applications *submitted*, not approved. Latency is the timeline; zero Regular outclicks today does not make waiting free. Do not swap `applyUrl`s until approved |
@@ -223,7 +229,7 @@ Agents flag these. They do not flip flags, post under the founder's name, or mer
 
 | ID | Action | Done means |
 |---|---|---|
-| **A-hn** | Rewrite then post Show HN (`docs/marketing/drafts/2026-07-06-show-hn-launch.md`) against §3. Do not advertise seats.aero as a live commercial feed unless A-terms is written-terms. Lead with stateful balances + observed flight cpp, not "we have an MCP" | URL in the next funnel-log entry. This is the only A-dist action that can dwarf 14/week for a day or two |
+| **A-hn** | Rewrite then post Show HN (`docs/marketing/drafts/2026-07-06-show-hn-launch.md`) against §3. Do not advertise seats.aero as a live commercial feed. Lead with stateful balances + observed flight cpp; name the chart caveat if Stage B is not live yet | URL in the next funnel-log entry. This is the only A-dist action that can dwarf 14/week for a day or two |
 | **A-reddit** | Rewrite then post the r/awardtravel math draft, or (better, matching July 4 GTM) start the weekly 10–15 "here's the actual math" reply habit | URL or a dated log of replies. One paste will not become a weekly visitor baseline; do not treat it as such |
 | **A-mcp** | Merge or close [PR #409](https://github.com/n3wth/hop/pull/409) | Merged + first CI publish log inspected, **or** closed with a recorded reason. **May run in parallel with A-terms** (listing is not a hop.flights launch). Gondola already occupies this registry — listing is table stakes, not GTM. The 2026-07-17 Smithery/PulseMCP/mcp.so draft is a separate checklist, not this PR |
 
@@ -238,8 +244,9 @@ memo instead of these.
 | ID | Action | Done means |
 |---|---|---|
 | **FD-copy** | Stop calling search-time observations "live bookings" | `LiveValuationShelf` uses "observations" / "observed cash-vs-award samples" — **not** "bookings," **not** "redemptions." Copy-voice review. Matches `lib/valuation-telemetry.ts` |
-| **FD-fallback** | N-386 failover prototype | One additional award client behind the existing `degraded[]` seam; flag-gated; `{ok:false}` on failure; **seats.aero still primary**. Tests: seats.aero down → fallback rows appear; cpp still from `lib/cpp.ts`. **Does not pass gate ④.** Names a candidate source in the PR; a stub with no vendor is not done |
-| **FD-docs** | This PR | Playbook goal, ops-runbook R0.2 Unknown, July 4 pointer, AGENTS.md pickup | Done in this diff |
+| **FD-charts** | N-386 **replacement** (was "failover") | Chart-cpp per `docs/plans/2026-08-21-replace-seatsaero.md` §5. Facade `lib/awards.ts`; seats.aero not called when flag off; `availability: 'chart'`; cpp from `lib/cpp.ts`; chart rows skipped by valuation telemetry. **This is what passes gate ④** once Production key/flag is off. A failover that keeps seats.aero primary is **out of spec** |
+| **FD-docs** | This PR + 2026-08-21 amendment | Playbook goal, ops-runbook R0.2 Unknown, July 4 pointer, AGENTS.md pickup, ADR 0014 | Done in this diff |
+| **FD-live** | First-party live search | **After** gate ④. `2026-08-21-replace-seatsaero.md` §6. Do not start while seats.aero is still the paid path |
 
 **Parked (not the next ticket):** public per-program observed-cpp table. `/stats` already
 ships the 14/34 count; the signed-in shelf already lists live vs baseline. Revisit after
@@ -258,9 +265,8 @@ if the dollar is Stripe.
 1. **Travelpayouts commission** (not a click) on a Regular `/api/go/kiwi` chain. Most
    likely first consumer dollar — no hop signup. Clicks stay a funnel leading indicator.
 2. **Stripe** — one `hop_subscriptions` row whose price id matches configured Stripe
-   prices, non-founder customer. **Only if billing is legitimate** (A-terms = written
-   terms, or flag off and this isn't a Pro charge). Test-mode is R0.2 evidence, not
-   revenue.
+   prices, non-founder customer. **Only if billing is legitimate** (A-terms = seats.aero
+   off the paid path). Test-mode is R0.2 evidence, not revenue.
 
 `$virt_traffic_type = Regular` stays non-negotiable.
 
@@ -295,7 +301,7 @@ default-alive looks like **if** Regular habit appears after a real launch. It is
 
 Card affiliates enter once A-cards is approved *and* Regular traffic exists. Escalation
 $149 still waits on ≥5 qualified leads/month (July 4 §3.4). Media-engine M-series may
-start only where they cost ~$0 and do not jump FD-fallback / A-terms. M6/M7 stay parked.
+start only where they cost ~$0 and do not jump FD-charts / A-terms. M6/M7 stay parked.
 
 ---
 
@@ -305,12 +311,14 @@ start only where they cost ~$0 and do not jump FD-fallback / A-terms. M6/M7 stay
 - [x] `docs/agent-playbook.md` §The goal no longer states "$10k+ MRR by 2026-08-05" as live.
 - [x] `docs/ops-runbook.md` no longer claims both "R0.2 still owed" and "R0.2 Passed."
 - [x] July 4 business plan carries a dated pointer here.
-- [x] Pickup rule: without Linear, take **FD-copy** then **FD-fallback**. With Linear, skip
-      any issue that is not those, a Phase A flag, or R3.4 packaging after #409. Do not
-      pick a shipped July 4 `B#` epic.
+- [x] Pickup rule: without Linear, take **FD-copy** then **FD-charts**. With Linear, skip
+      any issue that is not those, FD-live after gate ④, a Phase A flag, or R3.4 packaging
+      after #409. Do not pick a shipped July 4 `B#` epic. Do not build seats.aero-primary
+      failover.
 
 Non-goals of *this* PR: do not flip `HOP_ENABLE_BILLING`; do not merge #373 or #409; do
-not implement N-386; do not invent a price; do not spend on ads; do not reopen Eve,
+not implement FD-charts application code in the 2026-08-20 docs PR (the 2026-08-21 plan
+is the spec); do not invent a price; do not spend on ads; do not reopen Eve,
 hotels, or `/compare`; do not build the public per-program cpp table.
 
 ---
@@ -334,17 +342,17 @@ No application code in this PR.
 
 ---
 
-## 9. Engine hooks (constraints on FD-fallback / FD-copy, not this diff)
+## 9. Engine hooks (constraints on FD-charts / FD-copy / FD-live, not this diff)
 
 - **FD-copy**: `sampleSize` from `liveValuationStats` / `getLiveValuations` is observation
   count. UI string must not say bookings or redemptions.
-- **FD-fallback**: new award client behind a `lib/env.ts` `is*Enabled()` double-lock. Off =
-  today's seats.aero-only path. Rows still go through `assembleSearch` + `lib/cpp.ts`.
-  `{ok:false}` → existing `degraded[]` `'awards'`. Never fabricate cpp. **seats.aero remains
-  primary until gate ④ or a later parity ticket** (licensed source named, seats.aero off
-  the paid path).
-- **Tests**: seats.aero `{ok:false}` → fallback rows; both `{ok:false}` → empty awards +
-  `degraded` includes `'awards'`; cpp formula unchanged.
+- **FD-charts**: facade `lib/awards.ts`; chart-cpp default; `HOP_ENABLE_SEATSAERO` double-lock
+  off in production. Rows still go through `assembleSearch` + `lib/cpp.ts`.
+  `{ok:false}` → existing `degraded[]` `'awards'`. Never fabricate cpp. Chart rows
+  carry `availability: 'chart'` and **must not** POST to `recordCppObservations`.
+  **seats.aero is not the paid path.** Spec: `docs/plans/2026-08-21-replace-seatsaero.md`.
+- **Tests**: flag off → seats.aero client not called; chart miles/taxes from tables; cpp
+  formula unchanged; AA/DL omitted in Stage A; valuation telemetry skips chart rows.
 
 ---
 
@@ -365,9 +373,10 @@ No application code in this PR.
 1. Read `AGENTS.md`, then this doc, then July 4 §2–§3 (positioning, pricing, gates — do
    not re-derive).
 2. **Pickup, with or without Linear:** FD-copy if the string is still "live bookings";
-   else FD-fallback (N-386) if still zero code; else flag Phase A items and stop. Skip
+   else FD-charts (`2026-08-21-replace-seatsaero.md` §5) if `lib/awards.ts` is missing;
+   else FD-live only after ops-runbook shows seats.aero off in Production. Skip
    design-system, skip new `/guides`, skip shipped July 4 B1–B4, skip a public `/stats`
-   table, skip a new weekly memo as a substitute.
+   table, skip a new weekly memo as a substitute, skip seats.aero-primary failover.
 3. Founder-gated (A-terms, A-hn, A-mcp, A-gov, A-cards, R3.4): **do not impersonate.**
 4. Never generate an economic number, throw from a `lib/*` client, ship an ungated seam,
    touch the live Duffel key, or start a frozen item.
@@ -378,10 +387,10 @@ No application code in this PR.
 
 | Trigger | Action |
 |---|---|
-| 90 days after **A-hn and A-mcp** have fired, still zero Regular conversion **and** zero third-party MCP tokens | hop runs default-alive. Agent fleet → maintenance + FD-fallback if still unbuilt. No new M-series |
+| 90 days after **A-hn and A-mcp** have fired, still zero Regular conversion **and** zero third-party MCP tokens | hop runs default-alive. Agent fleet → maintenance + FD-charts/FD-live if still unbuilt. No new M-series |
 | 90 days after **this plan is adopted** if A-hn **or** A-mcp still unfired | Same maintenance outcome. Do not wait forever on founder actions that have already sat 45 days |
-| Billing flag still ON and gate ④ still unmet **30 days after adoption** (silence *or* a written "we wait") | Next board memo's #1 is "flip billing off." Agents still do not flip the flag |
-| seats.aero written **refusal** and FD-fallback never reaches **parity** (primary-capable, seats.aero off paid path) | Kill paid features that depend on award availability. Cash + affiliate + observed-cpp-from-cash-only remains |
+| Billing flag still ON and gate ④ still unmet **30 days after adoption** (silence *or* still on the Partner API) | Next board memo's #1 is "flip billing off." Agents still do not flip the flag |
+| FD-charts never ships | Kill paid features that depend on award availability, or flip billing off. Cash + affiliate + observed-cpp-from-cash-only remains. Do not turn seats.aero back on |
 | First attributed **commission or legitimate Stripe charge** | Dated addendum here naming the stream. Do not start a Floor-chase program on a Show HN blip. Growth attention → activation on *new Regular* sessions (program added → second search → outclick) |
 | First named R3.4 conversation | Dated addendum; that track outranks consumer Floor work |
 
@@ -394,8 +403,22 @@ The July 4 month-6 checkpoint (~2026-12-04: if no B2B conversation and Base isn'
 ## 13. Review hooks & compound
 
 - Docs review already run (adversarial, product, scope, coherence). P1s folded: gate ④
-  is written terms; FD-fallback ≠ legitimacy; "we wait" is not an A-terms pass; Phase
-  IDs no longer collide with July 4 B1–B4; A-hn does not precede A-terms; first dollar
-  is a commission not a click; B2B is parallel not behind Floor; 90-day kill has a
-  dual clock; copy says observations not redemptions.
-- Compound: `docs/solutions/2026-08-20-first-dollar-is-distribution-not-product.md`.
+  is seats.aero **off** the paid path (won't-buy, 2026-08-21); FD-charts is legitimacy,
+  FD-live is quality; failover-with-seats-primary is out of spec; "we wait" on the
+  Partner API is not an A-terms pass; Phase IDs no longer collide with July 4 B1–B4;
+  A-hn does not precede A-terms; first dollar is a commission not a click; B2B is
+  parallel not behind Floor; 90-day kill has a dual clock; copy says observations not
+  redemptions; chart rows are not live space and do not feed ADR 0005.
+- Compound: `docs/solutions/2026-08-20-first-dollar-is-distribution-not-product.md` and
+  `docs/solutions/2026-08-21-dont-clone-seatsaero-replace-the-search.md`.
+
+---
+
+## 14. Addendum — 2026-08-21 (won't-buy seats.aero)
+
+Founder: commercial license is unaffordable; do not depend on seats.aero. Spec:
+`docs/plans/2026-08-21-replace-seatsaero.md`. ADR 0014.
+
+This file's A-terms / gate ④ / pickup / kill rows above are edited in place so agents
+do not follow the retired "written terms or failover-while-primary" fork. Application
+code is still the next ticket (FD-charts), not this docs PR.

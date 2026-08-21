@@ -330,11 +330,11 @@ not visibly contradict "computed, never generated" (identical verdicts across ro
 
 ### Phase 3 — prove the business (weeks 9–13)
 
-**R3.1 — seats.aero written commercial terms + a fallback leg.** Owner email from a company
-address disclosing the use case (their docs invite it); in parallel, prototype one fallback
-award source behind the existing `degraded[]` seam so `assembleSearch` survives losing the
-landlord-competitor. **Blocks flipping `HOP_ENABLE_BILLING`** — do not build a paid product on
-an unlicensed feed.
+**R3.1 — seats.aero off the paid path (amended 2026-08-21).** Founder **won't-buy** commercial
+terms. Gate is Partner API not queried on commercial search: chart-cpp first, then first-party
+live search. Spec: `docs/plans/2026-08-21-replace-seatsaero.md` / ADR 0014. A failover that
+keeps seats.aero primary does **not** pass. **Blocks legitimate billing** — do not charge Pro
+on the unlicensed feed.
 
 **R3.2 — Flip billing at an early price.** Once alerts demonstrably fire (R0.4 + R1.3) and the
 Stripe lane is tested (R0.2): launch premium at an explicitly-early $49/yr (PointsYeah parity at
@@ -356,7 +356,8 @@ discovery in this segment.
 
 ### Owner actions (calendar, not code)
 
-- seats.aero commercial-terms email (R3.1 — start now, it gates billing).
+- seats.aero: **won't-buy** (2026-08-21). Remaining: billing off until FD-charts, or take
+  the Production key/flag off after FD-charts ships (R3.1).
 - Trademark consult (1 hour) on "hop" + bunny in classes 39/42; register @hopflights handles.
   The category+animal overlap with Hopper is the historically risky combination.
 - AwardWallet partner API: ask formally; a written "no" is strategic information.

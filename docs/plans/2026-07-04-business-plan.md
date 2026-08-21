@@ -5,12 +5,14 @@
 > TL;DR: hop has a genuinely differentiated product (real balances × deterministic
 > points-vs-cash economics × agent-native distribution). Monetization rails that were "one
 > wire short" on 2026-07-04 are largely wired; verified revenue is still $0 because
-> distribution and seats.aero written terms never landed. This plan still sets positioning,
+> distribution never landed and seats.aero was never taken off the paid path (won't-buy,
+> 2026-08-21). This plan still sets positioning,
 > pricing ($49/yr), cost model, and the four hard billing gates. It does not tell you what
 > to build this week.
 
 **How this doc relates to the others**: this is the *umbrella* for money math, pricing, and
 gates. `docs/plans/2026-08-20-path-to-first-dollar.md` sequences the next 90 days.
+`docs/plans/2026-08-21-replace-seatsaero.md` is the award-data replacement (gate ④ / ADR 0014).
 `docs/plans/2026-07-03-critical-review-roadmap.md` remains the execution detail for R-items;
 the individual `docs/plans/*` docs remain the implementation specs;
 `docs/plans/2026-07-02-competitive-positioning.md` remains the positioning source.
@@ -83,8 +85,10 @@ partner-set rates — never LLM-generated.
   answer would kill the trust the brand is.
 - **Gate to flip `HOP_ENABLE_BILLING` (all four, hard)**: ① R0.1 multi-pax cpp fixed; ② R0.2
   single tested Stripe lane with one real purchase; ③ alerts actually firing (R0.4 + R1.3);
-  ④ seats.aero written commercial terms (R3.1) — do not build a paid product on an unlicensed
-  feed.
+  ④ seats.aero **off the commercial/paid search path** (R3.1, amended 2026-08-21 /
+  ADR 0014) — founder will not buy the commercial license. Chart-cpp at honest-copy
+  parity with the Partner API **not called** is the gate. Do not charge Pro on an
+  unlicensed seats.aero feed; a failover that keeps seats.aero primary does not pass.
 
 ### 3.2 Card affiliates (highest $/event)
 Public payouts $25–200+/approval (premium travel cards top the range; $250–400 folklore is
@@ -114,7 +118,8 @@ free distribution wedge nobody in award-search occupies with *stateful* balances
 
 **Fixed burn today** (~$50–100/mo): Vercel Pro $20 · Neon $0–19 · Resend $0 (3k emails/mo free,
 $20/mo at 50k) · Upstash/PostHog/Cloudflare free tiers · seats.aero Pro $9.99 (personal tier —
-the commercial-terms gap R3.1 exists to fix) · domain ≈ $1.
+**won't-buy commercial**, 2026-08-21; gate ④ is now take this off the paid path, not upgrade
+it) · domain ≈ $1.
 **Variable**: Duffel $3 + 1%/confirmed order (+$0.005/search beyond 1,500:1 look-to-book) —
 only when native checkout ever goes live; concierge LLM ≈ $0.02–0.03/turn uncached on Sonnet-class
 models, well under $0.01 with prompt caching (cap free usage via existing rate limits);
@@ -233,7 +238,7 @@ application code.
 
 | Risk | Exposure | Mitigation / kill criterion |
 |---|---|---|
-| seats.aero license (landlord is a competitor) | Award feed = the product | R3.1 written terms **blocks billing**; prototype one fallback award source behind `degraded[]`. Kill paid tier if terms are refused and no fallback reaches parity |
+| seats.aero license (landlord is a competitor) | Award feed = the product | **Won't-buy** (2026-08-21). Gate ④ = Partner API off the paid path. Chart-cpp then first-party live search (`2026-08-21-replace-seatsaero.md`). Kill paid award features if FD-charts never ships; do not turn the unlicensed feed back on |
 | Multi-pax cpp bug | "Trust our math" brand | R0.1 before anything ships; it outranks every feature |
 | Card-affiliate approval latency | Highest-$ stream | Apply now; judge by outclick baseline; if no network approval in 2 quarters, deprioritize the stream (don't fake it with placeholder links) |
 | Hopper trademark (category+animal overlap) | Brand | 1-hour counsel consult; disambiguation FAQ shipped; distinct trade dress held |
@@ -275,13 +280,16 @@ Phase 0 code is on `main`. Verified revenue is still $0. hop.flights traffic is 
 visitors/week with zero confirmed-`Regular` conversion since instrumentation shipped
 (2026-07-05). The north-star "$10k MRR in 30 days" window closed 2026-08-05 without a launch
 being executed. B1–B4 from §7 are largely shipped; the remaining bind is distribution, seats.aero
-terms (R3.1 / N-320, email sent 2026-07-06, unanswered), and founder-gated PRs — not missing
-Stripe/pricing/quota code.
+**off the paid path** (R3.1 / N-320 **won't-buy** 2026-08-21; N-386 re-specified as
+chart-cpp replacement — `docs/plans/2026-08-21-replace-seatsaero.md`), and founder-gated
+PRs — not missing Stripe/pricing/quota code.
 
 **Sequencing for the next 90 days lives in
-`docs/plans/2026-08-20-path-to-first-dollar.md`.** This file still owns positioning, pricing
-($49/yr), the five streams, the four §3.1 billing gates, and the Floor/Base/Upside scenario
-shapes. Do not re-derive those. Do not treat the expired $10k target as a desk goal.
+`docs/plans/2026-08-20-path-to-first-dollar.md`.** Award-data replacement lives in
+`docs/plans/2026-08-21-replace-seatsaero.md` (ADR 0014). This file still owns positioning,
+pricing ($49/yr), the five streams, the four §3.1 billing gates (gate ④ as amended), and
+the Floor/Base/Upside scenario shapes. Do not re-derive those. Do not treat the expired
+$10k target as a desk goal.
 
 Against §5: the Floor (~$1k/yr, break-even side project) is the honest *consumer* near-term
 readout if a launch actually happens — not the 90-day company goal. Base and Upside have not

@@ -12,8 +12,10 @@ status are left untouched. Add new items above this note, following the same for
 
 - **to:** support@seats.aero
 - **subject:** Commercial API terms for hop.flights (award-availability data)
-- **status:** sent
+- **status:** closed-wont-buy
 - **sent-date:** 2026-07-06
+- **closed-date:** 2026-08-21
+- **close-note:** Founder will not buy commercial terms (unaffordable). Gate ④ restated as seats.aero off the paid path via first-party chart-cpp, then live search. See `docs/plans/2026-08-21-replace-seatsaero.md` / ADR 0014. Do not re-send.
 
 **Body:**
 

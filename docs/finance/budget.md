@@ -43,8 +43,9 @@ The board has discussed a possible future **$99/yr raise gate**, but it is expli
 **blocked-on-billing by construction**. Correction 2026-08-20: `docs/ops-runbook.md` reports
 the `HOP_ENABLE_BILLING` *flag* as ON; this file previously said the flag was "off." Those
 are not the same question as legitimacy. The raise clock cannot start while (1) paying-subscriber
-count is unknown and (2) seats.aero written terms (N-320, inquiry sent 2026-07-06) plus a
-fallback award source are unmet — see `docs/plans/2026-08-20-path-to-first-dollar.md`. The
+count is unknown and (2) seats.aero is still on the paid path (N-320 **won't-buy**
+2026-08-21; gate ④ is now Partner API off, via chart-cpp — see
+`docs/plans/2026-08-21-replace-seatsaero.md`). The
 2026-07-19 board memo's ranked amendment #10 voted to **stop describing the $99/yr raise as
 "in progress"**; that still holds. Honest answer: no new price, and the raise structurally
 cannot be decided yet.
