@@ -25,7 +25,7 @@ declared date 2026-08-05 at $0** and is historical.
 |---|---|
 | **Billing flag ON** | `HOP_ENABLE_BILLING` + Stripe keys, as reported in `docs/ops-runbook.md` |
 | **R0.2 unknown** | No in-repo Stripe/DB read has confirmed a live or test purchase |
-| **Billing legitimate** | All four July 4 §3.1 gates. Gate ④ (amended 2026-08-21, ADR 0014): seats.aero is **not queried** on the commercial/paid search path. Chart-cpp at honest-copy parity is enough; a failover that keeps seats.aero primary is not. Unmet until FD-charts ships and the Production key/flag is off. A Pro charge on the unlicensed feed is evidence of the plan violating itself, not of a business |
+| **Billing legitimate** | All four July 4 §3.1 gates. Gate ④ (amended 2026-08-21, ADR 0014): no production hop process calls the Partner API **and** the Production key is unset. Chart quality is not the gate. A failover that keeps seats.aero primary is not a pass. **④ ≠ keep billing ON** — ④b (honest-Pro copy: alerts/MCP/`evaluateOrder` do not claim space on chart) is required to keep or re-enable billing. Unmet today. A Pro charge on the unlicensed feed is evidence of the plan violating itself, not of a business |
 | **July 4 B1–B4** | Pricing page, MCP quotas, unit-economics panel, ops runbook — largely *shipped* |
 | **FD-copy / FD-charts / FD-live** | This addendum's agent idle work. Never called `B1`/`B2`. FD-fallback (failover) is retired |
 
@@ -217,7 +217,7 @@ post) before sending.
 
 | ID | Action | Done means |
 |---|---|---|
-| **A-terms** | Seats.aero (N-320) | **Won't-buy** (2026-08-21). Remaining: (1) `HOP_ENABLE_BILLING` flipped **off** until FD-charts is production and seats.aero is not queried, **or** (2) FD-charts in production + Production key/flag off, billing may stay on. **"We wait" while the flag stays ON and the Partner API is still the paid path is not a pass.** Record in `docs/ops-runbook.md` §Billing |
+| **A-terms** | Seats.aero (N-320) | **Won't-buy** (2026-08-21). **Not fired by the decision doc.** Fires when ops-runbook §Billing records **billing off** *or* (gate ④ + ④b). Default remaining action: flip `HOP_ENABLE_BILLING` **off now**. Option (2) is FD-charts in production + Production key **unset** + honest-Pro copy, *then* billing may come back on. **"We wait" while the flag stays ON and the Partner API is still the paid path is not a pass.** Agents do not flip the flag |
 | **A-stripe** | One sentence of Stripe truth | "Zero paying subscribers" **or** "N test-mode" **or** "N live" in ops-runbook + finance ledger. Ends R0.2 *unknown*, not a docs contradiction (already marked Unknown) |
 | **A-gov** | Merge or close [PR #373](https://github.com/n3wth/hop/pull/373) | `Auto-merge:` line in `docs/autonomy-runbook.md` matches a recorded decision. Governance, not revenue |
 | **A-cards** | Submit CJ/Impact applications (July 4 §3.2 / R3.3) | Applications *submitted*, not approved. Latency is the timeline; zero Regular outclicks today does not make waiting free. Do not swap `applyUrl`s until approved |
@@ -229,7 +229,7 @@ Agents flag these. They do not flip flags, post under the founder's name, or mer
 
 | ID | Action | Done means |
 |---|---|---|
-| **A-hn** | Rewrite then post Show HN (`docs/marketing/drafts/2026-07-06-show-hn-launch.md`) against §3. Do not advertise seats.aero as a live commercial feed. Lead with stateful balances + observed flight cpp; name the chart caveat if Stage B is not live yet | URL in the next funnel-log entry. This is the only A-dist action that can dwarf 14/week for a day or two |
+| **A-hn** | Rewrite then post Show HN (`docs/marketing/drafts/2026-07-06-show-hn-launch.md`) **after A-terms has fired**. Engine-first (balances × computed cpp), charted demo URL (SFO-LAX or SFO-NRT with the floor caveat). No July 4 one-liner. Do not name seats.aero. Do not lead with observed cpp (chart rows are banned from telemetry) | URL in the next funnel-log entry. This is the only A-dist action that can dwarf 14/week for a day or two |
 | **A-reddit** | Rewrite then post the r/awardtravel math draft, or (better, matching July 4 GTM) start the weekly 10–15 "here's the actual math" reply habit | URL or a dated log of replies. One paste will not become a weekly visitor baseline; do not treat it as such |
 | **A-mcp** | Merge or close [PR #409](https://github.com/n3wth/hop/pull/409) | Merged + first CI publish log inspected, **or** closed with a recorded reason. **May run in parallel with A-terms** (listing is not a hop.flights launch). Gondola already occupies this registry — listing is table stakes, not GTM. The 2026-07-17 Smithery/PulseMCP/mcp.so draft is a separate checklist, not this PR |
 
@@ -244,7 +244,7 @@ memo instead of these.
 | ID | Action | Done means |
 |---|---|---|
 | **FD-copy** | Stop calling search-time observations "live bookings" | `LiveValuationShelf` uses "observations" / "observed cash-vs-award samples" — **not** "bookings," **not** "redemptions." Copy-voice review. Matches `lib/valuation-telemetry.ts` |
-| **FD-charts** | N-386 **replacement** (was "failover") | Chart-cpp per `docs/plans/2026-08-21-replace-seatsaero.md` §5. Facade `lib/awards.ts`; seats.aero not called when flag off; `availability: 'chart'`; cpp from `lib/cpp.ts`; chart rows skipped by valuation telemetry. **This is what passes gate ④** once Production key/flag is off. A failover that keeps seats.aero primary is **out of spec** |
+| **FD-charts** | N-386 **replacement** (was "failover") | Chart-cpp per `docs/plans/2026-08-21-replace-seatsaero.md` §5. Facade `lib/awards.ts`; one snapshot `lib/award-charts.ts`; seats.aero stub-disabled, no `fetch`; `availability: 'chart'`; cpp from `lib/cpp.ts`; chart rows skipped by valuation telemetry; `evaluateOrder` does not cross on chart. v1 tables must cover **SFO-LAX** (the `/search` default) and SFO-NRT. **No** `lib/award-live.ts`, live flag, or worker in this PR. Gate ④ = this in production **+** Production key unset. A failover that keeps seats.aero primary is **out of spec** |
 | **FD-docs** | This PR + 2026-08-21 amendment | Playbook goal, ops-runbook R0.2 Unknown, July 4 pointer, AGENTS.md pickup, ADR 0014 | Done in this diff |
 | **FD-live** | First-party live search | **After** gate ④. Cache-first Queue + Durable Object + calendar JSON (`2026-08-21-replace-seatsaero.md` §6). Search path never waits on a browser. Do not start while seats.aero is still the paid path |
 
@@ -346,13 +346,17 @@ No application code in this PR.
 
 - **FD-copy**: `sampleSize` from `liveValuationStats` / `getLiveValuations` is observation
   count. UI string must not say bookings or redemptions.
-- **FD-charts**: facade `lib/awards.ts`; chart-cpp default; `HOP_ENABLE_SEATSAERO` double-lock
-  off in production. Rows still go through `assembleSearch` + `lib/cpp.ts`.
-  `{ok:false}` → existing `degraded[]` `'awards'`. Never fabricate cpp. Chart rows
-  carry `availability: 'chart'` and **must not** POST to `recordCppObservations`.
-  **seats.aero is not the paid path.** Spec: `docs/plans/2026-08-21-replace-seatsaero.md`.
-- **Tests**: flag off → seats.aero client not called; chart miles/taxes from tables; cpp
-  formula unchanged; AA/DL omitted in Stage A; valuation telemetry skips chart rows.
+- **FD-charts**: facade `lib/awards.ts`; one snapshot (`lib/award-charts.ts`);
+  `HOP_ENABLE_SEATSAERO` off; Production key **unset**. Rows still go through
+  `assembleSearch` + `lib/cpp.ts`. `{ok:false}` → existing `degraded[]` `'awards'`.
+  Never fabricate cpp. Chart rows carry `availability: 'chart'` and **must not**
+  POST to `recordCppObservations`. Saver floors are labeled floors, not today's
+  price. Sweet-spot mining **skips** without the seats.aero key. Do not implement
+  the live branch in this PR. **seats.aero is not the paid path.** Spec:
+  `docs/plans/2026-08-21-replace-seatsaero.md`.
+- **Tests**: flag off → seats.aero client not called; `MOCK=0` SFO-LAX and SFO-NRT
+  each emit ≥1 chart row; cpp formula unchanged; AA/DL/United-domestic omitted;
+  valuation telemetry skips chart rows; `evaluateOrder` does not cross on chart.
 
 ---
 
@@ -389,7 +393,7 @@ No application code in this PR.
 |---|---|
 | 90 days after **A-hn and A-mcp** have fired, still zero Regular conversion **and** zero third-party MCP tokens | hop runs default-alive. Agent fleet → maintenance + FD-charts/FD-live if still unbuilt. No new M-series |
 | 90 days after **this plan is adopted** if A-hn **or** A-mcp still unfired | Same maintenance outcome. Do not wait forever on founder actions that have already sat 45 days |
-| Billing flag still ON and gate ④ still unmet **30 days after adoption** (silence *or* still on the Partner API) | Next board memo's #1 is "flip billing off." Agents still do not flip the flag |
+| Billing flag still ON and gate ④ still unmet **now** (do not wait 30 days) | Founder flips billing off. Agents still do not |
 | FD-charts never ships | Kill paid features that depend on award availability, or flip billing off. Cash + affiliate + observed-cpp-from-cash-only remains. Do not turn seats.aero back on |
 | First attributed **commission or legitimate Stripe charge** | Dated addendum here naming the stream. Do not start a Floor-chase program on a Show HN blip. Growth attention → activation on *new Regular* sessions (program added → second search → outclick) |
 | First named R3.4 conversation | Dated addendum; that track outranks consumer Floor work |
@@ -402,13 +406,16 @@ The July 4 month-6 checkpoint (~2026-12-04: if no B2B conversation and Base isn'
 
 ## 13. Review hooks & compound
 
-- Docs review already run (adversarial, product, scope, coherence). P1s folded: gate ④
-  is seats.aero **off** the paid path (won't-buy, 2026-08-21); FD-charts is legitimacy,
-  FD-live is quality; failover-with-seats-primary is out of spec; "we wait" on the
-  Partner API is not an A-terms pass; Phase IDs no longer collide with July 4 B1–B4;
-  A-hn does not precede A-terms; first dollar is a commission not a click; B2B is
-  parallel not behind Floor; 90-day kill has a dual clock; copy says observations not
-  redemptions; chart rows are not live space and do not feed ADR 0005.
+- Docs review already run (adversarial, product, scope, coherence, security). P1s
+  folded: gate ④ is Partner API not called **and** Production key unset (won't-buy,
+  2026-08-21); chart quality is not the gate; **④ ≠ keep billing ON** (④b required);
+  A-terms is not fired by the decision doc; FD-charts v1 covers SFO-LAX and SFO-NRT
+  with saver floors labeled; no live worker in the charts PR; FD-live is quality after
+  counsel; failover-with-seats-primary is out of spec; "we wait" on the Partner API is
+  not an A-terms pass; Phase IDs no longer collide with July 4 B1–B4; A-hn is
+  engine-first after A-terms *fired*; first dollar is a commission not a click; B2B is
+  parallel not behind Floor; billing-off kill is **now**, not 30 days; copy says
+  observations not redemptions; chart rows are not live space and do not feed ADR 0005.
 - Compound: `docs/solutions/2026-08-20-first-dollar-is-distribution-not-product.md` and
   `docs/solutions/2026-08-21-dont-clone-seatsaero-replace-the-search.md`.
 

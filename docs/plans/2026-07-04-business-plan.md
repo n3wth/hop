@@ -86,9 +86,13 @@ partner-set rates — never LLM-generated.
 - **Gate to flip `HOP_ENABLE_BILLING` (all four, hard)**: ① R0.1 multi-pax cpp fixed; ② R0.2
   single tested Stripe lane with one real purchase; ③ alerts actually firing (R0.4 + R1.3);
   ④ seats.aero **off the commercial/paid search path** (R3.1, amended 2026-08-21 /
-  ADR 0014) — founder will not buy the commercial license. Chart-cpp at honest-copy
-  parity with the Partner API **not called** is the gate. Do not charge Pro on an
-  unlicensed seats.aero feed; a failover that keeps seats.aero primary does not pass.
+  ADR 0014) — founder will not buy the commercial license. Gate ④ = no production
+  hop process calls the Partner API **and** the Production key is unset. Chart
+  quality is not the gate. Do not charge Pro on an unlicensed seats.aero feed; a
+  failover that keeps seats.aero primary does not pass. **④ ≠ keep billing ON** —
+  Pro's paid line is alerts + MCP quota, which must not claim space on chart rows
+  (④b). Default founder action: flip billing off now. Spec:
+  `2026-08-21-replace-seatsaero.md`.
 
 ### 3.2 Card affiliates (highest $/event)
 Public payouts $25–200+/approval (premium travel cards top the range; $250–400 folklore is
@@ -174,8 +178,9 @@ CTR, receipts created/shared, cash + card outclicks, MRR, MCP tokens active.
 
 **Backbone**: R0.1–R3.5 exactly as specced in `2026-07-03-critical-review-roadmap.md` (Phase 0
 stop-the-bleeding → Phase 1 fix-the-funnel → Phase 2 earn-attention → Phase 3 prove-the-business),
-plus the kill/freeze list and owner-action pack. As of 2026-07-04 **all R-items are open**; the
-only movement since is design polish and thread memory.
+plus the kill/freeze list and owner-action pack. **Stale as of 2026-08-20:** R0.1–R0.5,
+R1.x slices, and July 4 B1–B4 are largely code-complete (caveats in
+`2026-08-20-path-to-first-dollar.md` §1.1). Pickup is first-dollar, not Phase 0.
 
 **Business-layer additions (this plan):**
 
@@ -195,7 +200,9 @@ only movement since is design polish and thread memory.
   Phase 3 revenue data exists.
 
 **Owner actions (calendar, not code — start immediately, latency is the timeline):**
-seats.aero commercial-terms email (gates billing) · CJ/Impact affiliate applications ·
+seats.aero **won't-buy** (2026-08-21) — remaining is flip `HOP_ENABLE_BILLING` off
+now, or (after FD-charts) unset the Production key **and** ship honest-Pro copy (④b);
+do not send another commercial-terms email · CJ/Impact affiliate applications ·
 Resend DKIM for hop.flights (gates every alert) · trademark consult on "hop" + bunny
 (class 39/42) + register @hopflights handles · AwardWallet partner API formal ask (a written
 "no" is strategic information).
@@ -238,7 +245,7 @@ application code.
 
 | Risk | Exposure | Mitigation / kill criterion |
 |---|---|---|
-| seats.aero license (landlord is a competitor) | Award feed = the product | **Won't-buy** (2026-08-21). Gate ④ = Partner API off the paid path. Chart-cpp then first-party live search (`2026-08-21-replace-seatsaero.md`). Kill paid award features if FD-charts never ships; do not turn the unlicensed feed back on |
+| seats.aero license (landlord is a competitor) | Award feed = the product | **Won't-buy** (2026-08-21). Gate ④ = Partner API not called **and** Production key unset. Chart quality is not the gate. **④ ≠ keep billing ON.** Chart-cpp then first-party live search (`2026-08-21-replace-seatsaero.md`). Kill paid award features if FD-charts never ships; do not turn the unlicensed feed back on |
 | Multi-pax cpp bug | "Trust our math" brand | R0.1 before anything ships; it outranks every feature |
 | Card-affiliate approval latency | Highest-$ stream | Apply now; judge by outclick baseline; if no network approval in 2 quarters, deprioritize the stream (don't fake it with placeholder links) |
 | Hopper trademark (category+animal overlap) | Brand | 1-hour counsel consult; disambiguation FAQ shipped; distinct trade dress held |
@@ -248,10 +255,13 @@ application code.
 
 ## 11. How an LLM agent picks this up (the protocol)
 
-1. Read `CLAUDE.md`, `AGENTS.md`, then this doc.
-2. Open Linear project **hop** (team `n3wth`). Pick the highest-priority open issue in the
-   lowest open phase milestone (`R0.x` before `R1.x` …; `B#` epics carry their phase in the
-   issue). Respect `blockedBy` relations and the §7 gates.
+1. Read `CLAUDE.md`, `AGENTS.md`, then this doc, then
+   `docs/plans/2026-08-20-path-to-first-dollar.md` (90-day sequencing) and
+   `docs/plans/2026-08-21-replace-seatsaero.md` (award-data).
+2. **Pickup for 90 days:** FD-copy, then **FD-charts** (`2026-08-21` §5). If Linear
+   still says "written terms" / "failover," **the 2026-08-21 plan wins.** Do not pick
+   a shipped July 4 `B#` epic. With Linear otherwise: highest-priority open issue in
+   the lowest open phase, respecting `blockedBy` and the §7 gates.
 3. Each issue body contains its continuation prompt — paste-ready context, evidence file:lines,
    and acceptance criteria. Follow the compound loop: `/plan` (if the item lacks a spec) → work
    → `/review-parallel` → `/compound`. Verify with all four: `tsc --noEmit`, lint, test, build.

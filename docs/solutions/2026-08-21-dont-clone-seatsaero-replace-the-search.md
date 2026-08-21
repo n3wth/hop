@@ -15,7 +15,7 @@ The other temptation is to "just rebuild seats.aero."
 
 ## Symptoms
 
-- July 4 gate ④ = written commercial terms; inquiry sent 2026-07-06, unanswered.
+- July 4 gate ④ = written commercial terms; inquiry sent 2026-07-06, now **closed-wont-buy**.
 - N-386 named as failover for five+ weeks; zero `lib/` client besides `lib/seatsaero.ts`.
 - `HOP_ENABLE_BILLING` reported ON. Show HN draft still names seats.aero as live upstream.
 - hop only needs miles + taxes + cabin + program for `assembleSearch` / `lib/cpp.ts`, not a
@@ -33,9 +33,12 @@ input as the company.
 Founder decision 2026-08-21: **won't-buy.** ADR 0014 +
 `docs/plans/2026-08-21-replace-seatsaero.md`:
 
-- Gate ④ = seats.aero **off** the commercial/paid search path, not a letter in a drawer.
-- Stage A **chart-cpp** (published tables, `availability: 'chart'`, honest copy) is enough
-  for billing legitimacy. Default production source once shipped.
+- Gate ④ = no production hop process calls the Partner API **and** the Production key
+  is unset. Chart quality is not the gate. **④ ≠ keep billing ON.**
+- Stage A **chart-cpp** (published tables, `availability: 'chart'`, honest copy) unblocks
+  the **license**. v1 must cover default `/search` SFO-LAX, not only SFO-NRT. Saver
+  floors are labeled floors. No live worker in that PR. Billing legitimacy also needs
+  ④b (alerts/MCP do not claim space).
 - Stage B first-party live search is **cache-first**: Cloudflare Queue + Durable Object +
   Browser Rendering fill Upstash; Vercel `assembleSearch` never waits on a browser.
   Calendar JSON after a warm session (seataero's pattern), not DOM scrape, not another
@@ -52,3 +55,6 @@ Founder decision 2026-08-21: **won't-buy.** ADR 0014 +
   off in Production. N-386 is replacement, not failover.
 - Reviewer check: a PR that adds an award source must set `availability`, skip chart rows in
   `recordCppObservations`, and not call `lib/seatsaero.ts` when `HOP_ENABLE_SEATSAERO` is off.
+  FD-charts must cover default `/search` SFO-LAX, not only SFO-NRT. Do not add
+  `lib/award-live.ts` or a worker in the charts PR. Saver floors must not look like
+  today's live quote.

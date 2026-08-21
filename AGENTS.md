@@ -110,16 +110,21 @@ git -C <main-checkout> worktree remove /tmp/<name>   # after merge
 pricing, revenue streams, and the four §3.1 billing gates. **Sequencing for the next 90 days
 is `docs/plans/2026-08-20-path-to-first-dollar.md`.** Pickup: **FD-copy** (stop calling
 observations "live bookings") then **FD-charts** (chart-cpp replacement — N-386
-re-specified; this is gate ④). Then **FD-live** only after seats.aero is off Production.
-Skip shipped July 4 B1–B4 epics, design-system callsites, and seats.aero-primary failover.
-Items marked **owner** (A-terms remaining env flip, A-hn, A-mcp PR #409, A-gov PR #373,
-A-cards, R3.4) are human-only — flag them, don't attempt them.
+re-specified; spec `2026-08-21-replace-seatsaero.md` §5). Gate ④ passes when that is
+in production **and** the Production key is unset — chart quality is not the gate.
+Then **FD-live** only after seats.aero is off Production **and** founder/counsel signs
+the first recipe. Skip shipped July 4 B1–B4 epics, design-system callsites, and
+seats.aero-primary failover. If Linear still says "written terms" / "failover," the
+2026-08-21 plan wins. Items marked **owner** (A-terms remaining env flip — default:
+billing off **now**, A-hn, A-mcp PR #409, A-gov PR #373, A-cards, R3.4) are human-only
+— flag them, don't attempt them.
 
 The work queue is mirrored in Linear (team `n3wth`, project
 [hop](https://linear.app/newth/project/hop-9365da373b9a)). If Linear disagrees with the
 first-dollar pickup rule, the first-dollar plan wins for 90 days. Billing is not
-*legitimate* until the four §3.1 gates pass (gate ④ = seats.aero off the paid path,
-ADR 0014); the billing *flag* being ON does not satisfy that. Spec:
+*legitimate* until the four §3.1 gates pass (gate ④ = Partner API not called **and**
+Production key unset, ADR 0014). The billing *flag* being ON does not satisfy that.
+**④ ≠ keep billing ON** — alerts/MCP must not claim space on chart (④b). Spec:
 `docs/plans/2026-08-21-replace-seatsaero.md`.
 The **ambition layer** is `docs/plans/2026-07-05-media-engine-to-1m.md` (M-series). It does
 not jump the first-dollar queue. The 2026-07-05 "$10k MRR in 30 days" target expired

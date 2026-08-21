@@ -36,7 +36,7 @@ founder-gated. Building more of the product (or polishing it) cannot substitute.
 Write an operating addendum — `docs/plans/2026-08-20-path-to-first-dollar.md` — that:
 
 - Keeps the July 4 plan's positioning, $49/yr price, streams, and four billing gates
-  (gate ④ amended 2026-08-21: seats.aero **off** the paid path, not a letter; ADR 0014).
+  (gate ④ amended 2026-08-21: Partner API not called **and** Production key unset, not a letter; ADR 0014). **④ ≠ keep billing ON.**
 - Replaces sequencing: A-terms before any public launch; A-hn for a possible Kiwi
   commission; A-mcp + R3.4 in parallel (not after Floor); agents do FD-copy then
   FD-charts (N-386 replacement), then FD-live after the Partner API is gone.
@@ -53,5 +53,7 @@ Write an operating addendum — `docs/plans/2026-08-20-path-to-first-dollar.md` 
 - Grep `first-dollar` / `distribution-not-product` before writing another business or
   monetization plan.
 - Reviewer check for future agents: if a plan claims hop will earn money, it must name the
-  distribution event **and** the license/fallback-at-parity state, not only the Stripe route.
-  Do not reuse July 4 `B1`–`B4` IDs for a new phase.
+  distribution event **and** the license state (Partner API not called, Production key
+  unset, billing off until honest-Pro), not only the Stripe route. Do not reuse July 4
+  `B1`–`B4` IDs for a new phase. Do not treat "charts shipped" as permission to leave
+  billing ON while alerts still claim space.

@@ -571,8 +571,9 @@ above), so this is discipline, not a guardrail. Violation count stands at 3 tota
   pricing until business-plan.md §3.1's gates close.
 - Pre-approve the drafted community replies before they go out.
 - **Reply to seats.aero (N-320)** — **closed 2026-08-21 as won't-buy.** Remaining founder
-  action is billing off until FD-charts, or FD-charts in production + Partner API off.
-  See `docs/plans/2026-08-21-replace-seatsaero.md`. Do not re-send the commercial-terms email.
+  action is flip billing **off now**. Re-enable only after FD-charts is production, the
+  Production key is unset, **and** honest-Pro copy (④b). See
+  `docs/plans/2026-08-21-replace-seatsaero.md`. Do not re-send the commercial-terms email.
 - **Grant the finance desk read-only DB/Stripe access, or explicitly pause it** — carried forward
   unverified this run; as of the last retro the desk had been silent since 2026-07-14 with no
   DB-verified subscriber count.
