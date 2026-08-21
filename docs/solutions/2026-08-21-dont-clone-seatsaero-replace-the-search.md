@@ -36,8 +36,10 @@ Founder decision 2026-08-21: **won't-buy.** ADR 0014 +
 - Gate ④ = seats.aero **off** the commercial/paid search path, not a letter in a drawer.
 - Stage A **chart-cpp** (published tables, `availability: 'chart'`, honest copy) is enough
   for billing legitimacy. Default production source once shipped.
-- Stage B first-party live search (Browser Rendering, 4–5 US-core programs, recipes start
-  empty) restores "a seat exists." Quality, not the license gate.
+- Stage B first-party live search is **cache-first**: Cloudflare Queue + Durable Object +
+  Browser Rendering fill Upstash; Vercel `assembleSearch` never waits on a browser.
+  Calendar JSON after a warm session (seataero's pattern), not DOM scrape, not another
+  seats.aero MCP wrapper, not Firecrawl/`/json` AI extract.
 - Failover that keeps seats.aero primary still fails the gate.
 - Chart rows must not POST to the valuation worker (ADR 0005). Miles/taxes never from an LLM
   (ADR 0002). Do not scrape seats.aero or rent another award API as "building it."

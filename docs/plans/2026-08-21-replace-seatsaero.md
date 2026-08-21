@@ -69,6 +69,38 @@ ADR 0014 records the build-vs-buy choice.
 
 ---
 
+## 3.1 OSS we actually looked at (2026-08-21)
+
+There is **no open-source seats.aero**. Almost every GitHub "award search" repo is a
+thin MCP/CLI over the same Partner API hop already calls. Vendoring them does not
+remove the license.
+
+| Project | What it actually is | Takeaway for hop |
+|---|---|---|
+| `baeleb/seats-MCP`, `gavgrego/seats.aero-mcp-server`, `cjmcenery/seats-aero-mcp` | Partner API wrappers. Pro key required. `/live` needs commercial terms | Same landlord |
+| `wrahim3933/pointpilot-core` | OSS hop-shaped engine (cpp + Duffel + playbooks) | Still `SEATS_AERO_API_KEY`. Same trap |
+| `nstevens/flight-finder` | Cash (Google Flights) + awards (seats.aero) + AeroLOPA | Same |
+| `andrew-demers/flights-points-tool` | seats.aero first; "airline site" fallback | **Honest negative:** AA.com / United.com / Delta.com Cloudflare + behavioral analysis beat Playwright stealth. Their fallback scrapes *seats.aero's site*, which we will not do |
+| `JadedOut/seatsaero` (`seataero` on PyPI) | Personal United tool: Playwright login + **award-calendar JSON** (~30 days/request) + SQLite + MCP. SMS MFA. `python-ghost-cursor`. 10 min between scrapes or Akamai starves you | **Architecture to copy, code not to vendor.** Python, personal MP login, evasion helpers, one airline, no partner awards |
+| Award Travel Finder (plugin OSS, backend closed) | Cloudflare Workers, "airline APIs", **4-hour cache**, plus `get_program_rates` chart tools | Confirms Stage A (charts) is a real product surface and Stage B must be **cached**, not live-on-request |
+| `markswendsen-code/mcp-united` | Playwright booking/check-in | Wrong product; MFA session |
+| `shilph/art` | Playwright **balance** scrapers | hop already has credential-sync |
+
+**What to steal (ideas, not code):**
+
+1. **Calendar JSON after a session, not DOM parse.** seataero's 30-day United calendar
+   call is why seats.aero itself is fast. Recipes target those XHR/JSON endpoints.
+2. **Warm session + local cache.** Search is a SQLite/KV read. Scrape is a background
+   job (~2 min, MFA once per session).
+3. **Charts as a first-class API.** Award Travel Finder's `get_program_rates` is Stage A.
+
+**What not to steal:** stealth flags, ghost-cursor, scraping seats.aero HTML, putting a
+2-minute United scrape on the Next.js request path, using a user's MileagePlus login to
+power everyone else's search (ToS + blast radius). Hop-owned research accounts, if any,
+are founder-gated and one ban ≠ product outage (chart fill).
+
+---
+
 ## 3. Two stages (do not collapse them)
 
 ### Stage A — chart-cpp (`FD-charts`) — unblocks legitimacy
@@ -92,13 +124,15 @@ gated on A-terms).
 
 ### Stage B — first-party live search (`FD-live`) — restores "a seat exists"
 
-Live award search for **four US-core programs**, then a fifth. Reuse the existing
-Cloudflare Browser Rendering pattern (`cloudflare/balance-fetch-worker/`,
-`docs/plans/2026-07-05-credential-sync.md`).
+Live award search for **four US-core programs**, then a fifth. Not request-path
+Puppeteer: **cache-first** on Upstash, Cloudflare Queue + Durable Object + Browser
+Rendering to fill a calendar JSON store in the background (§6). Balance-fetch is the
+login primitive; seataero is the calendar-cache pattern. Do not mirror
+`balance-fetch-worker` as a synchronous `POST /search`.
 
 | Order | Program | Why first |
 |---|---|---|
-| 1 | United MileagePlus | US-core; partner + saver still searchable |
+| 1 | United MileagePlus | seataero proved a ~30-day calendar JSON exists; first recipe |
 | 2 | Alaska Atmos | Charted partners; hop's mock pick |
 | 3 | Aeroplan | Distance chart + public search |
 | 4 | American AAdvantage | US-core; mostly dynamic — recipe may return "unsupported" honestly |
@@ -109,12 +143,14 @@ dressed as live.
 
 **ToS / account-ban risk is the same honesty as credential-sync.** Major programs fight
 automation. Recipes start empty; unverified programs return `{ok:false, reason:'unsupported'}`.
-No anti-bot evasion, no residential proxies, no CAPTCHA farms. A blocked search is a
-degraded awards section or a chart fill — not a silent invention.
+No anti-bot evasion, no residential proxies, no CAPTCHA farms. A blocked fetch is a chart
+fill — not a silent invention, and not `degraded[] 'awards'` on an otherwise-working
+chart path.
 
-Many award calendars are reachable without the user's login. Stage B does **not** require
-the credential vault. If a program requires login, it is a later ticket that may compose
-with `lib/credential-vault.ts`; it is not Stage B's done-means.
+Stage B does **not** use the user's credential vault to search for everyone. If a
+calendar needs a login, that is a **hop-owned research account** (founder-gated wrangler
+secret), one ban ≠ product outage. User-credential composition is a later ticket and is
+not Stage B's done-means.
 
 ### Rejected / parked (named so they don't come back)
 
@@ -127,6 +163,10 @@ with `lib/credential-vault.ts`; it is not Stage B's done-means.
 | LLM-estimated miles or taxes | Breaks ADR 0002 |
 | Chart rows feeding `recordCppObservations` | Would poison ADR 0005 live valuations with unpublished-space math |
 | Dynamic programs (AA/DL) as fake chart rows | Absent is honest; a made-up saver band is not |
+| Vendoring seats.aero MCP wrappers | They still need the license we refused |
+| Request-path Playwright on Vercel | Live scrape is 30s–2 min; `assembleSearch` must stay fast. Airline sites beat stealth flags (see §3.1) |
+| Cloudflare `/json` / Stagehand / Firecrawl for miles | AI extraction of economic figures — ADR 0002. Unused `FIRECRAWL` seam stays unused |
+| `python-ghost-cursor` / stealth / residential proxies | Credential-sync already forbade evasion. seataero needs it because United's Akamai does; we do not add it |
 
 ---
 
@@ -246,35 +286,105 @@ violation with extra steps.
 
 ---
 
-## 6. Stage B — what to build (`FD-live`)
+## 6. Stage B — reliable live search (`FD-live`)
 
 Do not start until Stage A is in production and gate ④ has passed. This is quality, not
 the license ticket.
 
+**Reliability rule:** `assembleSearch` never waits on a browser. Live space is an
+eventually-consistent cache. Chart-cpp is the synchronous answer on a miss.
+
+OSS and Cloudflare's own Browser Rendering docs agree: launch-per-request dies to cold
+start, concurrency caps (~10 browsers/account), and airline Akamai. seataero is slow
+because it scrapes on demand; it is *usable* because SQLite makes the next query instant.
+
+### 6.1 Split: Vercel answers, Cloudflare fetches
+
+Hop already runs this split for valuations (ADR 0005 / ADR 0011) and balance-fetch.
+Do not put Playwright on Vercel Fluid/serverless. Vercel has no first-party browser
+product; Cloudflare Browser Rendering (now "Browser Run") is the one we already enable
+for `cloudflare/balance-fetch-worker/`.
+
+```
+Vercel  assembleSearch  (sync, today's 10s budget)
+  │
+  ├ cacheGet Upstash `hop:awards:live:{program}:{from}:{to}:{date}`
+  │    hit  → FlightOption availability:'live'
+  │    miss → chart-cpp (sync) + enqueue Cloudflare Queue (do not await)
+  │
+  └ standing-orders cron (already every 6h in vercel.json)
+       → enqueue watched routes so alerts see live space without a user search
+
+Cloudflare  cloudflare/award-search-worker/
+  Queue consumer (buffer; stay under Browser Rendering concurrency)
+       → Durable Object per program (one warm browser/session)
+            login once (SMS MFA is founder/ops, not per-user)
+            then GET the program's award-calendar JSON (not a DOM scrape)
+            write ~30 days → D1 (or KV)
+            also SET the Upstash keys hop reads (REST; same cache.ts contract)
+  Workers Cron: keep-alive ping so the DO session does not idle-out;
+                optional prefetch of a small hub-pair allowlist
+```
+
+| Piece | Platform | Why this one |
+|---|---|---|
+| Sync search + chart-cpp | Vercel Next.js | `assembleSearch` already lives here; 10s budget |
+| Hot cache | **Upstash Redis** (existing `lib/cache.ts`) | Same seam as seats.aero's 300s cache; in-memory fallback; no new vendor |
+| Refresh enqueue | **Cloudflare Queues** | Official pairing with Browser Rendering; absorbs bursts; `max_concurrency` caps browsers |
+| Warm session | **Durable Object + Browser Rendering** (Playwright or Puppeteer) | Cloudflare's documented reliability pattern: reuse the browser, don't launch per search. One DO per program so cookies stay on the right origin |
+| Calendar store | **D1** (already on the valuations worker) | 30-day windows, queryable, cheap. KV is fine for blobs; D1 fits "all dates SFO-NRT" |
+| Keep-alive / prefetch | **Workers Cron** | DO idle timeout; do not burn a Vercel cron on browser keep-alive |
+| Watched-route refresh | **Existing Vercel cron** `/api/cron/standing-orders` | Alerts already promise "hop pings you"; they should enqueue live refresh, not scrape inline |
+
+**Recipe shape (not HTML selectors for miles):** after the session is warm, call the
+same XHR the airline calendar uses. Parse JSON with a typed schema; clamp; drop the
+row if miles/taxes missing. Visible-text fallback (balance-fetch style) is a last
+resort and still must yield numbers that parse as integers, never an LLM guess.
+
+**Do not use for Stage B:** Cloudflare `/crawl` (site-wide, robots.txt, verified bot —
+airline calendars will 403), `/json` Quick Action (Workers AI structured extract),
+Stagehand, Firecrawl. Those are content pipelines, not fare engines.
+
+### 6.2 Files
+
 | Piece | Path | Notes |
 |---|---|---|
-| Worker | `cloudflare/award-search-worker/` | Browser Rendering + Puppeteer. Mirror `balance-fetch-worker`: Bearer secret, no credential storage, `RECIPES` starts empty |
-| Client | `lib/award-live.ts` | `{ok:false}` on timeout / unsupported / non-2xx. Cache 15–60 min (award space is not a 5-minute market) |
-| Recipes | worker `RECIPES` | One program at a time, verified live, then merge. UA → AS → AC → AA → DL |
+| Worker | `cloudflare/award-search-worker/` | Queue + DO + Browser binding + D1. `RECIPES` starts empty. Bearer secret. No user credentials. Hop-owned research logins, if any, are wrangler secrets and founder-gated |
+| Client | `lib/award-live.ts` | Cache read only on the request path. Enqueue on miss. `{ok:true, data, pending?: true}` — pending is chart fill, not `degraded[] 'awards'` |
+| Merge | `lib/awards.ts` | Live cache hit → `availability:'live'`; else chart |
 | Flag | `HOP_ENABLE_LIVE_AWARDS` + worker URL + secret | Double-lock. Off = chart-only |
-| Merge | `lib/awards.ts` | Per program: live row if recipe returned miles+taxes+availability; else chart fill labeled `chart` |
-| Tests | live client mocked; merge order; unsupported → chart fill | Never hit a real airline in CI |
+| Cron hook | standing-orders path | Enqueue `{program, from, to, date}` for active watches. No new cron unless prefetch needs one |
+| Tests | mocked queue/cache | Never hit a real airline in CI |
 
-**Done means (per program, independently):**
+### 6.3 Done means (per program, independently)
 
 1. A verified recipe returns miles, taxes, cabin, and a live availability bit from the
-   program's own search UI (or documented public endpoint — prefer that if one exists).
-2. `availability: 'live'` only on those rows. Chart fill stays `chart`.
-3. Bot-block / layout-shift → `{ok:false, reason:'unsupported'|…}`, chart fill, no invented
-   miles.
-4. Cache hit does not call the worker.
-5. Worker excluded from the Next app's typecheck/lint/build (same as `eve/` and
-   `cloudflare/balance-fetch-worker/`).
+   program's **calendar JSON** (or a documented public endpoint). DOM-only recipes are
+   not done.
+2. `availability: 'live'` only on cache hits. Chart fill stays `chart`. A cache miss
+   does not block the search and does not mark awards degraded.
+3. Bot-block / layout-shift / Akamai starve → `{ok:false, reason:'unsupported'|…}`,
+   chart fill, no invented miles. Rate: seataero's floor is **≥10 min between scrapes**
+   of United; hop's queue consumer must not run hotter than that per program.
+4. Cache hit does not launch a browser (assert in tests).
+5. One Durable Object per program; browsers reused; Worker excluded from the Next
+   app's typecheck/lint/build.
+6. Standing-order refresh uses the queue, not a synchronous worker fetch inside the
+   Vercel cron (cron timeout + browser = flakes).
 
-**Cost at current traffic.** 10–14 hop.flights visitors/week. Browser Rendering billed
-per browser-minute; tens of searches/week is inside the infra envelope if cache holds.
-Do not size this as seats.aero-at-50k-routes. If volume jumps after A-hn, re-read cache
-TTL and worker concurrency before adding programs 4–5.
+**Cost at current traffic.** 10–14 hop.flights visitors/week. Browser-minutes are
+dominated by **keep-alive**, not searches, if we keep a warm DO. Prefer: keep-alive
+only while there is a queue backlog or an active watch; otherwise let the session die
+and pay a cold start on the next enqueue. Do not run 5 always-on browsers for 14
+visitors. If volume jumps after A-hn, raise cache TTL before raising concurrency
+(Award Travel Finder uses 4h; hop can start at 60 min).
+
+**First program:** United, because seataero already proved the calendar-JSON shape
+exists — hop still has to reverse-engineer our own recipe (do not copy their evasion
+or their client). Alaska / Aeroplan next if their calendars expose JSON; AA/DL last
+and may stay `unsupported` forever (flights-points-tool's finding).
+
+---
 
 ---
 
@@ -299,11 +409,13 @@ Stage A:
 Stage B (when that PR lands):
 
 - Unsupported recipe → chart fill, `availability: 'chart'`.
-- Live success → `availability: 'live'`, miles from the worker payload (fixture), cpp
-  still `lib/cpp.ts`.
-- Worker 5xx / timeout → `{ok:false}` then chart fill, not empty-and-degraded if chart
-  has rows.
-- Both live and chart empty → `degraded[]` includes `'awards'`.
+- Live **cache hit** → `availability: 'live'`, miles from cached payload, cpp still
+  `lib/cpp.ts`.
+- Live **cache miss** → chart fill, enqueue called, `'awards'` **not** in `degraded[]`.
+- Queue/worker 5xx → chart fill, not empty-and-degraded if chart has rows.
+- Both live-cache empty and chart empty → `degraded[]` includes `'awards'` only if the
+  chart source itself `{ok:false}`. Empty chart is still `{ok:true, data:[]}`.
+- Cache hit does not invoke the worker/queue (spy).
 
 ---
 
@@ -349,6 +461,7 @@ production. Do not open a design-system PR.
 | FD-charts not in production **and** billing still ON **30 days after this plan is adopted** | Next board #1 is "flip billing off." Agents still do not flip it |
 | Stage B recipes cannot land UA **and** AS **and** AC (three unsupported) | Stay on chart-cpp. Do not quietly turn seats.aero back on. Do not rent AwardSecrets as a substitute without a new ADR |
 | A recipe requires ToS-breaking evasion to work | Leave that program `unsupported`. Chart fill or omit |
+| Live scrape put on the Vercel request path | Out of spec. Revert to cache-first + queue |
 | Chart tables go stale (deval) | Treat like sweet-spots: dated header + VERIFY-style caveat already on the row. Refresh is a data PR, not an LLM pass |
 
 ---
@@ -381,5 +494,5 @@ No application code in *this* PR. FD-charts is the next code ticket.
    seats.aero off in Production. Skip design-system, skip shipped July 4 B1–B4, skip a
    failover that leaves seats.aero primary.
 3. Never generate miles, taxes, or cpp. Never call seats.aero from the paid path. Never
-   POST chart rows as valuation observations.
+   POST chart rows as valuation observations. Never scrape on the Vercel request path.
 4. Founder-gated flags and Vercel secrets: ship the code dark; do not flip production env.

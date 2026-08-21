@@ -246,7 +246,7 @@ memo instead of these.
 | **FD-copy** | Stop calling search-time observations "live bookings" | `LiveValuationShelf` uses "observations" / "observed cash-vs-award samples" — **not** "bookings," **not** "redemptions." Copy-voice review. Matches `lib/valuation-telemetry.ts` |
 | **FD-charts** | N-386 **replacement** (was "failover") | Chart-cpp per `docs/plans/2026-08-21-replace-seatsaero.md` §5. Facade `lib/awards.ts`; seats.aero not called when flag off; `availability: 'chart'`; cpp from `lib/cpp.ts`; chart rows skipped by valuation telemetry. **This is what passes gate ④** once Production key/flag is off. A failover that keeps seats.aero primary is **out of spec** |
 | **FD-docs** | This PR + 2026-08-21 amendment | Playbook goal, ops-runbook R0.2 Unknown, July 4 pointer, AGENTS.md pickup, ADR 0014 | Done in this diff |
-| **FD-live** | First-party live search | **After** gate ④. `2026-08-21-replace-seatsaero.md` §6. Do not start while seats.aero is still the paid path |
+| **FD-live** | First-party live search | **After** gate ④. Cache-first Queue + Durable Object + calendar JSON (`2026-08-21-replace-seatsaero.md` §6). Search path never waits on a browser. Do not start while seats.aero is still the paid path |
 
 **Parked (not the next ticket):** public per-program observed-cpp table. `/stats` already
 ships the 14/34 count; the signed-in shelf already lists live vs baseline. Revisit after

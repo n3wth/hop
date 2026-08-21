@@ -33,10 +33,13 @@ commercial search does not query seats.aero (key absent or `HOP_ENABLE_SEATSAERO
    taxes. Rows carry `availability: 'chart'` and copy that cannot be read as a held seat.
    Miles/taxes are table facts; cpp is still `lib/cpp.ts`. Chart rows must not feed
    `recordCppObservations` (ADR 0005).
-2. **First-party live search (quality, later).** Cloudflare Browser Rendering worker, recipes
-   starting empty, four then five US-core programs (UA, AS, AC, AA, DL last). Same `{ok:false}`
-   / unsupported honesty as balance-fetch. Live rows carry `availability: 'live'`. Chart fill
-   remains labeled chart.
+2. **First-party live search (quality, later).** Cloudflare Queue + Durable Object +
+   Browser Rendering worker. Recipes start empty; four then five US-core programs
+   (UA, AS, AC, AA, DL last). **Search path never waits on a browser** — live space is
+   an Upstash cache filled in the background; chart-cpp answers on a miss. Calendar
+   JSON after a warm session, not DOM scrape, not `/json` AI extract. Same `{ok:false}`
+   / unsupported honesty as balance-fetch. Live rows carry `availability: 'live'` only
+   on cache hit.
 
 **We will not** scrape seats.aero, scrape another award tool, rent AwardSecrets/PointsYeah as
 a substitute landlord, or let an LLM invent miles or taxes (ADR 0002).
@@ -55,6 +58,10 @@ import site. `MOCK=1` fixtures stay.
   trade for not paying the landlord.
 - Airline ToS may block Stage B recipes. Blocked programs stay chart or absent; we do not
   add evasion, and we do not turn seats.aero back on to paper over it.
+- `assembleSearch` must not await Browser Rendering. Live availability is eventually
+  consistent (Queue + cache). Putting Playwright on Vercel is out of spec.
+- OSS award-search repos are almost all seats.aero wrappers; seataero is the exception
+  (United calendar JSON + SQLite) and is a pattern source, not a dependency.
 - Founder still must take seats.aero off Vercel Production and, until then, treat billing-ON
   as a legitimacy miss.
 
