@@ -255,6 +255,7 @@ export function quoteChart(params: SearchParams): ApiResult<FlightOption[]> {
 
   const distance = greatCircleMiles(from, to)
   if (distance == null) return { ok: true, data: [] }
+  const chartMiles = Math.ceil(distance)
 
   const fromZone = zoneFor(from)
   const toZone = zoneFor(to)
@@ -265,7 +266,7 @@ export function quoteChart(params: SearchParams): ApiResult<FlightOption[]> {
   const data: FlightOption[] = []
 
   if (fromZone === 'na' && toZone === 'na') {
-    const alaskaMiles = lookupBand(ALASKA_NA_OWN, distance, cabin)
+    const alaskaMiles = lookupBand(ALASKA_NA_OWN, chartMiles, cabin)
     if (alaskaMiles != null) {
       data.push(
         option({
@@ -280,7 +281,7 @@ export function quoteChart(params: SearchParams): ApiResult<FlightOption[]> {
         }),
       )
     }
-    const acMiles = lookupBand(AEROPLAN_NA, distance, cabin)
+    const acMiles = lookupBand(AEROPLAN_NA, chartMiles, cabin)
     if (acMiles != null) {
       data.push(
         option({
@@ -301,7 +302,7 @@ export function quoteChart(params: SearchParams): ApiResult<FlightOption[]> {
     (fromZone === 'na' && toZone === 'pacific') ||
     (fromZone === 'pacific' && toZone === 'na')
   ) {
-    const acMiles = lookupBand(AEROPLAN_NA_PACIFIC, distance, cabin)
+    const acMiles = lookupBand(AEROPLAN_NA_PACIFIC, chartMiles, cabin)
     if (acMiles != null) {
       data.push(
         option({

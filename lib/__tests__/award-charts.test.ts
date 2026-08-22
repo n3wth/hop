@@ -39,6 +39,7 @@ const CASH_254 = {
 
 describe('quoteChart — published bands', () => {
   it('SFO-LAX is Alaska 4,500 saver floor + Aeroplan 6,000', () => {
+    expect(Number.isInteger(greatCircleMiles('SFO', 'LAX'))).toBe(false)
     const result = quoteChart({ from: 'SFO', to: 'LAX', depart: '2026-09-01', adults: 1 })
     expect(result.ok).toBe(true)
     if (!result.ok) return
