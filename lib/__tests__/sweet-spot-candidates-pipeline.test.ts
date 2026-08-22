@@ -39,12 +39,17 @@ vi.mock('@/lib/sweet-spot-drafts', () => ({
 // each test rather than relying on afterEach's restoreAllMocks() alone, which
 // only guarantees spy-implementation restoration (needed for vi.spyOn(Date,
 // 'now')), not that .mock.calls resets to empty for these factory mocks.
+const ORIGINAL_SEATS_KEY = process.env.SEATS_AERO_API_KEY
+
 beforeEach(() => {
   vi.clearAllMocks()
+  process.env.SEATS_AERO_API_KEY = 'test-key'
 })
 
 afterEach(() => {
   vi.restoreAllMocks()
+  if (ORIGINAL_SEATS_KEY === undefined) delete process.env.SEATS_AERO_API_KEY
+  else process.env.SEATS_AERO_API_KEY = ORIGINAL_SEATS_KEY
 })
 
 function fakeSearchResult(allAwards: FlightOption[]): SearchResult {

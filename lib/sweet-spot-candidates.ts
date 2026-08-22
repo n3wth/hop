@@ -37,6 +37,7 @@ import 'server-only'
 // rather than a strict global top-N — inherent to being able to stop early.
 
 import { assembleSearch, POINTS_THRESHOLD_CPP } from '@/lib/search'
+import { hasEnv } from '@/lib/env'
 import { canonicalizeProgram } from '@/lib/programs'
 import { programValue } from '@/lib/valuations'
 import { destinations, type Destination } from '@/lib/destinations'
@@ -403,6 +404,11 @@ export async function runSweetSpotCandidatePipeline(
   now: Date = new Date(),
   opts?: { deadlineAt?: number },
 ): Promise<PipelineResult> {
+  // Chart-cpp is not live space. Do not invent chart-backed "deals".
+  if (!hasEnv('SEATS_AERO_API_KEY')) {
+    return { created: 0, found: 0, drafts: [] }
+  }
+
   const deadlineAt = opts?.deadlineAt ?? now.getTime() + MINING_TIME_BUDGET_MS
   const runDestinations = destinationsForRun(now)
 

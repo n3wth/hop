@@ -25,6 +25,24 @@ must match the economics — believable figures for the labeled route and cabin,
 - Subline (plain, factual): `9,000 miles + $22 taxes at 2.6¢ per point — the best redemption
   across your 6 programs. Cash is $254 round trip. You have the miles.`
 - Primary CTA: `Book with Alaska miles`
+
+## Verdict hero — chart (`availability: 'chart'`)
+
+Same SFO→LAX math. The distinctive fact is **space not confirmed**, not "hop isn't
+holding a seat." Saver-floor miles stay the table number; uncertainty lives in the
+caveat. Do not use `estimated` / `about` / `up to` on the miles figure.
+
+- Kicker: `CHART · IF SAVER IS OPEN`
+- Headline: `Alaska chart: 2.6¢/pt.`
+- Hook: `Save $232 vs cash if saver is open.`
+- Extra: `Published saver rate. Space not confirmed.`
+- Primary CTA: `Check Alaska for space`
+- Empty awards: `No published saver chart for this route.`
+- Alert subject: never `Award space opened` / `Book now` on a chart row. Use
+  `Cash vs chart: …` or do not send.
+
+`You have the miles` (balance fact) may stay. `Use your Alaska miles` (spend
+instruction) may not, on chart.
 - Secondary: `See the math` (links to CPP breakdown — NOT "Why this wins →")
 - Stat row: `You pay 9,000 miles + $22` · `Value 2.6¢/pt` · `Cash price $254` · `You save $232`
 - Confidence chip: drop "hop is confident on this one." Replace with nothing, or a quiet

@@ -90,8 +90,11 @@ export function renderAlertEmail(alert: StandingOrderAlert): {
   const via = viaLabel(alert)
   const rate = cpp ? `${cpp}¢/pt` : null
 
-  // Subject: route + rate + program, dropping any piece we genuinely don't have.
-  const subjectParts = [`Award space opened: ${route}`]
+  const isChart = alert.pick?.availability === 'chart'
+  // Chart rows are not space. Never "Award space opened" / "book now" on a table.
+  const subjectParts = [
+    isChart ? `Cash vs chart: ${route}` : `Award space opened: ${route}`,
+  ]
   if (rate) subjectParts.push(`at ${rate}`)
   if (via) subjectParts.push(`via ${via}`)
   const subject = subjectParts.join(' ')
@@ -104,12 +107,12 @@ export function renderAlertEmail(alert: StandingOrderAlert): {
   // Plain text — the canonical body. One line for the verdict, one for the
   // detail, one CTA. Terse.
   const textLines: string[] = [
-    `${subject} — book now.`,
+    isChart ? `${subject}.` : `${subject} — book now.`,
     '',
     milesLine ? `${route} · ${milesLine}${rate ? ` · ${rate}` : ''}` : `${route}`,
   ]
   if (bookingUrl) {
-    textLines.push('', `Book: ${bookingUrl}`)
+    textLines.push('', isChart ? `Check space: ${bookingUrl}` : `Book: ${bookingUrl}`)
   }
   textLines.push('', 'You set this watch on hop. Manage it at hop.flights/account.')
   const text = textLines.join('\n')
@@ -120,7 +123,7 @@ export function renderAlertEmail(alert: StandingOrderAlert): {
     ? `${escapeHtml(route)} &middot; ${escapeHtml(milesLine)}${rate ? ` &middot; ${escapeHtml(rate)}` : ''}`
     : escapeHtml(route)
   const cta = bookingUrl
-    ? `<p style="margin:16px 0 0"><a href="${escapeAttr(bookingUrl)}" style="color:#0f6f6a;font-weight:600;text-decoration:underline">Book now</a></p>`
+    ? `<p style="margin:16px 0 0"><a href="${escapeAttr(bookingUrl)}" style="color:#0f6f6a;font-weight:600;text-decoration:underline">${isChart ? 'Check for space' : 'Book now'}</a></p>`
     : ''
   const html = [
     `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1a1a1a;font-size:15px;line-height:1.5;max-width:480px">`,

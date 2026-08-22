@@ -19,9 +19,9 @@ const STEPS: Step[] = [
   },
   {
     icon: 'flight',
-    source: 'Award space',
-    title: 'Finds bookable seats',
-    body: 'It checks where seats are actually bookable with miles on your exact dates and route.',
+    source: 'Published saver chart',
+    title: 'Prices the miles',
+    body: 'It reads the published saver chart for the route and computes cents-per-point. It does not confirm saver space is open.',
   },
   {
     icon: 'receipt_long',

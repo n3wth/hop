@@ -393,7 +393,7 @@ webhook routes refuse softly (`{ok:false}`/503), alert-cap copy reverts.
 1. Multi-pax cpp fixed (R0.1) — **Passed**
 2. Single tested Stripe lane with real purchase (R0.2) — **Passed**
 3. Alerts firing reliably (R0.4 + R1.3) — **Passed**
-4. seats.aero written commercial terms (R3.1) — **Pending / Blocked** (awaiting commercial response or fallback award source)
+4. seats.aero off the commercial/paid search path (R3.1, ADR 0014) — **Pending until Production `SEATS_AERO_API_KEY` is unset.** Code path is chart-cpp (`lib/awards.ts`); `lib/seatsaero.ts` is a hard stub (no fetch). Founder: unset the Production key. Do not leave billing ON until honest-Pro copy is confirmed (④b).
 
 ## Resend webhooks (deliverability / suppression list)
 
