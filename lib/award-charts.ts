@@ -255,7 +255,7 @@ export function quoteChart(params: SearchParams): ApiResult<FlightOption[]> {
 
   const distance = greatCircleMiles(from, to)
   if (distance == null) return { ok: true, data: [] }
-  const chartMiles = Math.ceil(distance)
+  const chartMiles = Math.round(distance)
 
   const fromZone = zoneFor(from)
   const toZone = zoneFor(to)
