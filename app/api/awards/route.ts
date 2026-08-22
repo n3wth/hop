@@ -1,7 +1,7 @@
-// GET /api/awards — thin debugging handler for the Seats.aero award client.
+// GET /api/awards — thin debugging handler for the award facade (chart-cpp).
 
 import type { SearchParams } from '@/lib/types'
-import { searchAwards } from '@/lib/seatsaero'
+import { searchAwards } from '@/lib/awards'
 import { clampTravelDates } from '@/lib/travel-dates'
 
 export async function GET(request: Request) {

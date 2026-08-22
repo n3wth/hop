@@ -306,45 +306,13 @@ describe('seats.aero normalizer', () => {
     expect(opt!.cabin).toBe('Premium Economy')
   })
 
-  it('returns {ok:false} (does not throw) when fetch fails', async () => {
+  it('is a hard stub: disabled, no fetch', async () => {
     process.env.SEATS_AERO_API_KEY = 'test-key'
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => Promise.reject(new Error('network down'))),
-    )
+    const fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
     const result = await searchAwards(PARAMS)
-    expect(result.ok).toBe(false)
-    if (!result.ok) expect(result.reason).toBe('Seats.aero request failed')
-  })
-
-  it('returns {ok:false} on a non-ok HTTP status', async () => {
-    process.env.SEATS_AERO_API_KEY = 'test-key'
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => Promise.resolve(new Response('nope', { status: 401 }))),
-    )
-    const result = await searchAwards(PARAMS)
-    expect(result.ok).toBe(false)
-  })
-
-  it('parses and filters a successful search response', async () => {
-    process.env.SEATS_AERO_API_KEY = 'test-key'
-    const payload = {
-      data: [
-        { ID: 'a', Source: 'alaska', Route: { OriginAirport: 'SFO', DestinationAirport: 'LAX' }, Date: '2026-07-09', YAvailable: true, YMileageCost: '4500', YTotalTaxes: 1120 },
-        { ID: 'b', Source: 'united', YAvailable: false, YMileageCost: '0' }, // filtered out
-      ],
-    }
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => Promise.resolve(new Response(JSON.stringify(payload), { status: 200 }))),
-    )
-    const result = await searchAwards(PARAMS)
-    expect(result.ok).toBe(true)
-    if (result.ok) {
-      expect(result.data).toHaveLength(1)
-      expect(result.data[0].miles).toBe(4500)
-    }
+    expect(result).toEqual({ ok: false, reason: 'disabled' })
+    expect(fetchSpy).not.toHaveBeenCalled()
   })
 })
 

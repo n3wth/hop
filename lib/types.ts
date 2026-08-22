@@ -59,6 +59,9 @@ export interface FlightOption {
   transferFrom?: TransferSource[]
   bookingUrl: string
   note?: string // e.g. "Dynamic pricing · weak value here"
+  // Award provenance. Cash omits it. 'chart' = published saver table (space
+  // and price unconfirmed). 'live' = cache-hit of a first-party search (Stage B).
+  availability?: 'live' | 'chart'
 }
 
 export interface TransferSource {
