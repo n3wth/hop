@@ -270,9 +270,9 @@ export function quoteChart(params: SearchParams): ApiResult<FlightOption[]> {
       data.push(
         option({
           id: `chart-as-${from}-${to}`,
-          airline: 'Alaska Atmos',
+          airline: 'Alaska Airlines',
           airlineCode: 'AS',
-          program: 'Alaska Atmos Rewards',
+          program: 'Alaska Mileage Plan',
           params,
           miles: alaskaMiles,
           taxes,
@@ -284,7 +284,7 @@ export function quoteChart(params: SearchParams): ApiResult<FlightOption[]> {
     if (acMiles != null) {
       data.push(
         option({
-          id: `chart-ac-${from}-${to}`,
+          id: `chart-ac-na-${from}-${to}`,
           airline: 'Air Canada',
           airlineCode: 'AC',
           program: 'Air Canada Aeroplan',
@@ -305,7 +305,7 @@ export function quoteChart(params: SearchParams): ApiResult<FlightOption[]> {
     if (acMiles != null) {
       data.push(
         option({
-          id: `chart-ac-${from}-${to}`,
+          id: `chart-ac-pacific-${from}-${to}`,
           airline: 'Air Canada',
           airlineCode: 'AC',
           program: 'Air Canada Aeroplan',

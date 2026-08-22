@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cpp } from '@/lib/cpp'
 import { assembleSearch } from '@/lib/search'
-import { searchAwards as searchAwardsStub } from '@/lib/seatsaero'
+import { searchAwards as searchAwardsDisabled } from '@/lib/seatsaero'
 import { searchAwards } from '@/lib/awards'
 import {
   CHART_NOTE,
@@ -44,6 +44,8 @@ describe('quoteChart — published bands', () => {
     if (!result.ok) return
     const alaska = result.data.find((o) => o.airlineCode === 'AS')
     const aeroplan = result.data.find((o) => o.airlineCode === 'AC')
+    expect(alaska?.airline).toBe('Alaska Airlines')
+    expect(alaska?.program).toBe('Alaska Mileage Plan')
     expect(alaska?.miles).toBe(4500)
     expect(alaska?.taxes).toBe(TAX_USD.usDomestic)
     expect(alaska?.availability).toBe('chart')
@@ -60,6 +62,7 @@ describe('quoteChart — published bands', () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     const aeroplan = result.data.find((o) => o.airlineCode === 'AC')
+    expect(aeroplan?.id).toBe('chart-ac-pacific-SFO-NRT')
     expect(aeroplan?.miles).toBe(45000)
     expect(aeroplan?.taxes).toBe(TAX_USD.japanPacific)
     expect(aeroplan?.availability).toBe('chart')
@@ -113,7 +116,12 @@ describe('facade + seats.aero stub', () => {
     const fetchSpy = vi.fn()
     vi.stubGlobal('fetch', fetchSpy)
     const facade = await searchAwards({ from: 'SFO', to: 'LAX', depart: '2026-09-01', adults: 1 })
-    const stub = await searchAwardsStub({ from: 'SFO', to: 'LAX', depart: '2026-09-01', adults: 1 })
+    const stub = await searchAwardsDisabled({
+      from: 'SFO',
+      to: 'LAX',
+      depart: '2026-09-01',
+      adults: 1,
+    })
     expect(facade.ok).toBe(true)
     expect(stub).toEqual({ ok: false, reason: 'disabled' })
     expect(fetchSpy).not.toHaveBeenCalled()
