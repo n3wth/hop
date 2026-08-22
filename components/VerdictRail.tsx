@@ -180,6 +180,11 @@ export default function VerdictRail({
     : undefined
 
   const airlineShort = pick?.airline.split(' ')[0] ?? 'points'
+  const isChart = pick?.availability === 'chart'
+  const chartEmpty =
+    !usingPoints &&
+    !bestAward &&
+    !result.degraded.includes('awards')
 
   return (
     <section
@@ -189,7 +194,7 @@ export default function VerdictRail({
       {/* LEFT — the verdict */}
       <div className="px-6 pb-9 pt-8 sm:px-10 lg:px-[52px] lg:pb-[46px] lg:pt-12">
         <Eyebrow onDark className="mb-[26px] inline-flex items-center border-b border-white/15 pb-4 text-[12px]">
-          Best value
+          {isChart ? 'Chart · if saver is open' : 'Best value'}
         </Eyebrow>
 
         {usingPoints ? (
@@ -201,14 +206,21 @@ export default function VerdictRail({
                 followed by an animating number. */}
             <h1
               aria-label={
-                owns
-                  ? `Use your ${airlineShort} ${unit} and save $${fmt(save)} vs cash.`
-                  : `${airlineShort} ${unit} win here — by $${fmt(save)} vs cash.`
+                isChart
+                  ? `${airlineShort} chart: ${cpp != null ? formatValue(cpp) : '—'}. Save $${fmt(save)} vs cash if saver is open.`
+                  : owns
+                    ? `Use your ${airlineShort} ${unit} and save $${fmt(save)} vs cash.`
+                    : `${airlineShort} ${unit} win here — by $${fmt(save)} vs cash.`
               }
               className="hop-rise text-balance font-display text-[24px] font-semibold leading-[1.05] tracking-[-0.02em] text-white sm:text-[34px] lg:text-[40px]"
               style={{ ['--hop-delay' as string]: '60ms' }}
             >
-              {owns ? (
+              {isChart ? (
+                <>
+                  <span className="text-gold-soft">{airlineShort}&nbsp;chart:</span>{' '}
+                  {cpp != null ? formatValue(cpp) : '—'}
+                </>
+              ) : owns ? (
                 <>
                   Use your <span className="text-gold-soft">{airlineShort}&nbsp;{unit}</span> and save
                 </>
@@ -249,7 +261,16 @@ export default function VerdictRail({
           </h1>
         )}
 
-        {usingPoints && owns ? (
+        {usingPoints && isChart ? (
+          <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-hero-body" style={{ ['--hop-delay' as string]: '140ms' }}>
+            Save{' '}
+            <b className="font-semibold text-white">${fmt(save)}</b> vs cash if saver is
+            open.{' '}
+            <b className="font-semibold text-white">{fmt(miles)} {unit}</b> at{' '}
+            <b className="font-semibold text-white">{cpp != null ? formatValue(cpp) : '—'}</b>
+            . Published saver rate. Space not confirmed.
+          </p>
+        ) : usingPoints && owns ? (
           <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-hero-body" style={{ ['--hop-delay' as string]: '140ms' }}>
             <b className="font-semibold text-white">
               {fmt(miles)} {unit}
@@ -283,8 +304,10 @@ export default function VerdictRail({
           </p>
         ) : (
           <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-hero-body" style={{ ['--hop-delay' as string]: '140ms' }}>
-            No award seats came back for this route and date, so there was nothing to weigh your
-            points against. Cash is <b className="font-semibold text-white">${fmt(cash)}</b> —
+            {chartEmpty
+              ? 'No published saver chart for this route.'
+              : 'No award seats came back for this route and date, so there was nothing to weigh your points against.'}{' '}
+            Cash is <b className="font-semibold text-white">${fmt(cash)}</b> —
             book it and your points stay put.
           </p>
         )}
@@ -303,11 +326,13 @@ export default function VerdictRail({
             <Icon name="check_circle" size={20} weight="fill" />
             {!usingPoints
               ? 'Book cash'
-              : owns
-                ? `Book with ${airlineShort} ${unit}`
-                : isSignedIn
-                  ? 'Add your programs'
-                  : `Sign in to see if your ${unit} win`}
+              : isChart
+                ? `Check ${airlineShort} for space`
+                : owns
+                  ? `Book with ${airlineShort} ${unit}`
+                  : isSignedIn
+                    ? 'Add your programs'
+                    : `Sign in to see if your ${unit} win`}
           </a>
           {/* Account nudge — pay-cash path only (the points path's primary CTA
               already carries the ask). Secondary treatment so "Book cash" still

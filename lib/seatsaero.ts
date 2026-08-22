@@ -10,13 +10,8 @@
 //     cabin, preferring economy.
 
 import type { ApiResult, FlightOption, SearchParams } from '@/lib/types'
-import { env, hasEnv } from '@/lib/env'
 import { tier } from '@/lib/cpp'
 import { pointsBookingUrl } from '@/lib/booking'
-import { cacheGet, cacheSet } from './cache'
-
-const SEATS_AERO_BASE = 'https://seats.aero/partnerapi'
-const TIMEOUT_MS = 10_000
 
 // --- Seats.aero response shapes (partial; defensive) ------------------------
 interface SeatsAeroRoute {
@@ -45,9 +40,6 @@ interface SeatsAeroRecord {
   JTotalTaxes?: string | number
   JAirlines?: string
   TaxesCurrency?: string
-}
-interface SeatsAeroResponse {
-  data?: SeatsAeroRecord[]
 }
 
 // Map Seats.aero `Source` program slug -> display name + IATA-ish code.
@@ -220,56 +212,8 @@ export function normalizeSeatsAeroRecord(
   }
 }
 
-export async function searchAwards(params: SearchParams): Promise<ApiResult<FlightOption[]>> {
-  if (!hasEnv('SEATS_AERO_API_KEY')) {
-    return { ok: false, reason: 'Seats.aero API key not configured' }
-  }
-
-  const cacheKey = `hop:search:awards:${params.from.toUpperCase()}:${params.to.toUpperCase()}:${params.depart}:${params.return || 'one-way'}:${params.cabin || 'economy'}`
-
-  const cached = await cacheGet<ApiResult<FlightOption[]>>(cacheKey)
-  if (cached !== null && cached.ok) return cached
-
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
-
-  const query = new URLSearchParams({
-    origin_airport: params.from.trim().toUpperCase(),
-    destination_airport: params.to.trim().toUpperCase(),
-    start_date: params.depart,
-    end_date: params.return ?? params.depart,
-    take: '50',
-  })
-
-  try {
-    const res = await fetch(`${SEATS_AERO_BASE}/search?${query.toString()}`, {
-      method: 'GET',
-      headers: {
-        'Partner-Authorization': env.seatsAeroApiKey(),
-        Accept: 'application/json',
-      },
-      signal: controller.signal,
-    })
-
-    if (!res.ok) {
-      return { ok: false, reason: `Seats.aero responded ${res.status}` }
-    }
-
-    const json = (await res.json()) as SeatsAeroResponse
-    const records = json.data ?? []
-    const options = records
-      .map((rec, i) => normalizeSeatsAeroRecord(rec, params, i))
-      .filter((o): o is FlightOption => o !== undefined)
-    const result: ApiResult<FlightOption[]> = { ok: true, data: options }
-    await cacheSet(cacheKey, result, 300)
-    return result
-  } catch (err) {
-    const reason =
-      err instanceof Error && err.name === 'AbortError'
-        ? 'Seats.aero request timed out'
-        : 'Seats.aero request failed'
-    return { ok: false, reason }
-  } finally {
-    clearTimeout(timer)
-  }
+export async function searchAwards(_params: SearchParams): Promise<ApiResult<FlightOption[]>> {
+  // Hard-disabled 2026-08-21 (ADR 0014). No fetch. Production callers use
+  // lib/awards.ts (chart-cpp). Keep this stub until the file is deleted.
+  return { ok: false, reason: 'disabled' }
 }

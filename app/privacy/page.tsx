@@ -122,7 +122,8 @@ export default async function PrivacyPage() {
             behalf.
           </li>
           <li>
-            <strong>seats.aero</strong> — award availability data.
+            <strong>Airline loyalty programs</strong> — published saver-chart figures
+            hop transcribes offline. hop does not currently query a live award-space API.
           </li>
           <li>
             <strong>Unsplash</strong> — destination imagery (image requests are made to Unsplash).

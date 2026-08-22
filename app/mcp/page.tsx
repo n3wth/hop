@@ -92,7 +92,7 @@ export default function McpLandingPage() {
           eyebrow="For AI agents"
           title="The points engine, as a tool call"
           titleMaxW="max-w-[26ch]"
-          intro="Every award tool can tell an agent a seat exists. hop tells it whether to burn points on it. Six tools, deterministic math, no LLM-generated numbers."
+          intro="hop tells you whether to burn your points — if saver space is open. Six tools, deterministic math, no LLM-generated numbers."
           introMaxW="max-w-[58ch]"
         >
           <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[13px] text-text3">

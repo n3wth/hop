@@ -23,7 +23,7 @@ import Icon, { type IconName } from '@/components/Icon'
 // external photo API to not look sparse.
 const HOW_HOP_ANSWERS: { icon: IconName; label: string }[] = [
   { icon: 'wallet', label: 'Your real balances' },
-  { icon: 'flight', label: 'Live award space' },
+  { icon: 'flight', label: 'Published saver chart' },
   { icon: 'currency', label: 'Real cash prices' },
 ]
 

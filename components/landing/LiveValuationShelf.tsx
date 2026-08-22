@@ -3,7 +3,7 @@ import { formatValue } from '@/lib/cpp'
 import { liveValuationStats, type LiveValuationStat } from '@/lib/verdict-shelves'
 import type { Balance } from '@/lib/types'
 
-// "3.8¢/pt · was 3.1¢ baseline · 24 live bookings" — the price+delta lead,
+// "3.8¢/pt · was 3.1¢ baseline · 24 observations" — the price+delta lead,
 // the static baseline it beat (or missed), and the sample size that earned
 // its trust, straight from lib/verdict-shelves#liveValuationStats.
 function StatCard({ stat }: { stat: LiveValuationStat }) {
@@ -21,7 +21,7 @@ function StatCard({ stat }: { stat: LiveValuationStat }) {
         </span>
       </div>
       <p className="mt-2 text-[12px] leading-[1.5] text-text2">
-        was {stat.baselineCpp.toFixed(1)}¢ baseline · {stat.sampleSize} live bookings
+        was {stat.baselineCpp.toFixed(1)}¢ baseline · {stat.sampleSize} observations
       </p>
     </div>
   )

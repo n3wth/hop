@@ -526,3 +526,11 @@ export function isShareReceiptsEnabled(): boolean {
   const flag = process.env.HOP_ENABLE_SHARE_RECEIPTS ?? ''
   return /^(1|true|yes)$/i.test(flag.trim())
 }
+
+// Partner API is off the paid path (ADR 0014). Flag defaults off. Even when
+// a leftover key is present, lib/seatsaero.ts#searchAwards is a hard stub.
+export function isSeatsAeroEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_SEATSAERO ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && hasEnv('SEATS_AERO_API_KEY')
+}

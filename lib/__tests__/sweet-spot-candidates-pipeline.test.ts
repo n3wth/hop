@@ -39,12 +39,17 @@ vi.mock('@/lib/sweet-spot-drafts', () => ({
 // each test rather than relying on afterEach's restoreAllMocks() alone, which
 // only guarantees spy-implementation restoration (needed for vi.spyOn(Date,
 // 'now')), not that .mock.calls resets to empty for these factory mocks.
+const ORIGINAL_SEATS_KEY = process.env.SEATS_AERO_API_KEY
+
 beforeEach(() => {
   vi.clearAllMocks()
+  process.env.SEATS_AERO_API_KEY = 'test-key'
 })
 
 afterEach(() => {
   vi.restoreAllMocks()
+  if (ORIGINAL_SEATS_KEY === undefined) delete process.env.SEATS_AERO_API_KEY
+  else process.env.SEATS_AERO_API_KEY = ORIGINAL_SEATS_KEY
 })
 
 function fakeSearchResult(allAwards: FlightOption[]): SearchResult {
@@ -86,12 +91,44 @@ function fakeNotableAward(): FlightOption {
   }
 }
 
+describe('runSweetSpotCandidatePipeline() — Stage A does not mine charts', () => {
+  it('skips mining even when a leftover Partner API key is set', async () => {
+    process.env.SEATS_AERO_API_KEY = 'leftover-production-key'
+    vi.mocked(listSweetSpotDrafts).mockResolvedValue([])
+    vi.mocked(assembleSearch).mockResolvedValue(fakeSearchResult([fakeNotableAward()]))
+
+    const result = await runSweetSpotCandidatePipeline(new Date('2026-07-05T00:00:00.000Z'))
+
+    expect(vi.mocked(assembleSearch)).not.toHaveBeenCalled()
+    expect(result).toEqual({ created: 0, found: 0, drafts: [] })
+  })
+
+  it('does not persist a chart-labeled Business floor when mining is forced on', async () => {
+    vi.mocked(listSweetSpotDrafts).mockResolvedValue([])
+    vi.mocked(assembleSearch).mockResolvedValue(
+      fakeSearchResult([{ ...fakeNotableAward(), availability: 'chart' }]),
+    )
+    vi.mocked(createSweetSpotDraft).mockResolvedValue('draft-should-not-exist')
+
+    const result = await runSweetSpotCandidatePipeline(new Date('2026-07-05T00:00:00.000Z'), {
+      allowMining: true,
+      deadlineAt: Date.now() + 10_000,
+    })
+
+    expect(result).toEqual({ created: 0, found: 0, drafts: [] })
+    expect(vi.mocked(createSweetSpotDraft)).not.toHaveBeenCalled()
+  })
+})
+
 describe('runSweetSpotCandidatePipeline() — timeout safety', () => {
   it('a deadline already in the past stops before starting any search', async () => {
     vi.mocked(listSweetSpotDrafts).mockResolvedValue([])
     const now = new Date('2026-07-05T00:00:00.000Z')
 
-    const result = await runSweetSpotCandidatePipeline(now, { deadlineAt: now.getTime() - 1 })
+    const result = await runSweetSpotCandidatePipeline(now, {
+      allowMining: true,
+      deadlineAt: now.getTime() - 1,
+    })
 
     expect(vi.mocked(assembleSearch)).not.toHaveBeenCalled()
     expect(result).toEqual({ created: 0, found: 0, drafts: [] })
@@ -109,7 +146,7 @@ describe('runSweetSpotCandidatePipeline() — timeout safety', () => {
     const nowSpy = vi.spyOn(Date, 'now')
     nowSpy.mockReturnValueOnce(deadlineAt - 1).mockReturnValueOnce(deadlineAt + 1)
 
-    const result = await runSweetSpotCandidatePipeline(now, { deadlineAt })
+    const result = await runSweetSpotCandidatePipeline(now, { allowMining: true, deadlineAt })
 
     // Only route 1's SAMPLE_DATE_OFFSETS_DAYS concurrent searches ran.
     expect(vi.mocked(assembleSearch)).toHaveBeenCalledTimes(SAMPLE_DATE_OFFSETS_DAYS.length)
@@ -125,7 +162,7 @@ describe('runSweetSpotCandidatePipeline() — timeout safety', () => {
     const nowSpy = vi.spyOn(Date, 'now')
     nowSpy.mockReturnValueOnce(now.getTime()).mockReturnValueOnce(now.getTime() + 10_000_000)
 
-    await runSweetSpotCandidatePipeline(now, { deadlineAt: now.getTime() + 1 })
+    await runSweetSpotCandidatePipeline(now, { allowMining: true, deadlineAt: now.getTime() + 1 })
 
     const calls = vi.mocked(assembleSearch).mock.calls
     expect(calls).toHaveLength(SAMPLE_DATE_OFFSETS_DAYS.length)
@@ -153,7 +190,10 @@ describe('runSweetSpotCandidatePipeline() — incremental persistence + early st
     // block above for that) — anchor it to the real clock, not `now` (a fixed
     // test date whose relationship to the real wall clock is otherwise
     // undefined and would make this test flaky).
-    const result = await runSweetSpotCandidatePipeline(now, { deadlineAt: Date.now() + 10_000_000 })
+    const result = await runSweetSpotCandidatePipeline(now, {
+      allowMining: true,
+      deadlineAt: Date.now() + 10_000_000,
+    })
 
     expect(result.created).toBe(MAX_NEW_CANDIDATES_PER_RUN)
     expect(result.found).toBe(MAX_NEW_CANDIDATES_PER_RUN)
@@ -181,7 +221,10 @@ describe('runSweetSpotCandidatePipeline() — incremental persistence + early st
     const now = new Date('2026-07-05T00:00:00.000Z')
     // Same real-clock anchoring as above — this test exercises the cap/found
     // bookkeeping, not the deadline.
-    const result = await runSweetSpotCandidatePipeline(now, { deadlineAt: Date.now() + 10_000_000 })
+    const result = await runSweetSpotCandidatePipeline(now, {
+      allowMining: true,
+      deadlineAt: Date.now() + 10_000_000,
+    })
 
     // Cap is never reached (nothing ever persists), so the full grid mines —
     // one notable candidate per hub/destination pair. Computed from the real

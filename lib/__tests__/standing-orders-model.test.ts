@@ -30,6 +30,7 @@ function award(over: Partial<FlightOption> = {}): FlightOption {
     cpp: 3.2,
     tier: 'green',
     bookingUrl: 'https://x',
+    availability: 'live',
     ...over,
   }
 }
@@ -201,6 +202,18 @@ describe('evaluateOrder — the crossing rule', () => {
     const e = evaluateOrder(base, result({ pick: award({ kind: 'cash', program: undefined }) }))
     expect(e.crossed).toBe(false)
     expect(e.reason).toBe('no-redemption')
+  })
+
+  it('does not cross on a chart row', () => {
+    const e = evaluateOrder(base, result({ pick: award({ availability: 'chart' }) }))
+    expect(e.crossed).toBe(false)
+    expect(e.reason).toBe('not-live')
+  })
+
+  it('does not cross when availability is omitted', () => {
+    const e = evaluateOrder(base, result({ pick: award({ availability: undefined }) }))
+    expect(e.crossed).toBe(false)
+    expect(e.reason).toBe('not-live')
   })
 
   it('fires again on a DIFFERENT offer after a prior alert', () => {

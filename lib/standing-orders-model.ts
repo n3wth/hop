@@ -232,6 +232,7 @@ export interface OrderEvaluation {
     | 'below-cpp'
     | 'not-enough-seats'
     | 'already-notified'
+    | 'not-live'
 }
 
 // Award seats available on an option, when the upstream reported it. We don't
@@ -257,6 +258,10 @@ export function evaluateOrder(
   const isRedemption = pick != null && (pick.kind === 'award' || pick.kind === 'transfer')
   if (!pick || !isRedemption) {
     return { crossed: false, fingerprint: '', reason: 'no-redemption' }
+  }
+
+  if (pick.availability !== 'live') {
+    return { crossed: false, fingerprint: '', reason: 'not-live' }
   }
 
   const fingerprint = offerFingerprint(pick)

@@ -84,6 +84,17 @@ describe('renderAlertEmail — facts only, from engine fields', () => {
     expect(html).toContain('href="https://example.com/book"')
   })
 
+  it('never says Award space opened or Book now on a chart pick', () => {
+    const { subject, text, html } = renderAlertEmail(
+      alert({ pick: { ...alert().pick, availability: 'chart' } }),
+    )
+    expect(subject.startsWith('Cash vs chart:')).toBe(true)
+    expect(subject).not.toMatch(/Award space opened/)
+    expect(text).not.toMatch(/book now/i)
+    expect(html).toContain('Check for space')
+    expect(html).not.toContain('Book now')
+  })
+
   it('never fabricates a number: omits the rate when cpp is missing', () => {
     const a = alert({ cpp: undefined, pick: { ...alert().pick, cpp: undefined } })
     const { subject, text } = renderAlertEmail(a)
