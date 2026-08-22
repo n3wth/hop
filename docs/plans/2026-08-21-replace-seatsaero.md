@@ -1,6 +1,7 @@
 # 2026-08-21 — Replace seats.aero (first-party award quotes)
 
-> Plan. Status: **adopted operating decision** (this PR), implementation not started.
+> Plan. Status: **adopted operating decision.** Stage A (chart-cpp) shipped in #415
+> (2026-08-22). Gate ④ still needs Production `SEATS_AERO_API_KEY` unset.
 > Founder (2026-08-21): do not buy seats.aero commercial terms; the license is unaffordable.
 > Build the narrow thing hop actually uses the Partner API for, then take seats.aero off the
 > paid path. Does not replace the 2026-07-04 business plan or the 2026-08-20 first-dollar

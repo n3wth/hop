@@ -7,7 +7,8 @@ Date: 2026-08-21
 
 hop's verdict engine (`lib/search.ts#assembleSearch`) needs award **miles + taxes + cabin +
 program** so `lib/cpp.ts` can compute cents-per-point against Duffel cash. That award firehose
-today is only `lib/seatsaero.ts` (Partner API). seats.aero's published terms prohibit commercial
+was `lib/seatsaero.ts` (Partner API) until #415 (2026-08-22) replaced search with
+`lib/awards.ts` → published charts. seats.aero's published terms prohibit commercial
 API use without written permission. The commercial license is, as of 2026-08-21, unaffordable.
 The 2026-07-06 inquiry (`docs/finance/outreach.md` Item 1) is **closed as won't-buy**.
 
