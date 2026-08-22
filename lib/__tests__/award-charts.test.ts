@@ -65,6 +65,36 @@ describe('quoteChart — published bands', () => {
     expect(aeroplan?.availability).toBe('chart')
   })
 
+  it('does not relabel a neighboring cabin when the published cell is empty', () => {
+    const business = quoteChart({
+      from: 'SFO',
+      to: 'LAX',
+      depart: '2026-09-01',
+      adults: 1,
+      cabin: 'business',
+    })
+    expect(business.ok).toBe(true)
+    if (!business.ok) return
+    expect(business.data.find((o) => o.airlineCode === 'AS')).toBeUndefined()
+    const acBiz = business.data.find((o) => o.airlineCode === 'AC')
+    expect(acBiz?.miles).toBe(15000)
+    expect(acBiz?.cabin).toBe('Business')
+
+    const first = quoteChart({
+      from: 'SFO',
+      to: 'LAX',
+      depart: '2026-09-01',
+      adults: 1,
+      cabin: 'first',
+    })
+    expect(first.ok).toBe(true)
+    if (!first.ok) return
+    const asFirst = first.data.find((o) => o.airlineCode === 'AS')
+    expect(asFirst?.miles).toBe(15000)
+    expect(asFirst?.cabin).toBe('First')
+    expect(first.data.find((o) => o.airlineCode === 'AC')).toBeUndefined()
+  })
+
   it('unknown IATA → empty, not a throw', () => {
     const result = quoteChart({ from: 'SFO', to: 'ZZZ', depart: '2026-09-01', adults: 1 })
     expect(result).toEqual({ ok: true, data: [] })

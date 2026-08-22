@@ -23,7 +23,10 @@ floors. Taxes are conservative bands; missing tax → no row.
 
 `recordCppObservations` allowlists `availability === 'live'` only.
 `evaluateOrder` does not cross on chart. Alert copy never says
-`Award space opened` on a chart row.
+`Award space opened` on a chart row. Sweet-spot mining is off unless a
+test passes `allowMining` — a leftover `SEATS_AERO_API_KEY` is not a
+live source. `scoreRoute` also drops `availability === 'chart'`.
+A missing cabin cell is no row, not a neighboring cabin's miles.
 
 Gate ④ still needs the Production `SEATS_AERO_API_KEY` **unset**. Agents do not
 flip billing.

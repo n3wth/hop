@@ -37,7 +37,6 @@ import 'server-only'
 // rather than a strict global top-N — inherent to being able to stop early.
 
 import { assembleSearch, POINTS_THRESHOLD_CPP } from '@/lib/search'
-import { hasEnv } from '@/lib/env'
 import { canonicalizeProgram } from '@/lib/programs'
 import { programValue } from '@/lib/valuations'
 import { destinations, type Destination } from '@/lib/destinations'
@@ -287,15 +286,10 @@ async function scoreRoute(
 
   for (const result of results) {
     for (const o of result.allAwards ?? []) {
-      // Chart-sourced rows (availability: 'chart') must never seed deals — they
-      // are published saver floors, not live observed space. Only live award
-      // availability should populate the review queue.
+      // Score only live Business rows. Chart saver floors are not observed
+      // space — treating them as "Observed" cpp would write chart-backed
+      // drafts into the deals review feed.
       if (o.availability === 'chart') continue
-      // seats.aero's cabin fallback (lib/seatsaero.ts#pickCabin) can return an
-      // Economy/Premium-Economy row even when Business was requested, if
-      // Business space wasn't available on that record. Score only rows
-      // actually labeled Business — never infer the requested cabin was what
-      // was served.
       if (o.cabin !== CANDIDATE_CABIN) continue
       if (typeof o.cpp !== 'number' || !Number.isFinite(o.cpp) || o.cpp <= 0) continue
       if (typeof o.miles !== 'number' || !Number.isFinite(o.miles) || o.miles <= 0) continue
@@ -406,10 +400,12 @@ async function persistCandidate(c: SweetSpotCandidate): Promise<SweetSpotDraft |
 // `now`) so a caller/test can inject an already-past deadline deterministically.
 export async function runSweetSpotCandidatePipeline(
   now: Date = new Date(),
-  opts?: { deadlineAt?: number },
+  opts?: { deadlineAt?: number; allowMining?: boolean },
 ): Promise<PipelineResult> {
-  // Chart-cpp is not live space. Do not invent chart-backed "deals".
-  if (!hasEnv('SEATS_AERO_API_KEY')) {
+  // Stage A has no live award feed. A leftover Production Partner API key
+  // is not a source — searchAwards is a hard stub. `allowMining` exists so
+  // orchestration tests can exercise the loop; cron/admin never pass it.
+  if (!opts?.allowMining) {
     return { created: 0, found: 0, drafts: [] }
   }
 
