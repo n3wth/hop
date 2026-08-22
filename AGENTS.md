@@ -173,7 +173,8 @@ program/airline, ranks by cpp, applies the user's natural-language prefs
 summary (cheapest cash, best miles/cpp, $ saved).
 
 Upstream clients (each returns a discriminated `{ok}` result, never throws):
-`lib/duffel.ts` (cash), `lib/seatsaero.ts` (award space), `lib/awardwallet.ts` (balances),
+`lib/duffel.ts` (cash), `lib/awards.ts` (published award charts via `lib/award-charts.ts`;
+`lib/seatsaero.ts#searchAwards` is a hard stub), `lib/awardwallet.ts` (balances),
 plus `lib/transfers.ts` (transfer reachability) and `lib/booking.ts` (booking URLs).
 
 ## Balances: one resolver, two sources — `lib/accounts.ts#getUserBalances`

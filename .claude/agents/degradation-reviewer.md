@@ -14,7 +14,9 @@ degrades per-section** rather than crashing the page.
 - `assembleSearch` always resolves, never throws; upstream failures collect into `degraded[]`
   (`'cash'`/`'awards'`/`'balances'`).
 - Every upstream client returns a discriminated `{ok}` result and never throws: `lib/duffel.ts`,
-  `lib/seatsaero.ts`, `lib/awardwallet.ts`, plus `lib/transfers.ts`, `lib/booking.ts`.
+  `lib/awards.ts` (charts via `lib/award-charts.ts`; empty chart is `{ok:true, data:[]}`, not
+  degraded), `lib/awardwallet.ts`, plus `lib/transfers.ts`, `lib/booking.ts`.
+  `lib/seatsaero.ts#searchAwards` is a hard stub (`{ok:false, reason:'disabled'}`, no `fetch`).
 - Persistence goes through `lib/supabase-helpers.ts#withDb(fallback, fn)` —
   `withDb<T>(fallback: T, fn: (db: Db) => Promise<T>): Promise<T>` wraps every query and returns
   `fallback` instead of throwing. `getUserBalances` returns `[]` (never throws) when the user has
@@ -23,11 +25,13 @@ degrades per-section** rather than crashing the page.
 
 ## What to check in THIS repo
 
-1. **Clients that throw.** Read `lib/duffel.ts`, `lib/seatsaero.ts`, `lib/awardwallet.ts`,
-   `lib/transfers.ts`, `lib/booking.ts`, `lib/email.ts`, `lib/travel-history.ts`. Grep for
-   `throw`, unguarded `await fetch(...)` / `.json()` without try/catch, and `res.ok` checks that
-   are missing. A client must convert failure into `{ok:false, ...}` (or a typed fallback), not
-   propagate an exception.
+1. **Clients that throw.** Read `lib/duffel.ts`, `lib/awards.ts`, `lib/award-charts.ts`,
+   `lib/awardwallet.ts`, `lib/transfers.ts`, `lib/booking.ts`, `lib/email.ts`,
+   `lib/travel-history.ts`. `lib/seatsaero.ts#searchAwards` is stub-disabled — do not treat a
+   leftover Partner API `fetch` as the live path. Grep for `throw`, unguarded
+   `await fetch(...)` / `.json()` without try/catch, and `res.ok` checks that are missing. A
+   client must convert failure into `{ok:false, ...}` (or a typed fallback), not propagate an
+   exception.
 2. **DB access bypassing withDb.** There is no Supabase client in this codebase — grep for direct
    `getDb()`/Drizzle queries or raw SQL in `lib/*` and routes that are NOT wrapped in `withDb`.
    Every read/write must go through `withDb` (the Postgrest-compat shim over Drizzle/Neon,
@@ -58,6 +62,6 @@ degrades per-section** rather than crashing the page.
   error with no log breadcrumb), or a `{ok:false}` shape that callers don't actually branch on.
 
 Return findings as a prioritized list, most severe first, each with `file:line` and a concrete
-failure scenario (e.g. "Seats.aero returns 503; `lib/seatsaero.ts:NN` does `await res.json()`
+failure scenario (e.g. "Duffel returns 503; `lib/duffel.ts:NN` does `await res.json()`
 without checking `res.ok`, throwing a SyntaxError that bubbles out of `assembleSearch` and 500s
 `/search`"). If nothing is wrong, return exactly: **no findings**.
