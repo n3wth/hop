@@ -183,9 +183,9 @@ function requestedCabin(params: SearchParams): ChartCabin {
 
 function milesForBand(band: DistanceBand, cabin: ChartCabin): number | undefined {
   if (cabin === 'economy') return band.economy
-  if (cabin === 'premium') return band.premium ?? band.economy
-  if (cabin === 'business') return band.business ?? band.first ?? band.economy
-  return band.first ?? band.business ?? band.economy
+  if (cabin === 'premium') return band.premium
+  if (cabin === 'business') return band.business
+  return band.first
 }
 
 function lookupBand(bands: DistanceBand[], miles: number, cabin: ChartCabin): number | undefined {

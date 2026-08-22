@@ -287,6 +287,10 @@ async function scoreRoute(
 
   for (const result of results) {
     for (const o of result.allAwards ?? []) {
+      // Chart-sourced rows (availability: 'chart') must never seed deals — they
+      // are published saver floors, not live observed space. Only live award
+      // availability should populate the review queue.
+      if (o.availability === 'chart') continue
       // seats.aero's cabin fallback (lib/seatsaero.ts#pickCabin) can return an
       // Economy/Premium-Economy row even when Business was requested, if
       // Business space wasn't available on that record. Score only rows
