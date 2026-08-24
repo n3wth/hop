@@ -204,7 +204,8 @@ function milesForBand(band: DistanceBand, cabin: ChartCabin): number | undefined
 }
 
 function lookupBand(bands: DistanceBand[], miles: number, cabin: ChartCabin): number | undefined {
-  const band = bands.find((b) => miles >= b.min && miles <= b.max)
+  const m = Math.floor(miles)
+  const band = bands.find((b) => m >= b.min && m <= b.max)
   return band ? milesForBand(band, cabin) : undefined
 }
 
