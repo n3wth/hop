@@ -88,7 +88,7 @@ export async function assembleSearch(
   const useMock = /^(1|true|yes)$/i.test(process.env.MOCK ?? '')
 
   // Duffel's cash total_amount already covers the WHOLE party (buildPassengers
-  // in lib/duffel.ts), while Seats.aero miles/taxes are always per-seat — so
+  // in lib/duffel.ts), while chart miles/taxes are always per-seat — so
   // award economics are scaled to the same party total below, making both legs
   // of every cpp comparison mean "cost to move everyone".
   const seats = seatsFor(params)

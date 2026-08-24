@@ -175,7 +175,7 @@ export async function generateMetadata({
     return {
       title: 'Search flights',
       description:
-        'Pick a route and hop reads live award space and cash fares side by side, priced in cents per point.',
+        'Pick a route and hop compares published saver charts with cash fares, priced in cents per point.',
       alternates: { canonical: '/search' },
     }
   }
@@ -186,7 +186,7 @@ export async function generateMetadata({
   const dates = fmtRange(p.depart, p.return)
 
   const title = `${p.from} → ${p.to}`
-  const description = `Points or cash for ${fromCity} (${p.from}) → ${toCity} (${p.to}), ${dates} — hop reads live award space and cash fares and gives you the verdict, with the value per point.`
+  const description = `Points or cash for ${fromCity} (${p.from}) → ${toCity} (${p.to}), ${dates} — hop compares published saver charts with cash fares and gives you the verdict, with the value per point.`
 
   // Clean canonical query: stable key order, only the fields that define the
   // trip, return omitted for one-way.
@@ -298,8 +298,8 @@ export default async function Search({
               Where are you flying?
             </h1>
             <p className="mt-3 max-w-[46ch] text-[15px] leading-[1.6] text-text2 sm:text-[16px]">
-              Pick a route and hop reads your balances, checks award space, prices the cash fare,
-              and tells you the smarter way to book it.
+              Pick a route and hop reads your balances, the published saver chart, and the cash fare,
+              then tells you the smarter way to book it.
             </p>
             <div className="mt-9 w-full">
               <HeroSearch

@@ -35,4 +35,5 @@ flip billing.
 
 Grep `availability: 'chart'` / `quoteChart` before adding an award source.
 Do not add `lib/award-live.ts` or a worker in a charts follow-up that is
-still just more tables.
+still just more tables. Live cpp without seats.aero is Duffel cash vs
+these charts (`docs/solutions/2026-08-22-live-cpp-without-seatsaero.md`).

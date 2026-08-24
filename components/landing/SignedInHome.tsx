@@ -220,8 +220,8 @@ export default async function SignedInHome({
             Run a search. Get the verdict.
           </h2>
           <p className="mt-2 max-w-[44ch] text-[14.5px] leading-[1.55] text-text2">
-            Pick a route and hop reads your balances, checks award space, prices
-            the cash fare, and tells you the smarter way to book it.
+            Pick a route and hop reads your balances, the published saver chart,
+            and the cash fare, then tells you the smarter way to book it.
           </p>
           <div className="mt-6">
             <HeroSearch initial={seed} align="start" />

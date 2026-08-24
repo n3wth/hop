@@ -104,7 +104,7 @@ export default function ResultsSkeleton() {
               doing something specific, not a generic spinner. */}
           <div className="mb-[26px] border-b border-white/15 pb-4">
             <Eyebrow as="span" onDark className="inline-flex items-center">
-              Pricing cash. Checking award space.
+              Pricing cash. Reading the saver chart.
             </Eyebrow>
           </div>
           <div className="space-y-[14px]">

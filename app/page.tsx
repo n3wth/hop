@@ -185,7 +185,7 @@ export default async function Home() {
                 className="hop-rise mt-4 text-pretty text-[15px] leading-[1.6] text-text2 sm:text-[17px]"
                 style={{ ['--hop-delay' as string]: '140ms' }}
               >
-                Live fares vs award space, priced in ¢/pt.
+                Cash fares vs published saver charts, priced in ¢/pt.
               </p>
               {/* the agent stays reachable — a secondary fast-path */}
               <p

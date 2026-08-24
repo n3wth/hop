@@ -10,13 +10,18 @@
 //     https://www.aircanada.com/ca/en/aco/home/aeroplan/redeem/air-canada.html
 //   Taxes: conservative bands. Domestic = TSA Sept 11 Security Fee ($5.60
 //     one-way) plus US flight-segment tax, rounded up. Pacific = a high
-//     US–Japan award-tax band so cpp is not optimistic. Missing tax → no row.
+//     US–Japan award-tax band so cpp is not optimistic. Atlantic = a high
+//     US–Europe award-tax band for the same reason. Missing tax → no row.
+//   Distance: great-circle from committed OurAirports lat/lon
+//     (lib/airport-coords.json; scripts/gen-airport-coords.mjs). Unknown
+//     IATA → no row. Duffel does not search award inventory.
 //
 // THESIS: miles and taxes are table facts. cpp is computed later by lib/cpp.ts.
 // A "starting at" figure is a saver FLOOR, not today's quote.
 
 import type { ApiResult, FlightOption, SearchParams } from '@/lib/types'
 import { airportByCode, cityForCode } from '@/lib/airports'
+import rawCoords from '@/lib/airport-coords.json'
 import { pointsBookingUrl } from '@/lib/booking'
 import { tier } from '@/lib/cpp'
 
@@ -31,10 +36,11 @@ export const EMPTY_CHART_COPY = 'No published saver chart for this route.'
 export const TAX_USD = {
   usDomestic: 12,
   japanPacific: 80,
+  europeAtlantic: 200,
 } as const
 
 type ChartCabin = 'economy' | 'premium' | 'business' | 'first'
-type Zone = 'na' | 'pacific' | 'other'
+type Zone = 'na' | 'pacific' | 'atlantic' | 'other'
 
 interface DistanceBand {
   min: number
@@ -70,26 +76,19 @@ const AEROPLAN_NA_PACIFIC: DistanceBand[] = [
   { min: 11001, max: Infinity, economy: 70000, premium: 95000, business: 105000, first: 150000 },
 ]
 
-// Statute-mile coords for Stage A hubs + destinations. Airport lat/lon
-// (not a second geography module). Unknown IATA → no distance-banded row.
-const COORDS: Record<string, { lat: number; lon: number }> = {
-  SFO: { lat: 37.6189, lon: -122.375 },
-  LAX: { lat: 33.9425, lon: -118.4081 },
-  JFK: { lat: 40.6413, lon: -73.7781 },
-  ORD: { lat: 41.9742, lon: -87.9073 },
-  EWR: { lat: 40.6895, lon: -74.1745 },
-  SEA: { lat: 47.4502, lon: -122.3088 },
-  HNL: { lat: 21.3187, lon: -157.9225 },
-  NRT: { lat: 35.7647, lon: 140.3863 },
-  HND: { lat: 35.5494, lon: 139.7798 },
-  KIX: { lat: 34.4347, lon: 135.2441 },
-  ICN: { lat: 37.4602, lon: 126.4407 },
-  TPE: { lat: 25.0777, lon: 121.2328 },
-  HKG: { lat: 22.308, lon: 113.9185 },
-  BKK: { lat: 13.69, lon: 100.7501 },
-  SIN: { lat: 1.3644, lon: 103.9915 },
-  SYD: { lat: -33.9399, lon: 151.1753 },
-}
+// Aeroplan North America ↔ Atlantic (Europe / Africa / Middle East / India).
+// Official June 2026 news page. Where "starting at" and partner fixed
+// prices diverge, use the higher partner figure so cpp is not optimistic.
+// Premium cells omitted — official news page did not publish them.
+const AEROPLAN_NA_ATLANTIC: DistanceBand[] = [
+  { min: 0, max: 4000, economy: 32500, business: 60000, first: 90000 },
+  { min: 4001, max: 6000, economy: 42500, business: 75000, first: 120000 },
+  { min: 6001, max: 8000, economy: 60000, business: 90000, first: 150000 },
+  { min: 8001, max: Infinity, economy: 75000, business: 110000, first: 165000 },
+]
+
+// Statute-mile coords. OurAirports CC0, fetch-once. Unknown IATA → no row.
+const COORDS = rawCoords as Record<string, number[]>
 
 const NA_COUNTRIES = new Set([
   'US',
@@ -120,6 +119,22 @@ const NA_COUNTRIES = new Set([
   'BQ',
   'BL',
   'MF',
+])
+
+// Official Aeroplan Atlantic: Europe, Africa, Middle East, India.
+const ATLANTIC_COUNTRIES = new Set([
+  'AD', 'AL', 'AT', 'BA', 'BE', 'BG', 'BY', 'CH', 'CY', 'CZ', 'DE', 'DK',
+  'EE', 'ES', 'FI', 'FR', 'GB', 'GI', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT',
+  'LI', 'LT', 'LU', 'LV', 'MC', 'MD', 'ME', 'MK', 'MT', 'NL', 'NO', 'PL',
+  'PT', 'RO', 'RS', 'SE', 'SI', 'SK', 'SM', 'UA', 'VA', 'XK',
+  'AO', 'BF', 'BI', 'BJ', 'BW', 'CD', 'CF', 'CG', 'CI', 'CM', 'CV', 'DJ',
+  'DZ', 'EG', 'EH', 'ER', 'ET', 'GA', 'GH', 'GM', 'GN', 'GQ', 'GW', 'KE',
+  'KM', 'LR', 'LS', 'LY', 'MA', 'MG', 'ML', 'MR', 'MU', 'MW', 'MZ', 'NA',
+  'NE', 'NG', 'RE', 'RW', 'SC', 'SD', 'SH', 'SL', 'SN', 'SO', 'SS', 'ST',
+  'SZ', 'TD', 'TG', 'TN', 'TZ', 'UG', 'YT', 'ZA', 'ZM', 'ZW',
+  'AE', 'BH', 'IL', 'IQ', 'IR', 'JO', 'KW', 'LB', 'OM', 'PS', 'QA', 'SA',
+  'SY', 'TR', 'YE',
+  'IN',
 ])
 
 const PACIFIC_COUNTRIES = new Set([
@@ -160,10 +175,10 @@ export function greatCircleMiles(from: string, to: string): number | undefined {
   const a = COORDS[from.toUpperCase()]
   const b = COORDS[to.toUpperCase()]
   if (!a || !b) return undefined
-  const rlat1 = (a.lat * Math.PI) / 180
-  const rlat2 = (b.lat * Math.PI) / 180
+  const rlat1 = (a[0] * Math.PI) / 180
+  const rlat2 = (b[0] * Math.PI) / 180
   const dlat = rlat2 - rlat1
-  const dlon = ((b.lon - a.lon) * Math.PI) / 180
+  const dlon = ((b[1] - a[1]) * Math.PI) / 180
   const h =
     Math.sin(dlat / 2) ** 2 + Math.cos(rlat1) * Math.cos(rlat2) * Math.sin(dlon / 2) ** 2
   return 2 * EARTH_MI * Math.asin(Math.min(1, Math.sqrt(h)))
@@ -174,6 +189,7 @@ export function zoneFor(code: string): Zone {
   if (!country) return 'other'
   if (NA_COUNTRIES.has(country)) return 'na'
   if (PACIFIC_COUNTRIES.has(country)) return 'pacific'
+  if (ATLANTIC_COUNTRIES.has(country)) return 'atlantic'
   return 'other'
 }
 
@@ -199,6 +215,12 @@ function taxFor(fromZone: Zone, toZone: Zone): number | undefined {
     (fromZone === 'pacific' && toZone === 'na')
   ) {
     return TAX_USD.japanPacific
+  }
+  if (
+    (fromZone === 'na' && toZone === 'atlantic') ||
+    (fromZone === 'atlantic' && toZone === 'na')
+  ) {
+    return TAX_USD.europeAtlantic
   }
   return undefined
 }
@@ -302,6 +324,27 @@ export function quoteChart(params: SearchParams): ApiResult<FlightOption[]> {
     (fromZone === 'pacific' && toZone === 'na')
   ) {
     const acMiles = lookupBand(AEROPLAN_NA_PACIFIC, distance, cabin)
+    if (acMiles != null) {
+      data.push(
+        option({
+          id: `chart-ac-${from}-${to}`,
+          airline: 'Air Canada',
+          airlineCode: 'AC',
+          program: 'Air Canada Aeroplan',
+          params,
+          miles: acMiles,
+          taxes,
+          cabin,
+        }),
+      )
+    }
+  }
+
+  if (
+    (fromZone === 'na' && toZone === 'atlantic') ||
+    (fromZone === 'atlantic' && toZone === 'na')
+  ) {
+    const acMiles = lookupBand(AEROPLAN_NA_ATLANTIC, distance, cabin)
     if (acMiles != null) {
       data.push(
         option({

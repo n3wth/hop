@@ -52,6 +52,47 @@ describe('quoteChart — published bands', () => {
     expect(aeroplan?.miles).toBe(6000)
   })
 
+  it('BOS-SFO uses OurAirports coords (not the old 15-hub map)', () => {
+    const miles = greatCircleMiles('BOS', 'SFO')
+    expect(miles).toBeGreaterThan(2100)
+    expect(miles).toBeLessThanOrEqual(3500)
+    const result = quoteChart({ from: 'BOS', to: 'SFO', depart: '2026-09-01', adults: 1 })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.find((o) => o.airlineCode === 'AS')?.miles).toBe(12500)
+    expect(result.data.find((o) => o.airlineCode === 'AC')?.miles).toBe(12500)
+  })
+
+  it('SFO-LHR is Aeroplan Atlantic 42,500 starting-at', () => {
+    const miles = greatCircleMiles('SFO', 'LHR')
+    expect(miles).toBeGreaterThan(4000)
+    expect(miles).toBeLessThanOrEqual(6000)
+    const result = quoteChart({ from: 'SFO', to: 'LHR', depart: '2026-09-01', adults: 1 })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const aeroplan = result.data.find((o) => o.airlineCode === 'AC')
+    expect(aeroplan?.miles).toBe(42500)
+    expect(aeroplan?.taxes).toBe(TAX_USD.europeAtlantic)
+    expect(aeroplan?.availability).toBe('chart')
+    expect(result.data.find((o) => o.airlineCode === 'AS')).toBeUndefined()
+  })
+
+  it('JFK-CDG is the shorter Atlantic band (32,500)', () => {
+    const miles = greatCircleMiles('JFK', 'CDG')
+    expect(miles).toBeGreaterThan(0)
+    expect(miles).toBeLessThanOrEqual(4000)
+    const result = quoteChart({ from: 'JFK', to: 'CDG', depart: '2026-09-01', adults: 1 })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.find((o) => o.airlineCode === 'AC')?.miles).toBe(32500)
+  })
+
+  it('SFO-EZE has no published SA chart — empty, not invented miles', () => {
+    expect(greatCircleMiles('SFO', 'EZE')).toBeGreaterThan(5000)
+    const result = quoteChart({ from: 'SFO', to: 'EZE', depart: '2026-09-01', adults: 1 })
+    expect(result).toEqual({ ok: true, data: [] })
+  })
+
   it('SFO-NRT is Aeroplan Pacific 45,000 starting-at', () => {
     const miles = greatCircleMiles('SFO', 'NRT')
     expect(miles).toBeGreaterThan(5000)
@@ -135,6 +176,25 @@ describe('assembleSearch MOCK=0 — in-memory charts', () => {
     expect(chart?.note).toBe(CHART_NOTE)
     expect(result.degraded).not.toContain('awards')
     expect(chart?.cpp).toBe(cpp(254, chart!.taxes!, chart!.miles!))
+    expect(vi.mocked(recordCppObservations)).toHaveBeenCalledWith([])
+  })
+
+  it('SFO-LHR computes live cpp from Duffel cash vs chart miles', async () => {
+    vi.mocked(searchCash).mockResolvedValue({
+      ok: true,
+      data: [{ ...CASH_254, cashPrice: 890, route: 'SFO → LHR' }],
+    })
+    const result = await assembleSearch({
+      from: 'SFO',
+      to: 'LHR',
+      depart: '2026-09-01',
+      return: '2026-09-15',
+      adults: 1,
+    })
+    const chart = result.options.find((o) => o.availability === 'chart' && o.airlineCode === 'AC')
+    expect(chart).toBeTruthy()
+    expect(chart?.miles).toBe(85000)
+    expect(chart?.cpp).toBe(cpp(890, chart!.taxes!, chart!.miles!))
     expect(vi.mocked(recordCppObservations)).toHaveBeenCalledWith([])
   })
 
