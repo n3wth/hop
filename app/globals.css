@@ -431,7 +431,7 @@ body {
 .hop-skeleton {
   position: relative;
   overflow: hidden;
-  background: var(--color-sunk);
+  background: var(--color-border-soft);
 }
 .hop-skeleton::after {
   content: '';
@@ -440,9 +440,9 @@ body {
   transform: translateX(-100%);
   background: linear-gradient(
     90deg,
-    transparent,
-    color-mix(in srgb, var(--color-bg) 60%, #fff) 55%,
-    transparent
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.45) 50%,
+    rgba(255, 255, 255, 0) 100%
   );
   animation: hop-shimmer 1.6s ease-in-out infinite;
 }
@@ -453,14 +453,19 @@ body {
 .hop-skeleton-dark {
   position: relative;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.1);
 }
 .hop-skeleton-dark::after {
   content: '';
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16) 55%, transparent);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.24) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
   animation: hop-shimmer 1.6s ease-in-out infinite;
 }
 
