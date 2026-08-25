@@ -325,6 +325,21 @@ body {
   animation: hop-appear 560ms var(--ease-premium) both;
 }
 
+@keyframes hop-popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.hop-popover-in {
+  animation: hop-popover-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* Confirmation check settle — a one-shot scale-in for the moment an action
    lands: the booking-confirmed ring, a watch saved, "Copied". Transform-only,
    overshoots a hair and settles. Apply to the ICON'S wrapper (re-key it to
