@@ -100,7 +100,7 @@ export default function OriginSelector() {
           radius="md"
           role="dialog"
           aria-label="Set departure airport"
-          className="absolute right-0 top-[calc(100%+10px)] z-[80] w-[300px] p-2.5"
+          className="hop-popover-in absolute right-0 top-[calc(100%+10px)] z-[80] w-[300px] p-2.5 origin-top-right"
         >
           <Eyebrow className="mb-1.5 block px-1 text-[10.5px]">
             Where from
