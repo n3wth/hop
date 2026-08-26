@@ -488,10 +488,20 @@ export default async function AccountPage({
             Tier truth is the webhook-written row; ?upgraded=1 is display only. */}
         {billingEnabled ? (
           <section id="billing" className="mt-10 scroll-mt-24">
+            {/* The param is forgeable and the webhook can lag checkout, so the
+                "You're on Pro" banner only renders once the webhook-written
+                tier agrees — otherwise it would sit directly above a status
+                line that still says Free. Until then: an honest pending note. */}
             {sp.upgraded === '1' ? (
-              <p className="mb-3 rounded-[12px] border border-brand-light bg-brand-light px-4 py-2.5 text-[13px] font-medium text-brand-deep">
-                You&apos;re on Pro. Thanks for upgrading.
-              </p>
+              tier === 'premium' ? (
+                <p className="mb-3 rounded-[12px] border border-brand-light bg-brand-light px-4 py-2.5 text-[13px] font-medium text-brand-deep">
+                  You&apos;re on Pro. Thanks for upgrading.
+                </p>
+              ) : (
+                <p className="mb-3 rounded-[12px] border border-brand-light bg-brand-light px-4 py-2.5 text-[13px] font-medium text-brand-deep">
+                  Payment received — activating your plan. Refresh in a moment.
+                </p>
+              )
             ) : null}
             {sp.billingError ? (
               <p className="mb-3 rounded-[12px] border border-border bg-sunk px-4 py-2.5 text-[13px] font-medium text-text2">
