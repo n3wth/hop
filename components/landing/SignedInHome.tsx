@@ -223,7 +223,11 @@ export default async function SignedInHome({
             Pick a route and hop reads your balances, the published saver chart,
             and the cash fare, then tells you the smarter way to book it.
           </p>
-          <div className="mt-6">
+          {/* mt-auto bottom-anchors the search pill so this card's composition
+              mirrors the teal panel beside it (whose CTA is bottom-anchored via
+              justify-between) — otherwise the grid row stretches both cells to
+              equal height and the shorter card shows dead space under the pill. */}
+          <div className="mt-auto pt-6">
             <HeroSearch initial={seed} align="start" />
           </div>
         </Card>

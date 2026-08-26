@@ -36,13 +36,6 @@ export const TEAL = '#0d6e6e'
 export const CREAM = '#f3f1ec'
 export const INK = '#19545d'
 
-export const SITE_SOCIAL = {
-  x: 'https://x.com/hopflights',
-  instagram: 'https://instagram.com/hopflights',
-  threads: 'https://threads.net/@hopflights',
-  tiktok: 'https://tiktok.com/@hopflights',
-}
-
 
 // Per-page metadata helper. Next 16 merges metadata SHALLOWLY across
 // layout → page, so a page that sets `openGraph` (or `alternates`) without
