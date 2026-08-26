@@ -136,7 +136,8 @@ export default async function PricingPage({
           )}
         </div>
 
-        <section className="mx-auto mt-14 max-w-[560px]">
+        {/* Left-aligned on the h1's axis — one editorial axis down the page. */}
+        <section className="mt-14 max-w-[560px]">
           <h2 className="font-display text-[20px] font-semibold leading-tight tracking-[-0.01em] text-text">
             Questions
           </h2>

@@ -377,11 +377,13 @@ export default function VerdictRail({
           ) : null}
         </div>
 
-        {/* Stat strip — a 2×2 grid on phones so the four figures read as a
-            table (flex-wrap gave a ragged 3+1 line); sm+ returns to the flex row. */}
-        <div className="hop-rise mt-7 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-white/15 pt-6 sm:mt-8 sm:flex sm:flex-wrap sm:gap-10 sm:pt-7 lg:mt-[42px] lg:pt-[30px]" style={{ ['--hop-delay' as string]: '220ms' }}>
-          <HStat label="You pay" value={fmt(miles)} unit={unit} />
-          <HStat label="Value" value={cpp != null ? formatValue(cpp) : '—'} />
+        {/* Stat strip — a fixed grid at every width (2×2 on phones, 4 equal
+            columns at sm+) so the four figures sit on a shared rhythm instead
+            of content-width flex items. Every unit routes through HStat's
+            `unit` prop so all four render value-27px + unit-14px identically. */}
+        <div className="hop-rise mt-7 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-white/15 pt-6 sm:mt-8 sm:grid-cols-4 sm:gap-x-8 sm:pt-7 lg:mt-[42px] lg:pt-[30px]" style={{ ['--hop-delay' as string]: '220ms' }}>
+          <HStat label="You pay" value={fmt(miles)} unit={` ${unit}`} />
+          <HStat label="Value" value={cpp != null ? `${cpp.toFixed(1)}¢` : '—'} unit={cpp != null ? '/pt' : undefined} />
           <HStat label="Cash price" value={`$${fmt(cash)}`} />
           {/* The accent stat ticks in LOCKSTEP with the headline (same value,
               same delay/duration) — one figure moving in two places reads as
@@ -425,9 +427,9 @@ export default function VerdictRail({
         style={{ background: 'var(--color-brand-deep)' }}
       >
         {/* destination photo — the place you're heading — fills the WHOLE panel,
-            including behind the pass. A scrim sits ONLY at the bottom (under the
-            pass) for legibility; the open upper area stays vivid, not faded.
-            Falls back to the bunny mark when no photo is available. */}
+            including behind the pass. Legibility under the pass comes from a
+            single flat ink band (below), never a gradient; the rest of the
+            photo stays vivid. Falls back to the bunny mark when no photo. */}
         {destPhoto ? (
           <>
             {/* Named only for curated photos (destPhotoCode) — shares identity
@@ -444,30 +446,12 @@ export default function VerdictRail({
                 className="pointer-events-none absolute inset-0 h-full w-full object-cover"
               />
             </ViewTransition>
-            {/* top scrim — a whisper of brand-ink at the very top edge so the
-                photo settles into the teal field instead of reading as a pasted
-                rectangle. Integration, not decoration; the upper photo stays vivid. */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-0 h-[22%]"
-              style={{
-                background:
-                  'linear-gradient(to bottom, rgba(7,62,62,0.42) 0%, rgba(7,62,62,0) 100%)',
-              }}
-            />
-            {/* bottom scrim — sits under the boarding pass for legibility. Anchored
-                deep enough that the pass reads with authority against the photo. */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-0 bottom-0 h-[56%]"
-              style={{
-                background:
-                  'linear-gradient(to bottom, rgba(7,62,62,0) 0%, rgba(7,62,62,0.58) 52%, rgba(7,62,62,0.9) 100%)',
-              }}
-            />
+            {/* No gradient scrims (flat-editorial canon) — the photo stays vivid
+                edge to edge; legibility under the pass comes from the single
+                flat band behind the pass zone below. */}
             {/* Unsplash attribution (API terms) — a small solid chip (not a
-                gradient/shadow surface) sitting in the already-scrimmed top
-                corner, above the top scrim so it stays legible. */}
+                gradient/shadow surface) in the top corner; its own flat fill
+                keeps it legible against any photo. */}
             {destPhoto.credit ? (
               <div
                 className="pointer-events-auto absolute right-3 top-3 z-10 max-w-[70%] truncate rounded-full px-2.5 py-1 text-[10px] font-medium text-white/80"
@@ -501,7 +485,15 @@ export default function VerdictRail({
         )}
 
         {pick ? (
-          <div className="relative z-10 mt-auto">
+          // One flat band behind the pass zone only — hard top edge, matching
+          // the attribution chip's flat treatment — instead of gradient sludge
+          // over the photo's lower half. The perforation notches punch through
+          // to this solid ink, a deliberate paper-on-ink read. Photo-only: the
+          // brand-deep fallback panel needs no band.
+          <div
+            className="relative z-10 mt-auto"
+            style={destPhoto ? { background: 'rgba(7,26,26,0.55)' } : undefined}
+          >
             <PickPass pick={pick} />
           </div>
         ) : null}
@@ -528,7 +520,9 @@ function HStat({
       </div>
       <div className={`hop-price text-[27px] ${accent ? 'text-mint-bright' : 'text-white'}`}>
         {value}
-        {unit ? <small className="text-[14px] font-medium text-hero-eyebrow"> {unit}</small> : null}
+        {/* Unit spacing travels with the unit string ("/pt" sits tight, " miles"
+            carries its own space) — one 14px treatment for every unit. */}
+        {unit ? <small className="text-[14px] font-medium text-hero-eyebrow">{unit}</small> : null}
       </div>
     </div>
   )
@@ -557,7 +551,7 @@ function PickPass({ pick }: { pick: FlightOption }) {
 
   return (
     <div
-      className="relative mx-4 mb-5 mt-5 rounded-[18px] bg-paper text-text sm:mx-[26px] sm:mb-[26px] sm:mt-6 lg:mt-0"
+      className="relative m-4 rounded-[18px] bg-paper text-text sm:m-[26px]"
       style={{
         // True perforation: punch two semicircle notches out of the LEFT and
         // RIGHT edges at the dashed line (~50% down) so whatever is behind the

@@ -109,7 +109,9 @@ export default function ShowcaseRotator({ entries }: { entries: ShowcaseEntry[] 
             {d.cpp.toFixed(1)}¢/pt
           </span>
         </span>
-        <span className="mt-2 block truncate text-[13px] text-text2">
+        {/* line-clamp-2, never truncate — this is a factual claim (program +
+            miles); cutting it mid-word in the first viewport reads as a bug. */}
+        <span className="mt-2 line-clamp-2 text-[13px] leading-[1.45] text-text2">
           from {Math.round(d.miles / 1000)}k miles{d.cabin ? ` · ${d.cabin}` : ''} · {d.program}
         </span>
       </Link>
