@@ -113,8 +113,11 @@ export default function ConciergeHero({
     if (!isDeleting && currentPlaceholder === fullText) {
       timer = setTimeout(() => setIsDeleting(true), 3000)
     } else if (isDeleting && currentPlaceholder === '') {
-      setIsDeleting(false)
-      setPlaceholderIndex((prev) => (prev + 1) % PLACEHOLDERS.length)
+      // schedule (not inline) so the effect never sets state synchronously
+      timer = setTimeout(() => {
+        setIsDeleting(false)
+        setPlaceholderIndex((prev) => (prev + 1) % PLACEHOLDERS.length)
+      }, 0)
     }
 
     return () => clearTimeout(timer)
