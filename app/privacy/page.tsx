@@ -102,8 +102,9 @@ export default async function PrivacyPage() {
           </li>
           <li>
             <strong>Google (Gmail)</strong> — optional, explicit-consent connection so hop can learn
-            from your past trips. We request read-only access and read only your
-            travel-confirmation emails (a tight search). We store only the normalized trip facts
+            from your past trips. We request read-only access, scan mail from airline and hotel
+            senders (a tight search), and parse only messages whose sender we recognize as an
+            airline or hotel. We store only the normalized trip facts
             (destination, month, airline, cabin, whether points were used) — never the emails
             themselves — and you can disconnect and delete them at any time.
           </li>

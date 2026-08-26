@@ -222,8 +222,8 @@ export default function GmailHistory({
           </ul>
         )}
         <p className="border-t border-border px-5 py-2.5 text-[12px] text-text3 sm:px-6">
-          hop reads only travel-confirmation emails and stores only these trip
-          facts — never the email itself. Disconnect deletes them.
+          hop scans mail from airline and hotel senders and keeps only these
+          trip facts — never the email itself. Disconnect deletes them.
         </p>
       </Card>
     )
@@ -241,9 +241,9 @@ export default function GmailHistory({
             Learn from your past trips
           </div>
           <p className="mt-1 max-w-[52ch] text-[13.5px] leading-[1.55] text-text2">
-            Connect Gmail and hop reads only your travel-confirmation emails to
+            Connect Gmail and hop scans mail from airline and hotel senders to
             learn where and when you fly — so it suggests trips that fit you. It
-            stores only the trip facts, never the emails, and you can disconnect
+            keeps only the trip facts, never the emails, and you can disconnect
             anytime.
           </p>
         </div>
