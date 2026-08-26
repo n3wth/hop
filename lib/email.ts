@@ -16,11 +16,15 @@ import { env, hasEnv } from '@/lib/env'
 import type { StandingOrderAlert } from '@/lib/standing-order-alerts'
 import type { LedgerDream } from '@/lib/ledger-dream'
 import { SITE_URL } from '@/lib/seo'
+import { isSuppressed } from '@/lib/email-suppressions'
+import { PRO_PRICE_YEARLY_USD } from '@/lib/pricing'
 
 // Discriminated result — mirrors the upstream-client {ok} contract. Never throws.
+// 'suppressed' = the recipient bounced or complained before (lib/email-suppressions.ts);
+// dispatch() refuses the send for EVERY sender, protecting Resend deliverability.
 export type EmailResult =
   | { ok: true; id?: string }
-  | { ok: false; reason: 'unconfigured' | 'invalid-recipient' | 'send-failed' }
+  | { ok: false; reason: 'unconfigured' | 'invalid-recipient' | 'suppressed' | 'send-failed' }
 
 // The From identity. Override via HOP_ALERT_EMAIL_FROM; defaults to hop.flights.
 // NOTE: the From domain must be VERIFIED in Resend for mail to flow — verify
@@ -66,6 +70,107 @@ function looksLikeEmail(to: string | null | undefined): to is string {
 function fmtCpp(cpp: number | undefined): string | null {
   if (typeof cpp !== 'number' || !Number.isFinite(cpp)) return null
   return `${Math.round(cpp * 10) / 10}`
+}
+
+// ── Email design system (owner-specified; applies to every template added or
+// touched from 2026-08 on) ───────────────────────────────────────────────────
+// White background (no cream wash), the bunny mark (44px) at top — never a
+// text wordmark — and card-structured content (bordered rounded cards with
+// stat rows + small pill chips, like the product's Verdict Card) over
+// paragraphs. Sentence case throughout: no kicker labels, no all-caps, no
+// fake-warmth phrases. Numbers use the same sans stack as body copy — no
+// monospace — differentiated by weight/size/color only. Colors and radii are
+// the EXACT site tokens from app/globals.css @theme (do not approximate).
+// Table-based HTML for email-client safety; every sender also provides a
+// text/plain alternative.
+const EMAIL_FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif"
+const BUNNY_SRC = 'https://hop.flights/bunny.svg'
+// app/globals.css @theme — exact hex, kept in sync by hand.
+const TOK = {
+  text: '#14201f', // --color-text
+  text2: '#4a5a58', // --color-text2
+  text3: '#5f6f6c', // --color-text3
+  border: '#e2ddd2', // --color-border
+  borderSoft: '#ece9e1', // --color-border-soft
+  brand: '#0d6e6e', // --color-brand
+  goodText: '#0d6e6e', // --color-good
+  goodBg: '#e3f1ef', // --color-good-bg
+  okText: '#8f5618', // --color-ok
+  okBg: '#f6ecd9', // --color-ok-bg
+  weakText: '#a8513a', // --color-weak
+  weakBg: '#f4e7e3', // --color-weak-bg
+} as const
+const RADIUS = { sm: 10, md: 14, lg: 20 } as const // --radius-sm / --radius / --radius-lg
+
+// The outer table shell: white ground, bunny mark, body, quiet footer line.
+function emailShell(bodyHtml: string, footerHtml: string): string {
+  return [
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff">`,
+    `<tr><td align="center" style="padding:32px 16px 40px">`,
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;font-family:${EMAIL_FONT};color:${TOK.text};font-size:15px;line-height:1.5;text-align:left">`,
+    `<tr><td style="padding:0 0 20px"><img src="${BUNNY_SRC}" width="44" height="44" alt="hop" style="display:block;border:0" /></td></tr>`,
+    `<tr><td>${bodyHtml}</td></tr>`,
+    `<tr><td style="padding:28px 0 0;color:${TOK.text3};font-size:13px;line-height:1.5">${footerHtml}</td></tr>`,
+    `</table></td></tr></table>`,
+  ].join('')
+}
+
+// A bordered rounded card — the email cousin of the product's Verdict Card.
+function emailCard(inner: string): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${TOK.border};border-radius:${RADIUS.lg}px"><tr><td style="padding:6px 20px">${inner}</td></tr></table>`
+}
+
+// One label/value stat row inside a card. Values render in the body sans
+// stack (never monospace), weight-differentiated. Pre-escaped HTML is allowed
+// in `valueHtml` (for pills); `label` is escaped here.
+function statRow(label: string, valueHtml: string, opts?: { last?: boolean }): string {
+  const border = opts?.last ? '' : `border-bottom:1px solid ${TOK.borderSoft};`
+  return [
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="${border}"><tr>`,
+    `<td style="padding:12px 0;font-size:13px;color:${TOK.text2}">${escapeHtml(label)}</td>`,
+    `<td align="right" style="padding:12px 0;font-size:14px;font-weight:600;color:${TOK.text}">${valueHtml}</td>`,
+    `</tr></table>`,
+  ].join('')
+}
+
+// Small tier pill — same tone mapping as the product's value tiers.
+function pill(label: string, tone: 'good' | 'ok' | 'weak'): string {
+  const c =
+    tone === 'good'
+      ? { fg: TOK.goodText, bg: TOK.goodBg }
+      : tone === 'ok'
+        ? { fg: TOK.okText, bg: TOK.okBg }
+        : { fg: TOK.weakText, bg: TOK.weakBg }
+  return `<span style="display:inline-block;border-radius:999px;background:${c.bg};color:${c.fg};padding:2px 10px;font-size:12px;font-weight:600">${escapeHtml(label)}</span>`
+}
+
+// Primary CTA — solid brand button, site --radius.
+function ctaButton(href: string, label: string): string {
+  return `<a href="${escapeAttr(href)}" style="display:inline-block;border-radius:${RADIUS.md}px;background:${TOK.brand};color:#ffffff;padding:12px 22px;font-size:15px;font-weight:600;text-decoration:none">${escapeHtml(label)}</a>`
+}
+
+function textLink(href: string, label: string): string {
+  return `<a href="${escapeAttr(href)}" style="color:${TOK.brand};font-weight:600;text-decoration:underline">${escapeHtml(label)}</a>`
+}
+
+function heading(text: string): string {
+  return `<p style="margin:0 0 8px;font-size:22px;font-weight:600;letter-spacing:-0.01em;color:${TOK.text}">${escapeHtml(text)}</p>`
+}
+
+// List-Unsubscribe / List-Unsubscribe-Post headers. Newsletter/digest sends
+// pass their real per-recipient HMAC unsubscribe URL (RFC 8058 one-click);
+// senders without one (standing-order alerts) fall back to a mailto +
+// account-manage pair — no Post header, since that fallback isn't one-click.
+function unsubscribeHeaders(url?: string): Record<string, string> {
+  if (url && url.trim()) {
+    return {
+      'List-Unsubscribe': `<${url.trim()}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    }
+  }
+  return {
+    'List-Unsubscribe': `<mailto:support@hop.flights?subject=unsubscribe>, <${SITE_URL}/account>`,
+  }
 }
 
 // The program/airline label for "via …". Empty when the option carries neither
@@ -114,25 +219,44 @@ export function renderAlertEmail(alert: StandingOrderAlert): {
   if (bookingUrl) {
     textLines.push('', isChart ? `Check space: ${bookingUrl}` : `Book: ${bookingUrl}`)
   }
-  textLines.push('', 'You set this watch on hop. Manage it at hop.flights/account.')
+  textLines.push(
+    '',
+    'You set this watch on hop. Manage it at hop.flights/account.',
+    `Unsubscribe from these alerts: ${SITE_URL}/account`,
+  )
   const text = textLines.join('\n')
 
-  // Minimal, flat HTML — no shadows/gradients, system type, just the facts and a
-  // single link. Inline styles only (email clients strip <style>).
-  const detail = milesLine
-    ? `${escapeHtml(route)} &middot; ${escapeHtml(milesLine)}${rate ? ` &middot; ${escapeHtml(rate)}` : ''}`
-    : escapeHtml(route)
+  // Card-structured HTML in the email design system (see the block above):
+  // route/points/value stat rows with a tier pill, one CTA. Inline styles
+  // only (email clients strip <style>).
+  const tier = alert.pick?.tier
+  const rateValue = rate
+    ? tier === 'green'
+      ? `${escapeHtml(rate)} &nbsp;${pill('Great value', 'good')}`
+      : tier === 'amber'
+        ? `${escapeHtml(rate)} &nbsp;${pill('Fair value', 'ok')}`
+        : escapeHtml(rate)
+    : null
+  const rows: string[] = [statRow('Route', escapeHtml(route))]
+  if (milesLine) rows.push(statRow('Points', escapeHtml(milesLine)))
+  if (rateValue) rows.push(statRow('Value', rateValue))
+  if (via) rows.push(statRow('Program', escapeHtml(via)))
+  // Re-mark the final row so the card doesn't end on a divider.
+  rows[rows.length - 1] = rows[rows.length - 1].replace(
+    `border-bottom:1px solid ${TOK.borderSoft};`,
+    '',
+  )
   const cta = bookingUrl
-    ? `<p style="margin:16px 0 0"><a href="${escapeAttr(bookingUrl)}" style="color:#0f6f6a;font-weight:600;text-decoration:underline">${isChart ? 'Check for space' : 'Book now'}</a></p>`
+    ? `<p style="margin:20px 0 0">${ctaButton(bookingUrl, isChart ? 'Check for space' : 'Book now')}</p>`
     : ''
-  const html = [
-    `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1a1a1a;font-size:15px;line-height:1.5;max-width:480px">`,
-    `<p style="margin:0 0 8px;font-size:17px;font-weight:600">${escapeHtml(subject)}</p>`,
-    `<p style="margin:0;color:#555">${detail}</p>`,
+  const body = [
+    heading(subject),
+    `<p style="margin:0 0 16px;color:${TOK.text2}">${isChart ? 'Published saver rate. Space not confirmed.' : 'Live award space at the rate you asked to watch for.'}</p>`,
+    emailCard(rows.join('')),
     cta,
-    `<p style="margin:24px 0 0;color:#767676;font-size:13px">You set this watch on hop. Manage it at hop.flights/account.</p>`,
-    `</div>`,
   ].join('')
+  const footer = `You set this watch on hop. Manage or ${textLink(`${SITE_URL}/account`, 'unsubscribe from these alerts')} at hop.flights/account.`
+  const html = emailShell(body, footer)
 
   return { subject, text, html }
 }
@@ -278,7 +402,15 @@ export async function sendWeeklyDigestEmail(
   unsubscribeUrl: string,
 ): Promise<EmailResult> {
   const { subject, text, html } = renderWeeklyDigestEmail(dream, unsubscribeUrl)
-  return dispatch({ from: fromAddress(), to, subject, text, html })
+  return dispatch({
+    from: fromAddress(),
+    to,
+    subject,
+    text,
+    html,
+    // The real per-recipient HMAC unsubscribe URL — one-click (RFC 8058).
+    headers: unsubscribeHeaders(unsubscribeUrl),
+  })
 }
 
 // Minimal HTML escaping for the few user/engine-derived strings we interpolate.
@@ -296,9 +428,12 @@ function escapeAttr(s: string): string {
 
 // Low-level Resend dispatch shared by every sender below. GATED: returns
 // {ok:false, reason:'unconfigured'} (no network, no throw) when RESEND_API_KEY is
-// absent; {ok:false, reason:'invalid-recipient'} for junk addresses. Any
-// SDK/network failure is caught and reported as 'send-failed' — NEVER thrown — so
-// a dead provider degrades the feature instead of crashing the caller.
+// absent; {ok:false, reason:'invalid-recipient'} for junk addresses;
+// {ok:false, reason:'suppressed'} for addresses that bounced or complained
+// (lib/email-suppressions.ts, written by the Resend webhook) — the suppression
+// check lives HERE so every sender inherits it and no new send path can forget
+// it. Any SDK/network failure is caught and reported as 'send-failed' — NEVER
+// thrown — so a dead provider degrades the feature instead of crashing the caller.
 interface Dispatch {
   from: string
   to: string | null | undefined
@@ -312,6 +447,10 @@ async function dispatch(opts: Dispatch): Promise<EmailResult> {
   if (!isEmailEnabled()) return { ok: false, reason: 'unconfigured' }
   const { to } = opts
   if (!looksLikeEmail(to)) return { ok: false, reason: 'invalid-recipient' } // narrows `to` to string
+  // Compliance gate for EVERY sender: an address that bounced or complained
+  // never receives another hop email from any path. Fails OPEN on a db error
+  // (isSuppressed's own contract), so a storage blip can't block real sends.
+  if (await isSuppressed(to)) return { ok: false, reason: 'suppressed' }
   try {
     const { Resend } = await import('resend')
     const resend = new Resend(env.resendApiKey())
@@ -356,7 +495,15 @@ export async function sendAlertEmail(
   alert: StandingOrderAlert,
 ): Promise<EmailResult> {
   const { subject, text, html } = renderAlertEmail(alert)
-  return dispatch({ from: fromAddress(), to, subject, text, html })
+  return dispatch({
+    from: fromAddress(),
+    to,
+    subject,
+    text,
+    html,
+    // No per-recipient unsubscribe URL exists for alerts — mailto/manage fallback.
+    headers: unsubscribeHeaders(),
+  })
 }
 
 // Email the owner/team a notification (new support ticket, new escalation lead)
@@ -395,4 +542,164 @@ export async function sendVerificationEmail(to: string, url: string): Promise<Em
 export async function sendResetPasswordEmail(to: string, url: string): Promise<EmailResult> {
   const { subject, text, html } = renderResetPasswordEmail(url)
   return dispatch({ from: fromAddress(), to, subject, text, html })
+}
+
+// ── Lifecycle emails (welcome / Pro welcome / cancellation) ─────────────────
+
+// The signup welcome. Numbers are the CANONICAL worked example from
+// docs/design/copy-spec.md (the SFO→LAX round-trip mock through the real
+// engine: cash $254, 9,000 miles + $22 taxes, 2.6¢/pt, save $232) — labeled a
+// sample, never presented as the recipient's own economics.
+export function renderWelcomeEmail(): { subject: string; text: string; html: string } {
+  const subject = 'Your points have a cash value'
+  const searchUrl = `${SITE_URL}/search`
+  const accountUrl = `${SITE_URL}/account`
+  const text = [
+    'Your points have a cash value. Let’s find it.',
+    '',
+    'hop prices any route in ¢/pt — cash fares vs published saver charts — and tells you when points beat cash. Every number is computed, never guessed.',
+    '',
+    'Sample verdict — SFO → LAX round trip:',
+    'Cash $254 · Alaska 9,000 miles + $22 taxes · 2.6¢/pt · save $232',
+    '',
+    `Run a search: ${searchUrl}`,
+    `Add your balances: ${accountUrl}`,
+  ].join('\n')
+  const body = [
+    heading('Your points have a cash value. Let’s find it.'),
+    `<p style="margin:0 0 16px;color:${TOK.text2}">hop prices any route in ¢/pt — cash fares vs published saver charts — and tells you when points beat cash. Every number is computed, never guessed.</p>`,
+    `<p style="margin:0 0 8px;font-size:13px;color:${TOK.text3}">Sample verdict — SFO → LAX round trip</p>`,
+    emailCard(
+      [
+        statRow('Cash price', '$254'),
+        statRow('Alaska miles', '9,000 + $22 taxes'),
+        statRow('Value', `2.6¢/pt &nbsp;${pill('Great value', 'good')}`),
+        statRow('You save', '$232', { last: true }),
+      ].join(''),
+    ),
+    `<p style="margin:20px 0 0">${ctaButton(searchUrl, 'Run a search')}</p>`,
+    `<p style="margin:14px 0 0;font-size:14px">${textLink(accountUrl, 'Add your balances')} and the verdict uses your real points.</p>`,
+  ].join('')
+  const footer = 'You’re getting this because you created a hop account at hop.flights.'
+  return { subject, text, html: emailShell(body, footer) }
+}
+
+// The free→premium upgrade welcome. $49/yr grandfathered per lib/pricing.ts.
+export function renderProWelcomeEmail(): { subject: string; text: string; html: string } {
+  const subject = 'hop Pro is on'
+  const searchUrl = `${SITE_URL}/search`
+  const price = `$${PRO_PRICE_YEARLY_USD}/yr`
+  const text = [
+    'hop Pro is on. Watches are now unlimited.',
+    '',
+    'Set a watch on any route and hop checks it around the clock, then emails you when award space opens at a rate worth booking.',
+    '',
+    `Your price: ${price}, grandfathered — it never goes up while you stay subscribed.`,
+    '',
+    `Set a watch: ${searchUrl}`,
+  ].join('\n')
+  const body = [
+    heading('hop Pro is on.'),
+    `<p style="margin:0 0 16px;color:${TOK.text2}">Set a watch on any route and hop checks it around the clock, then emails you when award space opens at a rate worth booking.</p>`,
+    emailCard(
+      [
+        statRow('Watches', `Unlimited &nbsp;${pill('Pro', 'good')}`),
+        statRow('Search + verdict', 'Included'),
+        statRow('Your price', `${price}, grandfathered`, { last: true }),
+      ].join(''),
+    ),
+    `<p style="margin:20px 0 0">${ctaButton(searchUrl, 'Set a watch')}</p>`,
+    `<p style="margin:14px 0 0;font-size:14px;color:${TOK.text2}">Grandfathered means ${price} for as long as you stay subscribed, even after the price rises.</p>`,
+  ].join('')
+  const footer = `You’re getting this because you upgraded to hop Pro. Manage billing at ${textLink(`${SITE_URL}/account`, 'hop.flights/account')}.`
+  return { subject, text, html: emailShell(body, footer) }
+}
+
+// The subscription-ended note. Terse: what stays free, one come-back link.
+export function renderCancellationEmail(): { subject: string; text: string; html: string } {
+  const subject = 'hop Pro is canceled'
+  const pricingUrl = `${SITE_URL}/pricing`
+  const price = `$${PRO_PRICE_YEARLY_USD}/yr`
+  const text = [
+    'hop Pro is canceled. No more charges.',
+    '',
+    'What stays free: full search and the verdict, plus 3 watches.',
+    '',
+    `Come back anytime: ${pricingUrl}`,
+  ].join('\n')
+  const body = [
+    heading('hop Pro is canceled.'),
+    `<p style="margin:0 0 16px;color:${TOK.text2}">No more charges. Here’s what stays on the free plan:</p>`,
+    emailCard(
+      [
+        statRow('Search + verdict', 'Included'),
+        statRow('Watches', '3'),
+        statRow('Pro', `${price} when you want it back`, { last: true }),
+      ].join(''),
+    ),
+    `<p style="margin:20px 0 0;font-size:14px">Come back anytime: ${textLink(pricingUrl, 'hop.flights/pricing')}.</p>`,
+  ].join('')
+  const footer = 'You’re getting this because your hop Pro subscription ended.'
+  return { subject, text, html: emailShell(body, footer) }
+}
+
+// Send the signup welcome. Gated; never throws.
+export async function sendWelcomeEmail(to: string | null | undefined): Promise<EmailResult> {
+  const { subject, text, html } = renderWelcomeEmail()
+  return dispatch({ from: fromAddress(), to, subject, text, html })
+}
+
+// Send the free→premium upgrade welcome (Stripe webhook). Gated; never throws.
+export async function sendProWelcomeEmail(to: string | null | undefined): Promise<EmailResult> {
+  const { subject, text, html } = renderProWelcomeEmail()
+  return dispatch({ from: fromAddress(), to, subject, text, html })
+}
+
+// Send the subscription-ended note (Stripe webhook). Gated; never throws.
+export async function sendCancellationEmail(to: string | null | undefined): Promise<EmailResult> {
+  const { subject, text, html } = renderCancellationEmail()
+  return dispatch({ from: fromAddress(), to, subject, text, html })
+}
+
+// Bounded, never-rejecting await for callers that must not let email delivery
+// throw or stall them — the Better Auth signup hook (where a rejection FAILS
+// the signup: docs/solutions/2026-07-04-better-auth-after-hooks-propagate-
+// errors.md) and the Stripe webhook (where it would delay the 200). dispatch()
+// already never rejects; the race just caps a slow provider. Same contract as
+// lib/posthog-server.ts#captureServerEvent: never throws, never rejects,
+// bounded time.
+const BOUNDED_SEND_TIMEOUT_MS = 3000
+export async function deliverBounded(
+  send: Promise<EmailResult>,
+  ms = BOUNDED_SEND_TIMEOUT_MS,
+): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    await Promise.race([
+      send.then(
+        () => undefined,
+        () => undefined,
+      ),
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, ms)
+      }),
+    ])
+  } catch {
+    // Unreachable — both branches resolve. Belt and braces for the auth hook.
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}
+
+// The signup hook's welcome send: safe to AWAIT from databaseHooks.user.create
+// .after precisely because it carries the never-throws/never-rejects/bounded
+// contract above — a Resend outage or slow provider can never fail or hang a
+// sign-up.
+export async function sendWelcomeEmailFromSignup(email: string | null | undefined): Promise<void> {
+  if (typeof email !== 'string' || !email.trim()) return
+  try {
+    await deliverBounded(sendWelcomeEmail(email))
+  } catch {
+    // Unreachable; the signup hook must never see a rejection.
+  }
 }

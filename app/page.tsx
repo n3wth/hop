@@ -11,6 +11,8 @@ import { walletValue } from '@/lib/valuations'
 import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
+import NewsletterForm from '@/components/NewsletterForm'
+import Card from '@/components/ui/Card'
 import type { SearchState } from '@/components/SearchBar'
 import HeroSearch from '@/components/landing/HeroSearch'
 import AgentComposer from '@/components/landing/AgentComposer'
@@ -281,6 +283,26 @@ export default async function Home() {
 
         {/* ── HOW IT WORKS ───────────────────────────────────────────────── */}
         <HowItWorks />
+
+        {/* ── NEWSLETTER — a quiet band before the footer card ───────────── */}
+        <Card
+          as="section"
+          surface="paper"
+          radius="lg"
+          className="px-6 py-8 sm:px-10 lg:rounded-[var(--radius-hero)]"
+        >
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-10">
+            <div>
+              <h2 className="font-display text-[22px] font-semibold leading-[1.1] tracking-[-0.02em] text-text">
+                The week&apos;s best redemptions, Mondays.
+              </h2>
+              <p className="mt-1.5 text-[13.5px] leading-[1.5] text-text2">
+                One email, priced in ¢/pt. Unsubscribe anytime.
+              </p>
+            </div>
+            <NewsletterForm label={null} />
+          </div>
+        </Card>
       </div>
 
       {/* CTA + footer read as one card: teal top half, paper-white bottom half. */}

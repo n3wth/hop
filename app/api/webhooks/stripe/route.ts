@@ -16,12 +16,43 @@
 //    can't help; recordSubscription already tried the metadata self-heal)
 //  - storage/Stripe hiccup    → 500 (transient — let Stripe retry)
 
+import { eq } from 'drizzle-orm'
 import { verifyStripeEvent, retrieveSubscriptionRecord } from '@/lib/stripe'
-import { tierFromStripeEvent, subscriptionRecordFromEvent } from '@/lib/billing'
-import { recordSubscription } from '@/lib/subscription'
+import {
+  tierFromStripeEvent,
+  subscriptionRecordFromEvent,
+  lifecycleEmailForTransition,
+} from '@/lib/billing'
+import {
+  recordSubscription,
+  getUserTier,
+  userIdForStripeCustomer,
+  type Tier,
+} from '@/lib/subscription'
+import { sendProWelcomeEmail, sendCancellationEmail, deliverBounded } from '@/lib/email'
+import { getDb } from '@/lib/db'
+import { user as userTable } from '@/lib/db/schema'
 import { isBillingEnabled } from '@/lib/env'
 
 export const runtime = 'nodejs'
+
+// Resolve a user's email for the lifecycle sends. `user` is Better Auth core,
+// not behind the withDb Postgrest shim, so this goes direct through Drizzle
+// (same precedent as app/api/cron/newsletter-digest). Never throws.
+async function userEmailById(userId: string): Promise<string | null> {
+  try {
+    const db = getDb()
+    if (!db) return null
+    const rows = await db
+      .select({ email: userTable.email })
+      .from(userTable)
+      .where(eq(userTable.id, userId))
+      .limit(1)
+    return rows[0]?.email ?? null
+  } catch {
+    return null
+  }
+}
 
 function json(body: Record<string, unknown>, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -74,6 +105,15 @@ export async function POST(request: Request): Promise<Response> {
     return json({ received: true })
   }
 
+  // Lifecycle-email context — read BEFORE the write so priorTier is the
+  // pre-event state (free→premium is only detectable against it). Best-effort:
+  // both helpers degrade to null/free on a db blip, which can only suppress an
+  // email, never fail the webhook.
+  let lifecycleUserId: string | null = update.userId
+  let priorTier: Tier | null = null
+  if (!lifecycleUserId) lifecycleUserId = await userIdForStripeCustomer(stripeCustomerId)
+  if (lifecycleUserId) priorTier = await getUserTier(lifecycleUserId)
+
   const outcome = await recordSubscription({
     userId: update.userId,
     stripeCustomerId,
@@ -87,5 +127,28 @@ export async function POST(request: Request): Promise<Response> {
       `stripe-webhook: unattributable Stripe customer ${stripeCustomerId} on ${event.type} — no stored mapping and no metadata user ref`,
     )
   }
+
+  // Lifecycle emails, AFTER the tier write landed: Pro welcome on free→premium,
+  // cancellation on customer.subscription.deleted, nothing on premium→premium
+  // (lib/billing.ts#lifecycleEmailForTransition, pure + unit-tested). Bounded
+  // and never-throwing (deliverBounded) — a slow or dead email provider can
+  // delay this 200 by at most 3s and can never turn it into an error, so
+  // Stripe never retries (and re-charges attribution work) over email trouble.
+  if (outcome === 'ok' && lifecycleUserId) {
+    const kind = lifecycleEmailForTransition({
+      eventType: event.type,
+      newTier: update.tier,
+      priorTier,
+    })
+    if (kind) {
+      const email = await userEmailById(lifecycleUserId)
+      if (email) {
+        await deliverBounded(
+          kind === 'pro-welcome' ? sendProWelcomeEmail(email) : sendCancellationEmail(email),
+        )
+      }
+    }
+  }
+
   return json({ received: true })
 }

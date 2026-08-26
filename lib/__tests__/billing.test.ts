@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { tierFromStripeEvent, subscriptionRecordFromEvent } from '@/lib/billing'
+import {
+  tierFromStripeEvent,
+  subscriptionRecordFromEvent,
+  lifecycleEmailForTransition,
+} from '@/lib/billing'
 import type { StripeEventLike } from '@/lib/stripe'
 
 // The event mapper is PURE — plain fixture objects, zero mocks, no SDK.
@@ -203,6 +207,58 @@ describe('subscriptionRecordFromEvent — the stored-state extractor', () => {
     ).toBeNull()
     expect(
       subscriptionRecordFromEvent({ type: 'customer.subscription.updated' } as never),
+    ).toBeNull()
+  })
+})
+
+describe('lifecycleEmailForTransition — which lifecycle email a webhook event triggers', () => {
+  it('sends the Pro welcome on free→premium (checkout completed)', () => {
+    expect(
+      lifecycleEmailForTransition({
+        eventType: 'checkout.session.completed',
+        newTier: 'premium',
+        priorTier: 'free',
+      }),
+    ).toBe('pro-welcome')
+  })
+
+  it('sends NOTHING on premium→premium (renewal / plan tweak / duplicate event)', () => {
+    expect(
+      lifecycleEmailForTransition({
+        eventType: 'customer.subscription.updated',
+        newTier: 'premium',
+        priorTier: 'premium',
+      }),
+    ).toBeNull()
+  })
+
+  it('sends the cancellation note on customer.subscription.deleted', () => {
+    expect(
+      lifecycleEmailForTransition({
+        eventType: 'customer.subscription.deleted',
+        newTier: 'free',
+        priorTier: 'premium',
+      }),
+    ).toBe('cancellation')
+  })
+
+  it('sends nothing when the prior tier is unknown (no recipient could be resolved anyway)', () => {
+    expect(
+      lifecycleEmailForTransition({
+        eventType: 'customer.subscription.updated',
+        newTier: 'premium',
+        priorTier: null,
+      }),
+    ).toBeNull()
+  })
+
+  it('sends nothing on a downgrade delivered as an update (deleted is the definitive signal)', () => {
+    expect(
+      lifecycleEmailForTransition({
+        eventType: 'customer.subscription.updated',
+        newTier: 'free',
+        priorTier: 'premium',
+      }),
     ).toBeNull()
   })
 })

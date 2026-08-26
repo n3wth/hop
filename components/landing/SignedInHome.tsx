@@ -10,6 +10,7 @@ import LedgerDream from '@/components/landing/LedgerDream'
 import TransferUnlockShelf from '@/components/landing/TransferUnlockShelf'
 import LiveValuationShelf from '@/components/landing/LiveValuationShelf'
 import HomeAirportPrompt from '@/components/HomeAirportPrompt'
+import NewsletterForm from '@/components/NewsletterForm'
 import {
   affordableWith,
   topValue,
@@ -286,6 +287,24 @@ export default async function SignedInHome({
             {programs > 0 ? 'Manage programs' : 'Add a program'}
           </Link>
         </div>
+      </Card>
+
+      {/* ── NEWSLETTER — a small closing card, not a competing module ────── */}
+      <Card
+        as="section"
+        surface="paper"
+        radius="lg"
+        className="flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between sm:gap-10 sm:p-8"
+      >
+        <div>
+          <h2 className="font-display text-[19px] font-semibold leading-[1.1] tracking-[-0.01em] text-text">
+            The week&apos;s best redemptions, Mondays.
+          </h2>
+          <p className="mt-1 text-[13.5px] leading-[1.5] text-text2">
+            Your wallet&apos;s top redemption, priced in ¢/pt. Unsubscribe anytime.
+          </p>
+        </div>
+        <NewsletterForm label={null} />
       </Card>
     </div>
   )

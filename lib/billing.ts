@@ -116,6 +116,25 @@ export function tierFromStripeEvent(event: StripeEventLike): SubscriptionUpdate 
   }
 }
 
+// Which lifecycle email (if any) a webhook event triggers, decided from the
+// event type + the tier transition. Pure and total, like everything here:
+//  - customer.subscription.deleted        → 'cancellation' (the definitive end)
+//  - anything landing on premium when the PRE-EVENT tier was 'free'
+//                                          → 'pro-welcome' (the upgrade moment)
+//  - premium→premium (renewal, plan tweak, dup checkout event) → null
+//  - priorTier null (user unattributable / tier unknown)       → null — we
+//    couldn't resolve a recipient anyway, and guessing risks a wrong send.
+export type LifecycleEmailKind = 'pro-welcome' | 'cancellation'
+export function lifecycleEmailForTransition(args: {
+  eventType: string
+  newTier: Tier
+  priorTier: Tier | null
+}): LifecycleEmailKind | null {
+  if (args.eventType === 'customer.subscription.deleted') return 'cancellation'
+  if (args.newTier === 'premium' && args.priorTier === 'free') return 'pro-welcome'
+  return null
+}
+
 // The subscription-state columns hop_subscriptions stores, extracted from a
 // VERIFIED event (or from a Stripe API retrieve shaped like one).
 export interface SubscriptionRecord {

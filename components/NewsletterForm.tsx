@@ -12,7 +12,13 @@ import { Input } from '@/components/ui/Field'
 
 type Phase = 'idle' | 'done'
 
-export default function NewsletterForm() {
+// `label` renders as the form's own small heading; pass null when the mount
+// point already provides one (the input keeps an aria-label either way).
+export default function NewsletterForm({
+  label = 'Your wallet’s best redemption, once a week.',
+}: {
+  label?: string | null
+} = {}) {
   const [email, setEmail] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [phase, setPhase] = useState<Phase>('idle')
@@ -57,15 +63,18 @@ export default function NewsletterForm() {
 
   return (
     <form onSubmit={submit} className="mt-4 max-w-[34ch] text-left">
-      <label htmlFor={inputId} className="text-[12px] font-semibold text-text2">
-        Your wallet&apos;s best redemption, once a week.
-      </label>
-      <div className="mt-1.5 flex items-center gap-2">
+      {label ? (
+        <label htmlFor={inputId} className="text-[12px] font-semibold text-text2">
+          {label}
+        </label>
+      ) : null}
+      <div className={`flex items-center gap-2 ${label ? 'mt-1.5' : ''}`}>
         <Input
           id={inputId}
           type="email"
           inputMode="email"
           autoComplete="email"
+          aria-label={label ? undefined : 'Email address'}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@email.com"

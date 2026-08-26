@@ -3,8 +3,11 @@
 // deliverability/sender reputation: repeatedly sending to a bounced or
 // complained address gets a sending domain throttled or suspended.
 //
-// FUTURE OUTBOUND SEND PATHS (alerts, newsletter, etc. — no call sites wired
-// yet) MUST call isSuppressed(email) before sending and skip delivery if true.
+// ENFORCED CENTRALLY: lib/email.ts#dispatch() checks isSuppressed(to) before
+// every send, so ALL senders inherit the guard automatically ({ok:false,
+// reason:'suppressed'}). New send paths that go through dispatch() need no
+// explicit check; the newsletter digest's own pre-check remains as a cheap
+// skip (it avoids computing the dream for a suppressed address).
 //
 // Like every hop upstream client, this degrades via withDb and NEVER throws.
 // isSuppressed() fails OPEN (false) on a DB error — see its own comment.

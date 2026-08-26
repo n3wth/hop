@@ -25,7 +25,7 @@ import {
   resolveAuthSecret,
   env,
 } from './env'
-import { sendVerificationEmail, sendResetPasswordEmail } from './email'
+import { sendVerificationEmail, sendResetPasswordEmail, sendWelcomeEmailFromSignup } from './email'
 import { captureServerEvent } from './posthog-server'
 
 // Forwards every property access to the live Drizzle client at call time.
@@ -96,19 +96,23 @@ export const auth = betterAuth({
   account: {
     accountLinking: { enabled: true, trustedProviders: ['google'] },
   },
-  // R0.5 funnel event #1 — signed_up fires exactly once per new user, at the
-  // moment Better Auth inserts the row (every sign-up method funnels through
-  // here). Keyed on the opaque user.id only. AWAITED deliberately: better-auth
-  // awaits .after hooks, so an un-awaited capture can be frozen with the
+  // R0.5 funnel event #1 (signed_up) + the welcome email — both fire exactly
+  // once per new user, at the moment Better Auth inserts the row (every
+  // sign-up method funnels through here). AWAITED deliberately: better-auth
+  // awaits .after hooks, so an un-awaited side effect can be frozen with the
   // serverless function before it leaves the box. Safe to await ONLY because
-  // captureServerEvent provably never rejects and caps latency at 2s — a hook
+  // BOTH seams provably never reject and cap their own latency
+  // (captureServerEvent at 2s, sendWelcomeEmailFromSignup at 3s) — a hook
   // that can throw would fail the sign-up itself (see
   // docs/solutions/2026-07-04-better-auth-after-hooks-propagate-errors.md).
   databaseHooks: {
     user: {
       create: {
-        after: async (user: { id: string }) => {
-          await captureServerEvent('signed_up', {}, { distinctId: user.id })
+        after: async (user: { id: string; email?: string | null }) => {
+          await Promise.all([
+            captureServerEvent('signed_up', {}, { distinctId: user.id }),
+            sendWelcomeEmailFromSignup(user.email),
+          ])
         },
       },
     },

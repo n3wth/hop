@@ -101,6 +101,23 @@ export async function saveStripeCustomer(
   })
 }
 
+// The hop user attributed to a Stripe customer via our stored hop_customers
+// mapping — the reverse of stripeCustomerIdFor. Used by the webhook's
+// lifecycle emails to find a recipient when the event carries no metadata
+// user ref. null (never a throw) when no mapping exists or the db is degraded.
+export async function userIdForStripeCustomer(stripeCustomerId: string): Promise<string | null> {
+  if (!stripeCustomerId) return null
+  return withDb<string | null>(null, async (db) => {
+    const { data, error } = await db
+      .from('hop_customers')
+      .select('user_id')
+      .eq('stripe_customer_id', stripeCustomerId)
+      .maybeSingle()
+    if (error) return null
+    return (data?.user_id as string | undefined) ?? null
+  })
+}
+
 export type RecordSubscriptionOutcome = 'ok' | 'no-attribution' | 'db-error'
 
 // The webhook's single write path: resolve the customer row from our stored
