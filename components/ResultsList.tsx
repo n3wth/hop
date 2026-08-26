@@ -60,14 +60,18 @@ export default function ResultsList({ result, travelers = 1 }: ResultsListProps)
 
   return (
     <div className="w-full">
-      {/* Toolbar — shown only when there are alternative options */}
+      {/* Section head — ONE row sharing a single ink underline: display-size
+          title left, expand/collapse toolbar right, both bottom-aligned on the
+          same rule so they can't drift apart. Shown only when there are cards. */}
       {hasCards ? (
-        <div className="flex items-center justify-between border-b border-border/80 pb-[12px]">
-          <h2 className="text-[14px] font-semibold text-text">Other ways to fly</h2>
+        <div className="flex items-end justify-between gap-4 border-b-[1.5px] border-text pb-4">
+          <h2 className="font-display text-[21px] font-semibold tracking-[-0.01em] text-text sm:text-[24px]">
+            Other ways to fly
+          </h2>
           <button
             type="button"
             onClick={toggleAll}
-            className="flex items-center gap-[4px] text-[13px] font-medium text-text2 hover:text-text transition-colors"
+            className="mb-[2px] flex flex-shrink-0 items-center gap-[4px] text-[13px] font-medium text-text2 hover:text-text transition-colors"
             aria-expanded={allExpanded}
           >
             <span>{allExpanded ? 'Collapse all' : 'Expand all'}</span>

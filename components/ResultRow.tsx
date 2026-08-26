@@ -51,17 +51,17 @@ function rankLabel(option: FlightOption, rank?: number): string {
 
 function subheadText(option: FlightOption, oneWay?: boolean): string {
   const trip = oneWay ? 'OW' : 'RT'
-  if (option.kind === 'transfer') {
-    const rawCpp = option.cpp != null ? `${option.cpp.toFixed(1)}c/pt` : ''
-    return [option.airline, trip, rawCpp].filter(Boolean).join(' • ')
+  // Cash is the only branch that says "Cash" — award AND transfer options are
+  // points redemptions, named by their loyalty program, never priced as $0.
+  if (option.kind === 'cash') {
+    return [option.airline, trip, 'Cash'].filter(Boolean).join(' • ')
   }
-  return [option.airline, trip, 'Cash'].filter(Boolean).join(' • ')
+  return [option.program ?? option.airline, trip, 'Points'].filter(Boolean).join(' • ')
 }
 
 function actionLabel(option: FlightOption): string {
-  if (option.kind === 'transfer') {
-    return 'Transfer points'
-  }
+  if (option.kind === 'transfer') return 'Transfer points'
+  if (option.kind === 'award') return 'Book with miles'
   return 'Book cash'
 }
 
@@ -112,14 +112,18 @@ const ResultRow = memo(function ResultRow({
 
         {/* Primary headline — price/points */}
         <div className="mt-[12px]">
+          {/* Branch on CASH, not transfer — award options are points options.
+              A missing figure renders "—", never a coalesced $0. */}
           <div className="text-[26px] font-semibold tracking-[-0.03em] text-text">
-            {isTransfer ? (
+            {isCash ? (
+              option.cashPrice != null ? `$${option.cashPrice.toLocaleString('en-US')}` : '—'
+            ) : option.miles != null ? (
               <>
-                {(option.miles ?? 0).toLocaleString('en-US')}{' '}
+                {option.miles.toLocaleString('en-US')}{' '}
                 <span className="text-[14px] font-medium tracking-normal text-text2">pts</span>
               </>
             ) : (
-              `$${(option.cashPrice ?? 0).toLocaleString('en-US')}`
+              '—'
             )}
           </div>
           <div className="mt-[2px] text-[13px] font-normal leading-[1.4] text-text2">

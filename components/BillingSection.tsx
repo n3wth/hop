@@ -30,8 +30,11 @@ export function BillingSection({ isSignedIn, tier = 'free', activeCount = 0 }: B
   const isPro = tier === 'premium'
 
   return (
-    <div className="grid gap-5 sm:grid-cols-2">
-      <Card surface="surface" className="p-6">
+    // Capped at 760px so each card holds its content instead of stranding
+    // three short lines in ~680px of air; both cards are flex columns with the
+    // feature list flexing and the CTA row pinned — every card ends in an action.
+    <div className="grid max-w-[760px] gap-5 sm:grid-cols-2">
+      <Card surface="surface" className="flex flex-col p-6">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-display text-[18px] font-semibold text-text">Free</h2>
           {isSignedIn && !isPro ? (
@@ -43,7 +46,7 @@ export function BillingSection({ isSignedIn, tier = 'free', activeCount = 0 }: B
         <p className="mt-3 text-[30px] font-semibold leading-none text-text">
           $0<span className="text-[14px] font-normal text-text3">/forever</span>
         </p>
-        <ul className="mt-4 space-y-2 text-[13.5px] leading-[1.5] text-text2">
+        <ul className="mt-4 flex-1 space-y-2 text-[13.5px] leading-[1.5] text-text2">
           <li>Full search &amp; verdict</li>
           <li>
             {ALERT_LIMITS.free} active alerts
@@ -51,9 +54,17 @@ export function BillingSection({ isSignedIn, tier = 'free', activeCount = 0 }: B
           </li>
           <li>{MCP_DAILY_LIMITS.free} MCP calls/day</li>
         </ul>
+        <div className="mt-5">
+          <Link
+            href="/search"
+            className={`${CTA} border border-border bg-surface text-text hover:border-brand hover:text-brand`}
+          >
+            Start searching
+          </Link>
+        </div>
       </Card>
 
-      <div className="rounded-[var(--radius)] border border-brand bg-brand-tint p-6">
+      <div className="flex flex-col rounded-[var(--radius)] border border-brand bg-brand-tint p-6">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-display text-[18px] font-semibold text-text">Pro</h2>
           {isPro ? (
@@ -69,7 +80,7 @@ export function BillingSection({ isSignedIn, tier = 'free', activeCount = 0 }: B
         <p className="mt-1 text-[13px] font-medium text-brand-deep">
           Early price — grandfathered for life
         </p>
-        <ul className="mt-4 space-y-2 text-[13.5px] leading-[1.5] text-text">
+        <ul className="mt-4 flex-1 space-y-2 text-[13.5px] leading-[1.5] text-text">
           <li>Unlimited alerts</li>
           <li>{MCP_DAILY_LIMITS.premium.toLocaleString()} MCP calls/day</li>
           <li>Weekly best-redemption digest</li>
