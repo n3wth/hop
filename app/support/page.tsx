@@ -259,15 +259,16 @@ export default async function SupportPage() {
 
         <h3>The price or availability changed — why?</h3>
         <p>
-          Fares, taxes, and award availability come from the airlines and third-party sources, and
-          can change at any moment before you book. hop shows the best information it has, but the
-          provider&rsquo;s live price at checkout is the real one. The figures are informational, not
-          financial advice — always confirm with the airline before booking.
+          Cash fares and taxes come from the airlines and third-party sources, and can change at any
+          moment before you book. Award miles are published saver-chart floors — hop does not
+          confirm space is open. hop shows the best information it has, but the provider&rsquo;s
+          live price at checkout is the real one. The figures are informational, not financial
+          advice — always confirm with the airline before booking.
         </p>
 
         <h3>A section says it&rsquo;s degraded — what does that mean?</h3>
         <p>
-          When an upstream source (cash prices, award space, or your balances) is briefly
+          When an upstream source (cash prices, saver charts, or your balances) is briefly
           unavailable, hop degrades just that part of the result and tells you, rather than failing
           the whole search. The rest of the answer still stands; re-run the search in a minute to
           fill the gap.

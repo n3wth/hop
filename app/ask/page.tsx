@@ -21,7 +21,7 @@ import { getConversation } from '@/lib/conversations'
 export const metadata: Metadata = pageMeta({
   title: 'Ask hop',
   description:
-    'Tell hop a vibe, a budget, or a city. It reads award space and cash for the same trip and gives you the verdict — points or cash, which one wins.',
+    'Tell hop a vibe, a budget, or a city. It reads published saver charts and cash for the same trip and gives you the verdict — points or cash, which one wins.',
   path: '/ask',
 })
 

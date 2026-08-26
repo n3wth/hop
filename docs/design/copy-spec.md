@@ -81,6 +81,16 @@ instruction) may not, on chart.
   worth once you fill in real balances.` (plain, no exclamation points, no "just add your cards!"
   flattery)
 
+## Public surfaces — Stage A awards (④b)
+
+Do not claim live award space on marketing, metadata, skeleton, login, /ask,
+or concierge tool prompts. Awards are published saver charts. Use
+`published saver chart` / `published saver rate`. Caveat: `Space not confirmed.`
+cpp on a chart row is live (Duffel cash vs those published miles). Do not
+call that "live award space."
+Human-fulfilled concierge ("find the award space and book it") may keep
+"award space" — a person is looking.
+
 ## Footer / utility (keep it a real tool)
 - `hop compares cash, miles, and transfer partners in one search.` (one plain line, no "tells you
   which one to actually use" swagger)

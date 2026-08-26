@@ -318,6 +318,9 @@ Each dataset has a regenerator under `scripts/`; re-run it and commit the output
   (Open-Meteo), USD FX snapshot (Frankfurter/ECB). `lib/place-info.ts` renders the essentials chips +
   the computed "how far your dollar goes" line. **Wikidata's raw language/currency-name fields are
   noisy** — they're curated in the script; the codes/timezone/FX stay sourced.
+- `lib/airport-coords.json` ← `scripts/gen-airport-coords.mjs` — OurAirports lat/lon (CC0) for
+  every IATA in `lib/airports-data.json`. `lib/award-charts.ts#greatCircleMiles` uses it so
+  published saver bands apply beyond a hardcoded hub list. Unknown IATA → no chart row.
 
 Same invariant as the engine: these are **real, looked-up, date-stamped values, never LLM-generated**.
 

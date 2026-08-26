@@ -54,8 +54,8 @@ export default async function LoginPage({
             Know which one wins before you book.
           </h2>
           <p className="mt-5 max-w-[36ch] text-[15px] leading-[1.6] text-hero-body">
-            hop reads award space and cash for the same trip and tells you the
-            verdict — with the math to back it.
+            hop reads published saver charts and cash for the same trip and tells
+            you the verdict — with the math to back it.
           </p>
         </div>
 

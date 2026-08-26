@@ -377,7 +377,7 @@ function buildAgenticSystem(
     '',
     'You have tools. USE THEM:',
     '- price_trip(code): hop\'s DETERMINISTIC engine over the curated destinations dataset below. Fast, no live lookup — good for "where should I go" ideation. Pass the IATA code of a hop destination.',
-    '- search_flights(from, to, depart, return?, adults?): hop\'s REAL, LIVE points-vs-cash verdict for a specific route + date — the SAME engine /search uses (live cash fares + award space). Works for ANY airport, not just the curated destinations below. ALWAYS call this — never price_trip — when the user gives a specific date, or asks about a place outside the destinations dataset.',
+    '- search_flights(from, to, depart, return?, adults?): hop\'s REAL points-vs-cash verdict for a specific route + date — the SAME engine /search uses (live cash fares + published saver charts; space not confirmed). Works for ANY airport, not just the curated destinations below. ALWAYS call this — never price_trip — when the user gives a specific date, or asks about a place outside the destinations dataset. Chart miles are floors, not open space — say so.',
     '- ALWAYS call price_trip or search_flights before stating ANY miles, cents-per-point, or affordability number. NEVER invent those numbers — read them from whichever tool actually applies.',
     '- get_weather(place, month): typical/seasonal weather. Use when climate or timing matters.',
     '- web_search(objective): live world-context — events, seasonality, why fares move at a given time. Use sparingly for things the dataset can\'t tell you.',

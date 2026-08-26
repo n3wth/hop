@@ -59,10 +59,10 @@ export function conciergeHeroCopy(opts: {
   // linking. Same sentence shape so the two surfaces never read as different
   // products.
   const sub = totalPoints
-    ? `Tell hop a vibe, a budget, or a city you can't stop thinking about. With ~${totalPoints.toLocaleString('en-US')} points, hop reads award space and cash for the same trip and tells you the verdict — points or cash, which one actually wins.`
+    ? `Tell hop a vibe, a budget, or a city you can't stop thinking about. With ~${totalPoints.toLocaleString('en-US')} points, hop reads published saver charts and cash for the same trip and tells you the verdict — points or cash, which one actually wins.`
     : signedIn
-      ? "Tell hop a vibe, a budget, or a city you can't stop thinking about. hop reads award space and cash for the same trip and tells you the verdict — points or cash, which one wins. Link your programs and it'll price every answer against your real balances."
-      : "Tell hop a vibe, a budget, or a city you can't stop thinking about. hop reads award space and cash for the same trip and tells you the verdict — points or cash, which one actually wins."
+      ? "Tell hop a vibe, a budget, or a city you can't stop thinking about. hop reads published saver charts and cash for the same trip and tells you the verdict — points or cash, which one wins. Link your programs and it'll price every answer against your real balances."
+      : "Tell hop a vibe, a budget, or a city you can't stop thinking about. hop reads published saver charts and cash for the same trip and tells you the verdict — points or cash, which one actually wins."
 
   return {
     eyebrow: CONCIERGE_EYEBROW,
