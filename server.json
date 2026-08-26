@@ -1,0 +1,30 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.n3wth/hop",
+  "description": "Give Cursor, VS Code, or any MCP client hop's points-vs-cash verdict engine: computed cpp, transfer paths, and sweet spots — never LLM-generated numbers.",
+  "title": "hop — points-vs-cash flight verdicts",
+  "repository": {
+    "url": "https://github.com/n3wth/hop",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "websiteUrl": "https://hop.flights/mcp",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://hop.flights/api/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer hop_ token from hop.flights/account for a personalized read (real balances, saved programs). Omit to call tools statelessly with caller-supplied balances.",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    },
+    {
+      "type": "sse",
+      "url": "https://hop.flights/api/sse"
+    }
+  ]
+}
