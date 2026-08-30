@@ -15,11 +15,18 @@ import posthog from 'posthog-js'
 let booted = false
 
 function ready(): boolean {
-  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY
+  // NEXT_PUBLIC_* vars must be referenced literally (not via a dynamic key) so
+  // Next.js can inline them at build time. VERCEL_HOP_* is the Vercel
+  // Marketplace PostHog integration's auto-injected fallback — same pairing
+  // instrumentation.ts already falls back to for LLM tracing.
+  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY || process.env.NEXT_PUBLIC_VERCEL_HOP_POSTHOG_PROJECT_TOKEN
   if (!key || key.trim() === '') return false
   if (!booted) {
     posthog.init(key, {
-      api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
+      api_host:
+        process.env.NEXT_PUBLIC_POSTHOG_HOST ||
+        process.env.NEXT_PUBLIC_VERCEL_HOP_POSTHOG_HOST ||
+        'https://us.i.posthog.com',
       // Where PostHog's own UI lives — required whenever api_host is a reverse
       // proxy (prod ingests via https://elephant.hop.flights) so app/toolbar
       // links resolve to PostHog, not the proxy. Harmless when going direct.

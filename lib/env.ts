@@ -61,10 +61,18 @@ export type EnvKey =
   // instrumentation.ts precedence. Absent → captureServerEvent is a no-op.
   | 'POSTHOG_KEY'
   | 'NEXT_PUBLIC_POSTHOG_KEY'
+  // Vercel-marketplace-integration-provided fallback token (auto-injected when
+  // the PostHog integration is installed from the Vercel Marketplace). Same
+  // fallback instrumentation.ts already applies for LLM tracing — kept in sync
+  // here so server + client capture don't silently no-op in that setup.
+  | 'NEXT_PUBLIC_VERCEL_HOP_POSTHOG_PROJECT_TOKEN'
   // Optional ingestion-host override (no trailing slash); defaults to the US
   // cloud host in lib/posthog-server.ts when absent.
   | 'POSTHOG_HOST'
   | 'NEXT_PUBLIC_POSTHOG_HOST'
+  // Vercel-marketplace-integration-provided fallback host — same pairing as
+  // NEXT_PUBLIC_VERCEL_HOP_POSTHOG_PROJECT_TOKEN above.
+  | 'NEXT_PUBLIC_VERCEL_HOP_POSTHOG_HOST'
   // ── Identity + data (Better Auth on Neon) ─────────────────────────────────
   // Neon Postgres connection string (pooled). The Drizzle client (lib/db) and
   // Better Auth both read it lazily; absent → getDb() returns null and every
@@ -128,8 +136,10 @@ export const env = {
   stripePriceIdProYearly: () => read('STRIPE_PRICE_ID_PRO_YEARLY'),
   linearApiKey: () => read('LINEAR_API_KEY'),
   linearTeamId: () => read('LINEAR_TEAM_ID'),
-  posthogKey: () => firstEnv('POSTHOG_KEY', 'NEXT_PUBLIC_POSTHOG_KEY'),
-  posthogHost: () => firstEnv('POSTHOG_HOST', 'NEXT_PUBLIC_POSTHOG_HOST'),
+  posthogKey: () =>
+    firstEnv('POSTHOG_KEY', 'NEXT_PUBLIC_POSTHOG_KEY', 'NEXT_PUBLIC_VERCEL_HOP_POSTHOG_PROJECT_TOKEN'),
+  posthogHost: () =>
+    firstEnv('POSTHOG_HOST', 'NEXT_PUBLIC_POSTHOG_HOST', 'NEXT_PUBLIC_VERCEL_HOP_POSTHOG_HOST'),
   databaseUrl: () => read('DATABASE_URL'),
   googleClientId: () => firstEnv('GOOGLE_CLIENT_ID', 'GOOGLE_ID'),
   googleClientSecret: () => firstEnv('GOOGLE_CLIENT_SECRET', 'GOOGLE_SECRET'),
@@ -145,11 +155,15 @@ function firstEnv(...keys: EnvKey[]): string {
   throw new Error(`Missing required environment variable: ${keys[0]}`)
 }
 
-// Server-side PostHog capture is available when EITHER token is present
+// Server-side PostHog capture is available when ANY token is present
 // (lib/posthog-server.ts no-ops otherwise). Key presence is the whole gate —
 // capture is fire-and-forget observability, not a product seam.
 export function isPostHogEnabled(): boolean {
-  return hasEnv('POSTHOG_KEY') || hasEnv('NEXT_PUBLIC_POSTHOG_KEY')
+  return (
+    hasEnv('POSTHOG_KEY') ||
+    hasEnv('NEXT_PUBLIC_POSTHOG_KEY') ||
+    hasEnv('NEXT_PUBLIC_VERCEL_HOP_POSTHOG_PROJECT_TOKEN')
+  )
 }
 
 // True when a key is present without throwing — lets a client degrade
