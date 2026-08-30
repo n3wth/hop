@@ -49,10 +49,10 @@ export function BillingSection({ isSignedIn, tier = 'free', activeCount = 0 }: B
         <ul className="mt-4 flex-1 space-y-2 text-[13.5px] leading-[1.5] text-text2">
           <li>Full search &amp; verdict</li>
           <li>
-            {ALERT_LIMITS.free} active alerts
+            {ALERT_LIMITS.free} active route alerts
             {isSignedIn && !isPro ? ` (${activeCount} used)` : ''}
           </li>
-          <li>{MCP_DAILY_LIMITS.free} MCP calls/day</li>
+          <li>Agent quota: {MCP_DAILY_LIMITS.free}/day</li>
         </ul>
         <div className="mt-5">
           <Link
@@ -81,14 +81,14 @@ export function BillingSection({ isSignedIn, tier = 'free', activeCount = 0 }: B
           Early price — grandfathered for life
         </p>
         <ul className="mt-4 flex-1 space-y-2 text-[13.5px] leading-[1.5] text-text">
-          <li>Unlimited alerts</li>
-          <li>{MCP_DAILY_LIMITS.premium.toLocaleString()} MCP calls/day</li>
+          <li>Unlimited route alerts</li>
           <li>Weekly best-redemption digest</li>
+          <li>Agent quota: {MCP_DAILY_LIMITS.premium.toLocaleString()}/day</li>
         </ul>
         <div className="mt-5">
           {!isSignedIn ? (
             <Link href="/login?returnTo=%2Fpricing" className={`${CTA} bg-brand text-white hover:bg-brand-deep`}>
-              Sign up to upgrade
+              Get Pro — ${PRO_PRICE_YEARLY_USD}/yr
             </Link>
           ) : isPro ? (
             <form action="/api/billing/portal" method="POST">

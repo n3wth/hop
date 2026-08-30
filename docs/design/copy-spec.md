@@ -91,6 +91,15 @@ call that "live award space."
 Human-fulfilled concierge ("find the award space and book it") may keep
 "award space" — a person is looking.
 
+## Pricing (`/pricing`)
+- Signed-out H1: `{n} watches are free.` (`n` = `ALERT_LIMITS.free`, never hardcoded)
+- Subline: search + verdict stay free; Pro is the watchlist; state `$49/yr` from `PRO_PRICE_YEARLY_USD`
+- Do not lead with MCP quota. Humans buy alerts. MCP is the last bullet, labeled `Agent quota`
+- Signed-out Pro CTA: `Get Pro — $49/yr` (price in the button). Not `Sign up to upgrade`
+- FAQ first extra after "is it free": `Why pay if search is free?` Answer: more than 3 watches; one missed drop costs more than a year
+- Keep grandfather line. No monthly CTA until `lib/pricing.ts` says otherwise
+- No "value on the table" / "war chest" / paywall-as-virtue copy
+
 ## Footer / utility (keep it a real tool)
 - `hop compares cash, miles, and transfer partners in one search.` (one plain line, no "tells you
   which one to actually use" swagger)
