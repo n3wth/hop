@@ -17,7 +17,7 @@ import { pageMeta, absoluteUrl } from '@/lib/seo'
 // <head>/social preview even while billing is off, regardless of what the body renders.
 export async function generateMetadata() {
   const description = isBillingEnabled()
-    ? `hop's verdict is free, always. Pro adds unlimited alerts and a bigger agent quota for $${PRO_PRICE_YEARLY_USD}/yr — early price, grandfathered for life.`
+    ? `Search and the verdict stay free. Pro is $${PRO_PRICE_YEARLY_USD}/yr for unlimited route alerts — early price, grandfathered.`
     : "hop's verdict is free, always. A paid plan isn't live yet."
   return pageMeta({ title: 'Pricing', description, path: '/pricing' })
 }
@@ -39,21 +39,25 @@ function pricingFaq(billingEnabled: boolean): { q: string; a: string }[] {
   return [
     {
       q: 'Is hop free to use?',
-      a: `Yes — hop's points-vs-cash verdict is free for everyone, always, with no signup required. The Free plan includes full search, the computed verdict, and ${ALERT_LIMITS.free} active route alerts.`,
+      a: `Yes. Search and the points-vs-cash verdict are free, no signup required. Free includes ${ALERT_LIMITS.free} active route alerts.`,
+    },
+    {
+      q: 'Why pay if search is free?',
+      a: `You don't, unless you want more than ${ALERT_LIMITS.free} watches. Pro is the watchlist: hop re-checks your routes and emails you when the miles get cheaper. One missed drop usually costs more than a year of Pro.`,
     },
     {
       q: 'What does hop Pro cost?',
       a: billingEnabled
-        ? `Pro is $${PRO_PRICE_YEARLY_USD}/yr — an early-adopter price that's grandfathered for life. It's billed annually with no monthly option yet.`
+        ? `Pro is $${PRO_PRICE_YEARLY_USD}/yr, billed once a year. That's the early price, grandfathered for life. No monthly option yet.`
         : `Pro isn't live yet — hop's paid plan hasn't launched, so there's nothing to buy right now. Search and the verdict stay free either way.`,
     },
     {
       q: "What's the difference between Free and Pro?",
-      a: `Free includes ${ALERT_LIMITS.free} active alerts and ${MCP_DAILY_LIMITS.free} MCP calls/day for agents. Pro adds unlimited alerts, ${MCP_DAILY_LIMITS.premium.toLocaleString()} MCP calls/day, and a weekly best-redemption digest.`,
+      a: `Free: full search, the verdict, and ${ALERT_LIMITS.free} active alerts. Pro: unlimited alerts, a weekly best-redemption digest, and ${MCP_DAILY_LIMITS.premium.toLocaleString()} MCP calls/day if you search from an agent.`,
     },
     {
       q: 'What is an MCP call?',
-      a: `hop exposes its verdict engine as an MCP server, so AI agents like Claude can price trips and check your balances directly. Each tool call an agent makes counts against your daily MCP quota.`,
+      a: `hop exposes its verdict engine as an MCP server, so agents like Claude can price trips and check balances. Each tool call counts against the daily quota. Humans on the site don't use this quota.`,
     },
   ]
 }
@@ -111,12 +115,12 @@ export default async function PricingPage({
         <div className="max-w-[560px]">
           <Eyebrow>Pricing</Eyebrow>
           <h1 className="mt-2 font-display text-[30px] font-semibold tracking-[-0.02em] text-text sm:text-[36px]">
-            {userId ? 'Your plan' : 'Free to search. Pay to watch.'}
+            {userId ? 'Your plan' : `${ALERT_LIMITS.free} watches are free.`}
           </h1>
           <p className="mt-3 text-[14.5px] leading-[1.6] text-text2">
-            hop&apos;s points-vs-cash verdict is free for everyone, always — computed, never
-            behind a paywall. Pro adds unlimited route watches and a bigger MCP quota for
-            agents.
+            Search and the points-vs-cash verdict stay free. Pro is the watchlist — hop
+            re-checks your routes and emails you when the miles get cheaper.{' '}
+            ${PRO_PRICE_YEARLY_USD}/yr, grandfathered.
           </p>
         </div>
 
