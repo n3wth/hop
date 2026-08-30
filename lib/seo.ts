@@ -7,7 +7,9 @@
 // for preview deploys; otherwise fall back to prod.
 
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'https://hop.flights'
+  (process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.trim() !== '')
+    ? process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')
+    : 'https://hop.flights'
 
 // Join a path onto the prod origin. The home path collapses to the bare origin
 // (no trailing slash) so canonical/OG urls don't double up on '/'.
@@ -33,13 +35,6 @@ export const TAGLINE = 'Your personal travel agent'
 export const TEAL = '#0d6e6e'
 export const CREAM = '#f3f1ec'
 export const INK = '#19545d'
-
-export const SITE_SOCIAL = {
-  x: 'https://x.com/hopflights',
-  instagram: 'https://instagram.com/hopflights',
-  threads: 'https://threads.net/@hopflights',
-  tiktok: 'https://tiktok.com/@hopflights',
-}
 
 
 // Per-page metadata helper. Next 16 merges metadata SHALLOWLY across

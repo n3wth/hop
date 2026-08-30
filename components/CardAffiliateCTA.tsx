@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { cardForProgram, cardOutclickPath } from '@/lib/card-affiliates'
 import { track } from '@/lib/posthog-client'
+import Eyebrow from './ui/Eyebrow'
 import Icon from './Icon'
 
 export interface CardAffiliateCTAProps {
@@ -26,7 +27,7 @@ export default function CardAffiliateCTA({ program, unit = 'miles' }: CardAffili
   if (!card) return null
   if (dismissed) return null
 
-  const bonus = card.bonusMiles > 0 ? card.bonusMiles.toLocaleString() : null
+  const bonus = card.bonusMiles > 0 ? card.bonusMiles.toLocaleString('en-US') : null
 
   return (
     // A hairline top divider (distinct from the bordered box below it) keeps
@@ -47,9 +48,9 @@ export default function CardAffiliateCTA({ program, unit = 'miles' }: CardAffili
         </span>
 
         <div className="min-w-0 flex-1">
-          <div className="mb-1 text-[10px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-hero-label">
+          <Eyebrow as="div" onDark className="mb-1 text-[10px]">
             Sponsored
-          </div>
+          </Eyebrow>
           {/* Outbound clicks route through the first-party redirect (logged,
               then 302 to the issuer). rel="sponsored noopener": network
               compliance + correct SEO signal for an affiliate link. */}
@@ -72,7 +73,7 @@ export default function CardAffiliateCTA({ program, unit = 'miles' }: CardAffili
               {card.bonusSpend ? (
                 <span className="text-hero-label">
                   {' '}
-                  after ${card.bonusSpend.toLocaleString()} spend
+                  after ${card.bonusSpend.toLocaleString('en-US')} spend
                 </span>
               ) : null}
             </span>

@@ -1,108 +1,114 @@
-'use client'
+import Card from '@/components/ui/Card'
+import Link from 'next/link'
+import { isBillingEnabled } from '@/lib/env'
+import { ALERT_LIMITS, MCP_DAILY_LIMITS, type Tier } from '@/lib/subscription'
+import { PRO_PRICE_YEARLY_USD } from '@/lib/pricing'
 
-import { useState, useTransition } from 'react'
-import type { Tier } from '@/lib/subscription'
-
-export interface BillingSectionProps {
-  /** Webhook-written tier truth (lib/subscription.getUserTier). */
-  tier: Tier
-  /** Engine-computed active-alert count (countActiveStandingOrders). */
-  activeCount: number
-  /** The free cap, interpolated from ALERT_LIMITS.free — never hardcoded here. */
-  freeLimit: number
-  /** ?upgraded=1 — the Stripe return flag. DISPLAY ONLY: tier truth still comes
-      from the webhook-written row, never from this forgeable redirect param. */
-  upgraded: boolean
-  /** Whether a yearly price is configured (STRIPE_PRICE_ID_PRO_YEARLY). */
-  yearlyAvailable: boolean
+interface BillingSectionProps {
+  /** Whether the viewer has a session at all — drives the Pro card's CTA
+      (sign up vs. upgrade vs. manage billing). */
+  isSignedIn: boolean
+  /** Defaults to 'free' for a signed-out viewer, who has no real tier. */
+  tier?: Tier
+  /** Active standing orders against the free cap — only meaningful when
+      isSignedIn && tier === 'free'. */
+  activeCount?: number
 }
 
-// The /account "Plan" section — the paywall's missing door. Flat editorial:
-// hairline border, no shadows, no bunny (money surface). Every number here is
-// computed upstream and passed down: the alert count from the engine, the cap
-// from ALERT_LIMITS. The prices are configuration paired to the Stripe Price
-// objects (roadmap WS3: $9.99/mo · $99/yr), displayed verbatim, never derived.
-// The parent renders this ONLY when isBillingEnabled() — off means no section.
-export default function BillingSection({
-  tier,
-  activeCount,
-  freeLimit,
-  upgraded,
-  yearlyAvailable,
-}: BillingSectionProps) {
-  const [pending, startTransition] = useTransition()
-  const [error, setError] = useState<string | null>(null)
+const CTA =
+  'hop-press inline-flex items-center justify-center gap-1.5 rounded-[var(--radius)] px-5 py-2.5 text-[14px] font-semibold transition-colors'
 
-  function upgrade(interval: 'monthly' | 'yearly') {
-    setError(null)
-    startTransition(async () => {
-      try {
-        const res = await fetch('/api/billing/checkout', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ interval }),
-        })
-        const data = (await res.json()) as { ok?: boolean; url?: string }
-        if (data.ok && data.url) {
-          // Stripe-hosted Checkout is the money gate — hand the user to it.
-          window.location.href = data.url
-          return
-        }
-        setError('Couldn’t reach billing — try again in a minute.')
-      } catch {
-        setError('Couldn’t reach billing — try again in a minute.')
-      }
-    })
-  }
-
-  const premium = tier === 'premium'
+// The Free/Pro plan-comparison pair — hop's only checkout surface, rendered
+// at /pricing (signed-out pitch and signed-in status share this one
+// component; /account shows a one-line status instead, see
+// app/account/page.tsx). Every cap and price is engine/config-sourced
+// (ALERT_LIMITS, MCP_DAILY_LIMITS, PRO_PRICE_YEARLY_USD) — never hand-typed
+// here, so this can never drift from what checkout/getUserTier actually
+// enforce. Flat editorial: no shadows/gradients, hover is color-only.
+export function BillingSection({ isSignedIn, tier = 'free', activeCount = 0 }: BillingSectionProps) {
+  if (!isBillingEnabled()) return null
+  const isPro = tier === 'premium'
 
   return (
-    <section id="billing" className="mt-10 scroll-mt-24">
-      <h2 className="font-display text-[18px] font-semibold tracking-[-0.01em] text-text">
-        Plan
-      </h2>
-      {upgraded ? (
-        <p className="mt-3 rounded-[12px] border border-brand-light bg-brand-light px-4 py-2.5 text-[13px] font-medium text-brand-deep">
-          You’re on Premium.
+    // Capped at 760px so each card holds its content instead of stranding
+    // three short lines in ~680px of air; both cards are flex columns with the
+    // feature list flexing and the CTA row pinned — every card ends in an action.
+    <div className="grid max-w-[760px] gap-5 sm:grid-cols-2">
+      <Card surface="surface" className="flex flex-col p-6">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-[18px] font-semibold text-text">Free</h2>
+          {isSignedIn && !isPro ? (
+            <span className="rounded-full border border-border px-2.5 py-0.5 text-[11px] font-semibold text-text2">
+              Your plan
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-3 text-[30px] font-semibold leading-none text-text">
+          $0<span className="text-[14px] font-normal text-text3">/forever</span>
         </p>
-      ) : null}
-      <div className="mt-4 rounded-[var(--radius)] border border-border bg-surface px-5 py-4">
-        {premium ? (
-          <p className="text-[14px] font-medium text-text">Premium — unlimited alerts.</p>
-        ) : (
-          <>
-            <p className="text-[14px] font-medium text-text">
-              Free — {activeCount} of {freeLimit} alerts used.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
+        <ul className="mt-4 flex-1 space-y-2 text-[13.5px] leading-[1.5] text-text2">
+          <li>Full search &amp; verdict</li>
+          <li>
+            {ALERT_LIMITS.free} active route alerts
+            {isSignedIn && !isPro ? ` (${activeCount} used)` : ''}
+          </li>
+          <li>Agent quota: {MCP_DAILY_LIMITS.free}/day</li>
+        </ul>
+        <div className="mt-5">
+          <Link
+            href="/search"
+            className={`${CTA} border border-border bg-surface text-text hover:border-brand hover:text-brand`}
+          >
+            Start searching
+          </Link>
+        </div>
+      </Card>
+
+      <div className="flex flex-col rounded-[var(--radius)] border border-brand bg-brand-tint p-6">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-[18px] font-semibold text-text">Pro</h2>
+          {isPro ? (
+            <span className="rounded-full bg-brand px-2.5 py-0.5 text-[11px] font-semibold text-white">
+              Your plan
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-3 text-[30px] font-semibold leading-none text-text">
+          ${PRO_PRICE_YEARLY_USD}
+          <span className="text-[14px] font-normal text-text3">/yr</span>
+        </p>
+        <p className="mt-1 text-[13px] font-medium text-brand-deep">
+          Early price — grandfathered for life
+        </p>
+        <ul className="mt-4 flex-1 space-y-2 text-[13.5px] leading-[1.5] text-text">
+          <li>Unlimited route alerts</li>
+          <li>Weekly best-redemption digest</li>
+          <li>Agent quota: {MCP_DAILY_LIMITS.premium.toLocaleString()}/day</li>
+        </ul>
+        <div className="mt-5">
+          {!isSignedIn ? (
+            <Link href="/login?returnTo=%2Fpricing" className={`${CTA} bg-brand text-white hover:bg-brand-deep`}>
+              Get Pro — ${PRO_PRICE_YEARLY_USD}/yr
+            </Link>
+          ) : isPro ? (
+            <form action="/api/billing/portal" method="POST">
               <button
-                type="button"
-                onClick={() => upgrade('monthly')}
-                disabled={pending}
-                className="inline-flex items-center rounded-[12px] bg-brand px-5 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-brand-deep disabled:opacity-70"
+                type="submit"
+                className={`${CTA} border border-border bg-surface text-text hover:border-brand hover:text-brand`}
               >
-                {pending ? 'Opening checkout…' : 'Upgrade — $9.99/mo'}
+                Manage billing
               </button>
-              {yearlyAvailable ? (
-                <button
-                  type="button"
-                  onClick={() => upgrade('yearly')}
-                  disabled={pending}
-                  className="inline-flex items-center rounded-[12px] border border-border px-5 py-2.5 text-[13.5px] font-semibold text-text transition-colors hover:border-brand hover:text-brand disabled:opacity-70"
-                >
-                  $99/yr
-                </button>
-              ) : null}
-            </div>
-          </>
-        )}
-        {error ? (
-          <p role="alert" className="mt-3 text-[13px] text-text2">
-            {error}
-          </p>
-        ) : null}
+            </form>
+          ) : (
+            <form action="/api/billing/checkout" method="POST">
+              <input type="hidden" name="interval" value="yearly" />
+              <button type="submit" className={`${CTA} bg-brand text-white hover:bg-brand-deep`}>
+                Upgrade to Pro — ${PRO_PRICE_YEARLY_USD}/yr
+              </button>
+            </form>
+          )}
+        </div>
       </div>
-    </section>
+    </div>
   )
 }

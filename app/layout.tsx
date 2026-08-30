@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next'
-import Script from 'next/script'
 import { Bricolage_Grotesque, Fraunces, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import {
@@ -9,6 +8,7 @@ import {
   DEFAULT_DESCRIPTION,
   TEAL,
 } from '@/lib/seo'
+import AstryxProviders from '@/components/AstryxProviders'
 import StructuredData from '@/components/StructuredData'
 import ScrollToTop from '@/components/ScrollToTop'
 import PostHogBoot from '@/components/PostHogBoot'
@@ -139,7 +139,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${bricolage.variable} ${fraunces.variable} ${geistMono.variable}`}>
+    <html
+      lang="en"
+      data-theme="light"
+      className={`${bricolage.variable} ${fraunces.variable} ${geistMono.variable}`}
+    >
       <head>
         {/* Body/UI: General Sans (Fontshare — not on Google/next-font). */}
         <link rel="preconnect" href="https://api.fontshare.com" />
@@ -149,27 +153,23 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans">
-        <ScrollToTop />
-        <StructuredData />
-        {children}
+        {/* Astryx primitives (Dialog/Sheet, DropdownMenu, Badge, EmptyState,
+            Toast) render through this theme — see lib/astryx-theme.ts and
+            components/AstryxProviders.tsx (a 'use client' boundary; see that
+            file for why it can't be inlined into this Server Component).
+            Light mode only, matching hop's own colorScheme (see `viewport`
+            above). ToastViewport makes useToast() available anywhere in the
+            tree; components/Toast.tsx re-exports it. */}
+        <AstryxProviders>
+          <ScrollToTop />
+          <StructuredData />
+          {children}
+        </AstryxProviders>
         <Analytics />
         {/* PostHog product analytics (R0.5) — init + pageviews on every page;
             AppShell adds identify() for signed-in sessions. No-ops without
             NEXT_PUBLIC_POSTHOG_KEY. */}
         <PostHogBoot />
-        {/* Travelpayouts auto-attribution tag (project/trs 545389, marker
-            745576). Decorates clicks on links that point DIRECTLY at partner
-            domains. It cannot see through the same-origin /api/go/kiwi ledger
-            redirect, so the cash CTAs do NOT rely on it — lib/booking.ts
-            #cashBookingUrl bakes attribution into the redirect destination
-            (tp.media). The tag stays for any other partner links on the page.
-            lazyOnload keeps it entirely off the critical path. No hop data is
-            sent; it only decorates outbound partner navigations. Production-only:
-            the tag 403s on non-whitelisted origins (localhost), spamming the
-            console — and dev clicks shouldn't attribute anyway. */}
-        {process.env.NODE_ENV === 'production' && (
-          <Script src="https://emrldtp.com/NTQ1Mzg5.js?t=545389" strategy="lazyOnload" />
-        )}
       </body>
     </html>
   )

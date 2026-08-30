@@ -3,6 +3,8 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { searchAirports, airportByCode } from '@/lib/airports'
 import { useOrigin } from '@/lib/origin-context'
+import Card from './ui/Card'
+import Eyebrow from './ui/Eyebrow'
 
 // Compact "where from" control for the TopNav — a flat pill that states the
 // current origin ("From SFO") and opens a small popover to set or change it.
@@ -85,22 +87,24 @@ export default function OriginSelector() {
         aria-expanded={open}
         aria-label={origin ? `Departure airport: ${origin}. Change` : 'Set your departure airport'}
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center rounded-full border border-border px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:border-text2 hover:bg-sunk ${
-          open ? 'border-text2 bg-sunk' : ''
+        className={`hop-ink-border flex items-center rounded-full border px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:border-text2 hover:bg-sunk ${
+          open ? 'hop-ink-border-active bg-sunk' : ''
         }`}
       >
         <span className="tabular-nums">{label}</span>
       </button>
 
       {open && (
-        <div
+        <Card
+          surface="surface"
+          radius="md"
           role="dialog"
           aria-label="Set departure airport"
-          className="absolute right-0 top-[calc(100%+10px)] z-[80] w-[300px] rounded-[var(--radius)] border border-border bg-surface p-2.5"
+          className="hop-popover-in absolute right-0 top-[calc(100%+10px)] z-[80] w-[300px] p-2.5 origin-top-right"
         >
-          <span className="mb-1.5 block px-1 text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text3">
+          <Eyebrow className="mb-1.5 block px-1 text-[10.5px]">
             Where from
-          </span>
+          </Eyebrow>
           <input
             ref={inputRef}
             value={query}
@@ -185,7 +189,7 @@ export default function OriginSelector() {
               </button>
             </div>
           ) : null}
-        </div>
+        </Card>
       )}
     </div>
   )

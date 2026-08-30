@@ -9,7 +9,7 @@ argument-hint: "[optional focus, e.g. eve/ or lib/standing-orders — defaults t
 before a milestone. It hunts violations of the standing invariants — engine-computed numbers,
 graceful degradation, copy voice, Next 16 idioms, Eve architecture, security scoping — **plus
 the memory surfaces themselves** (solutions index vs disk, code contradicting an Accepted ADR,
-a solved problem reintroduced, CLAUDE.md claims gone stale).
+a solved problem reintroduced, AGENTS.md claims gone stale).
 
 Optional focus: **$ARGUMENTS**.
 

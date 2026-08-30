@@ -1,4 +1,42 @@
+/* Pre-declares the full cascade-layer order BEFORE any layered stylesheet
+   loads a rule into one of these names — CSS resolves a layer's priority
+   from where its name *first* appears anywhere in the document, so this
+   statement (not the imports below) is what actually fixes the order.
+   Tailwind v4's own `@import "tailwindcss"` internally declares
+   theme/base/components/utilities in this same way; naming them here first
+   means Astryx's astryx-base/astryx-theme layers slot in BETWEEN base and
+   components — below hop's own `components`/`utilities` Tailwind classes
+   (so hop's own styling always wins a conflict, matching
+   node_modules/@astryxdesign/core/src/reset.css's own documented "consumer
+   styles always override Astryx" intent) but with astryx-theme still above
+   astryx-base (lib/astryx-theme.ts's overrides win over Astryx's stock
+   defaults). Same technique as newth-garden's src/app/globals.css.
+   Omitting a name here (this took a full round of screenshot debugging to
+   catch: `reset` was missing in an earlier version of this line, which sent
+   Astryx's reset.css to the *end* of the whole order instead of the front —
+   its zero-specificity `:where()` button reset then unconditionally beat
+   this theme's own button background/color overrides, since cross-layer
+   priority ignores specificity entirely) leaves that layer appended to the
+   *end* of the order instead — which, for astryx-base/astryx-theme, would
+   rank them ABOVE hop's own Tailwind utilities, a real regression risk
+   across every existing hop component, not just the new Astryx ones. */
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
+
 @import "tailwindcss";
+/* Astryx primitives (Dialog/Sheet, DropdownMenu, Badge, EmptyState, Toast —
+   see lib/astryx-theme.ts, components/AstryxProviders.tsx). reset.css is a
+   :where()-scoped (zero-specificity) base reset; astryx.css is the
+   precompiled component stylesheet — WITHOUT it, any Astryx design token
+   this app doesn't explicitly override in lib/astryx-theme.ts (radius-full,
+   the spacing scale, etc.) resolves to nothing instead of Astryx's own
+   documented default (confirmed via a throwaway screenshot harness: a
+   button themed with `borderRadius: 'var(--radius-full)'` rendered with
+   SHARP corners, because --radius-full was never declared anywhere without
+   this import — @astryxdesign/core's own defineTheme() docs promise
+   "everything else inherits from the Astryx defaults", which requires this
+   file to be loaded for that promise to hold). */
+@import '@astryxdesign/core/reset.css';
+@import '@astryxdesign/core/astryx.css';
 @import "flag-icons/css/flag-icons.min.css";
 /* Streamdown renders the concierge's streamed markdown — scan its classes so v4
    doesn't purge them. */
@@ -192,6 +230,10 @@ body {
      bounce the whole document (the tell of a wrapped web page). Scrollable
      regions inside still scroll normally. */
   overscroll-behavior-y: contain;
+  /* Full-bleed layers (hero ambience) stretch to 50vw past center; on
+     classic-scrollbar platforms 100vw overshoots the viewport by the
+     scrollbar width — clip it rather than grow a horizontal scroll. */
+  overflow-x: clip;
 }
 
 /* Paper grain — a whisper-subtle tiled fractal-noise texture baked onto the
@@ -283,6 +325,21 @@ body {
   animation: hop-appear 560ms var(--ease-premium) both;
 }
 
+@keyframes hop-popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.hop-popover-in {
+  animation: hop-popover-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* Confirmation check settle — a one-shot scale-in for the moment an action
    lands: the booking-confirmed ring, a watch saved, "Copied". Transform-only,
    overshoots a hair and settles. Apply to the ICON'S wrapper (re-key it to
@@ -346,7 +403,6 @@ body {
 .hop-float {
   animation: hop-float 4.5s var(--ease-premium) infinite;
 }
-
 /* Value bars grow from 0 to their target width once, on load. The target width
    is supplied inline as --hop-bar-w; the animation eases out to it. */
 @keyframes hop-bar-grow {
@@ -390,7 +446,7 @@ body {
 .hop-skeleton {
   position: relative;
   overflow: hidden;
-  background: var(--color-sunk);
+  background: var(--color-border-soft);
 }
 .hop-skeleton::after {
   content: '';
@@ -399,9 +455,9 @@ body {
   transform: translateX(-100%);
   background: linear-gradient(
     90deg,
-    transparent,
-    color-mix(in srgb, var(--color-bg) 60%, #fff) 55%,
-    transparent
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.45) 50%,
+    rgba(255, 255, 255, 0) 100%
   );
   animation: hop-shimmer 1.6s ease-in-out infinite;
 }
@@ -412,14 +468,19 @@ body {
 .hop-skeleton-dark {
   position: relative;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.1);
 }
 .hop-skeleton-dark::after {
   content: '';
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16) 55%, transparent);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.24) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
   animation: hop-shimmer 1.6s ease-in-out infinite;
 }
 
@@ -525,6 +586,12 @@ body {
     animation: none;
     opacity: 1;
     transform: none;
+  }
+  /* ConciergeHero's cross-fading backdrop rotator (JS already stops advancing
+     the index under reduced motion) — freeze the opacity transition itself too,
+     same belt-and-suspenders reset as every other motion class here. */
+  .hop-rotator img {
+    transition: none;
   }
 }
 
@@ -799,6 +866,56 @@ body {
   }
 }
 
+/* ── Outlined nav pills ───────────────────────────────────────────────────
+   Origin selector, admin shield, and points chip in the top nav: border
+   derived from the pill's own text color (currentColor) at low opacity
+   instead of the flat --color-border hairline token, so the outline reads
+   as intentional against any background — including the ambient-tinted
+   hero and photo cards under the glass nav, not just the plain cream canvas
+   --color-border was tuned for. Text colors are unchanged; the border stays
+   quieter than the label (30% vs. full-strength text). */
+.hop-ink-border {
+  border-color: color-mix(in srgb, currentColor 30%, transparent);
+}
+
+/* Open/active state needs to beat .hop-ink-border on specificity, not just
+   cascade order (Tailwind's plain `border-text2` utility ties with
+   `.hop-ink-border` at 0,1,0, and source order isn't a safe way to decide a
+   tie) — so this pairs with `.hop-ink-border` on the same element for 0,2,0. */
+.hop-ink-border.hop-ink-border-active {
+  border-color: var(--color-text2);
+}
+
+/* ── Glass nav surfaces ───────────────────────────────────────────────────
+   Shared translucent-background treatment for the sticky top nav (once
+   scrolled) and the fixed bottom tab bar — approved for nav chrome only,
+   everywhere else the flat-editorial no-shadow/gradient/glow rule stands.
+   The actual blur (backdrop-filter / -webkit-backdrop-filter) is applied
+   inline by each component, not here: Lightning CSS's prefix-dedup pass
+   silently drops the unprefixed `backdrop-filter` declaration when both
+   live in one compiled rule, so blur is set as an inline style to guarantee
+   both land in the DOM (same reasoning the pre-existing scroll-glass TopNav
+   style already followed). Background alone still degrades correctly here:
+   opaque cream for browsers without backdrop-filter support and for
+   prefers-reduced-transparency, so text never sits on unpredictable content
+   without a backdrop — any residual inline blur is invisible behind a fully
+   opaque background regardless. */
+.hop-glass-surface {
+  background: color-mix(in srgb, var(--color-bg) 75%, transparent);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .hop-glass-surface {
+    background: var(--color-bg);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .hop-glass-surface {
+    background: var(--color-bg);
+  }
+}
+
 /* ── Bottom tab bar (phone-only) ──────────────────────────────────────────
    Mobile-first fixed navigation bar. Sits above the safe-area inset to clear
    notches and home indicator. Hidden on /ask (concierge owns the bottom).
@@ -899,7 +1016,12 @@ body {
 
 
 /* ── Reduced motion: disable all tactile + view-transition animations ────────
-   Collapsed .hop-press to no scale, no transition. View transitions frozen. */
+   Collapsed .hop-press to no scale, no transition. View transitions frozen —
+   the wildcard selectors cover every NAMED transition (e.g. the home→/search
+   photo morph, `photo-${code}`), not just the root cross-fade: ::group is the
+   pseudo that animates a named element's position/size (the actual "morph"),
+   so without it reduced-motion would still slide/scale the photo even with
+   old/new's opacity animation removed. */
 @media (prefers-reduced-motion: reduce) {
   .hop-press:active,
   .hop-press-card:active {
@@ -907,8 +1029,9 @@ body {
     transition: none;
   }
 
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
     animation: none !important;
   }
 

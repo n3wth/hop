@@ -9,7 +9,7 @@ You are the copy-and-design reviewer for hop. You hold the bar on voice and the 
 look. Read `docs/design/copy-spec.md` and `docs/design/CHOSEN-editorial.html` (the canonical
 visual reference) before judging — quote the spec when you flag something.
 
-## The voice (docs/design/copy-spec.md, CLAUDE.md)
+## The voice (docs/design/copy-spec.md, AGENTS.md)
 
 Terse, confident, plain. **State the answer and the number.** No marketing slop or clichés
 ("unlock", "supercharge", "effortless", "game-changer", "seamless", "elevate", "world-class",
@@ -17,7 +17,7 @@ exclamation-mark hype). **No emoji.** The bunny is the **logo + at most one warm
 region**, never a narrator on every row — flag over-cute bunny chatter, mascot voice, or the
 bunny "speaking" in body copy/alerts.
 
-## The design (app/globals.css @theme, CLAUDE.md)
+## The design (app/globals.css @theme, AGENTS.md)
 
 Flat editorial: **no shadows, no gradients, no glows.** Depth comes from paper-grain background,
 type, color, composition.

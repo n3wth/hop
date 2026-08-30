@@ -46,17 +46,18 @@ const DUR = '280ms'
 // Static logo lockup — memoized so scroll-state toggles never re-render the
 // (path-heavy) bunny SVG. Only the wrapper's transform animates.
 const LogoLockup = memo(function LogoLockup() {
-  // Mark + wordmark lockup per CHOSEN-editorial.html's masthead: the bunny in
-  // brand teal, the hand-drawn wordmark in ink beside it. Links to the home
-  // page. Hover is a color flip only (house rule: no hover movement).
+  // Lockup color matches the nav's bordered controls (the Sign in pill's
+  // border-text2/text-text2) so the masthead reads as one quiet system;
+  // hover restores the brand flip. Hover is a color flip only (house rule:
+  // no hover movement).
   return (
     <Link href="/" aria-label="hop — home" className="group flex items-center gap-[9px]">
       <FlyingBunny
         size={41}
         carve="var(--color-bg)"
-        markClassName="text-brand transition-colors group-hover:text-brand-deep"
+        markClassName="text-text2 transition-colors group-hover:text-brand"
       />
-      <span className="wordmark text-[19px] leading-none text-text transition-colors group-hover:text-brand">
+      <span className="wordmark text-[19px] leading-none text-text2 transition-colors group-hover:text-brand">
         {SITE_NAME}
       </span>
     </Link>
@@ -217,17 +218,16 @@ export default function TopNav({
           disappears entirely; on search pages it survives only as the slim
           search-pill strip (the pill is the page's primary control, not chrome). */}
       <header
-        className={`sticky top-0 z-50 ${hideSearch ? 'hidden md:block' : ''}`}
+        className={`sticky top-0 z-50 ${hideSearch ? 'hidden md:block' : ''} ${c ? 'hop-glass-surface' : ''}`}
         style={{
           height: 72,
-          background: c ? 'color-mix(in srgb, var(--color-bg) 80%, transparent)' : 'transparent',
-          backdropFilter: c ? 'blur(10px) saturate(120%)' : 'none',
-          WebkitBackdropFilter: c ? 'blur(10px) saturate(120%)' : 'none',
+          backdropFilter: c ? 'blur(14px) saturate(140%)' : 'none',
+          WebkitBackdropFilter: c ? 'blur(14px) saturate(140%)' : 'none',
           borderBottom: c ? '1px solid var(--color-border)' : '1px solid transparent',
           transform: 'translateZ(0)',
           isolation: 'isolate',
           willChange: c ? 'backdrop-filter' : 'auto',
-          transition: `background ${DUR} ${EASE}, border-color ${DUR} ${EASE}`,
+          transition: `background ${DUR} ${EASE}, border-color ${DUR} ${EASE}, backdrop-filter ${DUR} ${EASE}`,
         }}
       >
         <div className="h-full px-5 sm:px-8 lg:px-12 xl:px-16">
@@ -327,7 +327,7 @@ export default function TopNav({
                     href="/admin"
                     title="Admin"
                     aria-label="Admin"
-                    className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full border border-border text-text2 transition-colors hover:bg-sunk"
+                    className="hop-ink-border grid h-10 w-10 flex-shrink-0 place-items-center rounded-full border text-text2 transition-colors hover:bg-sunk"
                   >
                     <Icon name="shield" size={20} />
                   </Link>
@@ -336,7 +336,7 @@ export default function TopNav({
                   <Link
                     href="/account"
                     title="Your points"
-                    className="hidden items-center gap-1.5 rounded-full border border-border px-3.5 py-2 transition-colors hover:bg-sunk lg:flex"
+                    className="hop-ink-border hidden items-center gap-1.5 rounded-full border px-3.5 py-2 text-text2 transition-colors hover:bg-sunk lg:flex"
                   >
                     <span className="hop-num text-[14px] font-semibold text-text">
                       {compactPoints(pointsTotal)}

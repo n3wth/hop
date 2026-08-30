@@ -12,6 +12,7 @@ import { startPaymentSession, placeOrder, refreshOffer } from '@/app/actions/che
 import Icon from '@/components/Icon'
 import BrandIcon from '@/components/BrandIcon'
 import FarePolicyCard from '@/components/checkout/FarePolicyCard'
+import Button from '@/components/ui/Button'
 
 // Native cash checkout — itinerary summary, passenger details, the Duffel hosted
 // card form, and the pay action. Flat, on-brand. The card form runs in a
@@ -181,7 +182,9 @@ export default function CheckoutForm({
     if (!activeOffer.expiresAt || expired) return null
     const d = new Date(activeOffer.expiresAt)
     if (isNaN(d.getTime())) return null
-    return `Price held until ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+    // Pin UTC like timeOf/dateOf above — a bare toLocaleTimeString formats in the
+    // server tz on SSR and the browser tz on hydration, which trips React #418.
+    return `Price held until ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })}`
   })()
 
   // Watch the held price: when it lapses, surface the expiry state. Re-checks on
@@ -409,14 +412,14 @@ export default function CheckoutForm({
           >
             <Icon name="schedule" size={16} className="flex-shrink-0 text-text2" />
             <span className="flex-1">The held price lapsed. Refresh to get the latest fare.</span>
-            <button
-              type="button"
+            <Button
+              variant="ink"
+              size="sm"
               onClick={refreshExpiredOffer}
               disabled={refreshing}
-              className="rounded-[9px] border-[1.5px] border-text px-3 py-1.5 text-[12.5px] font-semibold text-text transition-colors hover:bg-text hover:text-white disabled:opacity-60"
             >
               {refreshing ? 'Refreshing…' : 'Refresh price'}
-            </button>
+            </Button>
           </div>
         ) : null}
 
@@ -601,7 +604,26 @@ export default function CheckoutForm({
             className="mt-5 flex items-start gap-2.5 rounded-[12px] border border-weak/20 bg-weak-bg px-4 py-3.5 text-[13.5px] leading-[1.5] text-weak"
           >
             <Icon name="error" size={16} weight="fill" className="mt-px flex-shrink-0" />
-            <span>{error}</span>
+            <span>
+              {error}
+              {/* A lapsed session is recoverable — hand them the door back in,
+                  carrying this exact checkout URL so the offer survives the
+                  round-trip. (This branch only renders client-side, after an
+                  action result, so window is always available.) */}
+              {/sign in/i.test(error) ? (
+                <>
+                  {' '}
+                  <a
+                    href={`/login?returnTo=${encodeURIComponent(
+                      window.location.pathname + window.location.search,
+                    )}`}
+                    className="font-semibold underline underline-offset-2 transition-colors hover:text-text"
+                  >
+                    Sign in to continue
+                  </a>
+                </>
+              ) : null}
+            </span>
           </div>
         ) : null}
 
@@ -773,7 +795,7 @@ function Input({
       min={min}
       max={max}
       onChange={(e) => onChange(e.target.value)}
-      className={`rounded-[11px] border-[1.5px] bg-paper px-3 py-[10px] text-[14.5px] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand ${
+      className={`no-inner-ring rounded-[11px] border-[1.5px] bg-paper px-3 py-[10px] text-[14.5px] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand ${
         invalid ? 'border-weak' : 'border-border'
       }`}
     />
@@ -799,7 +821,7 @@ function Select({
         ref={selectRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full cursor-pointer appearance-none rounded-[11px] border-[1.5px] border-border bg-paper px-3 py-[10px] pr-9 text-[14.5px] text-text outline-none transition-colors focus:border-brand"
+        className="no-inner-ring w-full cursor-pointer appearance-none rounded-[11px] border-[1.5px] border-border bg-paper px-3 py-[10px] pr-9 text-[14.5px] text-text outline-none transition-colors focus:border-brand"
       >
         {options.map(([v, label]) => (
           <option key={v} value={v}>

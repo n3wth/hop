@@ -7,11 +7,12 @@ import type { TravelPrefs } from '@/lib/prefs-model'
 import { getUserBalances } from '@/lib/accounts'
 import { getPrefs } from '@/lib/prefs'
 import { cityForCode } from '@/lib/airports'
-import { destinationImage } from '@/lib/images'
+import { destinationImage, photoForCode } from '@/lib/images'
+import { affordableWith, topValue } from '@/lib/destinations'
 import { auth0 } from '@/lib/auth0'
 import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
-import { isStandingOrdersCronLive } from '@/lib/env'
-import { clampTravelDates, DEFAULT_DEPART } from '@/lib/travel-dates'
+import { isShareReceiptsEnabled, isStandingOrdersCronLive } from '@/lib/env'
+import { DEFAULT_DEPART, parseTravelDateQuery } from '@/lib/travel-dates'
 import { isoOffset } from '@/lib/dates'
 import { SITE_URL } from '@/lib/seo'
 import AppShell from '@/components/AppShell'
@@ -22,6 +23,8 @@ import SearchTelemetry from '@/components/SearchTelemetry'
 import PointsPanel from '@/components/PointsPanel'
 import SiteFooter from '@/components/SiteFooter'
 import HeroSearch from '@/components/landing/HeroSearch'
+import DestinationSuggestions from '@/components/DestinationSuggestions'
+import SearchAskChips from '@/components/SearchAskChips'
 
 const DEFAULT_PARAMS: SearchParams = {
   from: 'SFO',
@@ -64,9 +67,16 @@ function parseParams(
   // Origin and destination must differ — fall back to a sane default destination.
   if (to === from) to = from === DEFAULT_PARAMS.to ? DEFAULT_PARAMS.from : DEFAULT_PARAMS.to
 
-  // Clamp missing/malformed/past dates up to today; one-way when `return` is
-  // absent, and a malformed or pre-departure return is dropped.
-  const { depart, return: ret } = clampTravelDates(str(q.depart), str(q.return))
+  // Resolve exact, legacy, and evergreen relative-day query intents through
+  // one shared parser. Canonical `return` wins over legacy `ret`, and exact
+  // values win over relative offsets before the existing clamp is applied.
+  const { depart, return: ret } = parseTravelDateQuery({
+    depart: str(q.depart),
+    return: str(q.return),
+    ret: str(q.ret),
+    departIn: str(q.departIn),
+    returnIn: str(q.returnIn),
+  })
 
   const adultsRaw = parseInt(str(q.adults) ?? '', 10)
   const adults = Number.isFinite(adultsRaw)
@@ -165,7 +175,7 @@ export async function generateMetadata({
     return {
       title: 'Search flights',
       description:
-        'Pick a route and hop reads live award space and cash fares side by side, priced in cents per point.',
+        'Pick a route and hop compares published saver charts with cash fares, priced in cents per point.',
       alternates: { canonical: '/search' },
     }
   }
@@ -176,7 +186,7 @@ export async function generateMetadata({
   const dates = fmtRange(p.depart, p.return)
 
   const title = `${p.from} → ${p.to}`
-  const description = `Points or cash for ${fromCity} (${p.from}) → ${toCity} (${p.to}), ${dates} — hop reads live award space and cash fares and gives you the verdict, with the value per point.`
+  const description = `Points or cash for ${fromCity} (${p.from}) → ${toCity} (${p.to}), ${dates} — hop compares published saver charts with cash fares and gives you the verdict, with the value per point.`
 
   // Clean canonical query: stable key order, only the fields that define the
   // trip, return omitted for one-way.
@@ -240,44 +250,86 @@ export default async function Search({
   // No destination named — e.g. the header's "Search" nav link — used to
   // silently run the DEFAULT_PARAMS SFO→LAX verdict and present it as if it
   // were a real result. Land on a plain search-initiation state instead: the
-  // engine only ever runs on a route the visitor actually asked for. This
-  // state doesn't run the engine, so it only needs prefs (home airport
-  // prefill) — NOT the AwardWallet-backed balances call the results branch
-  // needs; pointsTotal is simply omitted (TopNav already renders fine
-  // without it) rather than making this fast path wait on a slow call it
-  // has no use for.
+  // engine (assembleSearch, cash + award-space lookups) never runs here — only
+  // a route the visitor actually asked for triggers it. Prefs + balances ARE
+  // read (in parallel, below) to ground the "worth a look" row in this
+  // visitor's own points: getUserBalances is a cached DB read now (the
+  // AwardWallet cache added alongside #217), not the live per-page call this
+  // fast path used to avoid, so it stays cheap. pointsTotal is still omitted
+  // from AppShell (TopNav renders fine without it) — that prop is for the
+  // header chip, not needed here.
   if (!hasDestination(sp)) {
-    const prefs = su?.sub ? await getPrefs(su.sub) : undefined
+    const [prefs, userBalances] = await Promise.all([
+      su?.sub ? getPrefs(su.sub) : Promise.resolve(undefined),
+      su?.sub ? getUserBalances(su.sub) : Promise.resolve(undefined),
+    ])
     const originSeed = prefs?.homeAirport ?? cookieOrigin
+    // The suggestion cards always need a concrete origin to link from; when
+    // the visitor has no saved airport yet, fall back to the same default the
+    // engine itself uses (DEFAULT_PARAMS.from) rather than leaving the cards
+    // linkless. hasKnownOrigin tracks whether that origin is real vs. guessed,
+    // independently of isPersonalized (points-based) below — the heading's
+    // "from <code>" suffix is gated on THIS, so a guessed fallback airport
+    // never gets attributed to the visitor as their own.
+    const hasKnownOrigin = !!originSeed
+    const cardOrigin = originSeed ?? DEFAULT_PARAMS.from
+    const totalPoints =
+      userBalances && userBalances.length > 0
+        ? userBalances.reduce((s, b) => s + b.balance, 0)
+        : undefined
+    // Only claim "computed from your points" when there are enough real
+    // affordable destinations to fill the row — a lone card next to three
+    // sample ones would misrepresent which figures are real.
+    const affordable = totalPoints ? affordableWith(totalPoints) : []
+    const isPersonalized = affordable.length >= 3
+    const suggestions = (isPersonalized ? affordable : topValue(4)).slice(0, 4)
+    // Sensible near-future dates for the suggestion links — same convention
+    // as /deals (3 weeks out, home a week later).
+    const suggestDepart = isoOffset(21)
+    const suggestReturn = isoOffset(28)
     return (
       <AppShell user={user} homeAirport={originSeed} hideSearch>
-        <div className="mx-auto flex min-h-[70vh] max-w-[var(--container-shell)] flex-col items-center justify-center px-2 py-16 text-center">
-          <span className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand sm:text-[12px]">
-            Points or cash
-          </span>
-          <h1 className="mt-4 text-balance font-display text-[32px] font-semibold leading-[1.05] tracking-[-0.02em] text-text sm:text-[42px]">
-            Where are you flying?
-          </h1>
-          <p className="mt-3 max-w-[46ch] text-[15px] leading-[1.6] text-text2 sm:text-[16px]">
-            Pick a route and hop reads your balances, checks award space, prices the cash fare,
-            and tells you the smarter way to book it.
-          </p>
-          <div className="mt-9 w-full">
-            <HeroSearch
-              initial={{
-                from: originSeed ?? '',
-                to: '',
-                depart: isoOffset(10),
-                ret: isoOffset(13),
-                adults: 1,
-                children: 0,
-                infants: 0,
-                cabin: 'economy',
-                oneWay: false,
-                nonstop: false,
-              }}
-            />
+        <div className="mx-auto max-w-[var(--container-shell)] px-2 pb-16 pt-16">
+          <div className="flex min-h-[46vh] flex-col items-center justify-center text-center">
+            <span className="text-[11px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand sm:text-[12px]">
+              Points or cash
+            </span>
+            <h1 className="mt-4 text-balance font-display text-[32px] font-semibold leading-[1.05] tracking-[-0.02em] text-text sm:text-[42px]">
+              Where are you flying?
+            </h1>
+            <p className="mt-3 max-w-[46ch] text-[15px] leading-[1.6] text-text2 sm:text-[16px]">
+              Pick a route and hop reads your balances, the published saver chart, and the cash fare,
+              then tells you the smarter way to book it.
+            </p>
+            <div className="mt-9 w-full">
+              <HeroSearch
+                initial={{
+                  from: originSeed ?? '',
+                  to: '',
+                  depart: isoOffset(10),
+                  ret: isoOffset(13),
+                  adults: 1,
+                  children: 0,
+                  infants: 0,
+                  cabin: 'economy',
+                  oneWay: false,
+                  nonstop: false,
+                }}
+              />
+            </div>
+            <SearchAskChips />
           </div>
+
+          <DestinationSuggestions
+            destinations={suggestions}
+            fromCode={cardOrigin}
+            hasKnownOrigin={hasKnownOrigin}
+            depart={suggestDepart}
+            ret={suggestReturn}
+            isPersonalized={isPersonalized}
+            totalPoints={isPersonalized ? totalPoints : undefined}
+            isSignedIn={!!user}
+          />
         </div>
         <SiteFooter />
       </AppShell>
@@ -308,21 +360,32 @@ export default async function Search({
     ? { ...prefs?.travelPrefs, maxStops: 0, preferNonstop: true }
     : prefs?.travelPrefs
   // Destination photo for the verdict hero — the place you're heading, behind
-  // the boarding pass (replaces the redundant bunny). Query the CITY skyline/
-  // landscape, never the airport code (which surfaces terminals, not beauty).
-  // Cached; null → bunny.
-  // Only query when we have a real city name — if cityForCode falls back to the
-  // raw IATA code (unmapped airport), skip the photo so we never search "JFK"
-  // and get a terminal. Bunny fallback covers it.
+  // the boarding pass (replaces the redundant bunny). Cached; null → bunny.
+  // Curated destinations resolve by the manifest's OWN code (params.to) first —
+  // the same identity the home showcase renders from (lib/destinations#code,
+  // ShowcaseEntry.code) — so the two surfaces provably render the same file,
+  // the precondition for the shared-element photo morph (destPhotoCode below).
+  // Only the long-tail (uncurated) destinations fall back to the free-text
+  // Unsplash query, keyed off the city name, never the airport code (which
+  // surfaces terminals, not beauty) — skipped entirely when cityForCode falls
+  // back to the raw IATA code (unmapped airport).
   // Independent of the verdict engine — fetched alongside it, not after, so the
   // photo round-trip never adds to the page's critical path.
+  const manifestPhoto = photoForCode(params.to)
   const destCity = cityForCode(params.to)
   const [result, destPhoto] = await Promise.all([
     assembleSearch(params, userBalances, effectivePrefs),
-    destCity && destCity !== params.to
-      ? destinationImage(`${destCity} skyline travel landmark`)
-      : Promise.resolve(null),
+    manifestPhoto
+      ? Promise.resolve(manifestPhoto)
+      : destCity && destCity !== params.to
+        ? destinationImage(`${destCity} skyline travel landmark`)
+        : Promise.resolve(null),
   ])
+  // Only assign the shared view-transition identity when the photo actually
+  // came from the curated manifest by exact code — an Unsplash long-tail photo
+  // has no showcase counterpart to morph from/to, so naming it would just be
+  // an unmatched transition (harmless, but pointless).
+  const destPhotoCode = manifestPhoto ? params.to : undefined
 
   // The verdict's ownership voice ("You have the miles") is only honest when
   // these balances are this signed-in user's own connected programs. Signed out
@@ -375,10 +438,12 @@ export default async function Search({
           <VerdictRail
             result={result}
             destPhoto={destPhoto}
+            destPhotoCode={destPhotoCode}
             hasRealBalances={hasRealBalances}
             isSignedIn={!!user}
             nonstop={nonstop}
             watchLive={isStandingOrdersCronLive()}
+            shareEnabled={isShareReceiptsEnabled() && result.degraded.length === 0}
           />
         ) : null}
 

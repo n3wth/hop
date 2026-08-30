@@ -11,13 +11,13 @@ import type {
   SearchParams,
   SearchResult,
 } from '@/lib/types'
-import { cpp, tier, rankOptions } from '@/lib/cpp'
+import { cpp, tier, rankOptions, POINTS_THRESHOLD_CPP } from '@/lib/cpp'
 import { applyPrefs, type TravelPrefs } from '@/lib/prefs-model'
 import { transfersTo, effectiveBalanceFor } from '@/lib/transfers'
 import { cashBookingUrl, pointsBookingUrl } from '@/lib/booking'
 import { isCheckoutEnabled } from '@/lib/env'
 import { searchCash } from '@/lib/duffel'
-import { searchAwards } from '@/lib/seatsaero'
+import { searchAwards } from '@/lib/awards'
 import { getBalances } from '@/lib/awardwallet'
 import { mockCash, mockAwards, mockBalances } from '@/lib/mock'
 import { recordCppObservations } from '@/lib/valuation-telemetry'
@@ -25,7 +25,9 @@ import { iataRouteCode, recordDegradation, sanitizeReason } from '@/lib/degradat
 import { captureServerEvent } from '@/lib/posthog-server'
 import { canonicalizeProgram } from '@/lib/programs'
 
-export const POINTS_THRESHOLD_CPP = 2.5
+// Re-exported from lib/cpp.ts, its actual owner — kept here so existing
+// `from '@/lib/search'` call sites don't need to change.
+export { POINTS_THRESHOLD_CPP }
 
 // Seat-occupying travelers: one seat per adult + child; infants ride as lap
 // infants (no seat, no award miles). THE party-size rule — the engine scales
@@ -57,11 +59,22 @@ function youHaveFor(option: FlightOption, balances: Balance[]): number | undefin
 // by lib/accounts.getUserBalances). When omitted, falls back to the AwardWallet
 // env global via getBalances() — preserving the original behavior for callers
 // without a session and for the test suite.
+//
+// opts.recordTelemetry (default true) gates BOTH telemetry side effects below
+// (the cpp-observation POST and the degradation-incident record/capture) —
+// every existing call site is unaffected. Set to false for a call that isn't a
+// real user search (e.g. lib/sweet-spot-candidates.ts mining a curated route
+// grid): those cpp values must never feed the live valuation worker's trust
+// gate (ADR 0005), and a burst of synthetic scan calls hitting a rate-limited
+// upstream must not read as a live-traffic degradation spike to the health
+// sentinel's D2 detector (lib/health-checks.ts).
 export async function assembleSearch(
   params: SearchParams,
   userBalances?: Balance[],
   prefs?: TravelPrefs,
+  opts?: { recordTelemetry?: boolean },
 ): Promise<SearchResult> {
+  const recordTelemetry = opts?.recordTelemetry ?? true
   let cashOptions: FlightOption[] = []
   let awardOptions: FlightOption[] = []
   let balances: Balance[] = []
@@ -75,7 +88,7 @@ export async function assembleSearch(
   const useMock = /^(1|true|yes)$/i.test(process.env.MOCK ?? '')
 
   // Duffel's cash total_amount already covers the WHOLE party (buildPassengers
-  // in lib/duffel.ts), while Seats.aero miles/taxes are always per-seat — so
+  // in lib/duffel.ts), while chart miles/taxes are always per-seat — so
   // award economics are scaled to the same party total below, making both legs
   // of every cpp comparison mean "cost to move everyone".
   const seats = seatsFor(params)
@@ -106,11 +119,16 @@ export async function assembleSearch(
       // Cash fixtures are authored per-seat; live Duffel returns party totals
       // (buildPassengers). Scale so mock and live share the same semantics —
       // otherwise the award scaling below would skew mock cpp for parties > 1.
+      // Cash fixtures are ROUND-TRIP totals (roundTrip: true). A one-way mock
+      // search halves them so mock cpp/verdicts stay consistent whichever trip
+      // type is searched — otherwise a one-way looked twice as good.
       ...(o.kind === 'cash'
         ? {
             bookingUrl: cashBookingUrl(params),
-            cashPrice: o.cashPrice != null ? o.cashPrice * seats : o.cashPrice,
-            taxes: o.taxes != null ? o.taxes * seats : o.taxes,
+            cashPrice:
+              o.cashPrice != null ? o.cashPrice * seats * (params.return ? 1 : 0.5) : o.cashPrice,
+            taxes: o.taxes != null ? o.taxes * seats * (params.return ? 1 : 0.5) : o.taxes,
+            roundTrip: Boolean(params.return),
           }
         : {}),
     })
@@ -195,13 +213,24 @@ export async function assembleSearch(
 
   // Annotate award/transfer options: compute cpp vs cheapest cash, tier,
   // youHave from balances, transfer sources, booking URL, and action intent.
+  //
+  // Round-trip parity: when the search has a return date, cash prices (Duffel,
+  // and the mock cash fixture) are ROUND-TRIP totals, but award availability
+  // (Seats.aero, mock awards) is priced per DIRECTION. Dividing RT cash by
+  // one-way miles silently doubled every cpp and "you save" figure — the
+  // single biggest way the math didn't add up. Scale the award side by the
+  // leg count (approximation: assumes the return leg books at the same award
+  // level, the standard way saver awards are quoted) so cpp compares
+  // like-for-like. One-way searches are unaffected.
+  const legs = params.return ? 2 : 1
   const awards: FlightOption[] = awardOptions.map((o) => {
     // Upstream award miles/taxes are per-seat (Seats.aero never scales by party
     // size); cheapestCash is a party total. Scale the award side to the party
-    // so cpp compares like-for-like — for a single seat this is a no-op. The
-    // per-seat cpp ratio is preserved: both numerator and denominator scale.
-    const partyMiles = o.miles != null ? o.miles * seats : undefined
-    const partyTaxes = o.taxes != null ? o.taxes * seats : undefined
+    // and to the trip's legs so cpp compares like-for-like — for one adult on
+    // a one-way this is a no-op. Per-seat cpp ratios are preserved: numerator
+    // and denominator scale together.
+    const partyMiles = o.miles != null ? o.miles * seats * legs : undefined
+    const partyTaxes = o.taxes != null ? o.taxes * seats * legs : undefined
     const miles = partyMiles ?? 0
     const taxes = partyTaxes ?? 0
     const value =
@@ -275,17 +304,27 @@ export async function assembleSearch(
   // aggregates today (ADR 0005) — is per-point and scale-invariant, so the
   // observations stay comparable; any future consumer of the raw miles field
   // must account for party size first.
-  recordCppObservations(
-    awards
-      .filter((o) => o.program && typeof o.cpp === 'number' && o.cpp > 0)
-      .map((o) => ({
-        programId: canonicalizeProgram(o.program!)?.id ?? '',
-        cpp: o.cpp!,
-        cashCents: cheapestCash != null ? Math.round(cheapestCash * 100) : undefined,
-        miles: o.miles,
-      }))
-      .filter((s) => s.programId !== ''),
-  )
+  // Mock runs never record (mirrors the recordDegradation guard below) —
+  // fixture cpp values must never reach the live valuation worker's trust gate.
+  if (!useMock && recordTelemetry) {
+    recordCppObservations(
+      awards
+        .filter(
+          (o) =>
+            o.availability === 'live' &&
+            o.program &&
+            typeof o.cpp === 'number' &&
+            o.cpp > 0,
+        )
+        .map((o) => ({
+          programId: canonicalizeProgram(o.program!)?.id ?? '',
+          cpp: o.cpp!,
+          cashCents: cheapestCash != null ? Math.round(cheapestCash * 100) : undefined,
+          miles: o.miles,
+        }))
+        .filter((s) => s.programId !== ''),
+    )
+  }
 
   // Collapse the raw API dump to ONE best option per program/airline, then cap.
   // Live sources return hundreds of near-duplicate offers (every fare/time);
@@ -387,7 +426,7 @@ export async function assembleSearch(
   // (HOP_ENABLE_SELF_IMPROVE) feeds the sentinel's D2 detector; the PostHog
   // "search_degraded" event (key presence) gives ops a live, queryable trail.
   // Both stay PII-free: no user id, validated route only, sanitized reasons.
-  if (!useMock && degraded.length > 0) {
+  if (!useMock && recordTelemetry && degraded.length > 0) {
     recordDegradation(
       degraded.map((source) => ({ source, reason: degradedReasons[source] })),
       { from: params.from, to: params.to },
@@ -438,6 +477,7 @@ export interface VerdictSummary {
     cashPrice: number | undefined
     cpp: number | undefined
     youHave: number | undefined
+    availability: FlightOption['availability']
   } | null
   options: Array<{
     kind: FlightOption['kind']
@@ -449,6 +489,7 @@ export interface VerdictSummary {
     cashPrice: number | undefined
     cpp: number | undefined
     action: OptionAction | undefined
+    availability: FlightOption['availability']
   }>
   degraded: string[]
 }
@@ -476,6 +517,7 @@ export async function verdictSummary(
           cashPrice: result.pick.cashPrice,
           cpp: result.pick.cpp,
           youHave: result.pick.youHave,
+          availability: result.pick.availability,
         }
       : null,
     options: result.options.slice(0, 6).map((o) => ({
@@ -488,6 +530,7 @@ export async function verdictSummary(
       cashPrice: o.cashPrice,
       cpp: o.cpp,
       action: o.action,
+      availability: o.availability,
     })),
     degraded: result.degraded,
   }

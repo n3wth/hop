@@ -1,3 +1,4 @@
+import { ViewTransition } from 'react'
 import type { FlightOption, SearchResult } from '@/lib/types'
 import { POINTS_THRESHOLD_CPP, seatsFor } from '@/lib/search'
 import { formatValue } from '@/lib/cpp'
@@ -10,12 +11,24 @@ import SeeTheMath from './SeeTheMath'
 import CountUp from './CountUp'
 import CardAffiliateCTA from './CardAffiliateCTA'
 import WatchThisRoute from './WatchThisRoute'
+import ShareVerdict from './ShareVerdict'
+import Eyebrow from './ui/Eyebrow'
 
 export interface VerdictRailProps {
   result: SearchResult
   /** Destination photo (server-fetched from the pick's destCode). When present
-      it fills the hero behind the boarding pass instead of the bunny mark. */
-  destPhoto?: { url: string; alt: string } | null
+      it fills the hero behind the boarding pass instead of the bunny mark.
+      `credit` (Unsplash attribution, per API terms) is optional only so callers
+      that never pass a photo don't need to fake one — when a photo IS present
+      it always carries a credit (lib/images.ts#DestImage). */
+  destPhoto?: { url: string; alt: string; credit?: { name: string; link: string; source?: string; sourceLink?: string } } | null
+  /** The manifest's destination code (lib/destination-photos.ts) when destPhoto
+      resolved from the curated set (app/search/page.tsx#photoForCode) — shared
+      identity with the home showcase's ShowcaseEntry.code, so wrapping both in
+      <ViewTransition name={`photo-${code}`}> morphs the same photo across the
+      home→/search navigation. Absent for Unsplash long-tail photos (no
+      showcase counterpart to morph from). */
+  destPhotoCode?: string
   /** True only when these balances are the SIGNED-IN user's own (real). Drives
       the ownership voice: "You have the miles" + "Book with X miles" are only
       honest when hop is reading this visitor's connected programs. Signed-out
@@ -35,10 +48,16 @@ export interface VerdictRailProps {
       promise copy: off → "alerts go live soon", never a ping we can't send.
       Defaults false — fail honest when a caller forgets. */
   watchLive?: boolean
+  /** Whether R1.5 verdict receipts are on (lib/env.ts#isShareReceiptsEnabled,
+      resolved server-side) AND this result is receipt-grade (mirrors
+      lib/shared-verdicts.ts#buildVerdictSnapshot's gate: no degradation).
+      Off (either half) → the share button never renders — no client JS ships
+      for it, and there is no client-side flag to drift from the server one. */
+  shareEnabled?: boolean
 }
 
 function fmt(n: number | undefined): string {
-  return n != null ? n.toLocaleString() : '—'
+  return n != null ? n.toLocaleString('en-US') : '—'
 }
 
 function milesUnit(pick: FlightOption | undefined): string {
@@ -71,10 +90,12 @@ function searchUrlFrom(params: SearchResult['params'], nonstop?: boolean): strin
 export default function VerdictRail({
   result,
   destPhoto,
+  destPhotoCode,
   hasRealBalances = false,
   isSignedIn = false,
   nonstop,
   watchLive = false,
+  shareEnabled = false,
 }: VerdictRailProps) {
   const { pick, summary, verdict, cashOption } = result
   const usingPoints = verdict === 'use-points'
@@ -111,6 +132,22 @@ export default function VerdictRail({
         ? addProgramsHref
         : signInHref
 
+  // Account nudge on the PAY-CASH path. The points path already asks unfinished
+  // visitors to act in its PRIMARY CTA ("Sign in to see if your miles win" /
+  // "Add your programs"), but a pay-cash verdict's primary CTA is just "Book
+  // cash" with no account ask at all — and pay-cash is the large majority of
+  // verdicts, so the sign-up prompt is effectively hidden from most searches.
+  // Surface it as a SECONDARY CTA beside "Book cash" so the honest cash action
+  // still leads. The framing is deliberately NOT "your miles might win here"
+  // (they don't — the cpp is under the bar regardless of balance); it's the
+  // ongoing product value: sign in to track real balances across every search,
+  // or, if already signed in without programs, add them. A fully-onboarded user
+  // (real balances) gets nothing — there's nothing to add and this verdict
+  // wouldn't change.
+  const showAccountNudge = !usingPoints && (!isSignedIn || !hasRealBalances)
+  const accountNudgeHref = isSignedIn ? addProgramsHref : signInHref
+  const accountNudgeLabel = isSignedIn ? 'Add your programs' : 'Track your miles'
+
   // M6 — first ACTION: turn this trip into a calendar event in one tap (Google
   // Calendar template, all-day, no OAuth). Carries route + dates + city + cabin
   // ONLY — never the engine's live cpp/miles/price (those would go stale). null
@@ -143,6 +180,11 @@ export default function VerdictRail({
     : undefined
 
   const airlineShort = pick?.airline.split(' ')[0] ?? 'points'
+  const isChart = pick?.availability === 'chart'
+  const chartEmpty =
+    !usingPoints &&
+    !bestAward &&
+    !result.degraded.includes('awards')
 
   return (
     <section
@@ -151,9 +193,9 @@ export default function VerdictRail({
     >
       {/* LEFT — the verdict */}
       <div className="px-6 pb-9 pt-8 sm:px-10 lg:px-[52px] lg:pb-[46px] lg:pt-12">
-        <span className="mb-[26px] inline-flex items-center border-b border-white/15 pb-4 text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-hero-eyebrow">
-          Best value
-        </span>
+        <Eyebrow onDark className="mb-[26px] inline-flex items-center border-b border-white/15 pb-4 text-[12px]">
+          {isChart ? 'Chart · if saver is open' : 'Best value'}
+        </Eyebrow>
 
         {usingPoints ? (
           <>
@@ -164,14 +206,21 @@ export default function VerdictRail({
                 followed by an animating number. */}
             <h1
               aria-label={
-                owns
-                  ? `Use your ${airlineShort} ${unit} and save $${fmt(save)} vs cash.`
-                  : `${airlineShort} ${unit} win here — by $${fmt(save)} vs cash.`
+                isChart
+                  ? `${airlineShort} chart: ${cpp != null ? formatValue(cpp) : '—'}. Save $${fmt(save)} vs cash if saver is open.`
+                  : owns
+                    ? `Use your ${airlineShort} ${unit} and save $${fmt(save)} vs cash.`
+                    : `${airlineShort} ${unit} win here — by $${fmt(save)} vs cash.`
               }
               className="hop-rise text-balance font-display text-[24px] font-semibold leading-[1.05] tracking-[-0.02em] text-white sm:text-[34px] lg:text-[40px]"
               style={{ ['--hop-delay' as string]: '60ms' }}
             >
-              {owns ? (
+              {isChart ? (
+                <>
+                  <span className="text-gold-soft">{airlineShort}&nbsp;chart:</span>{' '}
+                  {cpp != null ? formatValue(cpp) : '—'}
+                </>
+              ) : owns ? (
                 <>
                   Use your <span className="text-gold-soft">{airlineShort}&nbsp;{unit}</span> and save
                 </>
@@ -212,7 +261,16 @@ export default function VerdictRail({
           </h1>
         )}
 
-        {usingPoints && owns ? (
+        {usingPoints && isChart ? (
+          <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-hero-body" style={{ ['--hop-delay' as string]: '140ms' }}>
+            Save{' '}
+            <b className="font-semibold text-white">${fmt(save)}</b> vs cash if saver is
+            open.{' '}
+            <b className="font-semibold text-white">{fmt(miles)} {unit}</b> at{' '}
+            <b className="font-semibold text-white">{cpp != null ? formatValue(cpp) : '—'}</b>
+            . Published saver rate. Space not confirmed.
+          </p>
+        ) : usingPoints && owns ? (
           <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-hero-body" style={{ ['--hop-delay' as string]: '140ms' }}>
             <b className="font-semibold text-white">
               {fmt(miles)} {unit}
@@ -246,8 +304,10 @@ export default function VerdictRail({
           </p>
         ) : (
           <p className="hop-rise mt-6 max-w-[46ch] text-[17px] leading-[1.55] text-hero-body" style={{ ['--hop-delay' as string]: '140ms' }}>
-            No award seats came back for this route and date, so there was nothing to weigh your
-            points against. Cash is <b className="font-semibold text-white">${fmt(cash)}</b> —
+            {chartEmpty
+              ? 'No published saver chart for this route.'
+              : 'No award seats came back for this route and date, so there was nothing to weigh your points against.'}{' '}
+            Cash is <b className="font-semibold text-white">${fmt(cash)}</b> —
             book it and your points stay put.
           </p>
         )}
@@ -266,12 +326,27 @@ export default function VerdictRail({
             <Icon name="check_circle" size={20} weight="fill" />
             {!usingPoints
               ? 'Book cash'
-              : owns
-                ? `Book with ${airlineShort} ${unit}`
-                : isSignedIn
-                  ? 'Add your programs'
-                  : `Sign in to see if your ${unit} win`}
+              : isChart
+                ? `Check ${airlineShort} for space`
+                : owns
+                  ? `Book with ${airlineShort} ${unit}`
+                  : isSignedIn
+                    ? 'Add your programs'
+                    : `Sign in to see if your ${unit} win`}
           </a>
+          {/* Account nudge — pay-cash path only (the points path's primary CTA
+              already carries the ask). Secondary treatment so "Book cash" still
+              leads. Carries the same returnTo, so a signed-out visitor lands
+              back on this exact search after auth. */}
+          {showAccountNudge ? (
+            <a
+              href={accountNudgeHref}
+              className="inline-flex items-center justify-center gap-[8px] rounded-[14px] border-[1.5px] border-white/25 px-7 py-4 text-[15px] font-semibold text-white transition-colors hover:border-white/50"
+            >
+              <Icon name="wallet" size={16} />
+              {accountNudgeLabel}
+            </a>
+          ) : null}
           {/* Add to calendar — the first hop ACTION. Route + dates only; no economics. */}
           {calUrl ? (
             <a
@@ -284,6 +359,12 @@ export default function VerdictRail({
               Add to calendar
             </a>
           ) : null}
+          {/* Share this verdict — beside the secondary CTAs, before "See the
+              math" (which must stay last: its hop-collapse panel expands
+              directly below this row). Server-gated only: shareEnabled is
+              already isShareReceiptsEnabled() AND a clean, non-degraded
+              result, so there is no separate client-side flag to drift. */}
+          {shareEnabled ? <ShareVerdict params={result.params} /> : null}
           {/* See the math — last; its panel expands below the whole row. */}
           {pick ? (
             <SeeTheMath
@@ -296,11 +377,13 @@ export default function VerdictRail({
           ) : null}
         </div>
 
-        {/* Stat strip — a 2×2 grid on phones so the four figures read as a
-            table (flex-wrap gave a ragged 3+1 line); sm+ returns to the flex row. */}
-        <div className="hop-rise mt-7 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-white/15 pt-6 sm:mt-8 sm:flex sm:flex-wrap sm:gap-10 sm:pt-7 lg:mt-[42px] lg:pt-[30px]" style={{ ['--hop-delay' as string]: '220ms' }}>
-          <HStat label="You pay" value={fmt(miles)} unit={unit} />
-          <HStat label="Value" value={cpp != null ? formatValue(cpp) : '—'} />
+        {/* Stat strip — a fixed grid at every width (2×2 on phones, 4 equal
+            columns at sm+) so the four figures sit on a shared rhythm instead
+            of content-width flex items. Every unit routes through HStat's
+            `unit` prop so all four render value-27px + unit-14px identically. */}
+        <div className="hop-rise mt-7 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-white/15 pt-6 sm:mt-8 sm:grid-cols-4 sm:gap-x-8 sm:pt-7 lg:mt-[42px] lg:pt-[30px]" style={{ ['--hop-delay' as string]: '220ms' }}>
+          <HStat label="You pay" value={fmt(miles)} unit={` ${unit}`} />
+          <HStat label="Value" value={cpp != null ? `${cpp.toFixed(1)}¢` : '—'} unit={cpp != null ? '/pt' : undefined} />
           <HStat label="Cash price" value={`$${fmt(cash)}`} />
           {/* The accent stat ticks in LOCKSTEP with the headline (same value,
               same delay/duration) — one figure moving in two places reads as
@@ -344,38 +427,56 @@ export default function VerdictRail({
         style={{ background: 'var(--color-brand-deep)' }}
       >
         {/* destination photo — the place you're heading — fills the WHOLE panel,
-            including behind the pass. A scrim sits ONLY at the bottom (under the
-            pass) for legibility; the open upper area stays vivid, not faded.
-            Falls back to the bunny mark when no photo is available. */}
+            including behind the pass. Legibility under the pass comes from a
+            single flat ink band (below), never a gradient; the rest of the
+            photo stays vivid. Falls back to the bunny mark when no photo. */}
         {destPhoto ? (
           <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={destPhoto.url}
-              alt={destPhoto.alt}
-              className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-            />
-            {/* top scrim — a whisper of brand-ink at the very top edge so the
-                photo settles into the teal field instead of reading as a pasted
-                rectangle. Integration, not decoration; the upper photo stays vivid. */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-0 h-[22%]"
-              style={{
-                background:
-                  'linear-gradient(to bottom, rgba(7,62,62,0.42) 0%, rgba(7,62,62,0) 100%)',
-              }}
-            />
-            {/* bottom scrim — sits under the boarding pass for legibility. Anchored
-                deep enough that the pass reads with authority against the photo. */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-0 bottom-0 h-[56%]"
-              style={{
-                background:
-                  'linear-gradient(to bottom, rgba(7,62,62,0) 0%, rgba(7,62,62,0.58) 52%, rgba(7,62,62,0.9) 100%)',
-              }}
-            />
+            {/* Named only for curated photos (destPhotoCode) — shares identity
+                with the home showcase's ViewTransition of the same code, so the
+                browser morphs the SAME photo from the showcase card into this
+                hero instead of cross-fading two unrelated images. Unnamed
+                (undefined) for Unsplash long-tail photos — no showcase
+                counterpart, React auto-assigns an unshared name. */}
+            <ViewTransition name={destPhotoCode ? `photo-${destPhotoCode}` : undefined}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={destPhoto.url}
+                alt={destPhoto.alt}
+                className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+              />
+            </ViewTransition>
+            {/* No gradient scrims (flat-editorial canon) — the photo stays vivid
+                edge to edge; legibility under the pass comes from the single
+                flat band behind the pass zone below. */}
+            {/* Unsplash attribution (API terms) — a small solid chip (not a
+                gradient/shadow surface) in the top corner; its own flat fill
+                keeps it legible against any photo. */}
+            {destPhoto.credit ? (
+              <div
+                className="pointer-events-auto absolute right-3 top-3 z-10 max-w-[70%] truncate rounded-full px-2.5 py-1 text-[10px] font-medium text-white/80"
+                style={{ background: 'rgba(7,26,26,0.55)' }}
+              >
+                Photo by{' '}
+                <a
+                  href={`${destPhoto.credit.link}?utm_source=hop&utm_medium=referral`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-white/40 underline-offset-2 hover:text-white"
+                >
+                  {destPhoto.credit.name}
+                </a>{' '}
+                on{' '}
+                <a
+                  href={destPhoto.credit.sourceLink ?? 'https://unsplash.com/?utm_source=hop&utm_medium=referral'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-white/40 underline-offset-2 hover:text-white"
+                >
+                  {destPhoto.credit.source ?? 'Unsplash'}
+                </a>
+              </div>
+            ) : null}
           </>
         ) : (
           <div className="hidden flex-1 place-items-center pt-9 lg:grid">
@@ -384,7 +485,15 @@ export default function VerdictRail({
         )}
 
         {pick ? (
-          <div className="relative z-10 mt-auto">
+          // One flat band behind the pass zone only — hard top edge, matching
+          // the attribution chip's flat treatment — instead of gradient sludge
+          // over the photo's lower half. The perforation notches punch through
+          // to this solid ink, a deliberate paper-on-ink read. Photo-only: the
+          // brand-deep fallback panel needs no band.
+          <div
+            className="relative z-10 mt-auto"
+            style={destPhoto ? { background: 'rgba(7,26,26,0.55)' } : undefined}
+          >
             <PickPass pick={pick} />
           </div>
         ) : null}
@@ -411,7 +520,9 @@ function HStat({
       </div>
       <div className={`hop-price text-[27px] ${accent ? 'text-mint-bright' : 'text-white'}`}>
         {value}
-        {unit ? <small className="text-[14px] font-medium text-hero-eyebrow"> {unit}</small> : null}
+        {/* Unit spacing travels with the unit string ("/pt" sits tight, " miles"
+            carries its own space) — one 14px treatment for every unit. */}
+        {unit ? <small className="text-[14px] font-medium text-hero-eyebrow">{unit}</small> : null}
       </div>
     </div>
   )
@@ -440,7 +551,7 @@ function PickPass({ pick }: { pick: FlightOption }) {
 
   return (
     <div
-      className="relative mx-4 mb-5 mt-5 rounded-[18px] bg-paper text-text sm:mx-[26px] sm:mb-[26px] sm:mt-6 lg:mt-0"
+      className="relative m-4 rounded-[18px] bg-paper text-text sm:m-[26px]"
       style={{
         // True perforation: punch two semicircle notches out of the LEFT and
         // RIGHT edges at the dashed line (~50% down) so whatever is behind the

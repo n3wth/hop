@@ -8,6 +8,7 @@ import {
   offerFingerprint,
   programEligible,
   evaluateOrder,
+  isOrderExpired,
   parseStandingOrderFallback,
   MIN_CPP_FLOOR,
   MAX_CPP_CEIL,
@@ -29,6 +30,7 @@ function award(over: Partial<FlightOption> = {}): FlightOption {
     cpp: 3.2,
     tier: 'green',
     bookingUrl: 'https://x',
+    availability: 'live',
     ...over,
   }
 }
@@ -45,6 +47,17 @@ function result(over: Partial<SearchResult> = {}): SearchResult {
     ...over,
   }
 }
+
+describe('isOrderExpired', () => {
+  it('is false for a depart date today or in the future', () => {
+    expect(isOrderExpired('2026-07-05', '2026-07-05')).toBe(false)
+    expect(isOrderExpired('2026-07-09', '2026-07-05')).toBe(false)
+  })
+  it('is true once the depart date has passed', () => {
+    expect(isOrderExpired('2026-07-04', '2026-07-05')).toBe(true)
+    expect(isOrderExpired('2026-01-01', '2026-07-05')).toBe(true)
+  })
+})
 
 describe('clampCpp', () => {
   it('floors at hop verdict threshold', () => {
@@ -189,6 +202,18 @@ describe('evaluateOrder — the crossing rule', () => {
     const e = evaluateOrder(base, result({ pick: award({ kind: 'cash', program: undefined }) }))
     expect(e.crossed).toBe(false)
     expect(e.reason).toBe('no-redemption')
+  })
+
+  it('does not cross on a chart row', () => {
+    const e = evaluateOrder(base, result({ pick: award({ availability: 'chart' }) }))
+    expect(e.crossed).toBe(false)
+    expect(e.reason).toBe('not-live')
+  })
+
+  it('does not cross when availability is omitted', () => {
+    const e = evaluateOrder(base, result({ pick: award({ availability: undefined }) }))
+    expect(e.crossed).toBe(false)
+    expect(e.reason).toBe('not-live')
   })
 
   it('fires again on a DIFFERENT offer after a prior alert', () => {

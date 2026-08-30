@@ -2,11 +2,16 @@ import Link from 'next/link'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import EditorialHeader from '@/components/EditorialHeader'
+import BrandIcon from '@/components/BrandIcon'
+import Card from '@/components/ui/Card'
 import { pageMeta } from '@/lib/seo'
-import { sweetSpotsByProgram, sweetSpots, VERIFY_CAVEAT } from '@/lib/sweet-spots'
+import { VERIFY_CAVEAT } from '@/lib/sweet-spots'
+import { getSweetSpotsByProgram, getAllSweetSpots } from '@/lib/sweet-spots-live'
+import { canonicalizeProgram } from '@/lib/programs'
 
 // Static SEO guide — no per-request data, so it prerenders. Weekly cron
-// (app/api/cron/revalidate-seo) calls revalidatePath when content changes.
+// (app/api/cron/revalidate-seo) calls revalidatePath when content changes; an
+// owner approving a draft (app/actions/admin.ts) revalidates it immediately.
 export const dynamic = 'force-static'
 
 export const metadata = pageMeta({
@@ -16,8 +21,8 @@ export const metadata = pageMeta({
   path: '/sweet-spots',
 })
 
-export default function SweetSpotsIndexPage() {
-  const programs = sweetSpotsByProgram()
+export default async function SweetSpotsIndexPage() {
+  const [programs, allSpots] = await Promise.all([getSweetSpotsByProgram(), getAllSweetSpots()])
 
   return (
     <AppShell user={null} hideSearch>
@@ -38,7 +43,7 @@ export default function SweetSpotsIndexPage() {
             </span>
             <span className="hidden sm:inline">·</span>
             <span>
-              <b className="font-semibold text-text2">{sweetSpots.length}</b> redemptions
+              <b className="font-semibold text-text2">{allSpots.length}</b> redemptions
             </span>
             <span className="hidden sm:inline">·</span>
             <span>premium cabins first</span>
@@ -53,43 +58,55 @@ export default function SweetSpotsIndexPage() {
               <Link
                 key={p.slug}
                 href={`/sweet-spots/${p.slug}`}
-                className="group flex flex-col rounded-[var(--radius-lg)] border border-border bg-paper p-6 transition-colors duration-200 ease-[var(--ease-premium)] hover:border-brand"
+                className="group flex flex-col focus:outline-none"
               >
-                <div className="flex items-baseline justify-between gap-3">
-                  <h2 className="font-display text-[22px] font-semibold leading-tight tracking-[-0.01em] text-text">
-                    {p.name}
-                  </h2>
-                  <span className="flex-shrink-0 text-[13px] font-semibold text-text3">
-                    {p.spots.length} {p.spots.length === 1 ? 'route' : 'routes'}
-                  </span>
-                </div>
-                {/* the program's strongest lead redemption, as a teaser */}
-                <p className="mt-3 text-[14px] leading-snug text-text2">
-                  <span className="font-semibold text-text">{lead.route}</span>
-                  {' — '}
-                  {lead.cabin}
-                  {lead.metal ? ` on ${lead.metal}` : ''}, {lead.milesLabel} miles.
-                </p>
-                <div className="mt-auto flex items-center justify-between gap-3 pt-5">
-                  <span className="text-[14px] font-semibold text-text transition-colors group-hover:text-brand">
-                    See {p.name} sweet spots
-                  </span>
-                  <span
-                    aria-hidden
-                    className="flex-shrink-0 text-[15px] font-semibold text-text3 transition-colors group-hover:text-brand"
-                  >
-                    →
-                  </span>
-                </div>
+                <Card
+                  surface="paper"
+                  radius="lg"
+                  interactive
+                  className="flex flex-1 flex-col p-6 duration-200 ease-[var(--ease-premium)]"
+                >
+                  <div className="flex items-center gap-3">
+                    <BrandIcon
+                      code={canonicalizeProgram(p.name)?.code}
+                      name={p.name}
+                      size={48}
+                    />
+                    <div className="flex min-w-0 flex-1 items-baseline justify-between gap-3">
+                      <h2 className="font-display text-[22px] font-semibold leading-tight tracking-[-0.01em] text-text">
+                        {p.name}
+                      </h2>
+                      <span className="flex-shrink-0 text-[13px] font-semibold text-text3">
+                        {p.spots.length} {p.spots.length === 1 ? 'route' : 'routes'}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-[14px] leading-snug text-text2">
+                    <span className="font-semibold text-text">{lead.route}</span>
+                    {' — '}
+                    {lead.cabin}
+                    {lead.metal ? ` on ${lead.metal}` : ''}, {lead.milesLabel} miles.
+                  </p>
+                  <div className="mt-auto flex items-center justify-between gap-3 pt-5">
+                    <span className="text-[14px] font-semibold text-text transition-colors group-hover:text-brand">
+                      See {p.name} sweet spots
+                    </span>
+                    <span
+                      aria-hidden
+                      className="flex-shrink-0 text-[15px] font-semibold text-text3 transition-colors group-hover:text-brand"
+                    >
+                      →
+                    </span>
+                  </div>
+                </Card>
               </Link>
             )
           })}
         </section>
 
-        {/* accuracy caveat — the table is seed reference data, not live quotes */}
-        <p className="mt-8 rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[14px] leading-relaxed text-text3">
+        <Card surface="surface" radius="md" as="p" className="mt-8 px-4 py-3 text-[14px] leading-relaxed text-text3">
           {VERIFY_CAVEAT}
-        </p>
+        </Card>
 
         {/* internal-link mesh: out to inspiration + the live tool */}
         <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[14px]">

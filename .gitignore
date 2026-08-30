@@ -46,6 +46,7 @@ next-env.d.ts
 
 PROD_ENV_TO_SET.txt
 .claude/worktrees/
+.claude/settings.local.json
 
 # design-sync (claude.ai/design) — staged converter scripts, build output, and
 # machine state are all regenerated; only .design-sync/{config.json,NOTES.md,

@@ -18,6 +18,7 @@
 // are preserved (pure, unit-tested) and still used by the fallback path.
 
 import { streamText, stepCountIs, gateway } from 'ai'
+import { trace } from '@opentelemetry/api'
 import {
   destinations,
   affordableWith,
@@ -28,9 +29,11 @@ import {
 import { valuationsByName, walletValue } from '@/lib/valuations'
 import { liveValuationsByName } from '@/lib/valuations-live'
 import { effectiveBalanceFor } from '@/lib/transfers'
+import { reachableDestinations } from '@/lib/ledger-dream'
 import { POINTS_THRESHOLD_CPP } from '@/lib/search'
 import { buildConciergeTools } from '@/lib/concierge-tools'
 import { GATEWAY_MODEL } from '@/lib/ai-gateway'
+import { llmTelemetry, startLlmTraceAnchor, withLlmTraceAnchor } from '@/lib/llm-tracing'
 import type { Balance } from '@/lib/types'
 import { checkBotId } from 'botid/server'
 import { auth0 } from '@/lib/auth0'
@@ -64,6 +67,12 @@ import {
 // framing chars are NUL (char 0), not spaces — they can never appear in model
 // prose, so splitting on the sentinel never corrupts the visible answer.
 export const TOOL_FRAME_SEP = String.fromCharCode(30)
+
+// Response header carrying the OTel trace id that PostHogSpanProcessor forwards
+// when LLM tracing is explicitly enabled. The client threads it back on a
+// thumbs up/down so feedback can join the exact call without recording model
+// inputs or outputs — see lib/concierge-feedback.ts.
+export const TRACE_ID_HEADER = 'x-hop-trace-id'
 
 // One tool-activity event surfaced to the client. `state` mirrors the AI SDK
 // tool lifecycle that AI Elements' <Tool> understands. `id` ties a start to its
@@ -301,6 +310,7 @@ export function buildPrompt(
 ): { system: string; user: string } {
   const system = [
     "You are hop's AI travel concierge. hop helps people turn loyalty points into great trips.",
+    `Today is ${new Date().toISOString().slice(0, 10)} (UTC). Resolve every relative or year-less date ("August 12-19", "next month") FORWARD from today — never into a past year.`,
     'Your job: recommend WHERE to go and whether to use POINTS or CASH, grounded ONLY in the data below.',
     '',
     'Hard rules:',
@@ -357,6 +367,7 @@ function buildAgenticSystem(
   const hasBalances = (context?.programs?.length ?? 0) > 0
   return [
     "You are hop's AI travel concierge. hop helps people turn loyalty points into great trips.",
+    `Today is ${new Date().toISOString().slice(0, 10)} (UTC). Resolve every relative or year-less date ("August 12-19", "next month") FORWARD from today — never into a past year.`,
     'You plan ENTIRE trips, not just pick destinations. You can:',
     '  • Recommend WHERE to go and whether to use POINTS or CASH (priced by the engine).',
     '  • Build day-by-day ITINERARIES and trip plans (as clean markdown — headings, day sections, bullet lists).',
@@ -366,7 +377,7 @@ function buildAgenticSystem(
     '',
     'You have tools. USE THEM:',
     '- price_trip(code): hop\'s DETERMINISTIC engine over the curated destinations dataset below. Fast, no live lookup — good for "where should I go" ideation. Pass the IATA code of a hop destination.',
-    '- search_flights(from, to, depart, return?, adults?): hop\'s REAL, LIVE points-vs-cash verdict for a specific route + date — the SAME engine /search uses (live cash fares + award space). Works for ANY airport, not just the curated destinations below. ALWAYS call this — never price_trip — when the user gives a specific date, or asks about a place outside the destinations dataset.',
+    '- search_flights(from, to, depart, return?, adults?): hop\'s REAL points-vs-cash verdict for a specific route + date — the SAME engine /search uses (live cash fares + published saver charts; space not confirmed). Works for ANY airport, not just the curated destinations below. ALWAYS call this — never price_trip — when the user gives a specific date, or asks about a place outside the destinations dataset. Chart miles are floors, not open space — say so.',
     '- ALWAYS call price_trip or search_flights before stating ANY miles, cents-per-point, or affordability number. NEVER invent those numbers — read them from whichever tool actually applies.',
     '- get_weather(place, month): typical/seasonal weather. Use when climate or timing matters.',
     '- web_search(objective): live world-context — events, seasonality, why fares move at a given time. Use sparingly for things the dataset can\'t tell you.',
@@ -564,6 +575,24 @@ function destinationsMentionedIn(question: string): Destination[] {
   })
 }
 
+// Destinations the context's real per-program balances actually reach (direct
+// or verified transfer) — not just "total points >= award" summed across every
+// currency. Mirrors lib/ledger-dream.ts#reachableDestinations; kept local
+// since context.programs (not a Balance[]) is this route's own shape. Falls
+// back to the coarse total-only affordableWith(total) when no program
+// breakdown is available at all (nothing to cross-check against) — this only
+// tightens the case where we KNOW the per-program balances and can tell they
+// don't cover the specific currency a pick needs.
+function reachablePicks(total: number, context?: ConciergeContext): Destination[] {
+  if (!context?.programs?.length) return affordableWith(total)
+  const balances: Balance[] = context.programs.map((p) => ({
+    program: p.program,
+    code: '',
+    balance: p.balance,
+  }))
+  return reachableDestinations(balances)
+}
+
 // A graceful, on-brand fallback when we can't reach the model at all.
 export function fallbackAnswer(question: string, context?: ConciergeContext): ConciergeResponse {
   const total = context?.totalPoints
@@ -580,10 +609,13 @@ export function fallbackAnswer(question: string, context?: ConciergeContext): Co
       total !== undefined && total > 0
         ? `I can't reach my travel brain right now, but here's what I know about ${first.city} — with ~${total.toLocaleString('en-US')} points, check whether it clears the miles below.`
         : `I can't reach my travel brain right now, but here's what I know about ${first.city}.`
-  } else if (total !== undefined && total > 0 && affordableWith(total).length > 0) {
-    // affordableWith is pure and this list is tiny; recomputing here (vs.
-    // hoisting) keeps the condition and the value obviously in sync.
-    picks = affordableWith(total).slice(0, 3)
+  } else if (total !== undefined && total > 0 && reachablePicks(total, context).length > 0) {
+    // affordableWith(total) sums points across every program regardless of
+    // currency — reachablePicks additionally confirms the SPECIFIC (or
+    // verified-transfer) balance toward each pick's bestProgram, same as
+    // lib/ledger-dream.ts#reachableDestinations, so this never tells someone
+    // a trip is "in reach" on points they don't hold in the right currency.
+    picks = reachablePicks(total, context).slice(0, 3)
     answer = `I can't reach my travel brain right now, but with ~${total.toLocaleString('en-US')} points a few standout trips come to mind — here are some great-value ideas to get you dreaming.`
   } else {
     // Below the cheapest destination's required miles (or no points known at
@@ -706,52 +738,69 @@ export async function POST(request: Request): Promise<Response> {
     const liveValuations = await liveValuationsByName()
 
     const tools = buildConciergeTools(context?.programs ?? [], userId)
-    const result = streamText({
-      model: gateway(GATEWAY_MODEL),
-      // PostHog LLM analytics → $ai_generation (see instrumentation.ts).
-      experimental_telemetry: { isEnabled: true, functionId: 'concierge' },
-      system: buildAgenticSystem(context, profile, history, liveValuations, memory, observed),
-      // MULTI-TURN: thread the conversation (prior turns + this question) so the
-      // agent answers in context. Single-question back-compat is preserved —
-      // buildMessages yields a one-element [user] array when there's no history.
-      messages,
-      tools,
-      // Agentic loop: let the model call tools, then continue with the results.
-      stopWhen: stepCountIs(5),
-      // Never throw to the page — on a streaming error, surface a friendly line.
-      onError({ error }) {
-        console.error('[concierge] stream error', error)
-      },
-      // Persist the thread AFTER the answer finishes (signed-in only). Append the
-      // assistant's final text to the threaded messages and upsert. Best-effort:
-      // saveConversation never throws.
-      onFinish({ text }) {
-        if (!userId) return
-        // Persist the CLEAN prose (without the trailing a2ui fence) so reloaded
-        // threads read naturally and don't re-feed the spec back into context.
-        const answer = stripA2UIFence(text ?? '').trim()
-        const next = answer
-          ? [...messages, { role: 'assistant' as const, content: answer }]
-          : messages
-        void saveConversation(userId, next)
-        // Fold older turns into durable memory (gated, fire-and-forget). Uses the
-        // FULL prior thread the client resends — not the 40-capped `messages` — so
-        // turns past the live window aren't lost. No-ops entirely when disabled.
-        const fullPrior = Array.isArray(body?.messages)
-          ? (body.messages as ConversationMessage[])
-          : []
-        const fullThread: ConversationMessage[] = [
-          ...fullPrior,
-          { role: 'user', content: question },
-          ...(answer ? [{ role: 'assistant' as const, content: answer }] : []),
-        ]
-        void updateConversationMemory(userId, fullThread)
-        // Infer durable preferences from the conversation (gated, fire-and-forget).
-        // Lands as PENDING "hop noticed" suggestions the user confirms/dismisses in
-        // the /account glass box — nothing is ever auto-applied.
-        void proposeInferredFacts(userId, fullThread)
-      },
-    })
+
+    // Create a real OTel trace id for this turn BEFORE calling streamText when
+    // tracing is active, so the model call's gen_ai.* spans inherit it.
+    // When tracing is enabled, PostHogSpanProcessor preserves OTel trace/span
+    // ids as $ai_generation's $ai_trace_id. Returning this id to the client lets
+    // feedback join the call. This anchor span carries no model content and is
+    // not itself forwarded by the processor's ai./gen_ai. name filter.
+    const turnTrace = startLlmTraceAnchor('concierge.turn', trace.getTracer('hop.concierge'))
+    const run = () =>
+      streamText({
+        model: gateway(GATEWAY_MODEL),
+        telemetry: llmTelemetry('concierge'),
+        system: buildAgenticSystem(context, profile, history, liveValuations, memory, observed),
+        // MULTI-TURN: thread the conversation (prior turns + this question) so the
+        // agent answers in context. Single-question back-compat is preserved —
+        // buildMessages yields a one-element [user] array when there's no history.
+        messages,
+        tools,
+        // Agentic loop: let the model call tools, then continue with the results.
+        stopWhen: stepCountIs(5),
+        // Never throw to the page — on a streaming error, surface a friendly line.
+        onError({ error }) {
+          console.error('[concierge] stream error', error)
+        },
+        // Persist the thread AFTER the answer finishes (signed-in only). Append the
+        // assistant's final text to the threaded messages and upsert. Best-effort:
+        // saveConversation never throws.
+        onFinish({ text }) {
+          if (!userId) return
+          // Persist the CLEAN prose (without the trailing a2ui fence) so reloaded
+          // threads read naturally and don't re-feed the spec back into context.
+          const answer = stripA2UIFence(text ?? '').trim()
+          const next = answer
+            ? [...messages, { role: 'assistant' as const, content: answer }]
+            : messages
+          void saveConversation(userId, next)
+          // Fold older turns into durable memory (gated, fire-and-forget). Uses the
+          // FULL prior thread the client resends — not the 40-capped `messages` — so
+          // turns past the live window aren't lost. No-ops entirely when disabled.
+          const fullPrior = Array.isArray(body?.messages)
+            ? (body.messages as ConversationMessage[])
+            : []
+          const fullThread: ConversationMessage[] = [
+            ...fullPrior,
+            { role: 'user', content: question },
+            ...(answer ? [{ role: 'assistant' as const, content: answer }] : []),
+          ]
+          void updateConversationMemory(userId, fullThread)
+          // Infer durable preferences from the conversation (gated, fire-and-forget).
+          // Lands as PENDING "hop noticed" suggestions the user confirms/dismisses in
+          // the /account glass box — nothing is ever auto-applied.
+          void proposeInferredFacts(userId, fullThread)
+        },
+      })
+    const result = (() => {
+      try {
+        return withLlmTraceAnchor(turnTrace, run)
+      } finally {
+        // The span only needs to be active long enough for streamText's setup
+        // (and async continuations scheduled there) to inherit its trace id.
+        turnTrace?.span.end()
+      }
+    })()
 
     // Stream the answer as live text, but with THREE responsibilities:
     //   1. SURFACE TOOL ACTIVITY: pump the FULL stream so tool-call/result/error
@@ -860,9 +909,11 @@ export async function POST(request: Request): Promise<Response> {
       },
     })
 
+    const headers: Record<string, string> = { 'content-type': 'text/plain; charset=utf-8' }
+    if (turnTrace) headers[TRACE_ID_HEADER] = turnTrace.traceId
     return new Response(stream, {
       status: 200,
-      headers: { 'content-type': 'text/plain; charset=utf-8' },
+      headers,
     })
   } catch (err) {
     console.error('[concierge] setup failed, serving fallback', err)

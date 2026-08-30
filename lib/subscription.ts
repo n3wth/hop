@@ -8,6 +8,15 @@ export const ALERT_LIMITS: Record<Tier, number> = {
   premium: Infinity,
 }
 
+// MCP daily call quota, per docs/plans/2026-07-04-business-plan.md §3.1/§7
+// (B2). Enforced in app/api/[transport]/route.ts via a durable count from
+// hop_mcp_usage (lib/mcp-usage.ts#mcpCallsToday) — never the in-process rate
+// limiter, which doesn't survive a restart.
+export const MCP_DAILY_LIMITS: Record<Tier, number> = {
+  free: 25,
+  premium: 1000,
+}
+
 // Determine if the user has an active premium subscription.
 export async function getUserTier(userId: string): Promise<Tier> {
   if (!userId) return 'free'

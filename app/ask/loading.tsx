@@ -1,4 +1,6 @@
 import AppShell from '@/components/AppShell'
+import Card from '@/components/ui/Card'
+import { getSessionNavUser } from '@/lib/nav-user'
 
 // Route-level loading UI for /ask. The concierge is now ONE fixed surface: a quiet
 // control rail on top, a single scroll region in the middle (the empty state
@@ -7,9 +9,14 @@ import AppShell from '@/components/AppShell'
 // the real surface swaps in with no layout jump. Static text bars use the shared
 // .hop-skeleton shimmer (the house light-surface convention, visible on cream);
 // the composer/chips/tiles read via border-border on the paper canvas.
-export default function Loading() {
+//
+// user is resolved here (cheap session read, no balances) so signed-in visitors
+// see their own avatar from the first paint instead of a "Sign in" link that
+// pops to the avatar the instant the real page's slower data lands.
+export default async function Loading() {
+  const user = await getSessionNavUser()
   return (
-    <AppShell hideSearch noPadX>
+    <AppShell user={user} hideSearch noPadX>
       <div className="hop-ask-stage flex flex-col">
         <div className="flex min-h-0 flex-1 flex-col px-5 sm:px-8 lg:px-12 xl:px-16">
           {/* control rail — a quiet strip, right-aligned at the header frame */}
@@ -37,10 +44,14 @@ export default function Loading() {
                 {/* slim destination strip */}
                 <div className="mt-8 flex flex-wrap justify-center gap-2.5">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <span
+                    <Card
                       key={i}
-                      className="h-[78px] w-[92px] rounded-[var(--radius)] border border-border bg-paper"
-                    />
+                      surface="paper"
+                      radius="md"
+                      className="h-[78px] w-[92px]"
+                    >
+                      {null}
+                    </Card>
                   ))}
                 </div>
               </div>

@@ -71,6 +71,33 @@ export async function mcpUsageSummary(
   return { dayBuckets, toolCounts, windowDays }
 }
 
+// Durable day-quota count for a linked token — the B2 spec's "quota survives
+// process restarts" requirement, which the in-process rate limiter
+// (lib/rate-limit.ts) can't meet on its own. Rolling 24h window (not a
+// UTC-midnight bucket) so the cap is uniform regardless of when in the day a
+// caller started. null = DB unavailable — the caller (app/api/[transport]/
+// route.ts) treats null as "don't block," matching every other money-adjacent
+// read in this codebase (degrade open, never throw).
+export async function mcpCallsToday(tokenId: string | null | undefined): Promise<number | null> {
+  if (!tokenId) return null
+  return withDb<number | null>(null, async (db) => {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    const { count, error } = await db
+      .from(TABLE)
+      .select('id', { count: 'exact', head: true })
+      .eq('token_id', tokenId)
+      .gte('created_at', since)
+    if (error || typeof count !== 'number') return null
+    return count
+  })
+}
+
+// Pure boundary check, isolated so the "blocked at exactly the limit" case is
+// unit-testable without a DB: a null count (degraded) NEVER blocks.
+export function mcpQuotaExceeded(usedToday: number | null, limit: number): boolean {
+  return usedToday !== null && usedToday >= limit
+}
+
 export function recordMcpUsage({ userId, tokenId, tool }: McpUsageEvent): void {
   if (typeof tool !== 'string' || tool.trim() === '') return
   try {

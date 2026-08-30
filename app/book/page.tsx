@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { toNavUser } from '@/lib/nav-user'
@@ -6,10 +7,13 @@ import { auth0 } from '@/lib/auth0'
 import { isCheckoutEnabled } from '@/lib/env'
 import { getCheckoutOffer, freshOfferForRoute } from '@/lib/duffel-orders'
 import { pointsBookingUrl } from '@/lib/booking'
+import { loginHrefFor } from '@/lib/safe-return'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import Icon, { type IconName } from '@/components/Icon'
 import CheckoutForm from '@/components/checkout/CheckoutForm'
+import FareCheckSkeleton from '@/components/checkout/FareCheckSkeleton'
+import Button from '@/components/ui/Button'
 
 // Private, transactional page — keep it out of the index. (template adds "· hop".)
 export const metadata: Metadata = {
@@ -41,13 +45,14 @@ export default async function BookPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
+  // Read the query BEFORE the auth gate: the offer + route params are the
+  // whole booking context, and the login round-trip must carry them back here.
+  const q = await searchParams
   const session = await auth0.getSession()
-  if (!session) redirect('/login?returnTo=/book')
+  if (!session) redirect(loginHrefFor('/book', q))
 
   const su = session.user
   const user = toNavUser(su)
-
-  const q = await searchParams
   const str = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)
   const offerId = str(q.offer)
   const route = {
@@ -86,12 +91,22 @@ export default async function BookPage({
             cta={{ href: '/search', label: 'Find a flight' }}
           />
         ) : (
-          <OfferGate
-            offerId={offerId}
-            route={hasRoute ? (route as { from: string; to: string; depart: string; return?: string; adults?: number }) : undefined}
-            email={su.email ?? undefined}
-            name={su.name ?? undefined}
-          />
+          // OfferGate re-prices the offer server-side (a genuine Duffel round
+          // trip) before it knows whether it'll render the small Notice card
+          // or the full CheckoutForm. Isolating it in its own Suspense means
+          // that uncertainty is scoped to just this region — the shell above
+          // (back link, AppShell nav) streams immediately instead of the
+          // whole page blocking on Duffel, and the loading state shown here
+          // (FareCheckSkeleton) matches app/book/loading.tsx exactly, so
+          // there's one continuous skeleton rather than two different guesses.
+          <Suspense fallback={<FareCheckSkeleton />}>
+            <OfferGate
+              offerId={offerId}
+              route={hasRoute ? (route as { from: string; to: string; depart: string; return?: string; adults?: number }) : undefined}
+              email={su.email ?? undefined}
+              name={su.name ?? undefined}
+            />
+          </Suspense>
         )}
         <SiteFooter />
       </div>
@@ -174,15 +189,17 @@ function Notice({
           </div>
           <p className="mt-1.5 max-w-[54ch] text-[14px] leading-[1.55] text-text2">{body}</p>
           {cta ? (
-            <a
-              href={cta.href}
-              {...(/^https?:/.test(cta.href)
-                ? { target: '_blank', rel: 'noopener noreferrer' }
-                : {})}
-              className="mt-5 inline-flex items-center gap-2 rounded-[11px] border-[1.5px] border-text bg-transparent px-4 py-[9px] text-[14px] font-semibold text-text transition-colors hover:bg-text hover:text-white"
-            >
-              {cta.label}
-            </a>
+            <div className="mt-5">
+              <Button
+                variant="ink"
+                href={cta.href}
+                {...(/^https?:/.test(cta.href)
+                  ? { native: true, target: '_blank', rel: 'noopener noreferrer' }
+                  : {})}
+              >
+                {cta.label}
+              </Button>
+            </div>
           ) : null}
         </div>
       </div>

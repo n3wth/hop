@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "deploy": "wrangler deploy",
-    "dev": "wrangler dev",
+    "deploy": "env -u CF_API_TOKEN -u CF_API_KEY -u CF_API_EMAIL -u CLOUDFLARE_API_TOKEN -u CLOUDFLARE_API_KEY -u CLOUDFLARE_EMAIL wrangler deploy",
+    "dev": "env -u CF_API_TOKEN -u CF_API_KEY -u CF_API_EMAIL -u CLOUDFLARE_API_TOKEN -u CLOUDFLARE_API_KEY -u CLOUDFLARE_EMAIL wrangler dev",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

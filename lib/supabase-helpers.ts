@@ -54,6 +54,8 @@ function toCamelRow(obj: any): any {
 
 const TABLE_MAP: Record<string, any> = {
   hop_manual_balances: schema.manualBalances,
+  hop_sync_addresses: schema.syncAddresses,
+  hop_program_credentials: schema.programCredentials,
   hop_user_accounts: schema.userAccounts,
   hop_user_prefs: schema.userPrefs,
   hop_conversations: schema.conversations,
@@ -67,6 +69,8 @@ const TABLE_MAP: Record<string, any> = {
   hop_api_tokens: schema.apiTokens,
   hop_travel_history: schema.travelHistory,
   hop_escalations: schema.escalations,
+  hop_newsletter_subscribers: schema.newsletterSubscribers,
+  hop_sweet_spot_drafts: schema.sweetSpotDrafts,
   hop_valuation_overrides: schema.valuationOverrides,
   hop_customers: schema.hopCustomers,
   hop_outclicks: schema.outclicks,
@@ -76,6 +80,8 @@ const TABLE_MAP: Record<string, any> = {
   hop_support_tickets: schema.supportTickets,
   hop_notification_outbox: schema.notificationOutbox,
   hop_mcp_usage: schema.mcpUsage,
+  hop_shared_verdicts: schema.sharedVerdicts,
+  hop_email_suppressions: schema.emailSuppressions,
 }
 
 // ── Supabase/Postgrest Query Builder Shim for Drizzle ─────────────────────

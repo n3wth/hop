@@ -2,9 +2,12 @@ import Link from 'next/link'
 import { toNavUser } from '@/lib/nav-user'
 import { auth0 } from '@/lib/auth0'
 import { getUserBalances } from '@/lib/accounts'
+import { getPrefs, type UserPrefs } from '@/lib/prefs'
+import { isSupportAgentEnabled } from '@/lib/env'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
 import LegalShell from '@/components/LegalShell'
+import SupportChat from '@/components/SupportChat'
 import { pageMeta, absoluteUrl } from '@/lib/seo'
 
 export const metadata = pageMeta({
@@ -70,12 +73,12 @@ const SUPPORT_FAQ_JSONLD = {
 
 // Section anchors for the quick-jump nav. Keep in sync with the <h2 id> values
 // below so every entry lands on a real heading.
-const SECTIONS: { id: string; label: string }[] = [
+export const SECTIONS: { id: string; label: string }[] = [
   { id: 'getting-started', label: 'Getting started' },
   { id: 'points-balances', label: 'Points & balances' },
   { id: 'the-verdict', label: 'How the verdict works' },
   { id: 'booking', label: 'Booking, changes & cancellations' },
-  { id: 'claude-mcp', label: 'Using hop from Claude' },
+  { id: 'mcp', label: 'Using hop from an AI assistant' },
   { id: 'account-privacy', label: 'Account & privacy' },
   { id: 'contact', label: 'Contact' },
 ]
@@ -86,23 +89,42 @@ export default async function SupportPage() {
   const user = toNavUser(su)
 
   let pointsTotal: number | undefined
+  let realBalances: { program: string; balance: number }[] = []
+  let homeAirport: string | undefined
+
   if (user && su?.sub) {
-    const real = await getUserBalances(su.sub)
-    if (real.length > 0) pointsTotal = real.reduce((s, b) => s + b.balance, 0)
+    const [real, prefs] = await Promise.all([
+      getUserBalances(su.sub).catch(() => []),
+      getPrefs(su.sub).catch((): UserPrefs => ({})),
+    ])
+    realBalances = real
+    if (real.length > 0) pointsTotal = real.reduce((s: number, b: { balance: number }) => s + b.balance, 0)
+    homeAirport = prefs?.homeAirport
   }
+
+  const showSupportChat = isSupportAgentEnabled()
 
   return (
     <AppShell user={user} pointsTotal={pointsTotal} hideSearch>
       {/* machine-readable FAQ — see SUPPORT_FAQ_JSONLD above */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(SUPPORT_FAQ_JSONLD) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(SUPPORT_FAQ_JSONLD).replace(/</g, '\\u003c') }}
       />
       <LegalShell
         eyebrow="Support"
         title="Help center"
         intro="What hop does, and clear answers to the things people ask most. Can't find it? Email us — a real person reads it."
       >
+        {showSupportChat && (
+          <SupportChat
+            signedIn={Boolean(user && su?.sub)}
+            email={su?.email}
+            totalPoints={pointsTotal}
+            programs={realBalances}
+            homeAirport={homeAirport}
+          />
+        )}
         {/* Quick-jump nav. A real landmark so keyboard and screen-reader users
             can skip straight to a section. The list styling overrides the
             inherited .legal-prose ul (disc bullets / indent). */}
@@ -237,15 +259,16 @@ export default async function SupportPage() {
 
         <h3>The price or availability changed — why?</h3>
         <p>
-          Fares, taxes, and award availability come from the airlines and third-party sources, and
-          can change at any moment before you book. hop shows the best information it has, but the
-          provider&rsquo;s live price at checkout is the real one. The figures are informational, not
-          financial advice — always confirm with the airline before booking.
+          Cash fares and taxes come from the airlines and third-party sources, and can change at any
+          moment before you book. Award miles are published saver-chart floors — hop does not
+          confirm space is open. hop shows the best information it has, but the provider&rsquo;s
+          live price at checkout is the real one. The figures are informational, not financial
+          advice — always confirm with the airline before booking.
         </p>
 
         <h3>A section says it&rsquo;s degraded — what does that mean?</h3>
         <p>
-          When an upstream source (cash prices, award space, or your balances) is briefly
+          When an upstream source (cash prices, saver charts, or your balances) is briefly
           unavailable, hop degrades just that part of the result and tells you, rather than failing
           the whole search. The rest of the answer still stands; re-run the search in a minute to
           fill the gap.
@@ -285,24 +308,25 @@ export default async function SupportPage() {
           price.
         </p>
 
-        <h2 id="claude-mcp" className="scroll-mt-24">
-          Using hop from Claude
+        <h2 id="mcp" className="scroll-mt-24">
+          Using hop from an AI assistant
         </h2>
 
-        <h3>What is &ldquo;Use hop from Claude&rdquo;?</h3>
+        <h3>What is &ldquo;Use hop from your AI assistant&rdquo;?</h3>
         <p>
           hop&rsquo;s engine is available as an <strong>MCP server</strong>, so you can call it from
-          Claude or any MCP client and get the same deterministic answers you&rsquo;d get on the
+          any MCP-capable client and get the same deterministic answers you&rsquo;d get on the
           site — pricing a trip, the full verdict, sweet-spot redemptions, and transfer paths.
         </p>
 
         <h3>How do I connect it?</h3>
         <p>
           On your <Link href="/account">account</Link>, open{' '}
-          <strong>Use hop from Claude (MCP)</strong> and mint a token. Add it to your MCP client and
-          your assistant can run hop on your behalf. A token is tied to <em>your</em> account: when
-          it&rsquo;s present, the tools see your real balances and tell you what you can afford. Treat
-          the token like a password — anyone with it can read your balances through hop.
+          <strong>Use hop from your AI assistant (MCP)</strong> and mint a token. Add it to your MCP
+          client and your assistant can run hop on your behalf. A token is tied to <em>your</em>{' '}
+          account: when it&rsquo;s present, the tools see your real balances and tell you what you
+          can afford. Treat the token like a password — anyone with it can read your balances
+          through hop.
         </p>
 
         <h3>Can I use it without a token?</h3>

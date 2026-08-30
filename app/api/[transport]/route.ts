@@ -21,7 +21,8 @@ import type { ServerNotification, ServerRequest } from '@modelcontextprotocol/sd
 import { resolveToken } from '@/lib/api-tokens'
 import { getUserBalances } from '@/lib/accounts'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { recordMcpUsage } from '@/lib/mcp-usage'
+import { recordMcpUsage, mcpCallsToday, mcpQuotaExceeded } from '@/lib/mcp-usage'
+import { getUserTier, MCP_DAILY_LIMITS } from '@/lib/subscription'
 import {
   priceTripSchema,
   verdictSchema,
@@ -60,7 +61,10 @@ function tokenIdFromExtra(extra: { authInfo?: AuthInfo }): string | undefined {
 // handlers only see the plain-object IsomorphicHeaders record mcp-handler
 // builds from the real Request (Object.fromEntries(req.headers.entries())),
 // not a Request/Headers instance, so lib/rate-limit's clientIp() (which reads
-// via Headers.get) doesn't apply here — this mirrors its header preference.
+// via Headers.get) doesn't apply here — this mirrors its header preference:
+// Vercel's platform-computed x-vercel-forwarded-for / x-real-ip win over a
+// client-influenceable x-forwarded-for, so an attacker can't rotate the XFF
+// value to dodge the burst bucket (see lib/rate-limit.ts#clientIp).
 // Populated on the streamable-HTTP transport (/api/mcp, WebStandardStreamable-
 // HTTPServerTransport — confirmed in mcp-handler's dist); the legacy SSE
 // transport (/api/sse) doesn't set requestInfo, so anonymous SSE callers fall
@@ -70,16 +74,18 @@ function clientIpFromExtra(extra: {
   requestInfo?: { headers?: Record<string, string | string[] | undefined> }
 }): string {
   const headers = extra.requestInfo?.headers ?? {}
-  const raw = headers['x-forwarded-for'] ?? headers['x-real-ip']
+  const raw = headers['x-vercel-forwarded-for'] ?? headers['x-real-ip'] ?? headers['x-forwarded-for']
   const first = Array.isArray(raw) ? raw[0] : raw?.split(',')[0]
   const ip = first?.trim()
   return ip || 'unknown'
 }
 
-// MCP calls are cheap deterministic lookups (no LLM/tool-fanout cost like
-// /ask), so a more generous quota than the concierge's is fine. Burst 60,
-// sustained ~1/sec (~60/min) — plenty for an interactive agent session,
-// enough to blunt a scripted loop.
+// Anti-burst safety net, applied to EVERY caller regardless of tier — MCP
+// calls are cheap deterministic lookups (no LLM/tool-fanout cost like /ask),
+// so a generous burst is fine; this just blunts a scripted loop hammering the
+// endpoint. It is NOT the tier quota — see MCP_DAILY_LIMITS below, enforced
+// via a durable per-token count (lib/mcp-usage.ts#mcpCallsToday) rather than
+// this in-process bucket, which doesn't survive a process restart.
 const MCP_RATE = { capacity: 60, refillPerSec: 1 }
 
 type ToolExtra = RequestHandlerExtra<ServerRequest, ServerNotification>
@@ -93,35 +99,51 @@ interface ToolResult {
   isError?: boolean
 }
 
+function errorResult(text: string): ToolResult {
+  return { content: [{ type: 'text' as const, text }], isError: true }
+}
+
 // Shared per-call metering + rate limiting, applied inside every tool
 // handler below (mcp-handler has no middleware hook around server.tool, so
-// this wraps the handler body instead of the registration). Keys the limiter
-// on the linked user when a valid hop token resolved, else on IP — so
+// this wraps the handler body instead of the registration). Keys the burst
+// limiter on the linked user when a valid hop token resolved, else on IP — so
 // stateless calls stay usable (just capped by IP) per the optional-auth
-// contract. On limit: returns an MCP tool error (isError), never throws — a
-// throw would surface as a transport-level 500 instead of a clean tool
-// result. On success: fire-and-forget logs the call for metering.
+// contract. Token-linked callers additionally get a tier-aware DAILY quota
+// (free 25/day, Pro 1,000/day, business plan §3.1/§7 B2) — stateless/no-token
+// callers keep only the flat burst limit above, never the day quota, since
+// there is no per-caller identity to meter against. On limit: returns an MCP
+// tool error (isError), never throws — a throw would surface as a
+// transport-level 500 instead of a clean tool result. On success:
+// fire-and-forget logs the call for metering.
 async function meteredCall(
   tool: string,
   extra: ToolExtra,
   run: () => Promise<ToolResult>,
 ): Promise<ToolResult> {
   const userId = userIdFromExtra(extra)
-  const key = `mcp:${userId ?? clientIpFromExtra(extra)}`
-  const limit = await checkRateLimit(key, MCP_RATE)
-  if (!limit.ok) {
-    return {
-      content: [
-        {
-          type: 'text' as const,
-          text: `Rate limit exceeded for ${tool}. Try again in ${limit.retryAfterSec}s.`,
-        },
-      ],
-      isError: true,
+  const tokenId = tokenIdFromExtra(extra)
+
+  const burstKey = `mcp:${userId ?? clientIpFromExtra(extra)}`
+  const burst = await checkRateLimit(burstKey, MCP_RATE)
+  if (!burst.ok) {
+    return errorResult(`Rate limit exceeded for ${tool}. Try again in ${burst.retryAfterSec}s.`)
+  }
+
+  if (tokenId) {
+    const tier = await getUserTier(userId ?? '')
+    const limit = MCP_DAILY_LIMITS[tier]
+    const usedToday = await mcpCallsToday(tokenId)
+    if (mcpQuotaExceeded(usedToday, limit)) {
+      return errorResult(
+        tier === 'free'
+          ? `Daily limit of ${limit} calls reached on the free plan. Upgrade at hop.flights/pricing for ${MCP_DAILY_LIMITS.premium}/day.`
+          : `Daily limit of ${limit} calls reached. Try again tomorrow.`,
+      )
     }
   }
+
   const result = await run()
-  recordMcpUsage({ userId, tokenId: tokenIdFromExtra(extra), tool })
+  recordMcpUsage({ userId, tokenId, tool })
   return result
 }
 

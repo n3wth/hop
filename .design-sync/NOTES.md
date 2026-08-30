@@ -1,6 +1,6 @@
 # hop design-sync notes
 
-See also: `docs/decisions/0010-claude-design-component-library-sync.md` (why this exists, what's
+See also: `docs/decisions/0012-claude-design-component-library-sync.md` (why this exists, what's
 in/out of scope) and `docs/solutions/2026-07-22-sync-nextjs-app-components-to-claude-design.md`
 (the reusable technical pattern — synth-entry scoping, the `next/link`/`process.env` shims,
 finding the real compiled CSS, `guidelinesGlob` scoping).

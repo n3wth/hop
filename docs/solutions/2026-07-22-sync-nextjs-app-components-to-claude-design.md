@@ -104,5 +104,5 @@ silently bundles unwanted things.
   hop build, since Turbopack's chunk hashes are guaranteed to change.
 - Full config rationale, the exact re-sync command, and known/accepted warnings live in
   `.design-sync/NOTES.md` — read that before touching `.design-sync/config.json` for a re-sync.
-- See `docs/decisions/0010-claude-design-component-library-sync.md` for the decision this
+- See `docs/decisions/0012-claude-design-component-library-sync.md` for the decision this
   implements (what's in/out of scope, and why).

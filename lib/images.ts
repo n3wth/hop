@@ -1,9 +1,17 @@
-// Location photography via Unsplash. Server-side only (uses the access key).
-// Results are cached in-process per query so we don't hit the API on every
-// render, and Next's fetch cache (revalidate) keeps it cheap across requests.
+// Location photography. SELF-HOSTED FIRST: the curated destinations (plus the
+// big US origins) ship in public/destinations/ with a static manifest
+// (lib/destination-photos.ts) — no API, no rate limit, deterministic, and the
+// CC-BY credits render on /credits. Unsplash remains only the long-tail
+// fallback for queries outside the curated set (server-side, uses the key).
 
 import { averageColorHex, blurhashToDataUri } from './blurhash'
 import { cacheWrap } from './cache'
+import {
+  DESTINATION_PHOTOS,
+  PHOTO_QUERY_ALIASES,
+  PHOTO_CITY_INDEX,
+  type DestinationPhoto,
+} from './destination-photos'
 
 const ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY
 
@@ -11,14 +19,74 @@ export interface DestImage {
   url: string // regular-size image URL
   thumb: string // small thumb URL
   alt: string
-  credit: { name: string; link: string } // Unsplash attribution (per API terms)
+  // Attribution: name/link = the photographer; source/sourceLink = the
+  // platform (Unsplash when absent — per its API terms; Pexels/Wikimedia for
+  // self-hosted photos).
+  credit: { name: string; link: string; source?: string; sourceLink?: string }
   color?: string // avg color from the photo's blurhash (instant flat fallback)
   blur?: string // tiny blurred SVG placeholder data URI — fades the photo up
 }
 
+const SOURCE_LINKS: Record<string, string> = {
+  Pexels: 'https://www.pexels.com',
+  'Wikimedia Commons': 'https://commons.wikimedia.org',
+}
+
+// Shared shape conversion — one manifest entry → the DestImage callers render.
+function toDestImage(p: DestinationPhoto): DestImage {
+  return {
+    url: p.src,
+    thumb: p.thumbSrc,
+    alt: p.alt,
+    credit: {
+      name: p.credit.name,
+      link: p.credit.link,
+      source: p.credit.source,
+      sourceLink: SOURCE_LINKS[p.credit.source],
+    },
+    color: p.color,
+  }
+}
+
+// Resolve a query against the self-hosted manifest: exact imageHint alias
+// first (every curated surface queries via imageQuery(d) = d.imageHint), then
+// city-name containment for free-text queries ("Los Angeles skyline palm
+// trees" → LAX). Returns null for true long-tail queries.
+function localPhoto(query: string): DestImage | null {
+  const q = query.toLowerCase().trim()
+  let code = PHOTO_QUERY_ALIASES[q]
+  if (!code) {
+    for (const city in PHOTO_CITY_INDEX) {
+      if (q.includes(city)) {
+        code = PHOTO_CITY_INDEX[city]
+        break
+      }
+    }
+  }
+  if (!code) return null
+  return toDestImage(DESTINATION_PHOTOS[code])
+}
+
+// Exact-key lookup by the manifest's own destination code (e.g. 'CDG') — the
+// identity every curated surface shares (lib/destinations#Destination.code,
+// ShowcaseRotator's ShowcaseEntry.code, /search's params.to when the route's
+// destination is one of the curated cities). Unlike localPhoto()'s free-text
+// fuzzy match, this is the ONLY path that guarantees two surfaces render the
+// literal same file for the literal same destination — the precondition for
+// a shared-element <ViewTransition name={`photo-${code}`}> morph between the
+// home showcase and /search. Returns null for codes outside the curated set
+// (callers fall back to the free-text/Unsplash path, same as always).
+export function photoForCode(code: string): DestImage | null {
+  const p = DESTINATION_PHOTOS[code]
+  return p ? toDestImage(p) : null
+}
+
 // Fetch one landscape photo for a query (e.g. "Tokyo Japan skyline").
-// Returns null on any failure — callers fall back to a solid tile.
+// Self-hosted manifest first; Unsplash fallback; null on any failure —
+// callers fall back to a solid tile.
 export async function destinationImage(query: string): Promise<DestImage | null> {
+  const local = localPhoto(query)
+  if (local) return local
   if (!ACCESS_KEY) return null
   const key = query.toLowerCase().trim()
 
@@ -32,6 +100,11 @@ export async function destinationImage(query: string): Promise<DestImage | null>
           headers: { Authorization: `Client-ID ${ACCESS_KEY}` },
           // cache a day — destination photos don't need to be fresh
           next: { revalidate: 86400 },
+          // Hard timeout — a slow (not down) Unsplash response must never stall
+          // the page it's ornamenting. AbortError lands in the catch below,
+          // same as any other failure → null → cached as a miss → callers'
+          // solid fallback (degrade the ornament, never the page).
+          signal: AbortSignal.timeout(1500),
         },
       )
       if (!res.ok) return null
@@ -53,6 +126,17 @@ export async function destinationImage(query: string): Promise<DestImage | null>
         color: hash ? averageColorHex(hash) ?? undefined : undefined,
         blur: hash ? blurhashToDataUri(hash) ?? undefined : undefined,
       }
+      // Unsplash API terms require pinging download_location once per "use" of
+      // a photo, separate from attribution. Fire-and-forget — a slow/failing
+      // tracking call must never delay or break the page render. This sits
+      // inside the cacheWrap callback, so it only fires on a genuine cache
+      // miss (once per query per 24h TTL), not on every cached read.
+      const downloadLocation: string | undefined = p.links?.download_location
+      if (downloadLocation) {
+        fetch(downloadLocation, { headers: { Authorization: `Client-ID ${ACCESS_KEY}` } }).catch(
+          () => {},
+        )
+      }
       return img
     } catch {
       return null
@@ -60,15 +144,29 @@ export async function destinationImage(query: string): Promise<DestImage | null>
   })
 }
 
-// Batch helper — fetch images for many destinations in parallel (capped).
+// A cold cache means every long-tail query misses at once — cap how many
+// destinationImage() calls run concurrently so a big page (e.g. /deals' 24
+// destinations) can't fan out a burst of simultaneous Unsplash requests and
+// trip its rate limit. Self-hosted manifest hits (the common case now) resolve
+// instantly and never occupy a worker slot; only genuine network misses do.
+const IMAGE_FETCH_CONCURRENCY = 5
+
+// Batch helper — fetch images for many destinations in parallel, capped.
 export async function destinationImages(
   queries: string[],
 ): Promise<Record<string, DestImage | null>> {
   const out: Record<string, DestImage | null> = {}
-  await Promise.all(
-    queries.map(async (q) => {
+  let next = 0
+  async function worker() {
+    while (next < queries.length) {
+      const q = queries[next++]
       out[q] = await destinationImage(q)
-    }),
+    }
+  }
+  const workers = Array.from(
+    { length: Math.min(IMAGE_FETCH_CONCURRENCY, queries.length) },
+    worker,
   )
+  await Promise.all(workers)
   return out
 }

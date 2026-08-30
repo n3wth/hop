@@ -75,8 +75,8 @@ filename**, so name files to match.
 - **Human-in-the-loop on irreversible actions.** Anything that books, pays, sends money, or mutates
   standing orders goes through an Eve approval gate (park/resume); never autonomous, never the live
   Duffel key.
-- **user_id scoping.** Service-role bypasses RLS — every DB read/write scopes by the authenticated
-  Auth0 `sub`, never a caller-supplied id.
+- **user_id scoping.** No RLS safety net (Neon/Drizzle) — every DB read/write scopes by the
+  authenticated Better Auth `user.id`, never a caller-supplied id.
 
 ## Finish
 

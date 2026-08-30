@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import Icon from './Icon'
+import Card from './ui/Card'
+import Eyebrow from './ui/Eyebrow'
 import type { ApiTokenInfo } from '@/lib/api-tokens'
 
 // "Use hop from your LLM (MCP)" — mint/rename/revoke a hop API token, pick your
@@ -14,14 +16,13 @@ type Props = { initialTokens: ApiTokenInfo[] }
 
 // The selectable MCP-capable clients. Each renders its OWN connect snippet from
 // the live server URL + the user's token (or a placeholder until one is minted).
-type ClientId = 'claude-desktop' | 'claude-code' | 'cursor' | 'chatgpt' | 'generic'
+// Deliberately protocol-generic, not a directory of named AI-assistant products
+// — the instructions work for any MCP client without endorsing a specific one.
+type ClientId = 'cursor' | 'generic'
 
 const CLIENTS: { id: ClientId; label: string }[] = [
-  { id: 'claude-desktop', label: 'Claude Desktop' },
-  { id: 'claude-code', label: 'Claude Code' },
-  { id: 'cursor', label: 'Cursor' },
-  { id: 'chatgpt', label: 'ChatGPT' },
   { id: 'generic', label: 'Any MCP client' },
+  { id: 'cursor', label: 'Cursor' },
 ]
 
 function CopyButton({
@@ -75,15 +76,13 @@ function ConfigBlock({
   copyLabel: string
 }) {
   return (
-    <div className="mt-3 rounded-[12px] border border-border bg-sunk px-4 py-3">
+    <Card surface="sunk" className="mt-3 px-4 py-3">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-[11px] font-semibold uppercase tracking-[var(--track-label)] text-text2">
-          {label}
-        </div>
+        <Eyebrow className="text-text2">{label}</Eyebrow>
         <CopyButton value={copyValue} label={copyLabel} />
       </div>
       <pre className="mt-2 overflow-x-auto font-mono text-[12.5px] leading-[1.5] text-text">{body}</pre>
-    </div>
+    </Card>
   )
 }
 
@@ -117,7 +116,7 @@ export default function McpAccess({ initialTokens }: Props) {
   // While a fresh token is uncopied, revoke/rename are locked so the user can't
   // lose the one-time secret by navigating away from the panel.
   const [freshCopied, setFreshCopied] = useState(false)
-  const [client, setClient] = useState<ClientId>('claude-desktop')
+  const [client, setClient] = useState<ClientId>('generic')
   const [mintName, setMintName] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
@@ -229,25 +228,6 @@ export default function McpAccess({ initialTokens }: Props) {
       2,
     )
     switch (client) {
-      case 'claude-desktop':
-        return {
-          help:
-            'Open Claude Desktop > Settings > Developer > Edit Config, then merge this into claude_desktop_config.json and restart Claude.',
-          label: 'claude_desktop_config.json',
-          body: jsonConfig,
-          copyValue: jsonConfig,
-          copyLabel: 'Copy config',
-        }
-      case 'claude-code': {
-        const cmd = `claude mcp add --transport http hop ${mcpUrl} \\\n  --header "Authorization: Bearer ${token}"`
-        return {
-          help: 'Run this in your terminal. It registers hop as an HTTP MCP server for Claude Code.',
-          label: 'terminal',
-          body: cmd,
-          copyValue: cmd,
-          copyLabel: 'Copy command',
-        }
-      }
       case 'cursor':
         return {
           help:
@@ -257,17 +237,6 @@ export default function McpAccess({ initialTokens }: Props) {
           copyValue: jsonConfig,
           copyLabel: 'Copy config',
         }
-      case 'chatgpt': {
-        const body = `Server URL\n${mcpUrl}\n\nAuthentication\nBearer ${token}`
-        return {
-          help:
-            'In ChatGPT (where MCP / connectors are enabled), add a custom connector with this URL and a Bearer token.',
-          label: 'connector settings',
-          body,
-          copyValue: mcpUrl,
-          copyLabel: 'Copy URL',
-        }
-      }
       case 'generic':
       default: {
         const body = `Server URL\n${mcpUrl}\n\nTransport\nstreamable HTTP\n\nAuth header\nAuthorization: Bearer ${token}`
@@ -389,7 +358,7 @@ export default function McpAccess({ initialTokens }: Props) {
           onChange={(e) => setMintName(e.target.value)}
           placeholder="Token name (e.g. Laptop)"
           maxLength={60}
-          className="min-w-0 flex-1 rounded-[12px] border border-border bg-sunk px-3.5 py-2.5 text-[13.5px] text-text placeholder:text-text3 focus:border-brand focus:outline-none"
+          className="no-inner-ring min-w-0 flex-1 rounded-[12px] border border-border bg-sunk px-3.5 py-2.5 text-[13.5px] text-text placeholder:text-text3 focus:border-brand focus:outline-none"
         />
         <button
           type="button"
@@ -423,7 +392,7 @@ export default function McpAccess({ initialTokens }: Props) {
                           setEditName('')
                         }
                       }}
-                      className="min-w-0 flex-1 rounded-[10px] border border-border bg-sunk px-3 py-1.5 text-[13.5px] text-text focus:border-brand focus:outline-none"
+                      className="no-inner-ring min-w-0 flex-1 rounded-[10px] border border-border bg-sunk px-3 py-1.5 text-[13.5px] text-text focus:border-brand focus:outline-none"
                     />
                     <button
                       type="button"
@@ -455,7 +424,7 @@ export default function McpAccess({ initialTokens }: Props) {
                     </div>
                     <div className="text-[12px] text-text2">
                       {t.lastUsedAt
-                        ? `Last used ${new Date(t.lastUsedAt).toLocaleDateString()}`
+                        ? `Last used ${new Date(t.lastUsedAt).toLocaleDateString('en-US')}`
                         : 'Never used'}
                     </div>
                   </>

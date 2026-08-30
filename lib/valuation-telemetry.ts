@@ -1,5 +1,5 @@
 // Fire-and-forget telemetry: reports live cash-vs-award cpp observations (already
-// computed by lib/cpp.ts from real Duffel + seats.aero data) to the Cloudflare
+// computed by lib/cpp.ts from real Duffel cash + published chart miles) to the Cloudflare
 // valuation Worker, which aggregates them into per-program overrides that
 // lib/valuations-live.ts later merges over the static lib/valuations.ts baseline.
 //

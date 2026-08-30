@@ -50,7 +50,7 @@ export function ToolHeader({ title, icon = 'settings', state, className = '' }: 
       <Icon
         name="expand_more"
         size={16}
-        className="shrink-0 text-text3/60 transition-transform group-open/tool:rotate-180"
+        className="shrink-0 text-text3/60 transition-transform group-open/tool:rotate-180 motion-reduce:transition-none"
       />
     </summary>
   )

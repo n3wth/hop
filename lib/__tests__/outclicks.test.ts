@@ -13,7 +13,7 @@ vi.mock('@/lib/posthog-server', () => ({
 
 import { withDb } from '@/lib/supabase-helpers'
 import { captureServerEvent } from '@/lib/posthog-server'
-import { recordOutclick, type Outclick } from '@/lib/outclicks'
+import { recordOutclick, getOutclickSummary, listRecentOutclicks, type Outclick } from '@/lib/outclicks'
 
 const mockWithDb = vi.mocked(withDb)
 const mockCapture = vi.mocked(captureServerEvent)
@@ -111,5 +111,68 @@ describe('recordOutclick', () => {
     // Default mock: withDb resolves straight to the fallback (no client).
     expect(() => recordOutclick(CLICK)).not.toThrow()
     expect(mockWithDb).toHaveBeenCalledTimes(1)
+  })
+})
+
+// hop_outclicks has NO created_at column — only clicked_at (lib/db/schema.ts).
+// This fake mirrors lib/supabase-helpers.ts's real behavior: a filter/select
+// naming any other column fails the query (Drizzle's compat shim fails closed
+// on an unknown column). That's what made the real bug reproduce as "Outclick
+// ledger unavailable" on /admin/ops — listRecentOutclicks/getOutclickSummary
+// queried created_at and every call errored out to null.
+const KNOWN_COLUMNS = new Set(['kind', 'target', 'program', 'clicked_at'])
+
+function fakeOutclicksDb(rows: Array<Record<string, unknown>>) {
+  let failed: Error | null = null
+  function checkCol(col: string) {
+    if (!KNOWN_COLUMNS.has(col)) failed = new Error(`Unknown column "${col}"`)
+  }
+  function checkCols(cols: string) {
+    cols.split(',').map((c) => c.trim()).forEach(checkCol)
+  }
+  const terminal = () => (failed ? { data: null, error: failed } : { data: rows, error: null })
+  const builder = {
+    select(cols: string) {
+      checkCols(cols)
+      return builder
+    },
+    order(col: string) {
+      checkCol(col)
+      return builder
+    },
+    gte(col: string) {
+      checkCol(col)
+      return terminal()
+    },
+    limit() {
+      return terminal()
+    },
+  }
+  return { from: () => builder }
+}
+
+describe('listRecentOutclicks / getOutclickSummary — real column names', () => {
+  const ROW = { kind: 'card', target: 'chase-ur', program: 'Chase UR', clicked_at: '2026-07-04T10:00:00Z' }
+
+  it('listRecentOutclicks reads clicked_at, not created_at', async () => {
+    mockWithDb.mockImplementation(async (_fallback, fn) =>
+      (fn as (db: unknown) => Promise<unknown>)(fakeOutclicksDb([ROW])),
+    )
+    const out = await listRecentOutclicks(15)
+    expect(out).not.toBeNull()
+    expect(out?.[0]).toEqual({
+      kind: 'card',
+      target: 'chase-ur',
+      program: 'Chase UR',
+      createdAt: '2026-07-04T10:00:00Z',
+    })
+  })
+
+  it('getOutclickSummary reads clicked_at, not created_at', async () => {
+    mockWithDb.mockImplementation(async (_fallback, fn) =>
+      (fn as (db: unknown) => Promise<unknown>)(fakeOutclicksDb([ROW, { ...ROW, kind: 'cash' }])),
+    )
+    const out = await getOutclickSummary()
+    expect(out).toEqual({ last7d: { card: 1, cash: 1 }, total: 2 })
   })
 })

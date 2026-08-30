@@ -10,11 +10,14 @@ import {
   formatPointsLabel,
   formatPointsCompact,
   neighborBands,
+  pointsBandSearchHref,
 } from '@/lib/points-bands'
 import { affordableWith, computeCpp, type Destination } from '@/lib/destinations'
-import { tier, formatValue } from '@/lib/cpp'
-import type { CppTier } from '@/lib/types'
-import { isoOffset } from '@/lib/dates'
+import { formatValue } from '@/lib/cpp'
+import { TierChip } from '@/components/ui/TierChip'
+import Card from '@/components/ui/Card'
+import Button from '@/components/ui/Button'
+import Eyebrow from '@/components/ui/Eyebrow'
 import { VERIFY_CAVEAT } from '@/lib/sweet-spots'
 
 // Prerender one page per curated band; nothing else is valid.
@@ -41,17 +44,7 @@ export async function generateMetadata({
   })
 }
 
-// cpp tier -> chip palette. Mirrors DealCard/sweet-spots chip conventions.
-const TIER_CHIP: Record<CppTier, { bg: string; fg: string; bd: string }> = {
-  green: { bg: 'var(--color-good-bg)', fg: 'var(--color-good)', bd: 'var(--color-brand-mint-deep)' },
-  amber: { bg: 'var(--color-ok-bg)', fg: 'var(--color-ok)', bd: 'var(--color-gold-soft)' },
-  muted: { bg: 'var(--color-sunk)', fg: 'var(--color-text3)', bd: 'var(--color-border)' },
-}
 
-// Static seed origin for the CTA link — this page has no request-scoped
-// visitor context (it's force-static), so it seeds the same way /deals does
-// before an explicit ?from= or saved home airport is known.
-const DEFAULT_ORIGIN = 'SFO'
 
 // 37500 -> "37.5K". Compact miles for the row figures (mirrors DealCard).
 function compactMiles(n: number): string {
@@ -118,10 +111,12 @@ export default async function PointsBandPage({
 
   const list = affordableWith(amount)
   const { prev, next } = neighborBands(amount)
-  const depart = isoOffset(21)
-  const ret = isoOffset(28)
   const jsonLd = buildPointsJsonLd(amount, list)
-  const returnTo = encodeURIComponent(`/points/${slug}`)
+  // Post-sign-in destination is the personalized HOME, not this page: this
+  // route is force-static and always renders the reference balance, so
+  // bouncing back here can never show "your real balance" — the signed-in
+  // dashboard is where that promise is actually kept.
+  const returnTo = encodeURIComponent('/')
 
   return (
     <AppShell user={null} hideSearch>
@@ -146,9 +141,9 @@ export default async function PointsBandPage({
         {/* header — evergreen framing: "N points, here's where that typically
             goes", never a claim that the visitor holds this balance. */}
         <header className="mt-6 max-w-[60ch]">
-          <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
+          <Eyebrow className="text-brand">
             {list.length} {list.length === 1 ? 'destination' : 'destinations'}
-          </span>
+          </Eyebrow>
           <h1 className="mt-3 text-balance font-display text-[32px] font-semibold leading-[1.06] tracking-[-0.02em] text-text sm:text-[46px]">
             Where {formatPointsLabel(amount)} points typically goes
           </h1>
@@ -162,18 +157,20 @@ export default async function PointsBandPage({
         {/* soft sign-in CTA — never claims the visitor owns this balance;
             offers to reprice against their real one instead. Consistent with
             VerdictRail's owns/hasRealBalances framing. */}
-        <div className="mx-auto mt-7 flex flex-col items-center justify-between gap-3 rounded-[16px] border border-border bg-surface px-5 py-4 text-center sm:flex-row sm:gap-4 sm:text-left">
+        <Card surface="surface" className="mx-auto mt-7 flex flex-col items-center justify-between gap-3 px-5 py-4 text-center sm:flex-row sm:gap-4 sm:text-left">
           <span className="text-[14px] leading-[1.5] text-text2">
             <span className="font-semibold text-text">This is a reference balance, not yours.</span>{' '}
             Sign in and hop prices every destination against what you actually hold.
           </span>
-          <Link
+          <Button
             href={`/auth/login?returnTo=${returnTo}`}
-            className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-[var(--radius)] bg-brand px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-brand-deep"
+            native
+            size="sm"
+            className="flex-shrink-0"
           >
             Sign in to see it with your real balance
-          </Link>
-        </div>
+          </Button>
+        </Card>
 
         {/* the destination rows — flat editorial, best-cpp-first (already
             sorted by affordableWith) */}
@@ -181,12 +178,8 @@ export default async function PointsBandPage({
           <section className="mt-9 divide-y divide-hair border-y border-border">
             {list.map((d) => {
               const value = computeCpp(d)
-              const t = tier(value)
-              const chip = TIER_CHIP[t]
               const leftover = amount - d.typicalAwardMiles
-              const searchHref =
-                `/search?from=${DEFAULT_ORIGIN}&to=${d.code}` +
-                `&depart=${depart}&ret=${ret}&adults=1`
+              const searchHref = pointsBandSearchHref(d.code)
 
               return (
                 <article
@@ -203,14 +196,7 @@ export default async function PointsBandPage({
                         {d.city}
                       </h2>
                       <span className="text-[13px] text-text3">{d.country}</span>
-                      {value !== undefined && (
-                        <span
-                          className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[var(--track-label)]"
-                          style={{ background: chip.bg, color: chip.fg, borderColor: chip.bd }}
-                        >
-                          {formatValue(value)}
-                        </span>
-                      )}
+                      {value !== undefined && <TierChip cpp={value} />}
                     </div>
                     <p className="mt-2.5 max-w-[60ch] text-[14.5px] leading-relaxed text-text2">
                       {sentenceCase(d.vibe)}
@@ -218,7 +204,7 @@ export default async function PointsBandPage({
                     <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] text-text3">
                       <span>
                         <b className="font-semibold text-text2">{compactMiles(d.typicalAwardMiles)}</b>{' '}
-                        miles one-way
+                        miles one-way{d.cabin ? ` · ${d.cabin}` : ''}
                       </span>
                       <span>
                         vs <b className="font-semibold text-text2">{money(d.typicalCashUSD)}</b> cash
@@ -255,18 +241,18 @@ export default async function PointsBandPage({
         ) : (
           // Defensive: the dataset + curated bands are static so this
           // shouldn't happen, but never render a bare, dead list if it does.
-          <div className="mt-9 rounded-[var(--radius-lg)] border border-border bg-surface px-6 py-12 text-center">
+          <Card surface="surface" radius="lg" className="mt-9 px-6 py-12 text-center">
             <p className="text-[15px] text-text2">
               Nothing in hop&apos;s set clears at {formatPointsLabel(amount)} points one-way yet.
               Ask hop where a smaller trip might fit.
             </p>
-          </div>
+          </Card>
         )}
 
         {/* accuracy caveat — same seed-reference posture as /sweet-spots */}
-        <p className="mt-7 rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-[14px] leading-relaxed text-text3">
+        <Card surface="surface" className="mt-7 px-4 py-3 text-[14px] leading-relaxed text-text3">
           {VERIFY_CAVEAT}
-        </p>
+        </Card>
 
         {/* neighbor bands — "have fewer/more points?" mesh */}
         {(prev !== undefined || next !== undefined) && (

@@ -126,20 +126,33 @@ export async function refreshAccessToken(refreshToken: string): Promise<string |
 
 // Best-effort revoke of a refresh/access token at Google's revocation endpoint.
 // Called on disconnect so our access is killed upstream, not just locally.
-export async function revokeToken(token: string): Promise<void> {
+// Returns whether the upstream call itself succeeded — best-effort means the
+// caller's local disconnect proceeds regardless, but a caller can still log a
+// failure here (a token that silently stayed valid at Google is worth knowing
+// about, even though the local row is gone).
+export async function revokeToken(token: string): Promise<boolean> {
   try {
-    await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(token)}`, {
+    const res = await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(token)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     })
+    return res.ok
   } catch {
-    // best effort — local delete still happens regardless
+    return false
   }
 }
 
 // --- Gmail read -------------------------------------------------------------
 
-async function gmailGet(path: string, accessToken: string): Promise<unknown | null> {
+// Discriminated so callers can tell "the mailbox has nothing to say" (ok, empty
+// result) apart from "we couldn't ask" (dead/revoked token vs. a transient
+// network/5xx blip) — the root-cause gap this seam had: a 401 and an empty
+// inbox both used to collapse to the same `null`.
+type GmailGetResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; status: number | null; authFailed: boolean }
+
+async function gmailGet<T>(path: string, accessToken: string): Promise<GmailGetResult<T>> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
   try {
@@ -147,10 +160,12 @@ async function gmailGet(path: string, accessToken: string): Promise<unknown | nu
       headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
       signal: controller.signal,
     })
-    if (!res.ok) return null
-    return await res.json()
+    if (!res.ok) {
+      return { ok: false, status: res.status, authFailed: res.status === 401 || res.status === 403 }
+    }
+    return { ok: true, data: (await res.json()) as T }
   } catch {
-    return null
+    return { ok: false, status: null, authFailed: false }
   } finally {
     clearTimeout(timer)
   }
@@ -158,8 +173,8 @@ async function gmailGet(path: string, accessToken: string): Promise<unknown | nu
 
 // The connected account's email, for display ("Connected as you@gmail.com").
 export async function getProfileEmail(accessToken: string): Promise<string | null> {
-  const json = (await gmailGet('/profile', accessToken)) as { emailAddress?: string } | null
-  return json?.emailAddress ?? null
+  const res = await gmailGet<{ emailAddress?: string }>('/profile', accessToken)
+  return res.ok ? res.data.emailAddress ?? null : null
 }
 
 // A parsed confirmation message we hand to the parser: subject, sender, the
@@ -172,17 +187,45 @@ export interface RawMessage {
   body: string
 }
 
-// List message ids matching the tight confirmation query (capped).
+// Discriminated so the caller (syncTravelHistory) can tell a dead/revoked
+// access token (authFailed) apart from a genuinely empty/no-match inbox
+// (ok: true, ids: []) apart from a transient fetch failure (ok: false,
+// authFailed: false) — three different situations that used to all read as
+// "0 messages."
+export type MessageListResult =
+  | { ok: true; ids: string[] }
+  | { ok: false; authFailed: boolean }
+
+// List message ids matching the tight confirmation query. Pages through with
+// pageToken (Gmail caps a page at ~100 ids) up to `max` total — the old single
+// 50-newest page silently dropped a frequent flyer's older history. Still
+// bounded so a huge mailbox can't run away.
 export async function listConfirmationMessageIds(
   accessToken: string,
-  max = 50,
-): Promise<string[]> {
+  max = 300,
+): Promise<MessageListResult> {
   const q = encodeURIComponent(CONFIRMATION_QUERY)
-  const json = (await gmailGet(
-    `/messages?q=${q}&maxResults=${Math.min(max, 100)}`,
-    accessToken,
-  )) as { messages?: Array<{ id?: string }> } | null
-  return (json?.messages ?? []).map((m) => m.id).filter((id): id is string => Boolean(id))
+  const cap = Math.min(max, 300)
+  const ids: string[] = []
+  let pageToken: string | undefined
+  do {
+    const pageSize = Math.min(cap - ids.length, 100)
+    const res = await gmailGet<{ messages?: Array<{ id?: string }>; nextPageToken?: string }>(
+      `/messages?q=${q}&maxResults=${pageSize}${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ''}`,
+      accessToken,
+    )
+    if (!res.ok) {
+      // Fail the whole listing only if the FIRST page failed; a mid-pagination
+      // blip degrades to the ids we already have.
+      if (ids.length === 0) return { ok: false, authFailed: res.authFailed }
+      break
+    }
+    ids.push(
+      ...(res.data.messages ?? []).map((m) => m.id).filter((id): id is string => Boolean(id)),
+    )
+    pageToken = res.data.nextPageToken
+  } while (pageToken && ids.length < cap)
+  return { ok: true, ids }
 }
 
 // base64url → utf8 string (Gmail encodes part bodies this way).
@@ -227,12 +270,15 @@ export async function getMessage(
   accessToken: string,
   id: string,
 ): Promise<RawMessage | null> {
-  const json = (await gmailGet(`/messages/${id}?format=full`, accessToken)) as {
+  const res = await gmailGet<{
     internalDate?: string
     payload?: GmailPart & { headers?: Array<{ name?: string; value?: string }> }
-  } | null
-  if (!json?.payload) return null
-  const headers = json.payload.headers ?? []
+  }>(`/messages/${id}?format=full`, accessToken)
+  if (!res.ok) return null
+  const json = res.data
+  const payload = json.payload
+  if (!payload) return null
+  const headers = payload.headers ?? []
   const header = (name: string): string =>
     headers.find((h) => (h.name ?? '').toLowerCase() === name)?.value ?? ''
   return {
@@ -240,6 +286,6 @@ export async function getMessage(
     subject: header('subject'),
     from: header('from'),
     internalDate: Number(json.internalDate ?? 0),
-    body: extractPlainText(json.payload),
+    body: extractPlainText(payload),
   }
 }

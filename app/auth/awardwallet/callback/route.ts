@@ -10,7 +10,7 @@
 import { timingSafeEqual } from 'node:crypto'
 import { NextResponse, type NextRequest } from 'next/server'
 import { auth0 } from '@/lib/auth0'
-import { setUserAwId } from '@/lib/accounts'
+import { setUserAwId, refreshAwCache } from '@/lib/accounts'
 import { STATE_COOKIE, stateCookieValue } from '../start/route'
 
 // Constant-time string compare that never throws on length mismatch.
@@ -69,5 +69,13 @@ export async function GET(req: NextRequest) {
   }
 
   const saved = await setUserAwId(userId, awUserId.trim())
+  if (saved) {
+    // Bootstrap the cache right away, best-effort, so /account shows real
+    // balances on first render instead of waiting for the next cron tick.
+    // A failed bootstrap pull isn't fatal — the connection itself is what
+    // "connected" reports; the user can hit Refresh, and the cron will
+    // retry once it's flipped on.
+    await refreshAwCache(userId, awUserId.trim()).catch(() => false)
+  }
   return backToAccount(req, saved ? 'connected' : 'error')
 }

@@ -3,9 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { authClient } from '@/lib/auth-client'
-
-const inputClass =
-  'w-full rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[13.5px] font-semibold text-text outline-none transition-colors focus:border-brand'
+import { Input } from '@/components/ui/Field'
 
 export default function ResetPasswordForm({ token }: { token: string }) {
   const [password, setPassword] = useState('')
@@ -70,7 +68,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
           {error}
         </div>
       ) : null}
-      <input
+      <Input
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
@@ -79,7 +77,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
         autoComplete="new-password"
         required
         minLength={8}
-        className={inputClass}
+        className="font-semibold"
       />
       <button
         type="submit"

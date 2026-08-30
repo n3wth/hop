@@ -10,6 +10,7 @@ import { listRecentEscalations } from '@/lib/escalation'
 import { isSelfImproveEnabled } from '@/lib/env'
 import { getUserCounts } from '@/lib/admin-stats'
 import { gatherOpsPreflight, countPreflightIssues } from '@/lib/admin-ops'
+import { computeUnitEconomics } from '@/lib/unit-economics'
 import AdminDashboard from '@/components/admin/AdminDashboard'
 
 // Owner-only ops overview — the /admin landing page. Every figure is read
@@ -28,7 +29,7 @@ export default async function AdminPage() {
   const owner = await getOwnerSession()
   if (!owner) notFound()
 
-  const [digest, heartbeats, degradation, findings, tickets, escalations, users] =
+  const [digest, heartbeats, degradation, findings, tickets, escalations, users, unitEconomics] =
     await Promise.all([
       computeBusinessDigest(),
       listHeartbeats(),
@@ -37,6 +38,7 @@ export default async function AdminPage() {
       listRecentTickets(5),
       listRecentEscalations(5),
       getUserCounts(),
+      computeUnitEconomics(),
     ])
 
   // Chrome (sidebar rail, account, nav) comes from app/admin/layout.tsx.
@@ -53,6 +55,7 @@ export default async function AdminPage() {
       usersTotal={users.total}
       usersNew7d={users.last7d}
       preflightIssues={countPreflightIssues(gatherOpsPreflight())}
+      unitEconomics={unitEconomics}
     />
   )
 }

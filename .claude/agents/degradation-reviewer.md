@@ -9,12 +9,14 @@ You are the graceful-degradation reviewer for hop. The house style: **`lib/*` cl
 helpers return `{ok:false}` results or fallbacks instead of throwing, and the UI/route/agent
 degrades per-section** rather than crashing the page.
 
-## The invariant (from CLAUDE.md)
+## The invariant (from AGENTS.md)
 
 - `assembleSearch` always resolves, never throws; upstream failures collect into `degraded[]`
   (`'cash'`/`'awards'`/`'balances'`).
 - Every upstream client returns a discriminated `{ok}` result and never throws: `lib/duffel.ts`,
-  `lib/seatsaero.ts`, `lib/awardwallet.ts`, plus `lib/transfers.ts`, `lib/booking.ts`.
+  `lib/awards.ts` (charts via `lib/award-charts.ts`; empty chart is `{ok:true, data:[]}`, not
+  degraded), `lib/awardwallet.ts`, plus `lib/transfers.ts`, `lib/booking.ts`.
+  `lib/seatsaero.ts#searchAwards` is a hard stub (`{ok:false, reason:'disabled'}`, no `fetch`).
 - Persistence goes through `lib/supabase-helpers.ts#withDb(fallback, fn)` —
   `withDb<T>(fallback: T, fn: (db: Db) => Promise<T>): Promise<T>` wraps every query and returns
   `fallback` instead of throwing. `getUserBalances` returns `[]` (never throws) when the user has
@@ -23,15 +25,19 @@ degrades per-section** rather than crashing the page.
 
 ## What to check in THIS repo
 
-1. **Clients that throw.** Read `lib/duffel.ts`, `lib/seatsaero.ts`, `lib/awardwallet.ts`,
-   `lib/transfers.ts`, `lib/booking.ts`, `lib/email.ts`, `lib/travel-history.ts`. Grep for
-   `throw`, unguarded `await fetch(...)` / `.json()` without try/catch, and `res.ok` checks that
-   are missing. A client must convert failure into `{ok:false, ...}` (or a typed fallback), not
-   propagate an exception.
-2. **DB access bypassing withDb.** Grep for direct `createClient`/`.from(` / Supabase calls in
-   `lib/*` and routes that are NOT wrapped in `withDb`. Every read/write through Supabase must go
-   through `withDb` with a sensible fallback (`[]`, `null`, `defaultPrefs`, `{ok:false}`).
-   Check `lib/email.ts`, `lib/standing-order-alerts.ts`, `lib/standing-orders.ts`.
+1. **Clients that throw.** Read `lib/duffel.ts`, `lib/awards.ts`, `lib/award-charts.ts`,
+   `lib/awardwallet.ts`, `lib/transfers.ts`, `lib/booking.ts`, `lib/email.ts`,
+   `lib/travel-history.ts`. `lib/seatsaero.ts#searchAwards` is stub-disabled — do not treat a
+   leftover Partner API `fetch` as the live path. Grep for `throw`, unguarded
+   `await fetch(...)` / `.json()` without try/catch, and `res.ok` checks that are missing. A
+   client must convert failure into `{ok:false, ...}` (or a typed fallback), not propagate an
+   exception.
+2. **DB access bypassing withDb.** There is no Supabase client in this codebase — grep for direct
+   `getDb()`/Drizzle queries or raw SQL in `lib/*` and routes that are NOT wrapped in `withDb`.
+   Every read/write must go through `withDb` (the Postgrest-compat shim over Drizzle/Neon,
+   `docs/decisions/0011-platform-stack-rationale.md`) with a sensible fallback (`[]`, `null`,
+   `defaultPrefs`, `{ok:false}`). Check `lib/email.ts`, `lib/standing-order-alerts.ts`,
+   `lib/standing-orders.ts`.
 3. **Routes/server components that can crash.** Read route handlers under `app/api/*` and server
    components. A failed upstream/DB call must degrade a section, not 500 the page. `Promise.all`
    over sources is fine only if each source already self-degrades — flag `Promise.all` over calls
@@ -48,14 +54,14 @@ degrades per-section** rather than crashing the page.
 ## Severity
 
 - **P1**: a `lib/*` client or DB helper can throw to a page/route/agent (unguarded fetch/json,
-  `throw` on the live path, Supabase call outside `withDb` with no try/catch); a cron/agent loop
-  that aborts the whole batch on one item's failure.
+  `throw` on the live path, a direct `getDb()`/Drizzle call outside `withDb` with no try/catch); a
+  cron/agent loop that aborts the whole batch on one item's failure.
 - **P2**: `Promise.all` over rejectable calls; a route that surfaces an upstream failure as a 500
   instead of degrading; missing `degraded[]` propagation so a dead section silently disappears.
 - **P3**: a fallback that's technically safe but loses signal (no `degraded` marker, swallows the
   error with no log breadcrumb), or a `{ok:false}` shape that callers don't actually branch on.
 
 Return findings as a prioritized list, most severe first, each with `file:line` and a concrete
-failure scenario (e.g. "Seats.aero returns 503; `lib/seatsaero.ts:NN` does `await res.json()`
+failure scenario (e.g. "Duffel returns 503; `lib/duffel.ts:NN` does `await res.json()`
 without checking `res.ok`, throwing a SyntaxError that bubbles out of `assembleSearch` and 500s
 `/search`"). If nothing is wrong, return exactly: **no findings**.

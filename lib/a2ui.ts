@@ -66,6 +66,7 @@ export interface A2UIEconomics {
   country: string
   milesNeeded: number
   cashUsd: number
+  taxesUsd: number
   cpp: number | undefined
   bestProgram: string
   youHave: number | undefined
@@ -484,6 +485,7 @@ function econFromPriceTrip(res: PriceTripResult): A2UIEconomics {
     country: res.country,
     milesNeeded: res.milesNeeded,
     cashUsd: res.cashUsd,
+    taxesUsd: res.taxesUsd,
     cpp: res.cpp,
     bestProgram: res.bestProgram,
     youHave: res.youHave,

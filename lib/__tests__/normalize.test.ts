@@ -306,45 +306,13 @@ describe('seats.aero normalizer', () => {
     expect(opt!.cabin).toBe('Premium Economy')
   })
 
-  it('returns {ok:false} (does not throw) when fetch fails', async () => {
+  it('is a hard stub: disabled, no fetch', async () => {
     process.env.SEATS_AERO_API_KEY = 'test-key'
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => Promise.reject(new Error('network down'))),
-    )
+    const fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
     const result = await searchAwards(PARAMS)
-    expect(result.ok).toBe(false)
-    if (!result.ok) expect(result.reason).toBe('Seats.aero request failed')
-  })
-
-  it('returns {ok:false} on a non-ok HTTP status', async () => {
-    process.env.SEATS_AERO_API_KEY = 'test-key'
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => Promise.resolve(new Response('nope', { status: 401 }))),
-    )
-    const result = await searchAwards(PARAMS)
-    expect(result.ok).toBe(false)
-  })
-
-  it('parses and filters a successful search response', async () => {
-    process.env.SEATS_AERO_API_KEY = 'test-key'
-    const payload = {
-      data: [
-        { ID: 'a', Source: 'alaska', Route: { OriginAirport: 'SFO', DestinationAirport: 'LAX' }, Date: '2026-07-09', YAvailable: true, YMileageCost: '4500', YTotalTaxes: 1120 },
-        { ID: 'b', Source: 'united', YAvailable: false, YMileageCost: '0' }, // filtered out
-      ],
-    }
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => Promise.resolve(new Response(JSON.stringify(payload), { status: 200 }))),
-    )
-    const result = await searchAwards(PARAMS)
-    expect(result.ok).toBe(true)
-    if (result.ok) {
-      expect(result.data).toHaveLength(1)
-      expect(result.data[0].miles).toBe(4500)
-    }
+    expect(result).toEqual({ ok: false, reason: 'disabled' })
+    expect(fetchSpy).not.toHaveBeenCalled()
   })
 })
 
@@ -480,6 +448,86 @@ describe('awardwallet normalizer', () => {
     expect(headers['X-Authentication']).toBe('test-key')
     expect(headers['Authorization']).toBeUndefined()
   })
+
+  it('returns {ok:false} on a non-2xx response, without throwing', async () => {
+    process.env.AWARDWALLET_API_KEY = 'test-key'
+    process.env.AWARDWALLET_USER_ID = '597319'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response('', { status: 403 }))),
+    )
+    const result = await getBalances()
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('AwardWallet responded 403')
+  })
+
+  it('returns {ok:false} on an aborted/timed-out request', async () => {
+    process.env.AWARDWALLET_API_KEY = 'test-key'
+    process.env.AWARDWALLET_USER_ID = '597319'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => {
+        const err = new Error('The operation was aborted')
+        err.name = 'AbortError'
+        return Promise.reject(err)
+      }),
+    )
+    const result = await getBalances()
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('AwardWallet request timed out')
+  })
+
+  it('returns {ok:false} (does not throw) on malformed JSON', async () => {
+    process.env.AWARDWALLET_API_KEY = 'test-key'
+    process.env.AWARDWALLET_USER_ID = '597319'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response('not json{', { status: 200 }))),
+    )
+    const result = await getBalances()
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('AwardWallet request failed')
+  })
+
+  it('uses the explicit per-user id over the env global when both are present', async () => {
+    process.env.AWARDWALLET_API_KEY = 'test-key'
+    process.env.AWARDWALLET_USER_ID = 'env-global-id'
+    const fetchSpy = vi.fn((input: RequestInfo | URL) => {
+      void input
+      return Promise.resolve(new Response(JSON.stringify({ accounts: [] }), { status: 200 }))
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await getBalances('per-user-id')
+    expect(result.ok).toBe(true)
+
+    const url = fetchSpy.mock.calls[0][0] as string
+    expect(url).toContain('per-user-id')
+    expect(url).not.toContain('env-global-id')
+  })
+
+  it('falls back to the env global id when no per-user id is supplied', async () => {
+    process.env.AWARDWALLET_API_KEY = 'test-key'
+    process.env.AWARDWALLET_USER_ID = 'env-global-id'
+    const fetchSpy = vi.fn((input: RequestInfo | URL) => {
+      void input
+      return Promise.resolve(new Response(JSON.stringify({ accounts: [] }), { status: 200 }))
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await getBalances()
+    expect(result.ok).toBe(true)
+
+    const url = fetchSpy.mock.calls[0][0] as string
+    expect(url).toContain('env-global-id')
+  })
+
+  it('returns {ok:false} when a per-user id is blank and no env fallback exists', async () => {
+    process.env.AWARDWALLET_API_KEY = 'test-key'
+    delete process.env.AWARDWALLET_USER_ID
+    const result = await getBalances('   ')
+    expect(result.ok).toBe(false)
+  })
 })
 
 describe('booking urls', () => {
@@ -525,19 +573,19 @@ describe('mock fixtures', () => {
     expect(cash[0].roundTrip).toBe(true)
   })
 
-  it('mockAwards returns four options with the design cpp values', () => {
+  it('mockAwards never bakes a cpp — the engine computes it vs live cash', () => {
     const awards = mockAwards()
     expect(awards).toHaveLength(4)
     const byCode = Object.fromEntries(awards.map((a) => [a.id, a]))
     expect(byCode['mock-award-as'].miles).toBe(4500)
-    expect(byCode['mock-award-as'].cpp).toBe(5.6)
-    expect(byCode['mock-award-as'].tier).toBe('green')
-    expect(byCode['mock-award-wn'].cpp).toBe(4.2)
+    // cpp does not exist without a cash baseline: fixtures leave it undefined
+    // and assembleSearch computes it (a stale hand-baked 5.6 once shipped).
+    for (const a of awards) expect(a.cpp).toBeUndefined()
+    expect(byCode['mock-award-as'].tier).toBe('muted')
     expect(byCode['mock-transfer-aeroplan'].kind).toBe('transfer')
-    expect(byCode['mock-transfer-aeroplan'].miles).toBe(10000)
+    expect(byCode['mock-transfer-aeroplan'].miles).toBe(6000)
     expect(byCode['mock-transfer-aeroplan'].transferFrom).toHaveLength(2)
     expect(byCode['mock-award-ua'].miles).toBe(14100)
-    expect(byCode['mock-award-ua'].cpp).toBe(1.8)
   })
 
   it('every mock option carries a tier and bookingUrl', () => {

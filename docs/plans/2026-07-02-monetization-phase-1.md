@@ -1,6 +1,6 @@
 # 2026-07-02 — Turn hop into a profitable business (monetization Phase 1)
 
-> Plan. Status: billing rail SHIPPED — Stripe-hosted checkout, signed webhook, and tier mapping are live behind `HOP_ENABLE_BILLING` (`app/api/billing/checkout/route.ts`, `app/api/webhooks/route.ts`, `lib/billing.ts`; ops: `docs/ops-runbook.md` §Billing). Remaining Phase-1 items stay as proposed below.
+> Plan. Status: billing rail SHIPPED — Stripe-hosted checkout, signed webhook, and tier mapping are live behind `HOP_ENABLE_BILLING` (`app/api/billing/checkout/route.ts`, `app/api/webhooks/stripe/route.ts`, `lib/billing.ts`; ops: `docs/ops-runbook.md` §Billing). Remaining Phase-1 items stay as proposed below.
 > TL;DR: hop already owns three monetization seams that earn $0 today because each is missing one wire — the Kiwi "affiliate" link carries no affiliate id, the card CTAs point at placeholder public pages with no click record, and `hop_subscriptions`/`ALERT_LIMITS` enforce a paywall nobody can pay through. Phase 1 attaches the missing wires (Kiwi tag, Stripe-backed premium at the roadmap's $9.99/mo · $99/yr, and — as an optional fast-follow — a card-click ledger) behind flags that no-op byte-for-byte when off; later phases monetize escalations, the MCP API, and hotels only after Phase 1 produces revenue data.
 
 Lens commitment (risk-first): every section below starts from *what breaks* — Stripe down, webhook missed/replayed/out-of-order, DB unconfigured, signed-out caller, downgraded subscriber, hostile webhook forger — and shows the seam degrading instead of throwing.

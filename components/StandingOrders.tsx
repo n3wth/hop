@@ -10,8 +10,10 @@ import {
   removeWatch,
   clearAlertBadge,
 } from '@/app/actions/standing-orders'
+import Card from './ui/Card'
 import BrandIcon from './BrandIcon'
 import Icon from './Icon'
+import { useToast } from './Toast'
 
 // Standing Orders — "the verdict that watches". A plain-English watch box, the
 // list of active/paused watches, and the alerts the cron has recorded. Flat,
@@ -36,10 +38,10 @@ export default function StandingOrders({
     <div className="mt-4 flex flex-col gap-4">
       <WatchComposer />
       {!cronLive ? (
-        <p className="rounded-[12px] border border-border bg-sunk px-4 py-2.5 text-[12.5px] font-medium text-text2">
+        <Card surface="sunk" as="p" className="px-4 py-2.5 text-[12.5px] font-medium text-text2">
           Watches are saved, but automatic re-checks aren&apos;t live yet. hop will
           start running them on a schedule once the watcher is switched on.
-        </p>
+        </Card>
       ) : null}
       <WatchList orders={orders} />
       <AlertsList alerts={alerts} unseen={unseen} />
@@ -99,7 +101,7 @@ function WatchComposer() {
   }
 
   return (
-    <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
+    <Card as="section" surface="surface" className="overflow-hidden">
       <div className="flex items-start gap-4 px-5 py-5 sm:px-6">
         <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
           <Icon name="notifications" size={24} weight="fill" />
@@ -128,7 +130,7 @@ function WatchComposer() {
               maxLength={400}
               placeholder="watch SFO to Tokyo business 2026-03-25, ping me above 2.5 cpp using points I hold"
               aria-label="Describe a watch"
-              className="min-h-[64px] w-full resize-y rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[14px] leading-[1.5] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand"
+              className="no-inner-ring min-h-[64px] w-full resize-y rounded-[10px] border border-border bg-paper px-3.5 py-2.5 text-[14px] leading-[1.5] text-text outline-none transition-colors placeholder:text-text3 focus:border-brand"
             />
             <button
               type="button"
@@ -152,7 +154,7 @@ function WatchComposer() {
           ) : null}
         </div>
       </div>
-    </section>
+    </Card>
   )
 }
 
@@ -161,7 +163,7 @@ function WatchComposer() {
 function WatchList({ orders }: { orders: StandingOrder[] }) {
   if (orders.length === 0) {
     return (
-      <div className="flex items-start gap-4 rounded-[var(--radius)] border border-border bg-surface px-6 py-6">
+      <Card surface="surface" className="flex items-start gap-4 px-6 py-6">
         <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-brand-light text-brand">
           <Icon name="search" size={24} weight="fill" />
         </span>
@@ -172,17 +174,17 @@ function WatchList({ orders }: { orders: StandingOrder[] }) {
             it when points beat cash on your terms.
           </p>
         </div>
-      </div>
+      </Card>
     )
   }
   return (
-    <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-surface">
+    <Card as="section" surface="surface" className="overflow-hidden">
       <ul>
         {orders.map((o, i) => (
           <WatchRow key={o.id} order={o} first={i === 0} />
         ))}
       </ul>
-    </section>
+    </Card>
   )
 }
 
@@ -194,6 +196,7 @@ function WatchRow({ order, first }: { order: StandingOrder; first: boolean }) {
   const [removing, startRemove] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const confirm = useConfirm()
+  const toast = useToast()
 
   function toggle() {
     setError(null)
@@ -208,8 +211,15 @@ function WatchRow({ order, first }: { order: StandingOrder; first: boolean }) {
     confirm.disarm()
     startRemove(async () => {
       const res = await removeWatch(order.id)
-      if (res.ok) router.refresh()
-      else setError(res.error ?? 'Could not remove')
+      // A confirm-gated delete used to give no positive feedback beyond the
+      // row silently vanishing on refresh — a toast confirms the action
+      // actually landed, since router.refresh() alone is easy to miss.
+      if (res.ok) {
+        toast({ body: `Removed ${route}` })
+        router.refresh()
+      } else {
+        setError(res.error ?? 'Could not remove')
+      }
     })
   }
 
@@ -335,7 +345,12 @@ function AlertsList({ alerts, unseen }: { alerts: StandingOrderAlert[]; unseen: 
 
 function AlertRow({ alert, first }: { alert: StandingOrderAlert; first: boolean }) {
   const cppText = Number.isFinite(alert.cpp) ? alert.cpp.toFixed(1) : '—'
-  const when = alert.createdAt ? relativeTime(alert.createdAt) : ''
+  // Relative labels depend on Date.now(), which differs between the SSR render and
+  // hydration — so we hold off until mounted (see useClientNow), keeping `when`
+  // empty on the server and first client paint to avoid React #418, then fill it
+  // in and refresh it on a timer.
+  const now = useClientNow()
+  const when = now != null && alert.createdAt ? relativeTime(alert.createdAt, now) : ''
   const program = alert.pick.program || alert.pick.airline || 'redemption'
   return (
     <li
@@ -371,10 +386,24 @@ function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
-function relativeTime(iso: string): string {
+// Client-only clock: null on the server and the first client render (so callers
+// render nothing time-relative during SSR/hydration), then the real time once
+// mounted, refreshed every minute so labels like "5m ago" stay current.
+function useClientNow(intervalMs = 60_000): number | null {
+  const [now, setNow] = useState<number | null>(null)
+  useEffect(() => {
+    const tick = () => setNow(Date.now())
+    tick()
+    const id = window.setInterval(tick, intervalMs)
+    return () => window.clearInterval(id)
+  }, [intervalMs])
+  return now
+}
+
+function relativeTime(iso: string, now: number): string {
   const then = new Date(iso).getTime()
   if (!Number.isFinite(then)) return ''
-  const diff = Date.now() - then
+  const diff = now - then
   const mins = Math.round(diff / 60000)
   if (mins < 1) return 'just now'
   if (mins < 60) return `${mins}m ago`

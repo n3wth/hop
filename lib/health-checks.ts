@@ -60,6 +60,10 @@ export type CronJob =
   | 'business-digest'
   | 'health-sentinel'
   | 'sync-stripe'
+  | 'balance-autosync'
+  | 'sweet-spot-candidates'
+  | 'awardwallet-sync'
+  | 'newsletter-digest'
 
 export interface CronJobSpec {
   job: CronJob
@@ -75,6 +79,10 @@ export const CRON_JOBS: readonly CronJobSpec[] = [
   { job: 'sync-stripe', path: '/api/cron/sync-stripe', schedule: '0 2 * * *', expectedIntervalMs: DAY_MS },
   { job: 'business-digest', path: '/api/cron/business-digest', schedule: '7 14 * * 1', expectedIntervalMs: 7 * DAY_MS },
   { job: 'health-sentinel', path: '/api/cron/health-sentinel', schedule: '17 11 * * *', expectedIntervalMs: DAY_MS },
+  { job: 'balance-autosync', path: '/api/cron/balance-autosync', schedule: '45 9 * * *', expectedIntervalMs: DAY_MS },
+  { job: 'sweet-spot-candidates', path: '/api/cron/sweet-spot-candidates', schedule: '0 12 * * *', expectedIntervalMs: DAY_MS },
+  { job: 'awardwallet-sync', path: '/api/cron/awardwallet-sync', schedule: '20 */6 * * *', expectedIntervalMs: 6 * HOUR_MS },
+  { job: 'newsletter-digest', path: '/api/cron/newsletter-digest', schedule: '0 13 * * 1', expectedIntervalMs: 7 * DAY_MS },
 ]
 
 // ── Flag/key seam registry (D3) ─────────────────────────────────────────────
@@ -156,6 +164,7 @@ export type FindingKind =
   | 'flag-drift'
   | 'dataset-stale'
   | 'valuation-drift'
+  | 'dead-watches'
 
 export type FindingSeverity = 'p1' | 'p3'
 
@@ -194,6 +203,11 @@ export type Detection =
         thresholdShare: number
       }
     }
+  | {
+      kind: 'dead-watches'
+      subject: string
+      data: { count: number; staleAfterDays: number }
+    }
 
 export interface HealthFinding {
   kind: FindingKind
@@ -211,6 +225,7 @@ export type DetectorId =
   | 'flag-drift'
   | 'dataset-stale'
   | 'valuation-drift'
+  | 'dead-watches'
 
 export interface DetectorReport {
   detector: DetectorId
@@ -236,6 +251,8 @@ export interface HealthCheckInputs {
     baseline: Record<string, number>
     overrides: Array<{ programId: string; cpp: number; sampleSize: number }>
   } | null
+  /** D6 — Total active watches older than WATCH_DEAD_DAYS with zero alerts. */
+  deadWatches: number | null
 }
 
 export function fingerprintOf(kind: FindingKind, subject: string): string {
@@ -435,6 +452,25 @@ function checkValuationDrift(valuations: HealthCheckInputs['valuations']): Detec
   return report('valuation-drift', 'valuation-drift', findings, cleared)
 }
 
+// ── D6: dead watches ────────────────────────────────────────────────────────
+function checkDeadWatches(deadWatches: HealthCheckInputs['deadWatches']): DetectorReport {
+  if (deadWatches === null) return unknownReport('dead-watches', 'dead-watches')
+  const findings: HealthFinding[] = []
+  const cleared: string[] = []
+  if (deadWatches > 0) {
+    findings.push(
+      toFinding({
+        kind: 'dead-watches',
+        subject: 'all',
+        data: { count: deadWatches, staleAfterDays: WATCH_DEAD_DAYS },
+      }),
+    )
+  } else {
+    cleared.push('all')
+  }
+  return report('dead-watches', 'dead-watches', findings, cleared)
+}
+
 // Run every detector over pre-gathered inputs. Pure and total: never throws,
 // one report per detector, degraded inputs surface as status 'unknown'.
 export function runHealthChecks(inputs: HealthCheckInputs, now: Date): DetectorReport[] {
@@ -444,5 +480,6 @@ export function runHealthChecks(inputs: HealthCheckInputs, now: Date): DetectorR
     checkFlagDrift(inputs.flags),
     checkDatasetStaleness(inputs.datasets, now),
     checkValuationDrift(inputs.valuations),
+    checkDeadWatches(inputs.deadWatches),
   ]
 }

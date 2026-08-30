@@ -1,13 +1,18 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import type { BusinessDigest, WeeklyMetric } from '@/lib/business-digest'
+import type { UnitEconomics } from '@/lib/unit-economics'
 import type { CronHeartbeat } from '@/lib/cron-heartbeat'
 import type { DegradationWindowCounts } from '@/lib/degradation-telemetry'
 import type { ImprovementFinding } from '@/lib/improvement-findings'
 import type { SupportTicket } from '@/lib/support-tickets'
 import type { Escalation } from '@/lib/escalation'
 import { CRON_JOBS } from '@/lib/health-checks'
-import Sparkline from '@/components/admin/Sparkline'
+import { analyzeAdminHealth, analyzeAdminFindings } from '@/app/actions/admin-analysis'
+import AnalyzeButton from '@/components/admin/AnalyzeButton'
+import AdminPageHeader, { AdminPageShell } from '@/components/admin/AdminPageHeader'
+import Card from '@/components/ui/Card'
+import Eyebrow from '@/components/ui/Eyebrow'
 
 interface Props {
   ownerEmail: string
@@ -25,6 +30,7 @@ interface Props {
   usersNew7d: number | null
   /** Preflight seams needing attention (drift/warn) — the /admin/ops badge. */
   preflightIssues: number
+  unitEconomics: UnitEconomics
 }
 
 // The owner-gated ops overview: this week's funnel numbers, cron/degradation
@@ -44,47 +50,54 @@ export default function AdminDashboard({
   usersTotal,
   usersNew7d,
   preflightIssues,
+  unitEconomics,
 }: Props) {
   return (
-    <div className="max-w-[var(--container-shell)] px-4 py-8 sm:px-6 lg:px-8">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-semibold tracking-[-0.01em] text-text">Admin</h1>
-          <p className="mt-1 text-[13px] text-text3">Signed in as {ownerEmail}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/admin/ops"
-            className={`rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-colors ${
-              preflightIssues > 0
-                ? 'border-ok bg-ok-bg text-ok hover:bg-sunk'
-                : 'border-border bg-surface text-text2 hover:bg-sunk'
-            }`}
-          >
-            {preflightIssues > 0 ? `Ops · ${preflightIssues} to review →` : 'Ops →'}
-          </Link>
-          <Link
-            href="/admin/support"
-            className="rounded-full border border-border bg-surface px-3.5 py-2 text-[13px] font-semibold text-text2 transition-colors hover:bg-sunk"
-          >
-            Inbox →
-          </Link>
-        </div>
-      </div>
+    <AdminPageShell>
+      <AdminPageHeader
+        title="Overview"
+        description={`Signed in as ${ownerEmail}`}
+        crumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Overview' }]}
+        actions={
+          <>
+            <Link
+              href="/admin/ops"
+              className={`rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-colors ${
+                preflightIssues > 0
+                  ? 'border-ok bg-ok-bg text-ok hover:bg-sunk'
+                  : 'border-border bg-surface text-text2 hover:bg-sunk'
+              }`}
+            >
+              {preflightIssues > 0 ? `Ops · ${preflightIssues} to review →` : 'Ops →'}
+            </Link>
+            <Link
+              href="/admin/support"
+              className="rounded-full border border-border bg-surface px-3.5 py-2 text-[13px] font-semibold text-text2 transition-colors hover:bg-sunk"
+            >
+              Inbox →
+            </Link>
+          </>
+        }
+      />
+
+      <Section title="Unit economics">
+        <UnitEconomicsPanel economics={unitEconomics} />
+      </Section>
 
       <Section title="This week">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-          <Stat label="Registered users" value={usersTotal} />
-          <Stat label="New sign-ups" value={usersNew7d} sub="7 days" />
-          <Stat label="Active users" metric={digest.activeUsers} sub="7-day sessions" />
-          <Stat label="Booking requests" metric={digest.escalations} />
-          <Stat label="New watches" metric={digest.ordersCreated} />
-          <Stat label="Alerts fired" metric={digest.alertsFired} />
-          <Stat label="Active watches" value={digest.activeWatches} />
-          <Stat label="Paid subscribers" value={digest.activeSubscriptions} />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <Stat label="Registered users" value={usersTotal} href="/admin/users" />
+          <Stat label="New sign-ups" value={usersNew7d} sub="7 days" href="/admin/users" />
+          <Stat label="Active users" metric={digest.activeUsers} sub="7-day sessions" href="/admin/users" />
+          <Stat label="Booking requests" metric={digest.escalations} href="/admin/support" />
+          <Stat label="New watches" metric={digest.ordersCreated} href="/admin/ops" />
+          <Stat label="Alerts fired" metric={digest.alertsFired} href="/admin/ops" />
+          <Stat label="Active watches" value={digest.activeWatches} href="/admin/ops" />
+          <Stat label="Paid subscribers" value={digest.activeSubscriptions} href="/admin/users" />
           <Stat
             label="Card outclicks"
             metric={digest.outclicks}
+            href="/admin/ops"
             sub={
               digest.outclicks && digest.outclicks.total !== null && digest.outclicks.total !== digest.outclicks.count
                 ? `${digest.outclicks.total} total`
@@ -94,25 +107,21 @@ export default function AdminDashboard({
         </div>
       </Section>
 
+      <Section title="Revenue & bookings">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <OutclicksCard economics={unitEconomics} />
+          <BookingPipelineCard economics={unitEconomics} />
+        </div>
+      </Section>
+
       {/* Wide screens: health + findings side by side; below lg they stack. */}
       <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">
       <Section title="System health">
-        {heartbeats === null && degradation === null ? (
-          <Empty>
-            {selfImproveEnabled
-              ? 'No health data yet.'
-              : 'Monitoring is off (HOP_ENABLE_SELF_IMPROVE).'}
-          </Empty>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              {CRON_JOBS.map((spec) => (
-                <HeartbeatRow key={spec.job} spec={spec} heartbeat={heartbeats?.find((h) => h.job === spec.job) ?? null} />
-              ))}
-            </div>
-            {degradation ? <DegradationList degradation={degradation} /> : null}
-          </div>
-        )}
+        <SystemHealthContent
+          heartbeats={heartbeats}
+          degradation={degradation}
+          monitoringEnabled={selfImproveEnabled}
+        />
       </Section>
 
       <Section title="Open findings">
@@ -126,6 +135,7 @@ export default function AdminDashboard({
               .map((f) => (
                 <FindingRow key={f.id} finding={f} />
               ))}
+            <AnalyzeButton label="findings" run={analyzeAdminFindings} />
           </div>
         )}
       </Section>
@@ -134,7 +144,7 @@ export default function AdminDashboard({
       <Section title="Recent activity">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <h3 className="text-[12px] font-semibold text-text2">Support tickets</h3>
+            <SectionLink href="/admin/support" label="Support tickets" />
             <div className="mt-2 flex flex-col gap-2">
               {recentTickets === null ? (
                 <Empty>Tickets unavailable.</Empty>
@@ -155,7 +165,7 @@ export default function AdminDashboard({
             </div>
           </div>
           <div>
-            <h3 className="text-[12px] font-semibold text-text2">Booking requests</h3>
+            <SectionLink href="/admin/support" label="Booking requests" />
             <div className="mt-2 flex flex-col gap-2">
               {recentEscalations === null ? (
                 <Empty>Booking requests unavailable.</Empty>
@@ -177,14 +187,150 @@ export default function AdminDashboard({
           </div>
         </div>
       </Section>
-    </div>
+    </AdminPageShell>
   )
+}
+
+function SectionLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex items-center gap-1 text-[12px] font-semibold text-text2 transition-colors hover:text-text"
+    >
+      {label}
+      <span aria-hidden className="text-text3">→</span>
+    </Link>
+  )
+}
+
+function UnitEconomicsPanel({ economics }: { economics: UnitEconomics }) {
+  return (
+    <Card surface="paper" radius="md" className="p-4 sm:p-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <MoneyStat
+          label="Est. MRR"
+          value={economics.mrrUsd}
+          format="usd"
+          sub={
+            economics.activePaidCount !== null
+              ? `${economics.activePaidCount} active sub${economics.activePaidCount === 1 ? '' : 's'} · list prices`
+              : economics.mrrUsd === null
+                ? 'subscriptions unavailable'
+                : undefined
+          }
+          href="/admin/users"
+        />
+        <MoneyStat label="Infra (monthly)" value={economics.infraCostUsd} format="usd" sub="baseline constant" />
+        <MoneyStat label="LLM cost" value={economics.llmCostUsd} format="usd" sub="PostHog export not wired" />
+        <MoneyStat
+          label="Contribution"
+          value={economics.contributionUsd}
+          format="usd"
+          sub={economics.llmCostUsd === null ? 'MRR − infra (LLM omitted)' : undefined}
+        />
+      </div>
+    </Card>
+  )
+}
+
+function OutclicksCard({ economics }: { economics: UnitEconomics }) {
+  const kinds = economics.outclicksByKind
+    ? Object.entries(economics.outclicksByKind).sort((a, b) => b[1] - a[1])
+    : null
+
+  return (
+    <Card surface="paper" radius="md" className="p-4 sm:p-5">
+      <h3 className="text-[12px] font-semibold text-text2">Outclicks by kind · 7 days</h3>
+      <p className="mt-0.5 text-[11.5px] text-text3">All affiliate kinds — the This week tile above is card outclicks only.</p>
+      {kinds === null ? (
+        <p className="mt-2 text-[13px] text-text3">Ledger unavailable.</p>
+      ) : kinds.length === 0 ? (
+        <p className="mt-2 text-[13px] text-text3">None yet.</p>
+      ) : (
+        <ul className="mt-2 flex flex-col gap-1.5">
+          {kinds.map(([kind, count]) => (
+            <li key={kind} className="flex justify-between text-[13px]">
+              <span className="font-medium text-text">{kind}</span>
+              <span className="text-text3">{count}</span>
+            </li>
+          ))}
+          {economics.outclicksTotal7d !== null ? (
+            <li className="flex justify-between border-t border-hair pt-1.5 text-[13px] font-semibold text-text">
+              <span>Total</span>
+              <span>{economics.outclicksTotal7d}</span>
+            </li>
+          ) : null}
+        </ul>
+      )}
+      <Link href="/admin/ops" className="mt-2 inline-block text-[12px] font-semibold text-text2 transition-colors hover:text-text">
+        Ops ledger →
+      </Link>
+    </Card>
+  )
+}
+
+function BookingPipelineCard({ economics }: { economics: UnitEconomics }) {
+  return (
+    <Card surface="paper" radius="md" className="p-4 sm:p-5">
+      <h3 className="text-[12px] font-semibold text-text2">Booking pipeline</h3>
+      <p className="mt-0.5 text-[11.5px] text-text3">Current backlog, all-time — not scoped to this week.</p>
+      {economics.escalationsNew === null ? (
+        <p className="mt-2 text-[13px] text-text3">Unavailable.</p>
+      ) : (
+        <ul className="mt-2 flex flex-col gap-1.5 text-[13px]">
+          <li className="flex justify-between">
+            <span className="text-text2">Awaiting action</span>
+            <span className="font-semibold text-text">{economics.escalationsNew}</span>
+          </li>
+          <li className="flex justify-between">
+            <span className="text-text2">Resolved</span>
+            <span className="font-semibold text-text">{economics.escalationsDone ?? '—'}</span>
+          </li>
+        </ul>
+      )}
+      <Link href="/admin/support" className="mt-2 inline-block text-[12px] font-semibold text-text2 transition-colors hover:text-text">
+        Inbox →
+      </Link>
+    </Card>
+  )
+}
+
+function MoneyStat({
+  label,
+  value,
+  format,
+  sub,
+  href,
+}: {
+  label: string
+  value: number | null
+  format: 'usd'
+  sub?: string
+  href?: string
+}) {
+  const display =
+    value === null ? '—' : format === 'usd' ? `$${value.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : String(value)
+  const inner = (
+    <>
+      <div className="hop-num text-[22px] font-semibold text-text">{display}</div>
+      <div className="mt-1 text-[12.5px] text-text3">{label}</div>
+      {sub ? <div className="mt-1 text-[11.5px] text-text3">{sub}</div> : null}
+    </>
+  )
+  if (href) {
+    return (
+      <Link href={href} className="block rounded-[var(--radius-sm)] transition-colors hover:bg-sunk">
+        {inner}
+      </Link>
+    )
+  }
+  return <div>{inner}</div>
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mt-10">
-      <h2 className="text-[11px] font-bold uppercase tracking-[var(--track-eyebrow)] text-brand">{title}</h2>
+    <section className="mt-8">
+      <Eyebrow as="h2" className="font-bold text-brand">{title}</Eyebrow>
       <div className="mt-3">{children}</div>
     </section>
   )
@@ -198,37 +344,90 @@ function Empty({ children }: { children: ReactNode }) {
   )
 }
 
-// A single stat tile — either a WeeklyMetric (count + last-week delta + weekly
-// trend sparkline) or a plain point-in-time number. `value === null` /
-// `metric === null` both read as "degraded", not zero — the em dash makes that
-// visible instead of lying; a degraded trend simply drops the line.
+export function SystemHealthContent({
+  heartbeats,
+  degradation,
+  monitoringEnabled,
+}: {
+  heartbeats: CronHeartbeat[] | null
+  degradation: DegradationWindowCounts | null
+  monitoringEnabled: boolean
+}) {
+  if (heartbeats === null && degradation === null) {
+    return (
+      <Empty>
+        {monitoringEnabled
+          ? 'Cron health is unavailable.'
+          : 'Monitoring is off (HOP_ENABLE_SELF_IMPROVE).'}
+      </Empty>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {heartbeats === null ? (
+        <Empty>
+          {monitoringEnabled
+            ? 'Cron health is unavailable.'
+            : 'Monitoring is off (HOP_ENABLE_SELF_IMPROVE).'}
+        </Empty>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {CRON_JOBS.map((spec) => (
+            <HeartbeatRow
+              key={spec.job}
+              spec={spec}
+              heartbeat={heartbeats.find((heartbeat) => heartbeat.job === spec.job) ?? null}
+            />
+          ))}
+        </div>
+      )}
+      {degradation ? <DegradationList degradation={degradation} /> : null}
+      <AnalyzeButton label="health" run={analyzeAdminHealth} />
+    </div>
+  )
+}
+
+// A single stat tile — either a WeeklyMetric (count + last-week delta) or a
+// plain point-in-time number. `value === null` / `metric === null` both read
+// as "degraded", not zero — the em dash makes that visible instead of lying.
+// No sparkline here: only some metrics have real trend history, and showing
+// it on some tiles but not others read as broken rather than intentional —
+// the "last week N" comparison is the one trend signal every WeeklyMetric
+// tile can show consistently.
 function Stat({
   label,
   metric,
   value,
   sub,
+  href,
 }: {
   label: string
   metric?: WeeklyMetric | null
   value?: number | null
   sub?: string
+  href?: string
 }) {
   const count = metric !== undefined ? metric?.count ?? null : value ?? null
   const prev = metric?.prev ?? null
-  const trend = metric?.trend ?? null
-  return (
-    <div className="rounded-[14px] border border-border bg-paper p-4">
+  const inner = (
+    <>
       <div className="hop-num text-[22px] font-semibold text-text">{count === null ? '—' : count}</div>
       <div className="mt-1 text-[12.5px] text-text3">{label}</div>
-      {trend ? (
-        <div className="mt-2">
-          <Sparkline data={trend} label={label} />
-        </div>
-      ) : null}
       {prev !== null ? <div className="mt-1 text-[11.5px] text-text3">last week {prev}</div> : null}
       {sub ? <div className="mt-1 text-[11.5px] text-text3">{sub}</div> : null}
-    </div>
+    </>
   )
+  if (href) {
+    return (
+      <Link href={href} className="block">
+        <Card surface="paper" radius="md" className="p-4 transition-colors hover:bg-sunk">
+          {inner}
+        </Card>
+      </Link>
+    )
+  }
+  return <Card surface="paper" radius="md" className="p-4">{inner}</Card>
 }
 
 type Tone = 'good' | 'ok' | 'weak' | 'muted'
@@ -255,13 +454,13 @@ function heartbeatStatus(
 function HeartbeatRow({ spec, heartbeat }: { spec: (typeof CRON_JOBS)[number]; heartbeat: CronHeartbeat | null }) {
   const status = heartbeatStatus(spec, heartbeat)
   return (
-    <div className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3.5 py-2.5">
+    <Card surface="paper" radius="sm" className="flex items-center justify-between gap-3 px-3.5 py-2.5">
       <div className="flex items-center gap-2.5">
         <span className={`h-2 w-2 flex-shrink-0 rounded-full ${TONE_CLASS[status.tone]}`} aria-hidden />
         <span className="text-[13px] font-semibold text-text">{spec.job}</span>
       </div>
       <span className="text-[12px] text-text3">{status.label}</span>
-    </div>
+    </Card>
   )
 }
 
@@ -280,15 +479,17 @@ function DegradationList({ degradation }: { degradation: DegradationWindowCounts
         const mean = degradation.priorWeekDailyMean[source] ?? 0
         const elevated = last24h > 0 && last24h > mean * 2 + 2
         return (
-          <div
+          <Card
             key={source}
-            className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-paper px-3.5 py-2.5"
+            surface="paper"
+            radius="sm"
+            className="flex items-center justify-between gap-3 px-3.5 py-2.5"
           >
             <span className="text-[13px] font-semibold text-text">{source}</span>
             <span className={`text-[12px] ${elevated ? 'text-warn' : 'text-text3'}`}>
               {last24h} today · {mean.toFixed(1)}/day baseline
             </span>
-          </div>
+          </Card>
         )
       })}
     </div>
@@ -298,7 +499,7 @@ function DegradationList({ degradation }: { degradation: DegradationWindowCounts
 function FindingRow({ finding }: { finding: ImprovementFinding }) {
   const tone: Tone = finding.severity === 'p1' ? 'weak' : 'ok'
   return (
-    <div className="rounded-[14px] border border-border bg-paper p-4">
+    <Card surface="paper" radius="md" className="p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span
@@ -318,7 +519,7 @@ function FindingRow({ finding }: { finding: ImprovementFinding }) {
       <div className="mt-2 text-[11.5px] text-text3">
         first seen {fmtDate(finding.firstSeenAt) || 'unknown'} · last seen {fmtDate(finding.lastSeenAt) || 'unknown'}
       </div>
-    </div>
+    </Card>
   )
 }
 

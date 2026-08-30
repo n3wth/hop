@@ -65,6 +65,17 @@ General cpp guidance to encode in hop's tiering (matches industry consensus and 
 
 Sources: [Upgraded Points — sweet spots 2026](https://upgradedpoints.com/news/6-airline-award-sweet-spots-in-2026/), [AwardWallet sweet-spots roundup](https://awardwallet.com/travel/award-program-sweet-spots/), [Virgin Atlantic sweet spots](https://awardwallet.com/airlines/virgin-atlantic-flying-club/sweet-spots/), [Alaska/Atmos sweet spots](https://awardwallet.com/airlines/alaska-atmos-rewards/best-use-of-alaska-miles/), [Avios sweet spots](https://awardtravelfinder.com/avios-sweet-spots), [LifeMiles sweet spots](https://awardwallet.com/airlines/avianca-lifemiles/avianca-lifemiles-sweet-spots/), [Aeroplan 2026 chart changes](https://www.maxmilespoints.com/blog/aeroplan-award-chart-changes-2026), [Frequent Miler — best ways to Asia 2026](https://frequentmiler.com/best-ways-to-get-to-asia-using-points-and-miles/), [TPG — travel to Japan with points](https://thepointsguy.com/loyalty-programs/travel-to-japan-with-points-and-miles/).
 
+**This table also grows via an automated candidate pipeline now**
+(`lib/sweet-spot-candidates.ts`,
+`docs/plans/2026-07-05-content-candidate-pipeline.md`): a daily cron mines
+`assembleSearch` itself over a curated hub/destination/date grid for notable
+Business-cabin redemptions and drops up to 3/run into the
+`hop_sweet_spot_drafts` review queue as `pending_review` — the owner still
+approves every row by hand, same as the manually-typed flow above. Deferred:
+a second signal via the valuation Worker (extending `observations` with a
+`route`/`cabin` column, once valuation-sync is confirmed healthy) — see the
+plan's §2 for why the direct-mining approach shipped first.
+
 ---
 
 ## 3. Destination content — what makes a great card/guide

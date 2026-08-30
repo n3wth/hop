@@ -119,9 +119,7 @@ Non-goals (deliberate):
 - **No file moves** of existing primitives (`Icon`, `Sheet`, `SectionHead`, `EmptyState`,
   `DegradedNote` keep their paths) — the index documents location; churn costs tokens.
 - **No new visual language.** Every variant is an existing, shipped recipe canonized.
-- **No `PricePair` until the rule of three proves it** — `Stat` lands first; `PricePair` only
-  if ≥3 call sites (VerdictRail, SampleVerdict, A2UIBlock, DealCard, points/[amount]) migrate
-  to one shape cleanly. Decision recorded back into this plan (taste-call protocol, playbook §4).
+- **No `PricePair` (REJECTED by rule-of-three)** — `Stat` lands as the sole primitive. The three candidate call sites (`VerdictRail`, `SampleVerdict`, `A2UIBlock`) require highly distinct semantic layouts and supplementary details, so composing them with individual `Stat` primitives is cleaner and more flexible than a rigid paired abstraction. Decision recorded (taste-call protocol, playbook §4).
 - **No custom listbox.** `Select` ships the existing `appearance-none` + drawn-caret pattern
   (`CheckoutForm.tsx:802`) as-is.
 - **No touching `SearchBar.tsx` (~1100 lines) as a sweep** — its buttons/fields migrate only

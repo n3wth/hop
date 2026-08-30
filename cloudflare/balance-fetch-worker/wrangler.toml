@@ -1,0 +1,9 @@
+name = "hop-balance-fetch"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# HOP_BALANCE_FETCH_SECRET is set via `wrangler secret put HOP_BALANCE_FETCH_SECRET`
+# — never committed here, never stored in this file or in git.
+
+browser = { binding = "BROWSER" }

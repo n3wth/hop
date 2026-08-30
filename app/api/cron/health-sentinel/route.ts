@@ -29,6 +29,7 @@ import { getDegradationWindowCounts, pruneDegradationEvents } from '@/lib/degrad
 import {
   gatherFlagSeamInputs,
   runHealthChecks,
+  WATCH_DEAD_DAYS,
   type HealthCheckInputs,
 } from '@/lib/health-checks'
 import {
@@ -96,6 +97,37 @@ async function readOverridesForDrift(): Promise<
   )
 }
 
+async function queryDeadWatches(now: Date): Promise<number | null> {
+  return withDb<number | null>(null, async (db) => {
+    const staleDate = new Date(now.getTime() - WATCH_DEAD_DAYS * 24 * 60 * 60 * 1000).toISOString()
+    const { data: watches, error: watchesErr } = await db
+      .from('hop_standing_orders')
+      .select('id')
+      .eq('active', true)
+      .lt('created_at', staleDate)
+    if (watchesErr || !watches) return null
+    if (watches.length === 0) return 0
+
+    const watchIds = watches.map((w: { id: string }) => w.id)
+    const { data: alerts, error: alertsErr } = await db
+      .from('hop_standing_order_alerts')
+      .select('standing_order_id')
+      .in('standing_order_id', watchIds)
+    if (alertsErr || !alerts) return null
+
+    const alertedWatchIds = new Set(
+      alerts.map((a: { standing_order_id: string }) => a.standing_order_id)
+    )
+    let count = 0
+    for (const w of watches) {
+      if (!alertedWatchIds.has(w.id)) {
+        count++
+      }
+    }
+    return count
+  })
+}
+
 export async function GET(request: Request) {
   try {
     if (!isAuthorizedCron(request)) {
@@ -111,10 +143,11 @@ export async function GET(request: Request) {
     const now = new Date()
 
     // Gather inputs — each its own degradable read; null = unknown.
-    const [heartbeats, degradation, overrides] = await Promise.all([
+    const [heartbeats, degradation, overrides, deadWatches] = await Promise.all([
       listHeartbeats(),
       getDegradationWindowCounts(now),
       readOverridesForDrift(),
+      queryDeadWatches(now),
     ])
     const inputs: HealthCheckInputs = {
       heartbeats,
@@ -122,6 +155,7 @@ export async function GET(request: Request) {
       flags: gatherFlagSeamInputs(),
       datasets: gatherDatasetStamps(),
       valuations: overrides === null ? null : { baseline: listValuations(), overrides },
+      deadWatches,
     }
 
     const reports = runHealthChecks(inputs, now)

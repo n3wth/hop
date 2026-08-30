@@ -10,6 +10,7 @@ function dest(partial: Partial<Destination> & Pick<Destination, 'code' | 'city' 
     tags: [],
     typicalAwardMiles: 30000,
     typicalCashUSD: 500,
+    typicalTaxesUSD: 60,
     bestProgram: 'Test',
     imageHint: '',
     ...partial,

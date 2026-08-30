@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import type { SearchParams } from '@/lib/types'
 import { createWatchExplicit } from '@/app/actions/standing-orders'
 import { watchRequestFromParams } from '@/lib/watch-request'
@@ -44,27 +45,54 @@ export default function WatchThisRoute({
   const [pending, startTransition] = useTransition()
   const [status, setStatus] = useState<Status>('idle')
   const [message, setMessage] = useState<string | null>(null)
+  const searchQuery = useSearchParams()
+  const router = useRouter()
+  const resumedRef = useRef(false)
 
   const route = `${params.from} → ${params.to}`
   const dates = params.return ? `${params.depart} – ${params.return}` : params.depart
   const cabin = params.cabin && params.cabin !== 'economy' ? ` · ${cap(params.cabin)}` : ''
   const thresholdLabel = `${threshold.toFixed(1)}¢`
 
-  function watch() {
-    setMessage(null)
-    startTransition(async () => {
-      const res = await createWatchExplicit(watchRequestFromParams(params))
-      if (res.ok) {
-        setStatus('success')
-        return
-      }
-      const atLimit = /alert limit/i.test(res.error ?? '')
-      setStatus(atLimit ? 'limit' : 'error')
-      setMessage(res.error ?? 'Could not save the watch.')
-    })
+  async function performWatch() {
+    const res = await createWatchExplicit(watchRequestFromParams(params))
+    if (res.ok) {
+      setStatus('success')
+      return
+    }
+    const atLimit = /alert limit/i.test(res.error ?? '')
+    setStatus(atLimit ? 'limit' : 'error')
+    setMessage(res.error ?? 'Could not save the watch.')
   }
 
+  function watch() {
+    setMessage(null)
+    startTransition(performWatch)
+  }
+
+  // Resume the tap that started the login round-trip: the signed-out CTA sends
+  // `watch=1` through returnTo, and one saved watch is exactly what the user
+  // asked for by tapping it. The flag is stripped from the URL before firing so
+  // refresh/back can never repeat the action.
+  useEffect(() => {
+    if (!isSignedIn || resumedRef.current) return
+    if (searchQuery.get('watch') !== '1') return
+    resumedRef.current = true
+    const next = new URLSearchParams(searchQuery.toString())
+    next.delete('watch')
+    router.replace(`?${next.toString()}`, { scroll: false })
+    // Not watch(): its eager setMessage(null) would be a synchronous
+    // set-state-in-effect; message is still null on first render anyway.
+    startTransition(performWatch)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn, searchQuery])
+
   if (!isSignedIn) {
+    // Thread the one-shot resume flag INSIDE the (encoded) returnTo, so the
+    // post-login landing is this same search with `watch=1` present.
+    const resumeHref = /returnTo=[^&]/.test(signInHref)
+      ? signInHref.replace(/(returnTo=[^&]*)/, `$1${encodeURIComponent('&watch=1')}`)
+      : signInHref
     return (
       <Shell icon="notifications">
         <p className="text-[14px] leading-[1.5] text-hero-body">
@@ -72,7 +100,7 @@ export default function WatchThisRoute({
             ? `hop pings you the day ${route} clears ${thresholdLabel}/point.`
             : `hop saves a watch on ${route} for the day it clears ${thresholdLabel}/point — alerts aren't live yet.`}
         </p>
-        <ArrowLink href={signInHref}>Sign in to watch this route</ArrowLink>
+        <ArrowLink href={resumeHref}>Sign in to watch this route</ArrowLink>
       </Shell>
     )
   }

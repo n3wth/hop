@@ -58,28 +58,77 @@ export async function createCheckoutSession(args: {
   cancelUrl: string
 }): Promise<CheckoutSessionResult> {
   if (!isBillingEnabled()) return { ok: false, reason: 'unconfigured' }
-  // Yearly is optional config — fall back to monthly when it isn't set up.
+  // Yearly is optional config. hop is annual-only at launch — the UI has no
+  // monthly CTA — so if a caller asks for 'yearly' and no yearly Stripe price
+  // is configured, fail closed instead of silently selling the monthly price
+  // under a yearly label (a customer could be charged monthly for a "$/yr"
+  // promise with no error surfaced anywhere in the chain).
+  if (args.interval === 'yearly' && !hasEnv('STRIPE_PRICE_ID_PRO_YEARLY')) {
+    return { ok: false, reason: 'unconfigured' }
+  }
   const priceId =
-    args.interval === 'yearly' && hasEnv('STRIPE_PRICE_ID_PRO_YEARLY')
-      ? env.stripePriceIdProYearly()
-      : env.stripePriceIdProMonthly()
+    args.interval === 'yearly' ? env.stripePriceIdProYearly() : env.stripePriceIdProMonthly()
   try {
     const { default: Stripe } = await import('stripe')
     const stripe = new Stripe(env.stripeSecretKey())
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
-      client_reference_id: args.userId,
-      // Stripe rejects customer + customer_email together — the persistent
-      // customer wins when we have one.
-      customer: args.customerId,
-      customer_email: args.customerId ? undefined : args.email || undefined,
-      metadata: { user_id: args.userId },
-      subscription_data: { metadata: { user_id: args.userId } },
-      success_url: args.successUrl,
-      cancel_url: args.cancelUrl,
-    })
+    const create = (customerId: string | undefined) =>
+      stripe.checkout.sessions.create({
+        mode: 'subscription',
+        line_items: [{ price: priceId, quantity: 1 }],
+        client_reference_id: args.userId,
+        // Stripe rejects customer + customer_email together — the persistent
+        // customer wins when we have one.
+        customer: customerId,
+        customer_email: customerId ? undefined : args.email || undefined,
+        metadata: { user_id: args.userId },
+        subscription_data: { metadata: { user_id: args.userId } },
+        success_url: args.successUrl,
+        cancel_url: args.cancelUrl,
+      })
+    let session
+    try {
+      session = await create(args.customerId)
+    } catch (err) {
+      // A stored customer id can be stale — most commonly a test-mode
+      // cus_ left in hop_customers from before live keys (Stripe: "No such
+      // customer"). The mapping self-heals from metadata.user_id via the
+      // webhook, so retry once customer-less rather than failing the sale.
+      const msg = err instanceof Error ? err.message : ''
+      if (args.customerId && /no such customer/i.test(msg)) {
+        session = await create(undefined)
+      } else {
+        throw err
+      }
+    }
     if (!session.url) return { ok: false, reason: 'stripe-error' }
+    return { ok: true, url: session.url }
+  } catch {
+    return { ok: false, reason: 'stripe-error' }
+  }
+}
+
+export type BillingPortalResult =
+  | { ok: true; url: string }
+  | { ok: false; reason: 'unconfigured' | 'stripe-error' }
+
+// Create a Stripe-hosted Billing Portal session — the self-serve "manage
+// subscription" surface (update payment method, cancel). Same money-safety
+// shape as checkout: hop never touches card data, and a cancellation here
+// only takes effect once Stripe's customer.subscription.deleted webhook
+// fires (lib/subscription.ts#recordSubscription) — this function itself
+// writes no tier state.
+export async function createBillingPortalSession(args: {
+  customerId: string
+  returnUrl: string
+}): Promise<BillingPortalResult> {
+  if (!isBillingEnabled()) return { ok: false, reason: 'unconfigured' }
+  try {
+    const { default: Stripe } = await import('stripe')
+    const stripe = new Stripe(env.stripeSecretKey())
+    const session = await stripe.billingPortal.sessions.create({
+      customer: args.customerId,
+      return_url: args.returnUrl,
+    })
     return { ok: true, url: session.url }
   } catch {
     return { ok: false, reason: 'stripe-error' }

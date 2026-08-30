@@ -31,6 +31,19 @@ export type EnvKey =
   // Worker presents it as a Bearer token to file inbound emails as tickets.
   // Absent → the ingest endpoint rejects EVERY request (no unauthenticated writes).
   | 'HOP_SUPPORT_INGEST_SECRET'
+  // Shared secret guarding POST /api/balance-sync/ingest — the Cloudflare
+  // balance-sync Email Worker presents it as a Bearer token to relay forwarded
+  // loyalty-balance emails. Absent → the ingest endpoint rejects EVERY request.
+  | 'HOP_BALANCE_INGEST_SECRET'
+  // 64-hex (32-byte) AES-256-GCM key for the loyalty-credential vault
+  // (lib/credential-vault.ts). Absent → the credential-sync seam is OFF and no
+  // credential can be stored or read. Never logged.
+  | 'HOP_CREDENTIAL_KEY'
+  // Base URL of the deployed Cloudflare Browser Rendering worker that signs in
+  // to a loyalty site and returns the dashboard text (cloudflare/
+  // balance-fetch-worker), no trailing slash — plus its shared Bearer secret.
+  | 'HOP_BALANCE_FETCH_WORKER_URL'
+  | 'HOP_BALANCE_FETCH_SECRET'
   // Base URL of the deployed Cloudflare Worker that aggregates live cpp
   // observations into per-program valuation overrides (no trailing slash), e.g.
   // "https://hop-valuations.<subdomain>.workers.dev". See lib/valuation-telemetry.ts
@@ -57,8 +70,8 @@ export type EnvKey =
   | 'LINEAR_API_KEY'
   | 'LINEAR_TEAM_ID'
   // PostHog server-side capture (lib/posthog-server.ts). The write-only project
-  // token — POSTHOG_KEY (server) wins over the public client token, matching
-  // instrumentation.ts precedence. Absent → captureServerEvent is a no-op.
+  // token — POSTHOG_KEY (server) wins over the public client token. Absent →
+  // captureServerEvent is a no-op.
   | 'POSTHOG_KEY'
   | 'NEXT_PUBLIC_POSTHOG_KEY'
   // Vercel-marketplace-integration-provided fallback token (auto-injected when
@@ -73,6 +86,9 @@ export type EnvKey =
   // Vercel-marketplace-integration-provided fallback host — same pairing as
   // NEXT_PUBLIC_VERCEL_HOP_POSTHOG_PROJECT_TOKEN above.
   | 'NEXT_PUBLIC_VERCEL_HOP_POSTHOG_HOST'
+  // LLM tracing is privacy-sensitive and disabled unless this flag AND a
+  // configured PostHog project key are present.
+  | 'HOP_ENABLE_LLM_TRACING'
   // ── Identity + data (Better Auth on Neon) ─────────────────────────────────
   // Neon Postgres connection string (pooled). The Drizzle client (lib/db) and
   // Better Auth both read it lazily; absent → getDb() returns null and every
@@ -94,6 +110,30 @@ export type EnvKey =
   | 'GOOGLE_CLIENT_SECRET'
   | 'GOOGLE_ID'
   | 'GOOGLE_SECRET'
+  // Fine-grained PAT (read-only "Pull requests" scope is enough) for the
+  // admin Team view (lib/admin-team.ts) to list each agent's open PRs.
+  // Absent → the Team page still renders fully; each card just shows a quiet
+  // "connect GITHUB_TOKEN to see live work" note instead of PR data.
+  | 'GITHUB_TOKEN'
+  // Svix-format signing secret (whsec_…) for the Resend email-event webhook
+  // (app/api/webhooks/resend/route.ts). Absent → the route still exists but
+  // logs and no-ops instead of verifying/processing (dev/local has no way to
+  // receive real Resend deliveries anyway).
+  | 'RESEND_WEBHOOK_SECRET'
+  // Dedicated HMAC key for lib/newsletter.ts#deriveUnsubscribeToken.
+  // DELIBERATELY separate from BETTER_AUTH_SECRET/AUTH_SECRET: the newsletter
+  // derives each subscriber's unsubscribe-link token as
+  // HMAC-SHA256(secret, email) and stores only its hash, so the app must be
+  // able to reproduce the exact same plaintext for the life of the link — but
+  // the auth secret gets rotated for session-signing reasons that have
+  // nothing to do with the newsletter. Rotate BETTER_AUTH_SECRET alone and
+  // every unsubscribe link already emailed to a real subscriber stops
+  // matching its stored hash — see resolveNewsletterUnsubscribeSecret() below
+  // and docs/ops-runbook.md's "Newsletter unsubscribe secret" section. Absent
+  // → falls back to resolveAuthSecret()'s own chain, so existing/local setups
+  // keep working with no new config, but rotation is then unsafe for the
+  // newsletter until this is set explicitly.
+  | 'NEWSLETTER_UNSUBSCRIBE_SECRET'
 
 function read(key: EnvKey): string {
   const value = process.env[key]
@@ -115,6 +155,10 @@ export const env = {
   googleOAuthClientSecret: () => read('GOOGLE_OAUTH_CLIENT_SECRET'),
   resendApiKey: () => read('RESEND_API_KEY'),
   supportIngestSecret: () => read('HOP_SUPPORT_INGEST_SECRET'),
+  balanceIngestSecret: () => read('HOP_BALANCE_INGEST_SECRET'),
+  credentialKey: () => read('HOP_CREDENTIAL_KEY'),
+  balanceFetchWorkerUrl: () => read('HOP_BALANCE_FETCH_WORKER_URL'),
+  balanceFetchSecret: () => read('HOP_BALANCE_FETCH_SECRET'),
   hopValuationWorkerUrl: () => read('HOP_VALUATION_WORKER_URL'),
   hopValuationSyncSecret: () => read('HOP_VALUATION_SYNC_SECRET'),
   stripeSecretKey: () => read('STRIPE_SECRET_KEY'),
@@ -136,13 +180,30 @@ export const env = {
   stripePriceIdProYearly: () => read('STRIPE_PRICE_ID_PRO_YEARLY'),
   linearApiKey: () => read('LINEAR_API_KEY'),
   linearTeamId: () => read('LINEAR_TEAM_ID'),
+  // Product-event capture (client + server) also falls back to the Vercel
+  // marketplace token: without it, events silently no-op in any deployment
+  // where that integration is the only source of the key.
   posthogKey: () =>
     firstEnv('POSTHOG_KEY', 'NEXT_PUBLIC_POSTHOG_KEY', 'NEXT_PUBLIC_VERCEL_HOP_POSTHOG_PROJECT_TOKEN'),
   posthogHost: () =>
     firstEnv('POSTHOG_HOST', 'NEXT_PUBLIC_POSTHOG_HOST', 'NEXT_PUBLIC_VERCEL_HOP_POSTHOG_HOST'),
+  llmTracingPosthogKey: () =>
+    firstEnv(
+      'POSTHOG_KEY',
+      'NEXT_PUBLIC_POSTHOG_KEY',
+      'NEXT_PUBLIC_VERCEL_HOP_POSTHOG_PROJECT_TOKEN',
+    ),
+  llmTracingPosthogHost: () =>
+    firstEnv(
+      'POSTHOG_HOST',
+      'NEXT_PUBLIC_POSTHOG_HOST',
+      'NEXT_PUBLIC_VERCEL_HOP_POSTHOG_HOST',
+    ),
   databaseUrl: () => read('DATABASE_URL'),
   googleClientId: () => firstEnv('GOOGLE_CLIENT_ID', 'GOOGLE_ID'),
   googleClientSecret: () => firstEnv('GOOGLE_CLIENT_SECRET', 'GOOGLE_SECRET'),
+  githubToken: () => read('GITHUB_TOKEN'),
+  resendWebhookSecret: () => read('RESEND_WEBHOOK_SECRET'),
 }
 
 // First non-empty value across alias keys (throws naming the primary key when
@@ -163,6 +224,20 @@ export function isPostHogEnabled(): boolean {
     hasEnv('POSTHOG_KEY') ||
     hasEnv('NEXT_PUBLIC_POSTHOG_KEY') ||
     hasEnv('NEXT_PUBLIC_VERCEL_HOP_POSTHOG_PROJECT_TOKEN')
+  )
+}
+
+// LLM tracing is a privacy-sensitive double lock: a project key alone never
+// activates it. The AI SDK call-site helper separately disables input/output
+// recording even when this returns true.
+export function isLlmTracingEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_LLM_TRACING ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return (
+    on &&
+    (hasEnv('POSTHOG_KEY') ||
+      hasEnv('NEXT_PUBLIC_POSTHOG_KEY') ||
+      hasEnv('NEXT_PUBLIC_VERCEL_HOP_POSTHOG_PROJECT_TOKEN'))
   )
 }
 
@@ -209,6 +284,22 @@ export function resolveAuthSecret(): string | null {
 }
 let warnedDerivedSecret = false
 
+// Key for lib/newsletter.ts#deriveUnsubscribeToken's HMAC — decoupled from
+// session-signing on purpose. Resolution: explicit NEWSLETTER_UNSUBSCRIBE_SECRET
+// (the ONLY tier that's actually immune to a BETTER_AUTH_SECRET/AUTH_SECRET
+// rotation) → resolveAuthSecret()'s own chain → a fixed non-secret dev
+// fallback (local/test only — the newsletter feature is gated off by default
+// anyway, see isNewsletterEnabled). Never throws, never null — a caller can
+// always derive a token, but only the first tier survives an auth-secret
+// rotation without breaking outstanding unsubscribe links. See the EnvKey doc
+// comment above and docs/ops-runbook.md's "Newsletter unsubscribe secret"
+// section for the operational guidance.
+export function resolveNewsletterUnsubscribeSecret(): string {
+  const explicit = process.env.NEWSLETTER_UNSUBSCRIBE_SECRET
+  if (explicit && explicit.trim() !== '') return explicit.trim()
+  return resolveAuthSecret() ?? 'hop-newsletter-unsubscribe-dev-fallback'
+}
+
 // Native cash checkout is GATED. It activates only when BOTH the explicit flag
 // is on AND a TEST token is present — otherwise the cash CTA keeps its current
 // Kiwi deep-link behavior. This keeps production on deep-link until both are set
@@ -231,6 +322,42 @@ export function isGmailHistoryEnabled(): boolean {
   return on && hasEnv('GOOGLE_OAUTH_CLIENT_ID') && hasEnv('GOOGLE_OAUTH_CLIENT_SECRET')
 }
 
+// Balance sync (paste / email-forward balance extraction — the AwardWallet-
+// independent syncing seam) is GATED behind an explicit flag ONLY: the
+// deterministic fallback parser needs no key, and the AI path already degrades
+// to it when AI_GATEWAY_API_KEY is absent (lib/ai-gateway returns null). Off →
+// the /account affordance doesn't render, the paste route answers 503, and the
+// email-ingest route refuses even with a valid secret. The email rail
+// additionally needs HOP_BALANCE_INGEST_SECRET + the deployed
+// cloudflare/balance-sync-worker (see docs/plans/2026-07-05-balance-sync.md).
+export function isBalanceSyncEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_BALANCE_SYNC ?? ''
+  return /^(1|true|yes)$/i.test(flag.trim())
+}
+
+// Credential-based auto-sync (hop signs in to a loyalty site and reads the
+// balance) is GATED behind an explicit flag AND a real vault key — without a
+// proper AES key no credential may ever be stored. Off → the /account
+// affordance doesn't render and the credential actions refuse softly. The
+// scheduled FETCH additionally needs the Browser Rendering worker configured
+// (isCredentialAutosyncLive) — vault on + worker absent means credentials can
+// be stored but sync stays "pending", and the UI says so honestly.
+export function isCredentialSyncEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_CREDENTIAL_SYNC ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && /^[0-9a-f]{64}$/i.test((process.env.HOP_CREDENTIAL_KEY ?? '').trim())
+}
+
+// The scheduled credential fetch runs only when the vault is enabled AND the
+// Cloudflare Browser Rendering worker is deployed + shared-secret configured.
+export function isCredentialAutosyncLive(): boolean {
+  return (
+    isCredentialSyncEnabled() &&
+    hasEnv('HOP_BALANCE_FETCH_WORKER_URL') &&
+    hasEnv('HOP_BALANCE_FETCH_SECRET')
+  )
+}
+
 // The standing-orders watcher (app/api/cron/standing-orders) only re-checks
 // watches while STANDING_ORDERS_CRON_ENABLED is truthy — byte-identical
 // matching to the cron route's own isEnabled() (no trim: if the two ever
@@ -239,6 +366,17 @@ export function isGmailHistoryEnabled(): boolean {
 // copy stays truthful (roadmap R1.3): off → "alerts go live soon".
 export function isStandingOrdersCronLive(): boolean {
   return /^(1|true|yes)$/i.test(process.env.STANDING_ORDERS_CRON_ENABLED ?? '')
+}
+
+// The AwardWallet balance-cache cron (app/api/cron/awardwallet-sync) only
+// re-syncs connected users' cached balances while AWARDWALLET_SYNC_CRON_ENABLED
+// is truthy — flag-only, same shape as isStandingOrdersCronLive (no extra key:
+// AWARDWALLET_API_KEY/AWARDWALLET_USER_ID already gate the underlying client).
+// Off → bootstrap-on-connect and the manual Refresh button still populate the
+// cache; only the periodic re-sync is gated. Flip AWARDWALLET_SYNC_CRON_ENABLED
+// once npm run check/build are green and Refresh has been exercised for real.
+export function isAwardWalletSyncCronLive(): boolean {
+  return /^(1|true|yes)$/i.test(process.env.AWARDWALLET_SYNC_CRON_ENABLED ?? '')
 }
 
 // The live-valuation sync seam is GATED behind an explicit flag AND a configured
@@ -284,6 +422,16 @@ export function isConversationMemoryEnabled(): boolean {
   return on && Boolean(process.env.AI_GATEWAY_API_KEY?.trim())
 }
 
+// AI Customer Support Agent behind /support is GATED behind an explicit flag
+// AND the AI Gateway key it needs to stream replies. Off by default: /support
+// renders byte-identical static FAQ, and the route returns a calm 200 text line.
+// Flip HOP_ENABLE_SUPPORT_AGENT and provide AI_GATEWAY_API_KEY to enable.
+export function isSupportAgentEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_SUPPORT_AGENT ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && Boolean(process.env.AI_GATEWAY_API_KEY?.trim())
+}
+
 // Inferred-facts ("hop noticed …") is GATED behind an explicit flag AND the AI
 // Gateway key it needs to infer. Off by default: no inference runs, the glass box
 // shows no "noticed" rows, and even flipped on the read/write no-op gracefully
@@ -320,6 +468,20 @@ export function isEmailPasswordAuthEnabled(): boolean {
   return on && hasEnv('RESEND_API_KEY')
 }
 
+// Newsletter foundation (R1.6 capture + R2.3 weekly digest) is GATED behind
+// an explicit flag AND a working Resend key — same double-lock shape as
+// isEmailPasswordAuthEnabled, because delivery is load-bearing here too (no
+// confirmation email means no confirmed subscriber, ever). Off → the signup
+// route is a full no-op (no DB write, generic success so the client never
+// sees a broken form) and the digest cron returns 503 disabled, so nothing
+// sends to a real inbox until Oliver flips both HOP_ENABLE_NEWSLETTER and a
+// real RESEND_API_KEY.
+export function isNewsletterEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_NEWSLETTER ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && hasEnv('RESEND_API_KEY')
+}
+
 // Passkey/WebAuthn sign-in (@better-auth/passkey) is GATED behind its own
 // explicit flag — no upstream credential is needed (WebAuthn needs only the
 // `passkey` table plus the browser's platform authenticator), but flipping
@@ -345,4 +507,43 @@ export function isPasskeyEnabled(): boolean {
 export function isSelfImproveEnabled(): boolean {
   const flag = process.env.HOP_ENABLE_SELF_IMPROVE ?? ''
   return /^(1|true|yes)$/i.test(flag.trim())
+}
+
+// The AI-sourced sweet-spot candidate pipeline
+// (docs/plans/2026-07-05-content-candidate-pipeline.md) is GATED behind an
+// explicit flag AND the two live pricing keys it needs (SEATS_AERO_API_KEY for
+// award space, DUFFEL_API_KEY_LIVE for the cash comparison) — the SAME
+// credentials /search already requires live, so enabling costs no new secret.
+// Deliberately independent of isValuationSyncEnabled()/the Worker: this
+// pipeline mines assembleSearch directly rather than the Worker's aggregated
+// telemetry (see the plan's §2 rejection of the Worker-extension path). Off →
+// the cron answers 503 and the "Find candidates now" owner action refuses
+// softly — the deploy is a byte-for-byte no-op until flipped.
+export function isContentCandidatesEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_CONTENT_CANDIDATES ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && hasEnv('SEATS_AERO_API_KEY') && hasEnv('DUFFEL_API_KEY_LIVE')
+}
+
+// Shareable verdict receipts (/v/[id] + OG cards, docs/plans/2026-07-02-viral-
+// differentiation.md) are GATED behind an explicit flag ONLY — the seam needs
+// no external key: the engine re-run uses upstream credentials that are
+// already configured (or MOCK), and Neon persistence degrades gracefully via
+// withDb like every other hop_* table. Off (default) → VerdictRail never
+// renders the share button, shareVerdict() answers {ok:false,'disabled'}
+// before touching anything, and /v/[id] + its OG image 404 before the DB
+// read. Also the seam's emergency brake: flipping this off 404s every
+// already-shared receipt link. Flip HOP_ENABLE_SHARE_RECEIPTS once
+// drizzle/0010_nervous_clea.sql has been applied.
+export function isShareReceiptsEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_SHARE_RECEIPTS ?? ''
+  return /^(1|true|yes)$/i.test(flag.trim())
+}
+
+// Partner API is off the paid path (ADR 0014). Flag defaults off. Even when
+// a leftover key is present, lib/seatsaero.ts#searchAwards is a hard stub.
+export function isSeatsAeroEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_SEATSAERO ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && hasEnv('SEATS_AERO_API_KEY')
 }

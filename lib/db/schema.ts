@@ -14,12 +14,14 @@ import {
   uuid,
   numeric,
   integer,
+  serial,
   boolean,
   jsonb,
   timestamp,
   index,
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
+import type { Balance } from '@/lib/types'
 
 // mode 'string' matches the Postgrest convention every hop_* caller already
 // speaks: ISO strings in, timestamptz text out. (Drizzle's default 'date' mode
@@ -36,11 +38,53 @@ export const manualBalances = pgTable('hop_manual_balances', {
   updatedAt: tz('updated_at').defaultNow(),
 })
 
+// Pretty, opaque forwarding aliases for the balance-sync email rail
+// (sync-<alias>@…). One per user, minted lazily on /account. The alias is the
+// capability: random, unguessable, DB-resolved — replaces the long legacy
+// HMAC address (which the ingest route still accepts).
+export const syncAddresses = pgTable('hop_sync_addresses', {
+  userId: text('user_id').primaryKey(),
+  alias: text('alias').notNull().unique(),
+  createdAt: tz('created_at').defaultNow(),
+})
+
+// Loyalty-program logins for credential-based auto-sync (the "hop signs in
+// and reads your balance" rail). secret_enc holds the username+password as
+// ONE AES-256-GCM blob (lib/credential-vault.ts) keyed by HOP_CREDENTIAL_KEY —
+// never stored or logged in the clear, never sent to the client (username_mask
+// is the display form). status is the honest per-connection sync state the
+// account page surfaces: pending | ok | failed | unsupported.
+export const programCredentials = pgTable(
+  'hop_program_credentials',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: text('user_id').notNull(),
+    program: text('program').notNull(),
+    usernameMask: text('username_mask').notNull(),
+    secretEnc: text('secret_enc').notNull(),
+    status: text('status').notNull().default('pending'),
+    lastError: text('last_error'),
+    lastSyncedAt: tz('last_synced_at'),
+    createdAt: tz('created_at').defaultNow(),
+    updatedAt: tz('updated_at').defaultNow(),
+  },
+  (t) => [uniqueIndex('hop_program_credentials_user_program_idx').on(t.userId, t.program)],
+)
+
+// cachedBalances/lastSyncedAt/lastSyncOk back the AwardWallet snapshot cache
+// (lib/accounts.ts#refreshAwCache/getCachedAwBalances) — getUserBalances()
+// reads this cache instead of calling AwardWallet live on every request. A
+// connected row with a null cache (pre-migration, or before the first
+// bootstrap/refresh/cron tick) means "no synced snapshot yet", handled
+// identically to "not connected" by getCachedAwBalances.
 export const userAccounts = pgTable('hop_user_accounts', {
   userId: text('user_id').primaryKey(), // unique → pk
   awUserId: text('aw_user_id'),
   connectedAt: tz('connected_at'),
   updatedAt: tz('updated_at'),
+  cachedBalances: jsonb('cached_balances').$type<Balance[]>(),
+  lastSyncedAt: tz('last_synced_at'),
+  lastSyncOk: boolean('last_sync_ok'),
 })
 
 export const userPrefs = pgTable('hop_user_prefs', {
@@ -199,7 +243,13 @@ export const mcpUsage = pgTable(
     tool: text('tool').notNull(),
     createdAt: tz('created_at').defaultNow(),
   },
-  (t) => [index('hop_mcp_usage_user_id_created_at_idx').on(t.userId, t.createdAt)],
+  (t) => [
+    index('hop_mcp_usage_user_id_created_at_idx').on(t.userId, t.createdAt),
+    // Backs mcpCallsToday's per-token day-quota count (lib/mcp-usage.ts) —
+    // without this, a stateless-by-user but linked-by-token query scans the
+    // whole table.
+    index('hop_mcp_usage_token_id_created_at_idx').on(t.tokenId, t.createdAt),
+  ],
 )
 
 export const travelHistory = pgTable('hop_travel_history', {
@@ -225,6 +275,65 @@ export const escalations = pgTable('hop_escalations', {
   trip: jsonb('trip').notNull().default({}),
   status: text('status').notNull().default('new'),
   createdAt: tz('created_at').defaultNow(),
+})
+
+// Newsletter foundation (R1.6 capture + R2.3 weekly digest). email is stored
+// lowercased and unique (dedup, same convention as hop_escalations' lead
+// capture). userId is nullable-by-design — like hop_escalations, a signed-out
+// visitor is a valid, expected row, not a scoping bug; the weekly digest
+// re-resolves the user by email at send time rather than trusting a
+// point-in-time userId, so an account created after signup still personalizes.
+// confirmToken stays valid after use (a second click on the same email link
+// is a no-op success, not a broken-link error) — re-confirming an
+// already-confirmed row is harmless. unsubscribeToken is likewise permanent
+// so the one-click footer link never expires. Both columns store a SHA-256
+// HASH of the token, never the plaintext (lib/newsletter.ts, mirroring
+// lib/api-tokens.ts's hashToken pattern) — a leaked row can't be replayed.
+// unsubscribeToken's plaintext is itself derived deterministically from the
+// email (HMAC, lib/newsletter.ts#deriveUnsubscribeToken) rather than stored
+// randomly, so the weekly digest can always reproduce the same working link
+// from just the email without ever persisting it in recoverable form.
+// lastDigestSentAt is the per-subscriber idempotency guard for R2.3 (no
+// generic outbox — hop_notification_outbox is keyed on a non-null user_id,
+// which anonymous subscribers don't have).
+export const newsletterSubscribers = pgTable('hop_newsletter_subscribers', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id'),
+  email: text('email').notNull(),
+  confirmToken: text('confirm_token'),
+  unsubscribeToken: text('unsubscribe_token').notNull(),
+  confirmedAt: tz('confirmed_at'),
+  unsubscribedAt: tz('unsubscribed_at'),
+  lastDigestSentAt: tz('last_digest_sent_at'),
+  createdAt: tz('created_at').defaultNow(),
+}, (t) => [
+  uniqueIndex('hop_newsletter_subscribers_email_idx').on(t.email),
+  uniqueIndex('hop_newsletter_subscribers_confirm_token_idx').on(t.confirmToken),
+  uniqueIndex('hop_newsletter_subscribers_unsubscribe_token_idx').on(t.unsubscribeToken),
+])
+
+// Owner-drafted sweet-spot entries awaiting review before they join the
+// static seed table (lib/sweet-spots.ts). `seq` is a plain auto-increment used
+// only to derive a stable numeric SweetSpot#id above the static table's small
+// integers (see lib/sweet-spot-drafts.ts#toSweetSpot) — the uuid stays the
+// real key. Facts (route/program/miles) are always human-entered; only `why`
+// may be agent-drafted (lib/sweet-spot-drafts.ts#draftSweetSpotWhy).
+export const sweetSpotDrafts = pgTable('hop_sweet_spot_drafts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  seq: serial('seq').notNull(),
+  route: text('route').notNull(),
+  program: text('program').notNull(),
+  programSlug: text('program_slug').notNull(),
+  metal: text('metal'),
+  cabin: text('cabin').notNull(),
+  milesOw: integer('miles_ow'),
+  milesLabel: text('miles_label').notNull(),
+  why: text('why').notNull().default(''),
+  confidence: text('confidence').notNull().default('med'),
+  status: text('status').notNull().default('pending_review'),
+  createdBy: text('created_by').notNull(),
+  createdAt: tz('created_at').defaultNow(),
+  reviewedAt: tz('reviewed_at'),
 })
 
 // Live cents-per-point aggregates sourced from hop's own first-party cash vs
@@ -360,6 +469,42 @@ export const supportTickets = pgTable(
   },
   (t) => [uniqueIndex('hop_support_tickets_message_id_idx').on(t.messageId)],
 )
+
+// Shareable verdict receipts (/v/[id] — docs/plans/2026-07-02-viral-
+// differentiation.md, N-309). `snapshot` holds ONLY the engine-computed,
+// balance-/prefs-free VerdictSnapshot (lib/shared-verdicts.ts) — never
+// balances, identity, or a bookable action. `content_hash` (canonical params +
+// UTC day) is the idempotency key: re-sharing the same trip on the same day
+// upserts onto the same row instead of growing one per click. `created_by` is
+// abuse-forensics only (Better Auth user id or null for a signed-out share)
+// and is never selected into any render path. RLS enabled, no anon policies —
+// service-role only, same posture as every other hop_* table (the DDL lives
+// in the migration; this file never runs it).
+export const sharedVerdicts = pgTable(
+  'hop_shared_verdicts',
+  {
+    id: text('id').primaryKey(),
+    contentHash: text('content_hash').notNull().unique(),
+    createdBy: text('created_by'),
+    params: jsonb('params').notNull(),
+    snapshot: jsonb('snapshot').notNull(),
+    revoked: boolean('revoked').notNull().default(false),
+    createdAt: tz('created_at').defaultNow(),
+  },
+  (t) => [index('hop_shared_verdicts_created_by_idx').on(t.createdBy)],
+)
+
+// Email suppression list — addresses that bounced or complained, reported by
+// the Resend webhook (app/api/webhooks/resend/route.ts). Keyed directly by
+// email (not user_id): bounces/complaints arrive from Resend by raw address
+// and may not map to an account. lib/email-suppressions.ts#isSuppressed
+// consults this before any future outbound send (alerts, newsletter) to
+// protect Resend deliverability/sender reputation.
+export const emailSuppressions = pgTable('hop_email_suppressions', {
+  email: text('email').primaryKey(),
+  reason: text('reason').notNull(), // 'bounced' | 'complained'
+  createdAt: tz('created_at').defaultNow(),
+})
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),

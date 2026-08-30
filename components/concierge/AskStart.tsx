@@ -23,7 +23,7 @@ import Icon, { type IconName } from '@/components/Icon'
 // external photo API to not look sparse.
 const HOW_HOP_ANSWERS: { icon: IconName; label: string }[] = [
   { icon: 'wallet', label: 'Your real balances' },
-  { icon: 'flight', label: 'Live award space' },
+  { icon: 'flight', label: 'Published saver chart' },
   { icon: 'currency', label: 'Real cash prices' },
 ]
 
@@ -34,6 +34,10 @@ export interface AskStartDestination {
   thumb: string
   alt: string
   countryCode: string
+  /** Unsplash attribution (API terms) — optional only so a hand-built caller
+   *  without a real photo doesn't need to fake one; every photo actually
+   *  resolved via lib/images.ts#DestImage carries one. */
+  credit?: { name: string; link: string; source?: string; sourceLink?: string }
 }
 
 export interface AskStartProps {
@@ -98,33 +102,50 @@ export default function AskStart({
           </p>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {destinations.map((d) => (
-              <button
+              <div
                 key={d.city}
-                type="button"
-                onClick={() => onStarter(`Cheapest way to ${d.city}`)}
-                aria-label={`Cheapest way to ${d.city}`}
-                className="hop-press group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-colors duration-200 ease-[var(--ease-premium)] hover:border-brand"
+                className="group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-paper transition-colors duration-200 ease-[var(--ease-premium)] hover:border-brand"
               >
-                <span className="block h-[110px] w-full overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={d.thumb}
-                    alt=""
-                    aria-hidden
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                  />
-                </span>
-                <span className="flex items-center gap-1.5 px-3 py-2.5">
-                  <span
-                    className={`fi fi-${d.countryCode} h-[10px] w-[14px] flex-shrink-0 rounded-[1px]`}
-                    aria-hidden
-                  />
-                  <span className="truncate text-[13px] font-medium text-text2 transition-colors group-hover:text-brand">
-                    {d.city}
+                <button
+                  type="button"
+                  onClick={() => onStarter(`Cheapest way to ${d.city}`)}
+                  aria-label={`Cheapest way to ${d.city}`}
+                  className="hop-press flex flex-col text-left"
+                >
+                  <span className="block h-[110px] w-full overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={d.thumb}
+                      alt=""
+                      aria-hidden
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
                   </span>
-                </span>
-              </button>
+                  <span className="flex items-center gap-1.5 px-3 pt-2.5">
+                    <span
+                      className={`fi fi-${d.countryCode} h-[10px] w-[14px] flex-shrink-0 rounded-[1px]`}
+                      aria-hidden
+                    />
+                    <span className="truncate text-[13px] font-medium text-text2 transition-colors group-hover:text-brand">
+                      {d.city}
+                    </span>
+                  </span>
+                </button>
+                {/* Unsplash attribution (API terms) — sits outside the tile's
+                    button so the tap target stays a single control, not a
+                    nested link-in-button. */}
+                {d.credit ? (
+                  <a
+                    href={`${d.credit.link}?utm_source=hop&utm_medium=referral`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="truncate px-3 pb-2.5 pt-0.5 text-[10px] text-text3 underline decoration-border underline-offset-2 hover:text-text2"
+                  >
+                    Photo: {d.credit.name}
+                  </a>
+                ) : null}
+              </div>
             ))}
           </div>
         </div>

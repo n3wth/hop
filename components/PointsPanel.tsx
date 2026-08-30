@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Balance, FlightOption } from '@/lib/types'
 import { walletValue, WALLET_VALUE_CAVEAT } from '@/lib/valuations'
 import BrandIcon from './BrandIcon'
+import Eyebrow from '@/components/ui/Eyebrow'
 
 export interface PointsPanelProps {
   balances: Balance[]
@@ -17,7 +18,7 @@ export interface PointsPanelProps {
 function compact(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
   if (n >= 1_000) return `${Math.round(n / 1_000)}K`
-  return n.toLocaleString()
+  return n.toLocaleString('en-US')
 }
 
 // Does this balance fund the pick? Tolerant program/code match.
@@ -42,28 +43,64 @@ export default function PointsPanel({ balances, pick, isExample = false }: Point
   const spend = pick?.miles
   const worth = walletValue(balances)
 
-  // No programs yet → don't show a fake "0 across 0 programs" wallet. Invite the
-  // user to add their points so hop can value redemptions against what they hold.
-  if (balances.length === 0) {
+  // No REAL value yet → don't show a fake "0 across N programs" wallet — this
+  // fires both for zero programs AND for the R1.4 quick-start's zero-balance
+  // rows (5 real programs, no balances filled in yet). Either way there's
+  // nothing to render as a wallet, so invite the user to add value instead of
+  // rendering a $0 total next to a row of real brand logos.
+  if (balances.length === 0 || total === 0) {
+    const hasPrograms = balances.length > 0
     return (
       <section
         className="overflow-hidden rounded-[22px] px-5 py-7 text-hero-cream sm:px-[30px]"
         style={{ background: 'var(--color-brand-ink)' }}
       >
-        <h2 className="text-[13px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-wallet-active">
-          Your points
-        </h2>
-        <p className="mt-2 max-w-[40ch] text-[14px] leading-[1.55] text-hero-body">
-          Add your loyalty programs and hop will tell you which redemptions your
-          points actually unlock — and whether to book with miles or cash.
-        </p>
-        <Link
-          href="/account"
-          className="mt-4 inline-flex items-center gap-2 rounded-[12px] bg-white px-5 py-3 text-[14px] font-semibold text-brand-ink transition-colors hover:bg-hero-cream"
-        >
-          Add your programs
-          <span aria-hidden className="text-[15px] leading-none">→</span>
-        </Link>
+        {/* Two columns: the invitation left, a ghost preview of what the wallet
+            becomes right — the band sells the feature instead of advertising
+            its own absence. The preview is abstract shapes (no fabricated
+            program names or balances), aria-hidden, desktop-only. */}
+        <div className="lg:grid lg:grid-cols-[minmax(0,44ch)_1fr] lg:items-center lg:gap-12">
+          <div>
+            <Eyebrow as="h2" onDark className="text-wallet-active">
+              Your points
+            </Eyebrow>
+            <p className="mt-2 max-w-[40ch] text-[14px] leading-[1.55] text-hero-body">
+              {hasPrograms
+                ? `You've added ${balances.length} ${balances.length === 1 ? 'program' : 'programs'} but no balances yet. Fill in real numbers so hop can tell you which redemptions they actually unlock.`
+                : 'Add your loyalty programs and hop will tell you which redemptions your points actually unlock — and whether to book with miles or cash.'}
+            </p>
+            <Link
+              href="/account"
+              className="mt-4 inline-flex items-center gap-2 rounded-[12px] bg-white px-5 py-3 text-[14px] font-semibold text-brand-ink transition-colors hover:bg-hero-cream"
+            >
+              {hasPrograms ? 'Add your balances' : 'Add your programs'}
+              <span aria-hidden className="text-[15px] leading-none">→</span>
+            </Link>
+          </div>
+          <div aria-hidden className="hidden opacity-35 lg:block">
+            {[76, 52, 34].map((w, i) => (
+              <div
+                key={w}
+                className={`grid items-center gap-5 py-[14px] [grid-template-columns:40px_minmax(0,180px)_1fr_72px] ${
+                  i > 0 ? 'border-t border-white/[0.07]' : ''
+                }`}
+              >
+                <span className="h-[40px] w-[40px] rounded-[12px] bg-white/15" />
+                <span className="space-y-[6px]">
+                  <span className="block h-[10px] w-[72%] rounded-full bg-white/25" />
+                  <span className="block h-[8px] w-[44%] rounded-full bg-white/10" />
+                </span>
+                <span className="h-[8px] overflow-hidden rounded-full bg-white/[0.08]">
+                  <span
+                    className="block h-full rounded-full bg-white/25"
+                    style={{ width: `${w}%` }}
+                  />
+                </span>
+                <span className="block h-[10px] w-full rounded-full bg-white/25" />
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
     )
   }
@@ -114,7 +151,7 @@ export default function PointsPanel({ balances, pick, isExample = false }: Point
                   {b.program}
                 </div>
                 <div className="mt-[2px] truncate text-[12px] text-hero-label">
-                  {active && spend != null ? `Using ${spend.toLocaleString()} here` : b.status}
+                  {active && spend != null ? `Using ${spend.toLocaleString('en-US')} here` : b.status}
                 </div>
               </div>
 
@@ -133,7 +170,7 @@ export default function PointsPanel({ balances, pick, isExample = false }: Point
               </div>
 
               <div className="hop-num text-right text-[15px] font-semibold text-white sm:text-[16px]">
-                {b.balance.toLocaleString()}
+                {b.balance.toLocaleString('en-US')}
               </div>
             </div>
           )
@@ -143,7 +180,7 @@ export default function PointsPanel({ balances, pick, isExample = false }: Point
       {/* footer total — with a low-key sync line that earns its place */}
       <div className="flex items-center justify-between border-t border-white/10 bg-white/[0.03] px-4 py-[16px] sm:px-[30px] sm:py-[18px]">
         <span className="text-[13px] text-hero-label">
-          {total.toLocaleString()} across {balances.length}{' '}
+          {total.toLocaleString('en-US')} across {balances.length}{' '}
           {balances.length === 1 ? 'program' : 'programs'}
         </span>
         <span className="flex items-baseline gap-2">

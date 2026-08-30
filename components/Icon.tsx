@@ -46,9 +46,12 @@ import {
   Stop,
   Suitcase,
   Tag,
+  ThumbsDown,
+  ThumbsUp,
   TrendUp,
   Trophy,
   User,
+  UsersThree,
   Wallet,
   Warning,
   WarningCircle,
@@ -111,8 +114,12 @@ const ICONS = {
   star: Star,
   // People
   person: User,
+  team: UsersThree,
   logout: SignOut,
   lightbulb: Lightbulb,
+  // Feedback
+  thumbs_up: ThumbsUp,
+  thumbs_down: ThumbsDown,
 } as const
 
 export type IconName = keyof typeof ICONS

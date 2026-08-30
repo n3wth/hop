@@ -17,7 +17,7 @@ export default defineTool({
   description:
     "Get the user's real loyalty-point balances (manual programs merged with their AwardWallet link, de-duped by program). Returns an empty list when they've connected nothing yet — treat that as a genuine empty state, never invent balances. Use this to ground every personalized quote.",
   inputSchema: z.object({
-    userId: z.string().describe('Auth0 sub of the user whose balances to resolve.'),
+    userId: z.string().describe('Better Auth user.id of the user whose balances to resolve.'),
   }),
   async execute({ userId }) {
     const balances = await getUserBalances(userId)

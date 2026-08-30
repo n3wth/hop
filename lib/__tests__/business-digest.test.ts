@@ -18,6 +18,8 @@ function fullDigest(): BusinessDigest {
     activeWatches: 5,
     activeSubscriptions: 1,
     outclicks: { count: 4, prev: 2, total: 4 },
+    receiptsCreated: { count: 6, prev: 4 },
+    system: null,
   }
 }
 
@@ -26,7 +28,7 @@ describe('renderBusinessDigest', () => {
     const r = renderBusinessDigest(fullDigest())
     expect(r).not.toBeNull()
     expect(r!.subject).toBe(
-      'hop this week: 9 active users · 3 booking requests · 2 new watches · 12 alerts fired · 5 active watches · 1 paid subscriber · 4 card outclicks',
+      'hop this week: 9 active users · 3 booking requests · 2 new watches · 12 alerts fired · 5 active watches · 1 paid subscriber · 6 verdict receipts · 4 card outclicks',
     )
     // Week framing (UTC dates) in the body header.
     expect(r!.text).toContain('hop, Jun 25 – Jul 2.')
@@ -37,6 +39,7 @@ describe('renderBusinessDigest', () => {
     expect(r!.text).toContain('Alerts fired: 12 (last week 8)')
     expect(r!.text).toContain('Active watches: 5')
     expect(r!.text).toContain('Paid subscribers: 1')
+    expect(r!.text).toContain('Verdict receipts: 6 (last week 4)')
     expect(r!.text).toContain('Card outclicks: 4 (last week 2)')
     // total === card count (card is the only kind) → no redundant total suffix.
     expect(r!.text).not.toContain('total')
@@ -47,10 +50,12 @@ describe('renderBusinessDigest', () => {
       'alertsFired',
       'activeWatches',
       'activeSubscriptions',
+      'receiptsCreated',
       'outclicks',
     ])
     // HTML mirrors the same lines (flat, no fabricated extras).
     expect(r!.html).toContain('Alerts fired: 12 (last week 8)')
+    expect(r!.html).toContain('Verdict receipts: 6 (last week 4)')
     expect(r!.html).toContain('Card outclicks: 4 (last week 2)')
   })
 
@@ -72,15 +77,18 @@ describe('renderBusinessDigest', () => {
     d.escalations = null
     d.activeSubscriptions = null // e.g. hop_subscriptions doesn't exist yet
     d.outclicks = null // e.g. hop_outclicks migration not applied yet
+    d.receiptsCreated = null // e.g. drizzle/0008 not applied yet, or flag off
     const r = renderBusinessDigest(d)
     expect(r).not.toBeNull()
     expect(r!.sections).toEqual(['ordersCreated', 'alertsFired', 'activeWatches'])
     expect(r!.subject).not.toContain('booking request')
     expect(r!.subject).not.toContain('subscriber')
     expect(r!.subject).not.toContain('outclick')
+    expect(r!.subject).not.toContain('receipt')
     expect(r!.text).not.toContain('Booking requests')
     expect(r!.text).not.toContain('Paid subscribers')
     expect(r!.text).not.toContain('Card outclicks')
+    expect(r!.text).not.toContain('Verdict receipts')
     expect(r!.html).not.toContain('Booking requests')
   })
 
@@ -94,6 +102,7 @@ describe('renderBusinessDigest', () => {
       activeWatches: null,
       activeSubscriptions: null,
       outclicks: null,
+      receiptsCreated: null,
     })
     expect(r).toBeNull()
   })
@@ -108,6 +117,7 @@ describe('renderBusinessDigest', () => {
       activeWatches: 0,
       activeSubscriptions: null,
       outclicks: { count: 0, prev: null, total: 0 },
+      receiptsCreated: null,
     })
     expect(r).not.toBeNull()
     expect(r!.subject).toBe(
@@ -140,6 +150,31 @@ describe('renderBusinessDigest', () => {
     expect(r.subject).toContain('1 active watch ·')
     expect(r.subject).toContain('1 card outclick')
     expect(r.subject).not.toContain('1 card outclicks')
+  })
+
+  it('renders system section correctly when present', () => {
+    const d = fullDigest()
+    d.system = {
+      openFindings: [
+        { title: 'valuation-sync cron has not completed in 52h', identifier: 'HOP-12' },
+        { title: 'alaska live cpp 2.9 vs baseline 1.8 (61 samples)', identifier: null },
+      ],
+      counts: { resolved: 1, filed: 2 },
+      degradations: { cash: 11, awards: 3, balances: 0 },
+      sentinelLastRunAt: '2026-07-02T06:00:00.000Z',
+    }
+    const r = renderBusinessDigest(d, new Date('2026-07-02T12:00:00.000Z'))!
+    expect(r.text).toContain('System:')
+    expect(r.text).toContain('Needs attention: valuation-sync cron has not completed in 52h (HOP-12) · alaska live cpp 2.9 vs baseline 1.8 (61 samples)')
+    expect(r.text).toContain('Resolved since last week: 1 · Filed: 2')
+    expect(r.text).toContain('Degraded fetches, 7d: 14 (cash 11, awards 3)')
+    expect(r.text).toContain('Sentinel last ran 6h ago.')
+
+    expect(r.html).toContain('System')
+    expect(r.html).toContain('Needs attention: valuation-sync cron has not completed in 52h (HOP-12) · alaska live cpp 2.9 vs baseline 1.8 (61 samples)')
+    expect(r.html).toContain('Resolved since last week: 1 · Filed: 2')
+    expect(r.html).toContain('Degraded fetches, 7d: 14 (cash 11, awards 3)')
+    expect(r.html).toContain('Sentinel last ran 6h ago.')
   })
 })
 

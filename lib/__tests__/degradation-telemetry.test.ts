@@ -9,7 +9,7 @@ import {
 import { captureServerEvent } from '@/lib/posthog-server'
 import { assembleSearch } from '@/lib/search'
 import { searchCash } from '@/lib/duffel'
-import { searchAwards } from '@/lib/seatsaero'
+import { searchAwards } from '@/lib/awards'
 
 // Write hygiene for the degradation seam (plan §6 "Degradation write
 // hygiene"): gated no-op when the flag is off; the route column only ever
@@ -53,7 +53,7 @@ vi.mock('@/lib/supabase-helpers', () => ({
 // Upstream clients mocked so assembleSearch's degraded[] path is exercised
 // live and keylessly.
 vi.mock('@/lib/duffel', () => ({ searchCash: vi.fn() }))
-vi.mock('@/lib/seatsaero', () => ({ searchAwards: vi.fn() }))
+vi.mock('@/lib/awards', () => ({ searchAwards: vi.fn() }))
 // PostHog capture mocked so the lib/search.ts emit is observable without a
 // network; the REAL module is exercised via vi.importActual further down.
 vi.mock('@/lib/posthog-server', () => ({ captureServerEvent: vi.fn() }))
@@ -210,6 +210,22 @@ describe('lib/search.ts call site — live-only, after degraded[] is final', () 
     // The mocked upstreams were never even called on the mock path.
     expect(vi.mocked(searchCash)).not.toHaveBeenCalled()
     expect(vi.mocked(searchAwards)).not.toHaveBeenCalled()
+  })
+
+  // Regression guard for lib/sweet-spot-candidates.ts: a mining run's upstream
+  // failures (e.g. a rate-limited seats.aero) must not read as a live-traffic
+  // spike to the health sentinel's D2 detector, so opts.recordTelemetry:false
+  // suppresses this block too, not just recordCppObservations.
+  it('opts.recordTelemetry:false suppresses degradation recording on an otherwise-identical failed run', async () => {
+    vi.mocked(searchCash).mockResolvedValue({ ok: false, reason: 'Duffel responded 429' })
+    vi.mocked(searchAwards).mockResolvedValue({ ok: false, reason: 'seats.aero timed out' })
+
+    const result = await assembleSearch(params, [], undefined, { recordTelemetry: false })
+    await flush()
+
+    expect(result.degraded).toEqual(['cash', 'awards'])
+    expect(inserts).toHaveLength(0)
+    expect(vi.mocked(captureServerEvent)).not.toHaveBeenCalled()
   })
 })
 

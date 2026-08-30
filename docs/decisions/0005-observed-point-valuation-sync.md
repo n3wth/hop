@@ -38,8 +38,9 @@ hop instruments `assembleSearch` to emit each computed award option's real cpp a
 (`cloudflare/valuations-worker/`) that appends observations to a D1 table. On a Cron Trigger the
 Worker aggregates a trimmed-mean cpp per program, gated on a minimum sample size and damped against
 single-cycle swings. A Vercel cron (`app/api/cron/valuation-sync/route.ts`) periodically pulls that
-aggregate, validates and clamps it, and mirrors it into a Supabase table
-(`lib/valuation-overrides.ts`). `lib/valuations-live.ts` merges this on top of the **unchanged**
+aggregate, validates and clamps it, and mirrors it into a Neon table
+(`lib/valuation-overrides.ts`, via Drizzle — ADR 0011 moved persistence off Supabase after this
+ADR was written; no RLS/service-role model applies here, scoping is code-level via `withDb`). `lib/valuations-live.ts` merges this on top of the **unchanged**
 static baseline in `lib/valuations.ts`, only trusting an override once it has enough samples
 (`MIN_SAMPLES_TO_TRUST`) and is fresh enough (`OVERRIDE_FRESHNESS_DAYS`) — degrading completely back
 to the static table on any failure, at any stage.
