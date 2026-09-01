@@ -24,9 +24,10 @@ export const SITE_NAME = 'hop'
 // No emoji, no marketing slop.
 export const DEFAULT_TITLE = 'hop — your personal travel agent'
 
-// ~150 chars. What hop actually does, in plain language.
+// ~150 chars. What hop actually does, in plain language. Awards are PUBLISHED
+// SAVER CHARTS, not live availability — do not claim otherwise (copy-spec.md).
 export const DEFAULT_DESCRIPTION =
-  'Your personal travel agent that knows your points, reads real award availability and cash fares, and gives you the verdict on what actually wins.'
+  'Compares your points to live cash fares using published saver charts. hop calculates ¢/pt and tells you when points beat cash — and when to pay.'
 
 // One line for the social card.
 export const TAGLINE = 'Your personal travel agent'
