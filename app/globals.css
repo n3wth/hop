@@ -801,10 +801,10 @@ body {
    The concierge thread is the PRIMARY surface on /ask: it fills the viewport
    below the sticky TopNav, owns the only scroll region (the message area), and
    pins the composer to the bottom. No nested card-on-bg, no double scrollbar.
-   --hop-nav mirrors the TopNav's fixed height (72px). dvh keeps the mobile
+   --hop-nav mirrors the TopNav's fixed height (56px). dvh keeps the mobile
    browser chrome from clipping the pinned composer. */
 :root {
-  --hop-nav: 72px;
+  --hop-nav: 56px;
 }
 
 /* Single-viewport stage — the concierge fills exactly the space below the nav so

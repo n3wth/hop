@@ -219,10 +219,10 @@ export default function TopNav({
         {/* Island container — floats as a pill on desktop, full-width on mobile */}
         <div className="h-full px-5 sm:px-8 md:px-4 lg:px-6">
         <div
-          className={`mx-auto flex h-full max-w-[var(--container-shell)] items-center gap-3 sm:gap-4 lg:gap-5 md:mt-2 md:h-10 md:max-w-fit md:rounded-full md:px-2.5 lg:px-3 ${
+          className={`mx-auto flex h-full max-w-[var(--container-shell)] items-center gap-3 sm:gap-4 lg:gap-5 md:mt-4 md:h-10 md:max-w-fit md:rounded-full md:border md:px-2.5 lg:px-3 ${
             c
-              ? 'md:border md:border-border/60 md:bg-surface/80 md:backdrop-blur-md md:backdrop-saturate-[1.1]'
-              : 'md:border md:border-transparent md:bg-transparent'
+              ? 'md:border-border/60 md:bg-surface/80 md:backdrop-blur-md md:backdrop-saturate-[1.1]'
+              : 'md:border-border md:bg-surface'
           }`}
           style={{
             transition: `background ${DUR} ${EASE}, border-color ${DUR} ${EASE}, backdrop-filter ${DUR} ${EASE}`,
