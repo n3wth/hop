@@ -86,6 +86,13 @@ export const FOOTER_SECTIONS: FooterSection[] = [
       { href: '/credits', label: 'Photo credits' },
     ],
   },
+  {
+    title: 'Family',
+    links: [
+      { href: 'https://n3wth.com', label: 'n3wth' },
+      { href: 'https://garden.n3wth.com', label: 'garden' },
+    ],
+  },
 ]
 
 // Paths the weekly SEO cron revalidates. Dynamic trees (destinations/*,
