@@ -35,7 +35,7 @@ export default async function PrivacyPage() {
         <h2>Who we are</h2>
         <p>
           hop is operated by <strong>hop Travel, Inc.</strong> For privacy questions, contact{' '}
-          <a href="mailto:support@hop.flights">support@hop.flights</a>.
+          <a href="mailto:hop@n3wth.com">hop@n3wth.com</a>.
         </p>
 
         <h2>What we collect</h2>
@@ -170,13 +170,13 @@ export default async function PrivacyPage() {
           <li>
             <strong>Delete your account.</strong> You can request account deletion from your{' '}
             <Link href="/account">account</Link> or by emailing{' '}
-            <a href="mailto:support@hop.flights">support@hop.flights</a>.
+            <a href="mailto:hop@n3wth.com">hop@n3wth.com</a>.
           </li>
         </ul>
         <p>
           Depending on where you live, you may have additional rights over your personal data. We
           honor applicable requests. To exercise a right, email{' '}
-          <a href="mailto:support@hop.flights">support@hop.flights</a> and we will respond
+          <a href="mailto:hop@n3wth.com">hop@n3wth.com</a> and we will respond
           within 30 days.
         </p>
 
@@ -215,7 +215,7 @@ export default async function PrivacyPage() {
 
         <h2>Contact</h2>
         <p>
-          Email <a href="mailto:support@hop.flights">support@hop.flights</a> with any privacy
+          Email <a href="mailto:hop@n3wth.com">hop@n3wth.com</a> with any privacy
           question or request.
         </p>
       </LegalShell>
