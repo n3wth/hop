@@ -10,7 +10,6 @@ import OriginSelector from './OriginSelector'
 import { SearchForm, type SearchState, type Cabin } from './SearchBar'
 import { isoOffset } from '@/lib/dates'
 import { PRIMARY_NAV } from '@/lib/seo-routes'
-import { SITE_NAME } from '@/lib/seo'
 
 export interface TopNavProps {
   from?: string
@@ -43,23 +42,15 @@ export interface TopNavProps {
 const EASE = 'cubic-bezier(.2,0,0,1)'
 const DUR = '280ms'
 
-// Static logo lockup — memoized so scroll-state toggles never re-render the
-// (path-heavy) bunny SVG. Only the wrapper's transform animates.
-const LogoLockup = memo(function LogoLockup() {
-  // Lockup color matches the nav's bordered controls (the Sign in pill's
-  // border-text2/text-text2) so the masthead reads as one quiet system;
-  // hover restores the brand flip. Hover is a color flip only (house rule:
-  // no hover movement).
+// Desktop island logo — bunny mark only, no wordmark. Compact for the tighter
+// island nav. Hover is a color flip only (house rule: no hover movement).
+const LogoMark = memo(function LogoMark() {
   return (
-    <Link href="/" aria-label="hop — home" className="group flex items-center gap-[9px]">
+    <Link href="/" aria-label="hop — home" className="group flex items-center">
       <FlyingBunny
-        size={41}
-        carve="var(--color-bg)"
+        size={22}
         markClassName="text-text2 transition-colors group-hover:text-brand"
       />
-      <span className="wordmark text-[19px] leading-none text-text2 transition-colors group-hover:text-brand">
-        {SITE_NAME}
-      </span>
     </Link>
   )
 })
@@ -220,28 +211,27 @@ export default function TopNav({
       <header
         className={`sticky top-0 z-50 ${hideSearch ? 'hidden md:block' : ''}`}
         style={{
-          height: 72,
+          height: 56,
           transform: 'translateZ(0)',
           isolation: 'isolate',
         }}
       >
         {/* Island container — floats as a pill on desktop, full-width on mobile */}
-        <div className="h-full px-5 sm:px-8 md:px-6 lg:px-8">
+        <div className="h-full px-5 sm:px-8 md:px-4 lg:px-6">
         <div
-          className={`mx-auto flex h-full max-w-[var(--container-shell)] items-center gap-4 sm:gap-5 lg:gap-7 md:mt-3 md:max-w-fit md:rounded-full md:border md:px-4 lg:px-5 ${
+          className={`mx-auto flex h-full max-w-[var(--container-shell)] items-center gap-3 sm:gap-4 lg:gap-5 md:mt-2 md:h-10 md:max-w-fit md:rounded-full md:px-2.5 lg:px-3 ${
             c
-              ? 'md:border-border md:bg-surface/90 md:backdrop-blur-xl md:backdrop-saturate-150'
-              : 'md:border-transparent md:bg-transparent'
+              ? 'md:border md:border-border/60 md:bg-surface/80 md:backdrop-blur-md md:backdrop-saturate-[1.1]'
+              : 'md:border md:border-transparent md:bg-transparent'
           }`}
           style={{
             transition: `background ${DUR} ${EASE}, border-color ${DUR} ${EASE}, backdrop-filter ${DUR} ${EASE}`,
           }}
         >
-          {/* logo — left. Stays the SAME size whether at top or scrolled; only its
-              vertical position shifts as the header height contracts (76→56px).
-              Hidden below md — the bottom tab bar's home bunny is the mark there. */}
-          <div className="hidden flex-shrink-0 items-center gap-[11px] md:flex">
-            <LogoLockup />
+          {/* logo — bunny mark only on desktop island, no wordmark. Hidden below md
+              where the bottom tab bar's home bunny serves as the mark. */}
+          <div className="hidden flex-shrink-0 items-center md:flex">
+            <LogoMark />
           </div>
 
           {/* Search lives in the header on results pages; pages that hide it
@@ -249,7 +239,7 @@ export default function TopNav({
               links to the other main pages instead of a blank gap. */}
           {hideSearch ? (
             <>
-              <nav aria-label="Main" className="hidden items-center gap-0.5 md:flex sm:ml-1 lg:ml-2">
+              <nav aria-label="Main" className="hidden items-center gap-0 md:flex">
                 {PRIMARY_NAV.map((l) => (
                   <Link
                     key={l.href}
@@ -257,8 +247,8 @@ export default function TopNav({
                     aria-current={isActive(l.href) ? 'page' : undefined}
                     className={
                       isActive(l.href)
-                        ? 'rounded-full bg-sunk px-3.5 py-2 text-[14px] font-semibold text-text2'
-                        : 'rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk'
+                        ? 'rounded-full bg-sunk px-3 py-1.5 text-[13px] font-semibold text-text2'
+                        : 'rounded-full px-3 py-1.5 text-[13px] font-semibold text-text2 transition-colors hover:bg-sunk'
                     }
                   >
                     {l.label}
@@ -314,7 +304,7 @@ export default function TopNav({
 
           {/* right cluster — origin + account sit together as one tidy group so
               the gap between them is a single small step, not the wide header gap. */}
-          <div className="flex items-center gap-1.5 lg:gap-2">
+          <div className="flex items-center gap-1 lg:gap-1.5">
           {/* persistent "where from" — hidden below md so the phone header stays
               uncrowded (the menu sheet carries it there). */}
           <div className="hidden flex-shrink-0 md:block">
@@ -326,27 +316,27 @@ export default function TopNav({
               bottom tab bar's Account tab covers this. */}
           <div className="hidden flex-shrink-0 items-center md:flex">
             {user ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {isOwner ? (
                   <Link
                     href="/admin"
                     title="Admin"
                     aria-label="Admin"
-                    className="hop-ink-border grid h-10 w-10 flex-shrink-0 place-items-center rounded-full border text-text2 transition-colors hover:bg-sunk"
+                    className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full text-text2 transition-colors hover:bg-sunk"
                   >
-                    <Icon name="shield" size={20} />
+                    <Icon name="shield" size={16} />
                   </Link>
                 ) : null}
                 {pointsTotal != null ? (
                   <Link
                     href="/account"
                     title="Your points"
-                    className="hop-ink-border hidden items-center gap-1.5 rounded-full border px-3.5 py-2 text-text2 transition-colors hover:bg-sunk lg:flex"
+                    className="hidden items-center gap-1 rounded-full px-2.5 py-1 text-text2 transition-colors hover:bg-sunk lg:flex"
                   >
-                    <span className="hop-num text-[14px] font-semibold text-text">
+                    <span className="hop-num text-[13px] font-semibold text-text">
                       {compactPoints(pointsTotal)}
                     </span>
-                    <span className="text-[12px] font-medium text-text3">pts</span>
+                    <span className="text-[11px] font-medium text-text3">pts</span>
                   </Link>
                 ) : null}
                 <AccountMenu user={user} />
@@ -354,7 +344,7 @@ export default function TopNav({
             ) : (
               <a
                 href={signInHref}
-                className="rounded-full border border-text2 px-5 py-2.5 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hop-press"
+                className="rounded-full border border-text2/60 px-3.5 py-1.5 text-[13px] font-semibold text-text2 transition-colors hover:bg-sunk hop-press"
               >
                 Sign in
               </a>
