@@ -136,9 +136,9 @@ function useSheet(open: boolean, close: () => void) {
   return ref
 }
 
-// Scroll-aware top bar. The header SHRINKS in height on scroll (76→56px) and the
-// logo scales down, but the search stays full size and fully editable. Frosted
-// backdrop + hairline appear only once scrolled. Degrades to expanded with no JS.
+// Scroll-aware top bar. Desktop (md+) renders as a floating island/pill nav
+// aligned with n3wth family chrome. Mobile keeps the bottom tab bar as primary
+// nav. Frosted backdrop appears only once scrolled. Degrades to expanded with no JS.
 export default function TopNav({
   fromCode = 'SFO',
   toCode = 'LAX',
@@ -218,20 +218,25 @@ export default function TopNav({
           disappears entirely; on search pages it survives only as the slim
           search-pill strip (the pill is the page's primary control, not chrome). */}
       <header
-        className={`sticky top-0 z-50 ${hideSearch ? 'hidden md:block' : ''} ${c ? 'hop-glass-surface' : ''}`}
+        className={`sticky top-0 z-50 ${hideSearch ? 'hidden md:block' : ''}`}
         style={{
           height: 72,
-          backdropFilter: c ? 'blur(14px) saturate(140%)' : 'none',
-          WebkitBackdropFilter: c ? 'blur(14px) saturate(140%)' : 'none',
-          borderBottom: c ? '1px solid var(--color-border)' : '1px solid transparent',
           transform: 'translateZ(0)',
           isolation: 'isolate',
-          willChange: c ? 'backdrop-filter' : 'auto',
-          transition: `background ${DUR} ${EASE}, border-color ${DUR} ${EASE}, backdrop-filter ${DUR} ${EASE}`,
         }}
       >
-        <div className="h-full px-5 sm:px-8 lg:px-12 xl:px-16">
-        <div className="mx-auto flex h-full max-w-[var(--container-shell)] items-center gap-4 sm:gap-5 lg:gap-7">
+        {/* Island container — floats as a pill on desktop, full-width on mobile */}
+        <div className="h-full px-5 sm:px-8 md:px-6 lg:px-8">
+        <div
+          className={`mx-auto flex h-full max-w-[var(--container-shell)] items-center gap-4 sm:gap-5 lg:gap-7 md:mt-3 md:max-w-fit md:rounded-full md:border md:px-4 lg:px-5 ${
+            c
+              ? 'md:border-border md:bg-surface/90 md:backdrop-blur-xl md:backdrop-saturate-150'
+              : 'md:border-transparent md:bg-transparent'
+          }`}
+          style={{
+            transition: `background ${DUR} ${EASE}, border-color ${DUR} ${EASE}, backdrop-filter ${DUR} ${EASE}`,
+          }}
+        >
           {/* logo — left. Stays the SAME size whether at top or scrolled; only its
               vertical position shifts as the header height contracts (76→56px).
               Hidden below md — the bottom tab bar's home bunny is the mark there. */}

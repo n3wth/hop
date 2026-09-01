@@ -42,7 +42,7 @@ describe('support-kb', () => {
 
   it('fallback-invents-nothing: fallbackSupportAnswer contains mailto and no invented economic numbers', () => {
     const answer = fallbackSupportAnswer('how do i change my ticket')
-    expect(answer).toContain('support@hop.flights')
+    expect(answer).toContain('hop@n3wth.com')
     expect(answer).toContain('/support#')
     // Must not contain numeric ¢/pt or dollar figures
     expect(answer).not.toMatch(/\d+(\.\d+)?\s*(¢\/pt|miles|\$)/)
