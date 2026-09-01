@@ -11,7 +11,11 @@ import Eyebrow from './ui/Eyebrow'
 // Reuses the bundled airport list + the shared origin context so the choice
 // sticks across every surface (home, ask, search, deals). Keyboard accessible,
 // WCAG AA, no shadows/gradients — same flat vocabulary as the search popovers.
-export default function OriginSelector() {
+//
+// `quiet` mode drops the visible border so the pill sits flush inside the
+// desktop island without a nested-card double-border look; the open/active
+// state still highlights on interaction (bg-sunk).
+export default function OriginSelector({ quiet = false }: { quiet?: boolean }) {
   const { origin, setOrigin } = useOrigin()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -87,8 +91,12 @@ export default function OriginSelector() {
         aria-expanded={open}
         aria-label={origin ? `Departure airport: ${origin}. Change` : 'Set your departure airport'}
         onClick={() => setOpen((o) => !o)}
-        className={`hop-ink-border flex items-center rounded-full border px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:border-text2 hover:bg-sunk ${
-          open ? 'hop-ink-border-active bg-sunk' : ''
+        className={`flex items-center rounded-full px-3 py-1.5 text-[13px] font-semibold text-text2 transition-colors hover:bg-sunk ${
+          quiet
+            ? open
+              ? 'bg-sunk'
+              : ''
+            : `border hop-ink-border hover:border-text2 ${open ? 'hop-ink-border-active bg-sunk' : ''}`
         }`}
       >
         <span className="tabular-nums">{label}</span>

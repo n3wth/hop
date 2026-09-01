@@ -229,8 +229,9 @@ export default function TopNav({
           }}
         >
           {/* logo — bunny mark only on desktop island, no wordmark. Hidden below md
-              where the bottom tab bar's home bunny serves as the mark. */}
-          <div className="hidden flex-shrink-0 items-center md:flex">
+              where the bottom tab bar's home bunny serves as the mark. ml-1 matches
+              the right-side avatar's mr-1 for symmetric insets from the pill cap. */}
+          <div className="hidden flex-shrink-0 items-center md:ml-1 md:flex">
             <LogoMark />
           </div>
 
@@ -239,7 +240,10 @@ export default function TopNav({
               links to the other main pages instead of a blank gap. */}
           {hideSearch ? (
             <>
-              <nav aria-label="Main" className="hidden items-center gap-0 md:flex">
+              {/* Nav links + origin selector sit in one flexbox with even gap-2
+                  so there's no large empty slot after Pricing. The origin
+                  selector is inline here, not in the far-right cluster. */}
+              <nav aria-label="Main" className="hidden items-center gap-2 md:flex">
                 {PRIMARY_NAV.map((l) => (
                   <Link
                     key={l.href}
@@ -254,6 +258,8 @@ export default function TopNav({
                     {l.label}
                   </Link>
                 ))}
+                {/* Origin selector inline after nav links for even rhythm */}
+                <OriginSelector quiet />
               </nav>
             </>
           ) : (
@@ -290,26 +296,22 @@ export default function TopNav({
           )}
 
           {/* spacer pushes the right cluster to the far edge (desktop only).
-              Taste call (2026-07, full-width-shell gap fix): this row stays
-              at --container-shell width on purpose, matching the rest of
-              this bar and the "Chrome aligns with content" decision from the
-              full-width 2026 shell PR — this is persistent nav chrome, not a
-              content row, and generous open space between the logo/nav and
-              the account cluster at wide viewports is standard for
-              Airbnb/Linear-class full-bleed headers, not a layout bug.
-              (Contrast with RouteBar/PointsPanel below, which ARE content
-              rows and got capped back to --container-app because their two
-              clusters read as visually related and now sit stranded apart.) */}
-          <div className="hidden flex-1 md:block" />
+              On hideSearch pages the origin is inline with nav links so no
+              spacer is needed there. On search pages the spacer separates
+              the search form from the account cluster. */}
+          {!hideSearch && <div className="hidden flex-1 md:block" />}
 
-          {/* right cluster — origin + account sit together as one tidy group so
-              the gap between them is a single small step, not the wide header gap. */}
-          <div className="flex items-center gap-1 lg:gap-1.5">
+          {/* right cluster — origin (search pages only) + account. mr-1 matches
+              the left logo's ml-1 for symmetric insets from the pill caps. */}
+          <div className="flex items-center gap-2 md:mr-1">
           {/* persistent "where from" — hidden below md so the phone header stays
-              uncrowded (the menu sheet carries it there). */}
-          <div className="hidden flex-shrink-0 md:block">
-            <OriginSelector />
-          </div>
+              uncrowded (the menu sheet carries it there). On hideSearch pages
+              the origin is inline with nav links above, so skip it here. */}
+          {!hideSearch && (
+            <div className="hidden flex-shrink-0 md:block">
+              <OriginSelector />
+            </div>
+          )}
 
           {/* account — Auth0: avatar+logout when signed in, Sign in when out.
               No scroll scaling — the bar stays still as you scroll. Below md the
