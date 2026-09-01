@@ -47,7 +47,7 @@ export const SUPPORT_KB: KbEntry[] = [
   {
     slug: 'contact',
     title: 'Contact and human support',
-    body: `Email support@hop.flights for help from a real person. Include your account email and booking reference if applicable. You can also request a human handoff directly through the support chat.`,
+    body: `Email hop@n3wth.com for help from a real person. Include your account email and booking reference if applicable. You can also request a human handoff directly through the support chat.`,
     anchor: 'contact',
   },
 ]
@@ -91,5 +91,5 @@ export function searchSupportKb(query: string, limit = 3): KbEntry[] {
 export function fallbackSupportAnswer(query: string): string {
   const hits = searchSupportKb(query, 1)
   const best = hits.length > 0 ? hits[0] : SUPPORT_KB[0]
-  return `${best.body}\n\nFor details, see /support#${best.anchor} or email support@hop.flights.`
+  return `${best.body}\n\nFor details, see /support#${best.anchor} or email hop@n3wth.com.`
 }

@@ -161,8 +161,8 @@ export const hopTheme = defineTheme({
     // circle, hover = color change only (flat law — no scale/lift).
     button: {
       'variant:avatar': {
-        width: '40px',
-        height: '40px',
+        width: '32px',
+        height: '32px',
         padding: '0',
         borderRadius: 'var(--radius-full)',
         backgroundColor: 'var(--color-brand)',

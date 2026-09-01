@@ -164,7 +164,7 @@ export default async function TermsPage() {
         <h2>13. Contact</h2>
         <p>
           Questions about these terms? Email{' '}
-          <a href="mailto:support@hop.flights">support@hop.flights</a>.
+          <a href="mailto:hop@n3wth.com">hop@n3wth.com</a>.
         </p>
       </LegalShell>
       <div className="mx-auto max-w-[var(--container-shell)]">

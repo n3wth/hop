@@ -52,7 +52,7 @@ function supportToolDetail(toolName: string, input: Record<string, unknown> | un
 export async function POST(request: Request): Promise<Response> {
   if (!isSupportAgentEnabled()) {
     return new Response(
-      'hop support agent is unconfigured — see /support for FAQ or email support@hop.flights.',
+      'hop support agent is unconfigured — see /support for FAQ or email hop@n3wth.com.',
       { status: 200, headers: { 'content-type': 'text/plain; charset=utf-8' } }
     )
   }

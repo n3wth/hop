@@ -34,6 +34,9 @@ export default function Logo({
       width={size}
       height={size}
       className={className}
+      stroke="currentColor"
+      strokeWidth={12}
+      strokeLinejoin="round"
       {...(decorative ? { 'aria-hidden': true } : { 'aria-label': 'hop', role: 'img' })}
       {...rest}
     >
