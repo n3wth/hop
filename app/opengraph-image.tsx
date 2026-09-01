@@ -1,18 +1,30 @@
 import { ImageResponse } from 'next/og'
-import { TAGLINE } from '@/lib/seo'
-import { OG, Brand, ogFonts, FONT_DISPLAY, FONT_BODY } from '@/lib/og'
+import { ogFonts, FONT_DISPLAY } from '@/lib/og'
 
-// The card sub-line — the value prop, not a repeat of the headline/tagline.
-const OG_SUBLINE = 'Points or cash — the verdict on every flight'
+// n3wth family spec for social cards:
+// - Black background, white type
+// - n3wth cursor mark + one large title only
+// - NO chips, NO subtitle (unreadable from far away)
+// - 1200×630
 
-// Default social card for the whole site (1200×630). Same flat warm-paper poster
-// language and hop type as the per-page cards: the bunny mark up top, a big
-// display line anchored low, one teal accent. No panels, gradients, or shadows.
-// Wired as both og:image and twitter:image via the opengraph-image convention.
-
-export const alt = 'hop — your personal travel agent'
+export const alt = 'hop.flights'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
+
+// n3wth cursor mark — the canonical family logo from github.com/n3wth/n3wth public/brand/bimi.svg
+// Scaled and positioned for OG card. Original viewBox 0 0 100 100, path M36 24 → M70 54.
+function N3wthMark({ size = 80 }: { size?: number }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 100 100"
+      width={size}
+      height={size}
+    >
+      <path d="M36 24 L36 68 L47 57 L54 74 L61 71 L54 54 L70 54 Z" fill="#ffffff" />
+    </svg>
+  )
+}
 
 export default async function Image() {
   const fonts = await ogFonts()
@@ -24,22 +36,25 @@ export default async function Image() {
           flexDirection: 'column',
           width: '100%',
           height: '100%',
-          background: OG.cream,
+          background: '#000000',
           padding: 84,
           justifyContent: 'space-between',
-          fontFamily: FONT_BODY,
         }}
       >
-        <Brand />
+        <N3wthMark size={80} />
 
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ fontFamily: FONT_DISPLAY, fontSize: 100, fontWeight: 700, color: OG.ink, letterSpacing: '-0.035em', lineHeight: 1.0, maxWidth: 1010 }}>
-            {TAGLINE}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginTop: 30 }}>
-            <div style={{ display: 'flex', width: 44, height: 6, background: OG.teal, borderRadius: 3 }} />
-            <div style={{ display: 'flex', fontSize: 38, fontWeight: 500, color: OG.teal }}>{OG_SUBLINE}</div>
-          </div>
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: FONT_DISPLAY,
+            fontSize: 180,
+            fontWeight: 700,
+            color: '#ffffff',
+            letterSpacing: '-0.03em',
+            lineHeight: 1,
+          }}
+        >
+          hop
         </div>
       </div>
     ),
