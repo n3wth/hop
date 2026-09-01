@@ -1,0 +1,47 @@
+# hop.flights — what this product is
+
+hop is a points-vs-cash flight optimizer. Given a route and your loyalty
+balances, it tells you whether to book with points, transfer partners, or cash.
+
+## What hop actually does
+
+1. **Live cash fares** — real-time pricing from Duffel for the searched route.
+2. **Published saver charts** — committed award tables transcribed from airline
+   program pages (Alaska, Aeroplan). These are saver-floor miles, not live
+   availability.
+3. **Your balances** — connected via AwardWallet or entered manually.
+4. **Computed verdict** — cents-per-point (cpp) calculated as
+   `(cash − taxes) × 100 / miles`. Tiers: ≥3.0 = good, ≥1.5 = ok, else weak.
+   The verdict is "use points" when cpp ≥ 2.5 and you hold the miles.
+
+## What hop does NOT do
+
+hop does not confirm saver award availability. The award side is a published
+chart rate, not a live seat search. The note "Space not confirmed" appears on
+every chart-based result.
+
+## How hop differs from seats.aero and Roame
+
+| | hop | seats.aero / Roame |
+|---|---|---|
+| Question answered | "Should I use points or cash?" | "Is award space available?" |
+| Cash pricing | Live (Duffel) | Manual entry |
+| Award pricing | Published saver charts | Live/cached availability search |
+| Your balances | Connected (AwardWallet/manual) | Not connected |
+| Output | Verdict + cpp ranking | Available seats list |
+
+seats.aero and Roame are award-availability search engines — they tell you what
+seats exist. hop is a decision engine — it assumes you'll verify availability
+yourself and tells you whether that redemption is worth it given your actual
+balances and the live cash alternative.
+
+## MCP / agent integration
+
+hop exposes its engine via MCP ("Add to Claude"). Tools: `price_trip`,
+`verdict`, `sweet_spots`, `transfer_paths`, `compare_programs`,
+`best_card_for_program`. Auth is an optional Bearer token that loads your
+balances; omit it for stateless queries with caller-supplied balances.
+
+## Contact
+
+https://hop.flights
