@@ -193,11 +193,12 @@ never promises one.
 | `rate-limited` | Pricing, Account | `Too many tries. Wait a minute and try again.` | The button was pressed several times in a row. Wait a minute, try once. Nothing was charged. | No |
 | `stripe` | Pricing, Account | `Couldn't open checkout. Nothing was charged. Try again in a minute.` | Stripe didn't answer. Nothing was charged. Try once more; if it fails twice, send us the time it happened. | Holly if repeated |
 | `no-customer` | Account | `There's no subscription on this account. Get Pro from Pricing first.` | The signed-in Google account has never paid. Check the receipt email against the account email; they may have two Google accounts. | No |
-| `bot` | Pricing, Account | `That didn't look like a real request. Try again from the page.` | Open hop.flights/pricing in a normal browser tab and press the button once. | No |
+| `bot` | Pricing, Account | `That didn't look like a real request. Try again from the page.` No route emits this code today; keep or delete, but don't write more for it. | Open hop.flights/pricing in a normal browser tab and press the button once. | No |
 | `already-pro` (proposed) | Pricing | `You already have Pro. Use Manage billing to change your card or cancel.` | You're already on Pro. Manage billing handles cards and cancellation. | No |
 | Unknown code | Account | `Couldn't reach billing. Try again.` | Try once more. If it repeats, tell us the exact text and time. | Holly |
-| Alert cap, Free | Watch this route, Account | `You're at 3 alerts on Free. Pro lifts the cap.` with link `Get Pro` | Free holds 3 active alerts. Delete one in Account, or Pro removes the cap for $49 a year. | No |
-| Agent quota, Free | MCP tool error | `Daily limit reached: 25 agent calls on Free. Resets daily. Pro allows 1,000: hop.flights/pricing` | The quota counts tool calls from agents, not site use. It resets daily. | No |
+| Alert cap, Free | Watch this route, Account | `You're at the 3-alert limit on Free. Pro lifts the cap.` with link `Get Pro` (keep the words `alert limit`: `WatchThisRoute.tsx` matches `/alert limit/i` and `email-subscription.test.ts` asserts `3-alert limit`) | Free holds 3 active alerts. Delete one in Account, or Pro removes the cap for $49 a year. | No |
+| Agent quota, Free | MCP tool error | `Daily limit reached: 25 agent calls on Free. Resets daily. Pro allows 1,000 a day: hop.flights/pricing` (use `toLocaleString()`; the live string prints `1000`) | The quota counts tool calls from agents, not site use. It resets daily. | No |
+| Agent quota, Pro | MCP tool error | `Daily limit reached: 1,000 agent calls. Resets daily.` | You've used the Pro quota for today. It resets daily. | No |
 | Paid, still Free after a few minutes | Account banner | `Payment received. Pro switches on within a minute. Refresh to check.` | Your payment went through. Pro is being switched on. If it isn't on within an hour, reply and we'll set it by hand. | Holly: check Stripe customer by email, then `hop_subscriptions`; the daily `sync-stripe` cron also reconciles. No refund. |
 | Card declined on Stripe | Stripe page | Stripe's message | Nothing was charged. Try another card, or ask your bank why it declined. Never send card details by email. | No |
 | 3DS failed or abandoned | Stripe page | Stripe's message | Your bank's verification didn't complete. Nothing was charged. Try again; the bank app may need to approve it. | No |
@@ -229,6 +230,20 @@ never promises one.
    with it.
 6. The alert-cap message says `Upgrade in Account`. Account has no upgrade button; Pricing
    does. Rewritten to link to Pricing.
+7. `/mcp` says `Free 25 calls/day, Pro 1,000/day` and the tool error says `1000/day`. Same
+   number, two spellings. Use `1,000` everywhere.
+
+## Paste rules
+
+- Numbers stay interpolated from `ALERT_LIMITS`, `MCP_DAILY_LIMITS`, `PRO_PRICE_YEARLY_USD`.
+  Six test files assert on them; a hand-typed `3` or `49` fails `npm test`.
+- Every price-bearing string keeps its billing-off variant (`isBillingEnabled()` branches
+  in metadata, the FAQ cost answer, and the alert-cap error).
+- FAQ strings feed both the visible list and the FAQPage JSON-LD. Keep answers
+  self-contained.
+- The type stack in the repo is Bricolage Grotesque, General Sans, Fraunces italic, and
+  Geist Mono. Satoshi and Geist Sans are not loaded. The letter PDF spec uses Satoshi and
+  Geist as briefed; adopting them on the site is a separate decision.
 
 ## 10. Not copy, but blocking
 
@@ -240,6 +255,9 @@ never promises one.
   on the page and at checkout. Legal copy, Oliver's call.
 - Downgrade behaviour for a user holding more than 3 alerts is undefined. The cap is
   enforced only on create. Decide pause or keep before any copy promises either.
+- `isBillingEnabled()` does not require `STRIPE_PRICE_ID_PRO_YEARLY`, but the yearly-only
+  checkout fails closed without it. If that variable is missing in production, every
+  upgrade lands on `billingError=stripe`. Verify it is set before the copy goes live.
 - The Stripe billing portal must have cancellation enabled in its configuration for the
   cancellation copy to be true. Verify in the dashboard; not changed here.
 - Support address: origin/main uses hop@n3wth.com; the stale local checkout still says
