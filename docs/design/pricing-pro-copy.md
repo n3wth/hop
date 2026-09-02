@@ -210,6 +210,24 @@ never promises one.
 | Asks about the price going up | Email | n/a | $49 stays your price for as long as you keep the subscription. | No |
 | Can't find Manage billing | Account | n/a | Manage billing only appears on the Google account that paid. Check the email on the Stripe receipt. | No |
 
+### Support knowledge base entries to add (`lib/support-kb.ts`)
+
+The support bot has no entry for subscription billing today; its only refund entry is about
+airline tickets.
+
+- Title: `Cancel or change hop Pro`
+  Body: `Go to Account, then Manage billing. Stripe opens; cancel or change your card
+  there. Pro runs to the end of the paid year, then your account returns to Free with 3
+  alerts. hop cannot cancel for you from chat; email hop@n3wth.com from your account
+  address if the button is missing.`
+- Title: `A charge from hop`
+  Body: `hop Pro is $49 a year, billed once through Stripe. The receipt comes from Stripe.
+  If a charge looks wrong, email hop@n3wth.com with the receipt date. A person replies;
+  chat cannot issue refunds.`
+
+Also: `public/llms.txt` describes the MCP tools but never states the daily quota. Add one
+line: `Token-linked agents get 25 calls a day on Free and 1,000 on Pro.`
+
 ## 9. Flags: sentences that promise what Pro does not deliver
 
 1. `Weekly best-redemption digest` on the Pro card and in the FAQ. The digest cron
