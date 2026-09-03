@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import FooterNav from './FooterNav'
+import Icon from './Icon'
 
 const YEAR = new Date().getFullYear()
 
@@ -29,11 +30,19 @@ export default function SiteFooter({ flush = false }: { flush?: boolean }) {
               Points vs. cash — valued in ¢/pt so you always know the smarter way to book.
             </p>
 
-            {/* No social links yet — the handles aren't registered. Restore the
-                row (and a SITE_SOCIAL config in lib/seo.ts) once accounts exist. */}
+            {/* GitHub — icon only, links to the public repo */}
+            <a
+              href="https://github.com/n3wth/hop"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="hop on GitHub"
+              className="mt-4 inline-flex w-fit self-center text-text3 transition-colors hover:text-brand lg:self-start"
+            >
+              <Icon name="github" size={20} />
+            </a>
 
             {/* Consolidated copyright & slogan inline inside the brand column */}
-            <div className="mt-6 text-[11.5px] text-text4">
+            <div className="mt-4 text-[11.5px] text-text4">
               © {YEAR} hop.flights · Points + cash. Smarter travel.
             </div>
           </div>
