@@ -133,10 +133,27 @@ export default function CountUp({
   // The animated number is decorative for AT — a screen reader landing mid
   // count-up would otherwise read an intermediate (or 0) figure. Hide the
   // animating value and expose the true final value once, via sr-only.
+  // Inline styles are a fallback — if the Tailwind sr-only class fails to load
+  // or apply (CSS race, specificity clash), the span is still visually hidden.
   return (
     <span ref={rootRef} className={className} style={style}>
       <span aria-hidden="true">{render(display, format, decimals, prefix, suffix)}</span>
-      <span className="sr-only">{render(value, format, decimals, prefix, suffix)}</span>
+      <span
+        className="sr-only"
+        style={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: 'hidden',
+          clip: 'rect(0,0,0,0)',
+          whiteSpace: 'nowrap',
+          borderWidth: 0,
+        }}
+      >
+        {render(value, format, decimals, prefix, suffix)}
+      </span>
     </span>
   )
 }

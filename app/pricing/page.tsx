@@ -63,8 +63,8 @@ function pricingFaq(billingEnabled: boolean): { q: string; a: string }[] {
   ]
 }
 
-// FAQPage + WebPage JSON-LD — same posture as lib/seo.ts#buildJsonLd and
-// app/guides/point-value/page.tsx#buildPointValueJsonLd: no user input flows
+// FAQPage + WebPage + Offer/Product JSON-LD — same posture as lib/seo.ts#buildJsonLd
+// and app/guides/point-value/page.tsx#buildPointValueJsonLd: no user input flows
 // in, so JSON.stringify alone keeps it XSS-safe.
 function buildPricingJsonLd(billingEnabled: boolean) {
   const url = absoluteUrl('/pricing')
@@ -90,7 +90,44 @@ function buildPricingJsonLd(billingEnabled: boolean) {
     about: { '@id': `${SITE_URL}/#organization` },
     inLanguage: 'en-US',
   }
-  return { '@context': 'https://schema.org', '@graph': [webPage, faq] }
+
+  const freePlan = {
+    '@type': 'Product',
+    '@id': `${url}#free`,
+    name: 'hop Free',
+    description: `Full search and verdict, ${ALERT_LIMITS.free} active route alerts, ${MCP_DAILY_LIMITS.free} agent calls/day`,
+    brand: { '@id': `${SITE_URL}/#organization` },
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
+      url,
+    },
+  }
+
+  const proPlan = billingEnabled
+    ? {
+        '@type': 'Product',
+        '@id': `${url}#pro`,
+        name: 'hop Pro',
+        description: `Unlimited route alerts, weekly best-redemption digest, ${MCP_DAILY_LIMITS.premium.toLocaleString()} agent calls/day`,
+        brand: { '@id': `${SITE_URL}/#organization` },
+        offers: {
+          '@type': 'Offer',
+          price: String(PRO_PRICE_YEARLY_USD),
+          priceCurrency: 'USD',
+          priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          availability: 'https://schema.org/InStock',
+          url,
+        },
+      }
+    : null
+
+  const graph = [webPage, faq, freePlan]
+  if (proPlan) graph.push(proPlan)
+
+  return { '@context': 'https://schema.org', '@graph': graph }
 }
 
 // Public pricing surface (business plan §7 B1). Signed-out visitors get the
