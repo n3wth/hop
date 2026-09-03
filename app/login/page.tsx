@@ -60,7 +60,7 @@ export default async function LoginPage({
         </div>
 
         <p className="relative z-10 text-[12.5px] text-hero-label">
-          Points + cash. Smarter travel.
+          Points vs. cash, valued in ¢/pt.
         </p>
 
         {/* the warm moment — oversized mark bleeding off the corner */}

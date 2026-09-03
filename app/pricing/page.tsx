@@ -44,21 +44,13 @@ function pricingFaq(billingEnabled: boolean): { q: string; a: string }[] {
     },
     {
       q: 'Why pay if search is free?',
-      a: `You don't, unless you want more than ${ALERT_LIMITS.free} watches. Pro is the watchlist: hop re-checks your routes and emails you when the miles get cheaper. One missed drop usually costs more than a year of Pro.`,
-    },
-    {
-      q: 'What does hop Pro cost?',
       a: billingEnabled
-        ? `Pro is $${PRO_PRICE_YEARLY_USD}/yr, billed once a year. That's the early price, grandfathered for life. No monthly option yet.`
-        : `Pro isn't live yet — hop's paid plan hasn't launched, so there's nothing to buy right now. Search and the verdict stay free either way.`,
-    },
-    {
-      q: "What's the difference between Free and Pro?",
-      a: `Free: full search, the verdict, and ${ALERT_LIMITS.free} active alerts. Pro: unlimited alerts, a weekly best-redemption digest, and ${MCP_DAILY_LIMITS.premium.toLocaleString()} MCP calls/day if you search from an agent.`,
+        ? `More watches. Free gives you ${ALERT_LIMITS.free} active alerts. Pro gives you unlimited alerts, a weekly best-redemption digest, and ${MCP_DAILY_LIMITS.premium.toLocaleString()} MCP calls/day if you search from an agent.`
+        : `More watches. Free gives you ${ALERT_LIMITS.free} active alerts. Pro (once it launches) will give you unlimited alerts, a weekly digest, and higher agent quotas.`,
     },
     {
       q: 'What is an MCP call?',
-      a: `hop exposes its verdict engine as an MCP server, so agents like Claude can price trips and check balances. Each tool call counts against the daily quota. Humans on the site don't use this quota.`,
+      a: `hop exposes its verdict engine as an MCP server, so agents can price trips and check balances. Each tool call counts against the daily quota. Humans on the site don't use this quota.`,
     },
   ]
 }
@@ -169,8 +161,8 @@ export default async function PricingPage({
             {userId ? 'Your plan' : `${ALERT_LIMITS.free} watches are free.`}
           </h1>
           <p className="mt-3 text-[14.5px] leading-[1.6] text-text2">
-            Search and the points-vs-cash verdict stay free. Pro is the watchlist — hop
-            re-checks your routes and emails you when the miles get cheaper.{' '}
+            Search and the points-vs-cash verdict stay free. Pro is the watchlist. hop
+            re-checks your routes and emails you when the miles drop.{' '}
             ${PRO_PRICE_YEARLY_USD}/yr, grandfathered.
           </p>
         </div>
@@ -186,7 +178,7 @@ export default async function PricingPage({
             <BillingSection isSignedIn={!!userId} tier={tier} activeCount={activeCount} />
           ) : (
             <Card surface="sunk" className="px-5 py-4 text-[13.5px] text-text2">
-              hop is free for everyone right now — a paid plan isn&apos;t live yet.
+              hop is free for everyone right now. A paid plan isn&apos;t live yet.
             </Card>
           )}
         </div>

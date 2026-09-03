@@ -24,7 +24,7 @@ export type { DreamCardData }
 
 function compactMiles(n: number): string {
   const k = n / 1000
-  return `${Number.isInteger(k) ? k : k.toFixed(1)}K`
+  return `${Number.isInteger(k) ? k : k.toFixed(1)}k`
 }
 function money(n: number): string {
   return `$${Math.round(n).toLocaleString('en-US')}`
@@ -228,7 +228,7 @@ export default function LedgerDreamCard({
                 <div className="hop-price mt-1 text-[20px] leading-none text-text">
                   {compactMiles(v.milesNeeded)}
                   <span className="font-sans ml-1 text-[12px] font-medium text-text3">
-                    mi{v.cabin ? ` · ${v.cabin}` : ''}
+                    miles{v.cabin ? ` · ${v.cabin}` : ''}
                   </span>
                 </div>
               </div>
