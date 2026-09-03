@@ -5,7 +5,7 @@ import { DEFAULT_DESCRIPTION, TAGLINE } from '@/lib/seo'
 // hop family OG card: warm cream editorial, bunny mark, brand title + tagline.
 // 1200×630, flat editorial design — no shadows, gradients, or glows.
 
-export const alt = 'hop — your personal travel agent'
+export const alt = 'hop — points or cash, one number'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 

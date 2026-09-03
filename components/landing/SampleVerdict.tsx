@@ -68,7 +68,6 @@ export default async function SampleVerdict() {
           <Stat label="You pay" value="9,000" unit="miles + $22" />
           <Stat label="Value" value="2.6¢" unit="/ pt" />
           <Stat label="Cash price" value="$254" />
-          <Stat label="You save" value="$232" accent />
         </div>
       </div>
 

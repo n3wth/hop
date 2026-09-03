@@ -50,9 +50,9 @@ export default function manifest(): MetadataRoute.Manifest {
         url: '/search',
       },
       {
-        name: 'Ask the concierge',
+        name: 'Ask hop',
         short_name: 'Ask',
-        description: 'Tell hop a vibe, a budget, or a city',
+        description: 'Name a destination, get the verdict',
         url: '/ask',
       },
       {
