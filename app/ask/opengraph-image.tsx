@@ -12,7 +12,7 @@ export default async function Image() {
       <PageOgCard
         eyebrow="Ask hop"
         title="Points or cash?"
-        description="Tell hop a vibe, a budget, or a city. It reads saver charts and cash for the same trip and tells you which one wins."
+        description="Name a destination or describe the trip. hop reads saver charts and cash for the same route and tells you which one wins."
       />
     ),
     { ...size, fonts },

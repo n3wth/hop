@@ -172,11 +172,11 @@ export default async function SignedInHome({
             <h2 className="font-display text-[26px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[34px]">
               {personalized
                 ? 'Within reach.'
-                : 'Dreams worth saving toward.'}
+                : 'Just out of reach.'}
             </h2>
             <p className="max-w-[46ch] text-[15px] leading-[1.55] text-text2">
               {personalized
-                ? 'Where your balances can take you as you pool and transfer — sorted by value per point.'
+                ? 'Where your balances can take you as you pool and transfer. Sorted by value per point.'
                 : 'A few more points and these open up. Sorted by value per point.'}
             </p>
           </div>
@@ -228,7 +228,7 @@ export default async function SignedInHome({
           </h2>
           <p className="mt-2 max-w-[44ch] text-[14.5px] leading-[1.55] text-text2">
             Pick a route and hop reads your balances, the published saver chart,
-            and the cash fare, then tells you the smarter way to book it.
+            and the cash fare. Points or cash, with the math.
           </p>
           {/* mt-auto bottom-anchors the search pill so this card's composition
               mirrors the teal panel beside it (whose CTA is bottom-anchored via
@@ -253,8 +253,8 @@ export default async function SignedInHome({
               Not sure where to go?
             </h2>
             <p className="mt-2.5 text-[14.5px] leading-[1.55] text-hero-body">
-              Describe the trip in plain words — beach, big city, cheap flight,
-              business class — and hop finds where points beat cash.
+              Describe the trip in plain words: beach, big city, cheap flight,
+              business class. hop finds where points beat cash.
             </p>
           </div>
           <Link
@@ -280,7 +280,7 @@ export default async function SignedInHome({
             <p className="mt-1 max-w-[48ch] text-[13.5px] leading-[1.5] text-text2">
               {programs > 0
                 ? `${programs} ${programs === 1 ? 'program' : 'programs'} connected. Add a loyalty account or refresh your balances anytime.`
-                : 'Link a loyalty account anytime — hop fills in your real balances and the trips they reach.'}
+                : 'Link a loyalty account anytime. hop fills in your real balances and the trips they reach.'}
             </p>
           </div>
         </div>

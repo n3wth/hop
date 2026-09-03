@@ -103,7 +103,7 @@ export function BillingSection({ isSignedIn, tier = 'free', activeCount = 0 }: B
             <form action="/api/billing/checkout" method="POST">
               <input type="hidden" name="interval" value="yearly" />
               <button type="submit" className={`${CTA} bg-brand text-white hover:bg-brand-deep`}>
-                Upgrade to Pro — ${PRO_PRICE_YEARLY_USD}/yr
+                Upgrade to Pro
               </button>
             </form>
           )}

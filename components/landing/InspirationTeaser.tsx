@@ -23,14 +23,13 @@ export default async function InspirationTeaser() {
           sliver. Heading and body each carry their OWN caps below. */}
       <div className="mx-auto flex flex-col items-center gap-2 text-center">
         <span className="text-[12px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-brand">
-          Imagine where your points could go
+          High-value redemptions
         </span>
         <h2 className="mx-auto max-w-[22ch] text-balance font-display text-[32px] font-bold leading-[1.05] tracking-[-0.025em] text-text sm:text-[44px] lg:text-[52px]">
           The trips where miles stretch furthest.
         </h2>
         <p className="mt-1 max-w-[52ch] text-[15px] leading-[1.55] text-text2">
-          Top value per point — the program that books each one, and the dream
-          on the other side.
+          Top value per point. The program that books each one, and where it takes you.
         </p>
       </div>
 

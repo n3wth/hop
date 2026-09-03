@@ -27,7 +27,7 @@ export default function SiteFooter({ flush = false }: { flush?: boolean }) {
               hop.flights
             </Link>
             <p className="mt-2.5 text-[14px] leading-[1.6]">
-              Points vs. cash — valued in ¢/pt so you always know the smarter way to book.
+              Points vs. cash, valued in ¢/pt.
             </p>
 
             {/* GitHub — icon only, links to the public repo */}
@@ -43,7 +43,7 @@ export default function SiteFooter({ flush = false }: { flush?: boolean }) {
 
             {/* Consolidated copyright & slogan inline inside the brand column */}
             <div className="mt-4 text-[11.5px] text-text4">
-              © {YEAR} hop.flights · Points + cash. Smarter travel.
+              © {YEAR} hop.flights
             </div>
           </div>
 

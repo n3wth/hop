@@ -298,8 +298,8 @@ export default async function Search({
               Where are you flying?
             </h1>
             <p className="mt-3 max-w-[46ch] text-[15px] leading-[1.6] text-text2 sm:text-[16px]">
-              Pick a route and hop reads your balances, the published saver chart, and the cash fare,
-              then tells you the smarter way to book it.
+              Pick a route and hop reads your balances, the published saver chart, and the cash fare.
+              Points or cash, with the math.
             </p>
             <div className="mt-9 w-full">
               <HeroSearch

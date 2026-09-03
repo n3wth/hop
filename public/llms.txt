@@ -1,4 +1,4 @@
-# hop — your personal travel agent
+# hop — points or cash, one number
 
 > https://hop.flights
 
