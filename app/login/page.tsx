@@ -96,10 +96,10 @@ export default async function LoginPage({
             {/* welcome copy */}
             <div className="mt-7 text-center lg:mt-0 lg:text-left">
               <h1 className="font-display text-[34px] font-bold leading-[1.1] tracking-[-0.02em] text-text sm:text-[40px]">
-                Welcome to hop
+                Sign in
               </h1>
               <p className="mt-3 text-[14.5px] leading-[1.55] text-text2">
-                Sign in to save searches, track value, and book.
+                Save searches, track value, and book.
               </p>
             </div>
 
