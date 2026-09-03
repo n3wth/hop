@@ -1,29 +1,13 @@
 import { ImageResponse } from 'next/og'
-import { ogFonts, FONT_DISPLAY } from '@/lib/og'
+import { OG, Brand, ogFonts, FONT_DISPLAY, FONT_BODY } from '@/lib/og'
+import { DEFAULT_DESCRIPTION, TAGLINE } from '@/lib/seo'
 
-// n3wth family spec (kit#17): centered stack, dart + title, #08090b background.
-// 1200×630, no chips, no subtitle, no bunny.
+// hop family OG card: warm cream editorial, bunny mark, brand title + tagline.
+// 1200×630, flat editorial design — no shadows, gradients, or glows.
 
-export const alt = 'hop.flights'
+export const alt = 'hop — your personal travel agent'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
-
-// n3wth dart — canonical family mark from n3wth.com public/favicon.svg.
-function N3wthDart({ size = 80 }: { size?: number }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 32 32"
-      width={size}
-      height={size}
-    >
-      <path
-        d="M9.4 6.6 25.2 14a1.5 1.5 0 0 1-.15 2.78l-6.1 1.78a2 2 0 0 0-1.32 1.24l-2.2 6.1c-.5 1.36-2.42 1.27-2.78-.15L8.0 8.2A1.6 1.6 0 0 1 9.4 6.6Z"
-        fill="#ffffff"
-      />
-    </svg>
-  )
-}
 
 export default async function Image() {
   const fonts = await ogFonts()
@@ -35,26 +19,52 @@ export default async function Image() {
           flexDirection: 'column',
           width: '100%',
           height: '100%',
-          background: '#08090b',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 48,
+          background: OG.cream,
+          padding: 84,
+          justifyContent: 'space-between',
+          fontFamily: FONT_BODY,
         }}
       >
-        <N3wthDart size={96} />
+        <Brand size={100} />
 
-        <div
-          style={{
-            display: 'flex',
-            fontFamily: FONT_DISPLAY,
-            fontSize: 180,
-            fontWeight: 700,
-            color: '#ffffff',
-            letterSpacing: '-0.03em',
-            lineHeight: 1,
-          }}
-        >
-          hop
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div
+            style={{
+              fontFamily: FONT_DISPLAY,
+              fontSize: 160,
+              fontWeight: 700,
+              color: OG.ink,
+              letterSpacing: '-0.035em',
+              lineHeight: 0.95,
+            }}
+          >
+            hop
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              fontSize: 48,
+              fontWeight: 600,
+              color: OG.teal,
+              marginTop: 24,
+            }}
+          >
+            {TAGLINE}
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              fontSize: 32,
+              color: OG.ink2,
+              marginTop: 28,
+              maxWidth: 900,
+              lineHeight: 1.4,
+            }}
+          >
+            Compares your points to live cash fares. Tells you when points beat cash — and when to pay.
+          </div>
         </div>
       </div>
     ),

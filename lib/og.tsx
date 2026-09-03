@@ -84,3 +84,73 @@ export function ogFonts(): Promise<OgFont[]> {
 // Font families to set on cards (Satori matches by these names + weight).
 export const FONT_DISPLAY = 'Bricolage Grotesque'
 export const FONT_BODY = 'General Sans'
+
+// Reusable page-level OG card layout: bunny mark top-left, eyebrow + title +
+// description stacked at the bottom. Flat editorial on cream canvas.
+export interface PageOgCardProps {
+  eyebrow: string
+  title: string
+  description: string
+}
+
+export function PageOgCard({ eyebrow, title, description }: PageOgCardProps) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%',
+        height: '100%',
+        background: OG.cream,
+        padding: 84,
+        justifyContent: 'space-between',
+        fontFamily: FONT_BODY,
+      }}
+    >
+      <Brand size={80} />
+
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div
+          style={{
+            display: 'flex',
+            fontSize: 26,
+            fontWeight: 600,
+            color: OG.teal,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+          }}
+        >
+          {eyebrow}
+        </div>
+
+        <div
+          style={{
+            fontFamily: FONT_DISPLAY,
+            fontSize: 96,
+            fontWeight: 700,
+            color: OG.ink,
+            letterSpacing: '-0.03em',
+            lineHeight: 1,
+            marginTop: 16,
+            maxWidth: 1000,
+          }}
+        >
+          {title}
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            fontSize: 32,
+            color: OG.ink2,
+            marginTop: 28,
+            maxWidth: 900,
+            lineHeight: 1.45,
+          }}
+        >
+          {description}
+        </div>
+      </div>
+    </div>
+  )
+}
