@@ -191,8 +191,8 @@ export default async function PricingPage({
           )}
         </div>
 
-        {/* Left-aligned on the h1's axis — one editorial axis down the page. */}
-        <section className="mt-14 max-w-[560px]" aria-labelledby="faq-heading">
+        {/* FAQ — same max-width as the billing cards so sections align. */}
+        <section className="mt-14 max-w-[760px]" aria-labelledby="faq-heading">
           <h2
             id="faq-heading"
             className="font-display text-[20px] font-semibold leading-tight tracking-[-0.01em] text-text"
@@ -203,15 +203,25 @@ export default async function PricingPage({
             {faq.map((item, i) => (
               <details key={item.q} className="group py-3.5">
                 <summary
-                  className="cursor-pointer list-none text-[14.5px] font-semibold text-text marker:content-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+                  className="flex cursor-pointer list-none items-center justify-between gap-3 text-[14.5px] font-semibold text-text marker:content-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
                   id={`faq-q-${i}`}
                   aria-controls={`faq-a-${i}`}
                 >
-                  {item.q}
+                  <span>{item.q}</span>
+                  <svg
+                    aria-hidden="true"
+                    className="h-4 w-4 flex-shrink-0 text-text3 transition-transform duration-200 group-open:rotate-180"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
                 </summary>
                 <p
                   id={`faq-a-${i}`}
-                  className="mt-2 text-[13.5px] leading-[1.6] text-text2"
+                  className="mt-2 pr-7 text-[13.5px] leading-[1.6] text-text2"
                   aria-labelledby={`faq-q-${i}`}
                 >
                   {item.a}

@@ -48,7 +48,10 @@ export default async function AppShell({
         {/* Identify this browser's analytics with the session's opaque user id
             (root layout boots PostHog itself; this only adds identity). */}
         {nav.user?.id ? <PostHogBoot userId={nav.user.id} /> : null}
-        <main id="main" className={noPadX ? '' : 'px-5 pb-24 sm:px-8 lg:px-12 xl:px-16'}>
+        {/* pb-28 md:pb-8 — mobile needs 112px clearance for the fixed tab bar
+            (56px bar + 34px safe-area + breathing room); desktop hides the bar
+            so a tight 32px is enough. */}
+        <main id="main" className={noPadX ? '' : 'px-5 pb-28 sm:px-8 md:pb-8 lg:px-12 xl:px-16'}>
           {children}
         </main>
         <BottomTabBar />

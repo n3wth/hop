@@ -88,28 +88,35 @@ export default async function SignedInHome({
   // The hero showcase — the member's own reachable picks, in the exact visual
   // language of the signed-out hero (photo + engine-numbers card + ambience).
   // Every figure computed here, server-side; the rotator only cycles.
-  const heroEntries: ShowcaseEntry[] = heroPicks.flatMap((d) => {
+  // IMPORTANT: preserve stable ordering even when photos are missing — filter
+  // AFTER mapping so the first entry is deterministic (prevents hydration
+  // flash when photo availability differs between server/client).
+  const heroEntriesAll: (ShowcaseEntry | null)[] = heroPicks.map((d) => {
     const photo = photos[imageQuery(d)]
     const cppVal = computeCpp(d)
-    if (!photo || cppVal === undefined) return []
-    return [
-      {
-        code: d.code,
-        city: d.city,
-        country: d.country,
-        cpp: cppVal,
-        miles: d.typicalAwardMiles,
-        program: d.bestProgram,
-        cabin: d.cabin,
-        pointsWin: cppVal >= POINTS_THRESHOLD_CPP,
-        image: photo.url,
-        thumb: photo.thumb,
-        color: photo.color,
-        href: `/search?from=${encodeURIComponent(seed.from)}&to=${encodeURIComponent(d.code)}&adults=1`,
-        cashValue: d.typicalCashUSD,
-      },
-    ]
+    if (cppVal === undefined) return null
+    return {
+      code: d.code,
+      city: d.city,
+      country: d.country,
+      cpp: cppVal,
+      miles: d.typicalAwardMiles,
+      program: d.bestProgram,
+      cabin: d.cabin,
+      pointsWin: cppVal >= POINTS_THRESHOLD_CPP,
+      image: photo?.url ?? '',
+      thumb: photo?.thumb ?? '',
+      color: photo?.color,
+      href: `/search?from=${encodeURIComponent(seed.from)}&to=${encodeURIComponent(d.code)}&adults=1`,
+      cashValue: d.typicalCashUSD,
+    }
   })
+  // Filter out nulls but keep entries with missing photos (they'll render with
+  // the color fallback in ShowcaseRotator). This ensures entries[0] is always
+  // the best-value destination regardless of photo availability.
+  const heroEntries: ShowcaseEntry[] = heroEntriesAll.filter(
+    (e): e is ShowcaseEntry => e !== null,
+  )
 
   return (
     <div className="flex flex-col gap-14 pt-4 sm:gap-16 sm:pt-6 lg:gap-20">
