@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Bricolage_Grotesque, Fraunces, Geist_Mono } from 'next/font/google'
+import { GoogleAnalytics } from '@next/third-parties/google'
 import { Analytics } from '@vercel/analytics/next'
 import {
   SITE_URL,
@@ -166,6 +167,7 @@ export default function RootLayout({
           {children}
         </AstryxProviders>
         <Analytics />
+        <GoogleAnalytics gaId="G-4QRMSG5HXK" />
         {/* PostHog product analytics (R0.5) — init + pageviews on every page;
             AppShell adds identify() for signed-in sessions. No-ops without
             NEXT_PUBLIC_POSTHOG_KEY. */}
