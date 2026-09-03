@@ -1,47 +1,51 @@
-# hop.flights — what this product is
+# hop — your personal travel agent
 
-hop is a points-vs-cash flight optimizer. Given a route and your loyalty
-balances, it tells you whether to book with points, transfer partners, or cash.
+> https://hop.flights
 
-## What hop actually does
+hop compares your points to live cash fares using published saver charts. It calculates cents per point and tells you when points beat cash — and when to pay.
 
-1. **Live cash fares** — real-time pricing from Duffel for the searched route.
-2. **Published saver charts** — committed award tables transcribed from airline
-   program pages (Alaska, Aeroplan). These are saver-floor miles, not live
-   availability.
-3. **Your balances** — connected via AwardWallet or entered manually.
-4. **Computed verdict** — cents-per-point (cpp) calculated as
-   `(cash − taxes) × 100 / miles`. Tiers: ≥3.0 = good, ≥1.5 = ok, else weak.
-   The verdict is "use points" when cpp ≥ 2.5 and you hold the miles.
+## What hop does
 
-## What hop does NOT do
+- Searches cash fares and published award charts for the same trip
+- Computes cents per point (cpp) for every award option
+- Ranks redemptions by value and tells you which one wins
+- Tracks your real loyalty balances across programs
+- Alerts you when the math changes on routes you care about
 
-hop does not confirm saver award availability. The award side is a published
-chart rate, not a live seat search. The note "Space not confirmed" appears on
-every chart-based result.
+## The verdict engine
 
-## How hop differs from seats.aero and Roame
+hop's engine computes — it never generates. Every economic number (cpp, miles, price, verdict) comes from deterministic code, not an LLM. The engine:
 
-| | hop | seats.aero / Roame |
-|---|---|---|
-| Question answered | "Should I use points or cash?" | "Is award space available?" |
-| Cash pricing | Live (Duffel) | Manual entry |
-| Award pricing | Published saver charts | Live/cached availability search |
-| Your balances | Connected (AwardWallet/manual) | Not connected |
-| Output | Verdict + cpp ranking | Available seats list |
+1. Fans out to upstream cash and award sources concurrently
+2. Computes per-option economics (cpp = (cash − taxes) × 100 / miles)
+3. Ranks by cpp, applies user preferences, picks the winner
+4. Renders a verdict: use points, transfer first, or pay cash
 
-seats.aero and Roame are award-availability search engines — they tell you what
-seats exist. hop is a decision engine — it assumes you'll verify availability
-yourself and tells you whether that redemption is worth it given your actual
-balances and the live cash alternative.
+cpp tiers: ≥3.0¢/pt is good (green), ≥1.5¢/pt is acceptable (amber), below is weak.
 
-## MCP / agent integration
+## MCP server
 
-hop exposes its engine via MCP ("Add to Claude"). Tools: `price_trip`,
-`verdict`, `sweet_spots`, `transfer_paths`, `compare_programs`,
-`best_card_for_program`. Auth is an optional Bearer token that loads your
-balances; omit it for stateless queries with caller-supplied balances.
+hop exposes its verdict engine as an MCP server at https://hop.flights/api/mcp
+
+Tools available:
+- price_trip — price one destination with verdict
+- verdict — full points-vs-cash call for a route
+- sweet_spots — top-value award redemptions ranked by cpp
+- transfer_paths — transfer reachability for a program
+- compare_programs — loyalty programs head-to-head on a route
+- best_card_for_program — top points-earning card for a program
+
+Works without auth (pass balances directly) or with a hop token for personalized results.
+
+## Key surfaces
+
+- /search — the flight search with live verdict
+- /deals — high-value redemptions worth your miles right now
+- /sweet-spots — best uses of miles by program
+- /destinations — destination guides with points-vs-cash context
+- /ask — AI concierge grounded in your real points
+- /pricing — search is free; Pro ($49/yr) is the watchlist
 
 ## Contact
 
-https://hop.flights
+hop@n3wth.com

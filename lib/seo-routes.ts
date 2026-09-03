@@ -84,12 +84,17 @@ export const FOOTER_SECTIONS: FooterSection[] = [
       { href: '/privacy', label: 'Privacy' },
       { href: '/terms', label: 'Terms' },
       { href: '/credits', label: 'Photo credits' },
+      { href: 'mailto:hop@n3wth.com', label: 'Contact' },
     ],
   },
   {
     title: 'Family',
     links: [
-      { href: 'https://n3wth.com', label: 'n3wth' },
+      { href: 'https://r3.n3wth.com', label: 'r3' },
+      { href: 'https://kit.n3wth.com', label: 'kit' },
+      { href: 'https://skills.n3wth.com', label: 'skills' },
+      { href: 'https://ui.n3wth.com', label: 'ui' },
+      { href: 'https://n3wth.com', label: 'n3wth.com' },
       { href: 'https://garden.n3wth.com', label: 'garden' },
     ],
   },

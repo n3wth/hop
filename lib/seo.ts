@@ -116,3 +116,29 @@ export function buildJsonLd() {
     ],
   }
 }
+
+// WebPage JSON-LD for individual pages. Links back to the WebSite and
+// Organization identities established in buildJsonLd() so search engines
+// connect the page to the site graph. Pure data — no user input flows in.
+export function buildWebPageJsonLd({
+  title,
+  description,
+  path,
+}: {
+  title: string
+  description: string
+  path: string
+}) {
+  const url = absoluteUrl(path)
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    '@id': `${url}#webpage`,
+    url,
+    name: `${title} · ${SITE_NAME}`,
+    description,
+    isPartOf: { '@id': `${SITE_URL}/#website` },
+    about: { '@id': `${SITE_URL}/#organization` },
+    inLanguage: 'en-US',
+  }
+}

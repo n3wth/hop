@@ -130,13 +130,40 @@ export default function CountUp({
     }
   }, [value, durationMs, delayMs, startInView])
 
-  // The animated number is decorative for AT — a screen reader landing mid
-  // count-up would otherwise read an intermediate (or 0) figure. Hide the
-  // animating value and expose the true final value once, via sr-only.
+  // The sr-only span exists so a screen reader landing mid-animation reads the
+  // final value, not an intermediate (or 0). But when animation is complete
+  // (display === value), both spans have the same text — crawlers and markdown
+  // parsers concatenate them into "$232$232". Only render the sr-only span
+  // while animating (display !== value); once settled, the visible span alone
+  // is correct for both sighted users and AT.
+  const isAnimating = Math.round(display) !== value
+  const rendered = render(display, format, decimals, prefix, suffix)
+
   return (
     <span ref={rootRef} className={className} style={style}>
-      <span aria-hidden="true">{render(display, format, decimals, prefix, suffix)}</span>
-      <span className="sr-only">{render(value, format, decimals, prefix, suffix)}</span>
+      {isAnimating ? (
+        <>
+          <span aria-hidden="true">{rendered}</span>
+          <span
+            className="sr-only"
+            style={{
+              position: 'absolute',
+              width: 1,
+              height: 1,
+              padding: 0,
+              margin: -1,
+              overflow: 'hidden',
+              clip: 'rect(0,0,0,0)',
+              whiteSpace: 'nowrap',
+              borderWidth: 0,
+            }}
+          >
+            {render(value, format, decimals, prefix, suffix)}
+          </span>
+        </>
+      ) : (
+        rendered
+      )}
     </span>
   )
 }
