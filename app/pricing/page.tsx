@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { getUserId } from '@/lib/session'
 import { getSessionNavUser } from '@/lib/nav-user'
 import { getUserTier, ALERT_LIMITS, MCP_DAILY_LIMITS } from '@/lib/subscription'
@@ -9,7 +10,7 @@ import Card from '@/components/ui/Card'
 import Eyebrow from '@/components/ui/Eyebrow'
 import AppShell from '@/components/AppShell'
 import SiteFooter from '@/components/SiteFooter'
-import { pageMeta, absoluteUrl } from '@/lib/seo'
+import { pageMeta, absoluteUrl, buildWebPageJsonLd, SITE_URL } from '@/lib/seo'
 
 // Billing is flag-gated (isBillingEnabled()) — the page body already branches on it
 // (BillingSection vs. the "not live yet" note). Metadata must branch the same way:
@@ -62,11 +63,14 @@ function pricingFaq(billingEnabled: boolean): { q: string; a: string }[] {
   ]
 }
 
-// FAQPage JSON-LD — same posture as lib/seo.ts#buildJsonLd and
+// FAQPage + WebPage JSON-LD — same posture as lib/seo.ts#buildJsonLd and
 // app/guides/point-value/page.tsx#buildPointValueJsonLd: no user input flows
 // in, so JSON.stringify alone keeps it XSS-safe.
 function buildPricingJsonLd(billingEnabled: boolean) {
   const url = absoluteUrl('/pricing')
+  const description = billingEnabled
+    ? `Search and the verdict stay free. Pro is $${PRO_PRICE_YEARLY_USD}/yr for unlimited route alerts.`
+    : "hop's verdict is free, always. A paid plan isn't live yet."
   const faq = {
     '@type': 'FAQPage',
     '@id': `${url}#faq`,
@@ -76,7 +80,17 @@ function buildPricingJsonLd(billingEnabled: boolean) {
       acceptedAnswer: { '@type': 'Answer', text: a },
     })),
   }
-  return { '@context': 'https://schema.org', '@graph': [faq] }
+  const webPage = {
+    '@type': 'WebPage',
+    '@id': `${url}#webpage`,
+    url,
+    name: 'Pricing · hop',
+    description,
+    isPartOf: { '@id': `${SITE_URL}/#website` },
+    about: { '@id': `${SITE_URL}/#organization` },
+    inLanguage: 'en-US',
+  }
+  return { '@context': 'https://schema.org', '@graph': [webPage, faq] }
 }
 
 // Public pricing surface (business plan §7 B1). Signed-out visitors get the
@@ -141,21 +155,53 @@ export default async function PricingPage({
         </div>
 
         {/* Left-aligned on the h1's axis — one editorial axis down the page. */}
-        <section className="mt-14 max-w-[560px]">
-          <h2 className="font-display text-[20px] font-semibold leading-tight tracking-[-0.01em] text-text">
+        <section className="mt-14 max-w-[560px]" aria-labelledby="faq-heading">
+          <h2
+            id="faq-heading"
+            className="font-display text-[20px] font-semibold leading-tight tracking-[-0.01em] text-text"
+          >
             Questions
           </h2>
           <div className="mt-4 divide-y divide-hair border-y border-border">
-            {faq.map((item) => (
+            {faq.map((item, i) => (
               <details key={item.q} className="group py-3.5">
-                <summary className="cursor-pointer list-none text-[14.5px] font-semibold text-text marker:content-none">
+                <summary
+                  className="cursor-pointer list-none text-[14.5px] font-semibold text-text marker:content-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+                  id={`faq-q-${i}`}
+                  aria-controls={`faq-a-${i}`}
+                >
                   {item.q}
                 </summary>
-                <p className="mt-2 text-[13.5px] leading-[1.6] text-text2">{item.a}</p>
+                <p
+                  id={`faq-a-${i}`}
+                  className="mt-2 text-[13.5px] leading-[1.6] text-text2"
+                  aria-labelledby={`faq-q-${i}`}
+                >
+                  {item.a}
+                </p>
               </details>
             ))}
           </div>
         </section>
+
+        {/* Contact link for questions not covered by the FAQ */}
+        <p className="mt-8 max-w-[560px] text-[14px] text-text3">
+          Still have questions?{' '}
+          <Link
+            href="/support"
+            className="font-medium text-brand underline decoration-border underline-offset-2 hover:text-brand-deep hover:decoration-brand-deep"
+          >
+            Visit support
+          </Link>{' '}
+          or email{' '}
+          <a
+            href="mailto:hop@n3wth.com"
+            className="font-medium text-brand underline decoration-border underline-offset-2 hover:text-brand-deep hover:decoration-brand-deep"
+          >
+            hop@n3wth.com
+          </a>
+          .
+        </p>
 
         <SiteFooter />
       </div>

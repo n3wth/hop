@@ -39,6 +39,7 @@ export default async function AppShell({
       <div className="relative">
         <a
           href="#main"
+          data-nosnippet
           className="sr-only rounded-[12px] bg-brand px-4 py-2 text-[14px] font-semibold text-white focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[80]"
         >
           Skip to content
