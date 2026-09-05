@@ -23,6 +23,7 @@ import {
   type EnvKey,
 } from '@/lib/env'
 import { MIN_SAMPLES_TO_TRUST } from '@/lib/valuations-live'
+import { MAX_CPP, MIN_CPP } from '@/lib/valuations'
 import { renderFinding } from '@/lib/improvement-templates'
 
 // ── Thresholds — named, exported, never guessed ─────────────────────────────
@@ -197,6 +198,13 @@ export type Detection =
         sampleGate: number
         driftShare: number
         thresholdShare: number
+        /**
+         * Set when the stored override sits exactly on a clamp band edge
+         * (lib/valuations.ts MIN_CPP/MAX_CPP). The value is then a saturated
+         * clamp artifact, not a measurement, so the finding reports a
+         * data-quality problem instead of a precise drift percentage.
+         */
+        saturatedAt?: 'floor' | 'ceiling'
       }
     }
   | {
@@ -426,21 +434,23 @@ function checkValuationDrift(valuations: HealthCheckInputs['valuations']): Detec
     const baseline = valuations.baseline[o.programId]
     if (!Number.isFinite(baseline) || baseline === undefined || baseline <= 0) continue
     const driftShare = Math.abs(o.cpp - baseline) / baseline
-    if (driftShare > VALUATION_DRIFT_THRESHOLD) {
-      findings.push(
-        toFinding({
-          kind: 'valuation-drift',
-          subject: o.programId,
-          data: {
-            observedCpp: o.cpp,
-            baselineCpp: baseline,
-            sampleSize: o.sampleSize,
-            sampleGate: MIN_SAMPLES_TO_TRUST,
-            driftShare,
-            thresholdShare: VALUATION_DRIFT_THRESHOLD,
-          },
-        }),
-      )
+    // A stored override pinned to a clamp band edge is a saturated clamp
+    // artifact, not a measurement — its true trimmed mean was censored, so the
+    // drift percentage would be a fiction. Report it as a data-quality problem
+    // instead, and never clear it (a saturated value is never verified healthy).
+    const saturatedAt = o.cpp >= MAX_CPP ? 'ceiling' : o.cpp <= MIN_CPP ? 'floor' : undefined
+    const data = {
+      observedCpp: o.cpp,
+      baselineCpp: baseline,
+      sampleSize: o.sampleSize,
+      sampleGate: MIN_SAMPLES_TO_TRUST,
+      driftShare,
+      thresholdShare: VALUATION_DRIFT_THRESHOLD,
+    }
+    if (saturatedAt) {
+      findings.push(toFinding({ kind: 'valuation-drift', subject: o.programId, data: { ...data, saturatedAt } }))
+    } else if (driftShare > VALUATION_DRIFT_THRESHOLD) {
+      findings.push(toFinding({ kind: 'valuation-drift', subject: o.programId, data }))
     } else {
       cleared.push(o.programId)
     }

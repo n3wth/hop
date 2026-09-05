@@ -139,7 +139,36 @@ export function renderFinding(d: Detection): { title: string; body: string } {
       }
     }
     case 'valuation-drift': {
-      const { observedCpp, baselineCpp, sampleSize, sampleGate, driftShare, thresholdShare } = d.data
+      const { observedCpp, baselineCpp, sampleSize, sampleGate, driftShare, thresholdShare, saturatedAt } =
+        d.data
+      // A saturated override is a data-quality problem, not baseline drift: the
+      // stored value is pinned to a clamp band edge, so its true trimmed mean
+      // was censored and any drift percentage would be a fiction. Report the
+      // saturation instead of a precise number no measurement supports.
+      if (saturatedAt) {
+        const edge = saturatedAt === 'ceiling' ? 'MAX_CPP' : 'MIN_CPP'
+        return {
+          title: `${d.subject} live cpp saturated at ${edge} (${fmt1(observedCpp)}) on ${sampleSize} samples`,
+          body: joinBody([
+            [
+              'What was observed',
+              `- The stored override cpp for ${d.subject} is pinned to the clamp band edge (${edge} = ${fmt1(observedCpp)}) on ${sampleSize} first-party samples (trust gate: ${sampleGate}, MIN_SAMPLES_TO_TRUST). This is a saturated clamp artifact, not a measurement — the true trimmed mean was at or past ${edge} and got censored, so the real value is unknown and no drift percentage is reported.`,
+              `- lib/valuations-live.ts distrusts a saturated override, so the concierge falls back to the curated baseline (${fmt1(baselineCpp)}) rather than grounding on the artifact.`,
+            ].join('\n'),
+            [
+              'Where to look',
+              '- lib/valuation-telemetry.ts (isValidSample — bounds observations to the sane cpp band at the source)',
+              '- cloudflare/valuations-worker/src/index.ts (trimmed-mean + clamp; the clamp saturates when inputs are out of band)',
+              '- lib/valuations-live.ts (distrusts a band-edge override)',
+            ].join('\n'),
+            [
+              'Acceptance',
+              '- The stored trimmed mean lands strictly inside MIN_CPP..MAX_CPP once out-of-band inputs are rejected; the finding auto-resolves.',
+            ].join('\n'),
+            FOOTER,
+          ]),
+        }
+      }
       return {
         title: `${d.subject} live cpp ${fmt1(observedCpp)} vs baseline ${fmt1(baselineCpp)} (${sampleSize} samples)`,
         body: joinBody([

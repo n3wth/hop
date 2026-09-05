@@ -10,6 +10,7 @@
 // every failure (network, timeout, non-2xx) is swallowed.
 
 import { env, isValuationSyncEnabled } from '@/lib/env'
+import { MAX_CPP, MIN_CPP } from '@/lib/valuations'
 
 const TIMEOUT_MS = 3_000
 const MAX_SAMPLES = 50
@@ -21,13 +22,20 @@ export interface CppObservation {
   miles?: number
 }
 
+// Accept only samples inside the sane cpp band (lib/valuations.ts MIN_CPP..MAX_CPP).
+// An out-of-band per-option cpp is implausible for a real loyalty currency, so it
+// must be rejected here, at the source. The Worker only CLAMPS its trimmed mean to
+// the band, which hides an implausible input instead of dropping it — and a 10%
+// trim cannot rescue a pool where most values are out of band, so the stored
+// snapshot saturates at MIN_CPP/MAX_CPP: a clamp artifact, not a measurement.
 function isValidSample(s: CppObservation): boolean {
   return (
     typeof s?.programId === 'string' &&
     s.programId.trim() !== '' &&
     typeof s.cpp === 'number' &&
     Number.isFinite(s.cpp) &&
-    s.cpp > 0
+    s.cpp >= MIN_CPP &&
+    s.cpp <= MAX_CPP
   )
 }
 
