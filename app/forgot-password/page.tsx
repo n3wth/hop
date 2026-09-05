@@ -25,7 +25,7 @@ export default function ForgotPasswordPage() {
             Know which one wins before you book.
           </h2>
         </div>
-        <p className="relative z-10 text-[12.5px] text-hero-label">Points + cash. Smarter travel.</p>
+        <p className="relative z-10 text-[12.5px] text-hero-label">Points vs. cash, valued in ¢/pt.</p>
         <Logo size={340} decorative carve="var(--color-brand-ink)" className="absolute -bottom-16 -right-14 text-brand-muted/40" />
       </aside>
 

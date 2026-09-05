@@ -286,11 +286,10 @@ async function scoreRoute(
 
   for (const result of results) {
     for (const o of result.allAwards ?? []) {
-      // seats.aero's cabin fallback (lib/seatsaero.ts#pickCabin) can return an
-      // Economy/Premium-Economy row even when Business was requested, if
-      // Business space wasn't available on that record. Score only rows
-      // actually labeled Business — never infer the requested cabin was what
-      // was served.
+      // Score only live Business rows. Chart saver floors are not observed
+      // space — treating them as "Observed" cpp would write chart-backed
+      // drafts into the deals review feed.
+      if (o.availability === 'chart') continue
       if (o.cabin !== CANDIDATE_CABIN) continue
       if (typeof o.cpp !== 'number' || !Number.isFinite(o.cpp) || o.cpp <= 0) continue
       if (typeof o.miles !== 'number' || !Number.isFinite(o.miles) || o.miles <= 0) continue
@@ -401,8 +400,15 @@ async function persistCandidate(c: SweetSpotCandidate): Promise<SweetSpotDraft |
 // `now`) so a caller/test can inject an already-past deadline deterministically.
 export async function runSweetSpotCandidatePipeline(
   now: Date = new Date(),
-  opts?: { deadlineAt?: number },
+  opts?: { deadlineAt?: number; allowMining?: boolean },
 ): Promise<PipelineResult> {
+  // Stage A has no live award feed. A leftover Production Partner API key
+  // is not a source — searchAwards is a hard stub. `allowMining` exists so
+  // orchestration tests can exercise the loop; cron/admin never pass it.
+  if (!opts?.allowMining) {
+    return { created: 0, found: 0, drafts: [] }
+  }
+
   const deadlineAt = opts?.deadlineAt ?? now.getTime() + MINING_TIME_BUDGET_MS
   const runDestinations = destinationsForRun(now)
 

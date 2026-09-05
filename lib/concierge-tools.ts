@@ -5,10 +5,10 @@
 //     destinationByCode + effectiveBalanceFor) — fast, no live lookup, good for
 //     "where should I go" ideation across hop's ~30 inspiration destinations.
 //   - search_flights runs verdictSummary — the SAME assembleSearch call /search
-//     makes (Duffel cash + seats.aero awards, live, for the exact route/dates
-//     asked) — for a real, bookable verdict on ANY route, not just the curated
-//     list. This is what makes the LLM concierge and the plain /search page
-//     agree: one engine, two front doors.
+//     makes (Duffel cash + published saver-chart miles, space not confirmed,
+//     for the exact route/dates asked) — for a real verdict on ANY route, not
+//     just the curated list. This is what makes the LLM concierge and the
+//     plain /search page agree: one engine, two front doors.
 // Either way the model NEVER invents miles, CPP, or affordability — it reads
 // them from a tool call.
 //
@@ -340,7 +340,7 @@ export function buildConciergeTools(balances: PriceTripBalance[], userId?: strin
 
     search_flights: tool({
       description:
-        "Run hop's REAL, LIVE points-vs-cash verdict for a specific route and date — the SAME engine the /search page uses (live Duffel cash fares + seats.aero award space). Use this whenever the user gives (or you know) a specific date, or asks about ANY airport — including ones outside hop's curated destinations list (price_trip only covers those ~30). ALWAYS call this before stating a live miles/cash/CPP figure for a specific date — never invent them. Degraded sections (cash or awards unavailable) are reported honestly — say so, never fill the gap with an invented number.",
+        "Run hop's REAL points-vs-cash verdict for a specific route and date — the SAME engine the /search page uses (live Duffel cash fares + published saver-chart miles; space not confirmed). Use this whenever the user gives (or you know) a specific date, or asks about ANY airport — including ones outside hop's curated destinations list (price_trip only covers those ~30). ALWAYS call this before stating a miles/cash/CPP figure for a specific date — never invent them. Chart miles are published saver floors, not open space — say so. Degraded sections (cash or awards unavailable) are reported honestly — say so, never fill the gap with an invented number.",
       inputSchema: searchFlightsSchema,
       execute: async ({ from, to, depart, return: ret, adults, children, infants }) => {
         // The model resolves relative/year-less dates ("August 12-19") and can

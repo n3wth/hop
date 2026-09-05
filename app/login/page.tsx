@@ -54,13 +54,13 @@ export default async function LoginPage({
             Know which one wins before you book.
           </h2>
           <p className="mt-5 max-w-[36ch] text-[15px] leading-[1.6] text-hero-body">
-            hop reads award space and cash for the same trip and tells you the
-            verdict — with the math to back it.
+            hop reads published saver charts and cash for the same trip and tells
+            you the verdict — with the math to back it.
           </p>
         </div>
 
         <p className="relative z-10 text-[12.5px] text-hero-label">
-          Points + cash. Smarter travel.
+          Points vs. cash, valued in ¢/pt.
         </p>
 
         {/* the warm moment — oversized mark bleeding off the corner */}
@@ -96,10 +96,10 @@ export default async function LoginPage({
             {/* welcome copy */}
             <div className="mt-7 text-center lg:mt-0 lg:text-left">
               <h1 className="font-display text-[34px] font-bold leading-[1.1] tracking-[-0.02em] text-text sm:text-[40px]">
-                Welcome to hop
+                Sign in
               </h1>
               <p className="mt-3 text-[14.5px] leading-[1.55] text-text2">
-                Sign in to save searches, track value, and book.
+                Save searches, track value, and book.
               </p>
             </div>
 

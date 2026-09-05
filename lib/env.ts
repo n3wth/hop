@@ -74,13 +74,17 @@ export type EnvKey =
   // captureServerEvent is a no-op.
   | 'POSTHOG_KEY'
   | 'NEXT_PUBLIC_POSTHOG_KEY'
-  // PostHog's Vercel integration aliases. LLM tracing accepts these for
-  // compatibility, but still requires HOP_ENABLE_LLM_TRACING explicitly.
+  // Vercel-marketplace-integration-provided fallback token (auto-injected when
+  // the PostHog integration is installed from the Vercel Marketplace). Same
+  // fallback instrumentation.ts already applies for LLM tracing — kept in sync
+  // here so server + client capture don't silently no-op in that setup.
   | 'NEXT_PUBLIC_VERCEL_HOP_POSTHOG_PROJECT_TOKEN'
   // Optional ingestion-host override (no trailing slash); defaults to the US
   // cloud host in lib/posthog-server.ts when absent.
   | 'POSTHOG_HOST'
   | 'NEXT_PUBLIC_POSTHOG_HOST'
+  // Vercel-marketplace-integration-provided fallback host — same pairing as
+  // NEXT_PUBLIC_VERCEL_HOP_POSTHOG_PROJECT_TOKEN above.
   | 'NEXT_PUBLIC_VERCEL_HOP_POSTHOG_HOST'
   // LLM tracing is privacy-sensitive and disabled unless this flag AND a
   // configured PostHog project key are present.
@@ -176,8 +180,13 @@ export const env = {
   stripePriceIdProYearly: () => read('STRIPE_PRICE_ID_PRO_YEARLY'),
   linearApiKey: () => read('LINEAR_API_KEY'),
   linearTeamId: () => read('LINEAR_TEAM_ID'),
-  posthogKey: () => firstEnv('POSTHOG_KEY', 'NEXT_PUBLIC_POSTHOG_KEY'),
-  posthogHost: () => firstEnv('POSTHOG_HOST', 'NEXT_PUBLIC_POSTHOG_HOST'),
+  // Product-event capture (client + server) also falls back to the Vercel
+  // marketplace token: without it, events silently no-op in any deployment
+  // where that integration is the only source of the key.
+  posthogKey: () =>
+    firstEnv('POSTHOG_KEY', 'NEXT_PUBLIC_POSTHOG_KEY', 'NEXT_PUBLIC_VERCEL_HOP_POSTHOG_PROJECT_TOKEN'),
+  posthogHost: () =>
+    firstEnv('POSTHOG_HOST', 'NEXT_PUBLIC_POSTHOG_HOST', 'NEXT_PUBLIC_VERCEL_HOP_POSTHOG_HOST'),
   llmTracingPosthogKey: () =>
     firstEnv(
       'POSTHOG_KEY',
@@ -207,11 +216,15 @@ function firstEnv(...keys: EnvKey[]): string {
   throw new Error(`Missing required environment variable: ${keys[0]}`)
 }
 
-// Server-side PostHog capture is available when EITHER token is present
+// Server-side PostHog capture is available when ANY token is present
 // (lib/posthog-server.ts no-ops otherwise). Key presence is the whole gate —
 // capture is fire-and-forget observability, not a product seam.
 export function isPostHogEnabled(): boolean {
-  return hasEnv('POSTHOG_KEY') || hasEnv('NEXT_PUBLIC_POSTHOG_KEY')
+  return (
+    hasEnv('POSTHOG_KEY') ||
+    hasEnv('NEXT_PUBLIC_POSTHOG_KEY') ||
+    hasEnv('NEXT_PUBLIC_VERCEL_HOP_POSTHOG_PROJECT_TOKEN')
+  )
 }
 
 // LLM tracing is a privacy-sensitive double lock: a project key alone never
@@ -525,4 +538,12 @@ export function isContentCandidatesEnabled(): boolean {
 export function isShareReceiptsEnabled(): boolean {
   const flag = process.env.HOP_ENABLE_SHARE_RECEIPTS ?? ''
   return /^(1|true|yes)$/i.test(flag.trim())
+}
+
+// Partner API is off the paid path (ADR 0014). Flag defaults off. Even when
+// a leftover key is present, lib/seatsaero.ts#searchAwards is a hard stub.
+export function isSeatsAeroEnabled(): boolean {
+  const flag = process.env.HOP_ENABLE_SEATSAERO ?? ''
+  const on = /^(1|true|yes)$/i.test(flag.trim())
+  return on && hasEnv('SEATS_AERO_API_KEY')
 }

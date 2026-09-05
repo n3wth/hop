@@ -22,7 +22,7 @@ const USERS_SEE: Record<string, string> = {
 
 const SOURCE_CLIENTS: Record<string, string> = {
   cash: 'lib/duffel.ts (cash fares)',
-  awards: 'lib/seatsaero.ts (award space)',
+  awards: 'lib/awards.ts (published saver charts)',
   balances: 'lib/awardwallet.ts + lib/accounts.ts (balances)',
 }
 

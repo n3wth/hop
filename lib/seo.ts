@@ -20,28 +20,22 @@ export function absoluteUrl(path = '/'): string {
 
 export const SITE_NAME = 'hop'
 
-// Strong, on-brand default. Confident, terse — your personal travel agent.
+// Strong, on-brand default. Confident, terse — the verdict engine.
 // No emoji, no marketing slop.
-export const DEFAULT_TITLE = 'hop — your personal travel agent'
+export const DEFAULT_TITLE = 'hop — points or cash, one number'
 
-// ~150 chars. What hop actually does, in plain language.
+// ~150 chars. What hop actually does, in plain language. Awards are PUBLISHED
+// SAVER CHARTS, not live availability — do not claim otherwise (copy-spec.md).
 export const DEFAULT_DESCRIPTION =
-  'Your personal travel agent that knows your points, reads real award availability and cash fares, and gives you the verdict on what actually wins.'
+  'Compares your points to live cash fares using published saver charts. hop calculates ¢/pt and tells you when points beat cash — and when to pay.'
 
 // One line for the social card.
-export const TAGLINE = 'Your personal travel agent'
+export const TAGLINE = 'Points or cash, one number'
 
 // Brand palette.
 export const TEAL = '#0d6e6e'
 export const CREAM = '#f3f1ec'
 export const INK = '#19545d'
-
-export const SITE_SOCIAL = {
-  x: 'https://x.com/hopflights',
-  instagram: 'https://instagram.com/hopflights',
-  threads: 'https://threads.net/@hopflights',
-  tiktok: 'https://tiktok.com/@hopflights',
-}
 
 
 // Per-page metadata helper. Next 16 merges metadata SHALLOWLY across
@@ -120,5 +114,31 @@ export function buildJsonLd() {
         },
       },
     ],
+  }
+}
+
+// WebPage JSON-LD for individual pages. Links back to the WebSite and
+// Organization identities established in buildJsonLd() so search engines
+// connect the page to the site graph. Pure data — no user input flows in.
+export function buildWebPageJsonLd({
+  title,
+  description,
+  path,
+}: {
+  title: string
+  description: string
+  path: string
+}) {
+  const url = absoluteUrl(path)
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    '@id': `${url}#webpage`,
+    url,
+    name: `${title} · ${SITE_NAME}`,
+    description,
+    isPartOf: { '@id': `${SITE_URL}/#website` },
+    about: { '@id': `${SITE_URL}/#organization` },
+    inLanguage: 'en-US',
   }
 }

@@ -25,6 +25,24 @@ must match the economics — believable figures for the labeled route and cabin,
 - Subline (plain, factual): `9,000 miles + $22 taxes at 2.6¢ per point — the best redemption
   across your 6 programs. Cash is $254 round trip. You have the miles.`
 - Primary CTA: `Book with Alaska miles`
+
+## Verdict hero — chart (`availability: 'chart'`)
+
+Same SFO→LAX math. The distinctive fact is **space not confirmed**, not "hop isn't
+holding a seat." Saver-floor miles stay the table number; uncertainty lives in the
+caveat. Do not use `estimated` / `about` / `up to` on the miles figure.
+
+- Kicker: `CHART · IF SAVER IS OPEN`
+- Headline: `Alaska chart: 2.6¢/pt.`
+- Hook: `Save $232 vs cash if saver is open.`
+- Extra: `Published saver rate. Space not confirmed.`
+- Primary CTA: `Check Alaska for space`
+- Empty awards: `No published saver chart for this route.`
+- Alert subject: never `Award space opened` / `Book now` on a chart row. Use
+  `Cash vs chart: …` or do not send.
+
+`You have the miles` (balance fact) may stay. `Use your Alaska miles` (spend
+instruction) may not, on chart.
 - Secondary: `See the math` (links to CPP breakdown — NOT "Why this wins →")
 - Stat row: `You pay 9,000 miles + $22` · `Value 2.6¢/pt` · `Cash price $254` · `You save $232`
 - Confidence chip: drop "hop is confident on this one." Replace with nothing, or a quiet
@@ -62,6 +80,25 @@ must match the economics — believable figures for the labeled route and cabin,
 - Quick-start subtext: `Amex, Chase, Citi, Capital One, and Bilt — hop shows what your points are
   worth once you fill in real balances.` (plain, no exclamation points, no "just add your cards!"
   flattery)
+
+## Public surfaces — Stage A awards (④b)
+
+Do not claim live award space on marketing, metadata, skeleton, login, /ask,
+or concierge tool prompts. Awards are published saver charts. Use
+`published saver chart` / `published saver rate`. Caveat: `Space not confirmed.`
+cpp on a chart row is live (Duffel cash vs those published miles). Do not
+call that "live award space."
+Human-fulfilled concierge ("find the award space and book it") may keep
+"award space" — a person is looking.
+
+## Pricing (`/pricing`)
+- Signed-out H1: `{n} watches are free.` (`n` = `ALERT_LIMITS.free`, never hardcoded)
+- Subline: search + verdict stay free; Pro is the watchlist; state `$49/yr` from `PRO_PRICE_YEARLY_USD`
+- Do not lead with MCP quota. Humans buy alerts. MCP is the last bullet, labeled `Agent quota`
+- Signed-out Pro CTA: `Get Pro — $49/yr` (price in the button). Not `Sign up to upgrade`
+- FAQ first extra after "is it free": `Why pay if search is free?` Answer: more than 3 watches; one missed drop costs more than a year
+- Keep grandfather line. No monthly CTA until `lib/pricing.ts` says otherwise
+- No "value on the table" / "war chest" / paywall-as-virtue copy
 
 ## Footer / utility (keep it a real tool)
 - `hop compares cash, miles, and transfer partners in one search.` (one plain line, no "tells you

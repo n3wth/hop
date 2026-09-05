@@ -164,8 +164,8 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           </div>
 
           <p className="mt-7 border-t border-border pt-5 text-[12.5px] leading-[1.5] text-text3">
-            Priced {pricedOn(snap.asOf)} — computed from live cash fares and award space. Fares
-            move.
+            Priced {pricedOn(snap.asOf)} — computed from live cash fares and published saver
+            charts. Space not confirmed. Fares move.
           </p>
 
           <Button href={runItYourselfUrl(snap)} className="mt-6">

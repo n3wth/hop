@@ -82,7 +82,7 @@ export default async function TermsPage() {
         <h2>4. Third-party services</h2>
         <p>
           The Service relies on third parties, including (among others) Duffel (flight search and
-          cash booking), airlines and their loyalty programs, seats.aero (award availability),
+          cash booking), airlines and their loyalty programs (published saver charts),
           AwardWallet (optional loyalty-balance sync), Google (sign-in), Neon (data storage),
           Vercel and Anthropic (AI-assisted balance extraction), Cloudflare (sync-address email
           relay), and Unsplash (destination imagery). Your use of those services is also subject to their
@@ -164,7 +164,7 @@ export default async function TermsPage() {
         <h2>13. Contact</h2>
         <p>
           Questions about these terms? Email{' '}
-          <a href="mailto:support@hop.flights">support@hop.flights</a>.
+          <a href="mailto:hop@n3wth.com">hop@n3wth.com</a>.
         </p>
       </LegalShell>
       <div className="mx-auto max-w-[var(--container-shell)]">

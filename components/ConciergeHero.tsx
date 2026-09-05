@@ -14,7 +14,7 @@
 // photo as imagery, a single dark→ink scrim for legibility, solid white input,
 // hover = color only (no lift), motion is reduced-motion-safe via .hop-rise.
 
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, useMemo, type FormEvent } from 'react'
 import Icon from './Icon'
 import { type ConciergeHeroCopy } from '@/lib/concierge-hero'
 
@@ -71,9 +71,6 @@ export default function ConciergeHero({
   headingTag: HeadingTag = 'h1',
   lazyBackdrop = false,
 }: ConciergeHeroProps) {
-  const tiles = photos.slice(0, 6)
-  const backdrop = tiles[0]
-
   // autoFocus is gated to pointer:fine + wide viewports: on a phone, focusing the
   // input on mount pops the keyboard and buries the hero. We focus imperatively
   // after mount only when the device clearly has a hardware pointer and room.
@@ -85,96 +82,59 @@ export default function ConciergeHero({
     if (ok) inputRef.current?.focus()
   }, [autoFocus])
 
-  // Backdrop rotation — when the caller passes several photos, the scrim
-  // photo slowly cross-fades through them so the panel feels alive. Reduced
-  // motion → static first photo (the effect never starts).
-  const [backdropIdx, setBackdropIdx] = useState(0)
-  const rotating = tiles.length > 1
-  useEffect(() => {
-    if (!rotating) return
-    if (typeof window === 'undefined' || !window.matchMedia) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const t = window.setInterval(() => setBackdropIdx((v) => v + 1), 7600)
-    return () => window.clearInterval(t)
-  }, [rotating])
+  // Engaging, dynamic typing loop for sample search queries
+  const PLACEHOLDERS = useMemo(() => [
+    'somewhere warm, ~40k points...',
+    '7 nights in Tokyo on United miles...',
+    'business class to Europe under 80k points...',
+    'direct flight to London next month...',
+    'beach trip for a long weekend...'
+  ], [])
 
-  // Attribution (Unsplash API terms) for whichever backdrop photo is actually
-  // on screen right now — the rotating tile when cross-fading, else the
-  // single static backdrop.
-  const activeCredit = rotating ? tiles[backdropIdx % tiles.length]?.credit : backdrop?.credit
+  const [placeholderIndex, setPlaceholderIndex] = useState(0)
+  const [currentPlaceholder, setCurrentPlaceholder] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout
+    const fullText = PLACEHOLDERS[placeholderIndex]
+    
+    // Typing speed: 40ms per char. Erasing speed: 20ms. Delay between words: 3000ms.
+    if (isDeleting) {
+      timer = setTimeout(() => {
+        setCurrentPlaceholder(p => p.slice(0, -1))
+      }, 20)
+    } else {
+      timer = setTimeout(() => {
+        setCurrentPlaceholder(fullText.slice(0, currentPlaceholder.length + 1))
+      }, 40)
+    }
+
+    if (!isDeleting && currentPlaceholder === fullText) {
+      timer = setTimeout(() => setIsDeleting(true), 3000)
+    } else if (isDeleting && currentPlaceholder === '') {
+      // schedule (not inline) so the effect never sets state synchronously
+      timer = setTimeout(() => {
+        setIsDeleting(false)
+        setPlaceholderIndex((prev) => (prev + 1) % PLACEHOLDERS.length)
+      }, 0)
+    }
+
+    return () => clearTimeout(timer)
+  }, [currentPlaceholder, isDeleting, placeholderIndex, PLACEHOLDERS])
 
   return (
     <div
       className="relative flex flex-col overflow-hidden rounded-[var(--radius-hero)]"
       style={{ background: 'var(--color-brand-ink)' }}
     >
-      {/* full-bleed photo as imagery (allowed), under a single legibility scrim.
-          Several photos → a slow cross-fade through them (opacity only; the
-          scrim above holds legibility constant throughout). The active tile
-          eager-loads unless lazyBackdrop says this hero is below the fold. */}
-      {rotating ? (
-        <div aria-hidden className="pointer-events-none absolute inset-0 hop-rotator">
-          {tiles.map((t, i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={t.thumb + i}
-              src={t.thumb}
-              alt=""
-              loading={i === 0 && !lazyBackdrop ? undefined : 'lazy'}
-              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1600ms] ${
-                i === backdropIdx % tiles.length ? 'opacity-35' : 'opacity-0'
-              }`}
-            />
-          ))}
-        </div>
-      ) : backdrop ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={backdrop.thumb}
-          alt=""
-          aria-hidden
-          loading={lazyBackdrop ? 'lazy' : undefined}
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35"
-        />
-      ) : null}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          // Stronger top stop so white eyebrow/heading clear WCAG AA even over a
-          // bright backdrop photo (the lightest tiles previously thinned the top).
-          background:
-            'linear-gradient(to bottom, rgba(7,62,62,0.80) 0%, rgba(7,62,62,0.90) 55%, rgba(7,62,62,0.97) 100%)',
-        }}
-      />
-
-      {/* Unsplash attribution (API terms) for the backdrop currently on
-          screen — a small solid chip, not a shadow/gradient surface. */}
-      {activeCredit ? (
-        <div
-          className="pointer-events-auto absolute right-3 top-3 z-10 max-w-[70%] truncate rounded-full px-2.5 py-1 text-[10px] font-medium text-white/70"
-          style={{ background: 'rgba(7,26,26,0.5)' }}
-        >
-          Photo by{' '}
-          <a
-            href={`${activeCredit.link}?utm_source=hop&utm_medium=referral`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline decoration-white/40 underline-offset-2 hover:text-white"
-          >
-            {activeCredit.name}
-          </a>{' '}
-          on{' '}
-          <a
-            href={activeCredit.sourceLink ?? 'https://unsplash.com/?utm_source=hop&utm_medium=referral'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline decoration-white/40 underline-offset-2 hover:text-white"
-          >
-            {activeCredit.source ?? 'Unsplash'}
-          </a>
-        </div>
-      ) : null}
+      {/* Structural architectural minimalist grid lines */}
+      <div className="pointer-events-none absolute inset-0 flex justify-between px-6 sm:px-10 md:px-16 lg:px-24">
+        <div className="w-px h-full bg-white/[0.03]" />
+        <div className="w-px h-full bg-white/[0.02] hidden md:block" />
+        <div className="w-px h-full bg-white/[0.02] hidden md:block" />
+        <div className="w-px h-full bg-white/[0.03]" />
+      </div>
 
       {/* Content: centered in the available space. */}
       <div className="relative flex flex-1 flex-col items-center px-5 py-16 text-center sm:px-10 sm:py-24">
@@ -212,7 +172,7 @@ export default function ConciergeHero({
               type="text"
               value={value}
               onChange={(e) => onValueChange(e.target.value)}
-              placeholder={copy.placeholder}
+              placeholder={currentPlaceholder || copy.placeholder}
               aria-label="Tell hop where you want to go"
               enterKeyHint="go"
               className="no-inner-ring min-w-0 flex-1 bg-transparent py-1.5 text-[16px] font-medium text-text outline-none placeholder:font-normal placeholder:text-text3"

@@ -438,7 +438,7 @@ export const destinations: Destination[] = [
     country: 'Qatar',
     countryCode: 'qa',
     region: 'Middle East',
-    vibe: 'Qsuite business, the gold standard',
+    vibe: 'Qsuite business.',
     tags: ['business', 'luxury', 'city'],
     typicalAwardMiles: 70000,
     typicalCashUSD: 5600,

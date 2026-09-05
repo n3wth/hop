@@ -88,28 +88,35 @@ export default async function SignedInHome({
   // The hero showcase — the member's own reachable picks, in the exact visual
   // language of the signed-out hero (photo + engine-numbers card + ambience).
   // Every figure computed here, server-side; the rotator only cycles.
-  const heroEntries: ShowcaseEntry[] = heroPicks.flatMap((d) => {
+  // IMPORTANT: preserve stable ordering even when photos are missing — filter
+  // AFTER mapping so the first entry is deterministic (prevents hydration
+  // flash when photo availability differs between server/client).
+  const heroEntriesAll: (ShowcaseEntry | null)[] = heroPicks.map((d) => {
     const photo = photos[imageQuery(d)]
     const cppVal = computeCpp(d)
-    if (!photo || cppVal === undefined) return []
-    return [
-      {
-        code: d.code,
-        city: d.city,
-        country: d.country,
-        cpp: cppVal,
-        miles: d.typicalAwardMiles,
-        program: d.bestProgram,
-        cabin: d.cabin,
-        pointsWin: cppVal >= POINTS_THRESHOLD_CPP,
-        image: photo.url,
-        thumb: photo.thumb,
-        color: photo.color,
-        href: `/search?from=${encodeURIComponent(seed.from)}&to=${encodeURIComponent(d.code)}&adults=1`,
-        cashValue: d.typicalCashUSD,
-      },
-    ]
+    if (cppVal === undefined) return null
+    return {
+      code: d.code,
+      city: d.city,
+      country: d.country,
+      cpp: cppVal,
+      miles: d.typicalAwardMiles,
+      program: d.bestProgram,
+      cabin: d.cabin,
+      pointsWin: cppVal >= POINTS_THRESHOLD_CPP,
+      image: photo?.url ?? '',
+      thumb: photo?.thumb ?? '',
+      color: photo?.color,
+      href: `/search?from=${encodeURIComponent(seed.from)}&to=${encodeURIComponent(d.code)}&adults=1`,
+      cashValue: d.typicalCashUSD,
+    }
   })
+  // Filter out nulls but keep entries with missing photos (they'll render with
+  // the color fallback in ShowcaseRotator). This ensures entries[0] is always
+  // the best-value destination regardless of photo availability.
+  const heroEntries: ShowcaseEntry[] = heroEntriesAll.filter(
+    (e): e is ShowcaseEntry => e !== null,
+  )
 
   return (
     <div className="flex flex-col gap-14 pt-4 sm:gap-16 sm:pt-6 lg:gap-20">
@@ -165,11 +172,11 @@ export default async function SignedInHome({
             <h2 className="font-display text-[26px] font-semibold leading-[1.08] tracking-[-0.02em] text-text sm:text-[34px]">
               {personalized
                 ? 'Within reach.'
-                : 'Dreams worth saving toward.'}
+                : 'Just out of reach.'}
             </h2>
             <p className="max-w-[46ch] text-[15px] leading-[1.55] text-text2">
               {personalized
-                ? 'Where your balances can take you as you pool and transfer — sorted by value per point.'
+                ? 'Where your balances can take you as you pool and transfer. Sorted by value per point.'
                 : 'A few more points and these open up. Sorted by value per point.'}
             </p>
           </div>
@@ -220,10 +227,14 @@ export default async function SignedInHome({
             Run a search. Get the verdict.
           </h2>
           <p className="mt-2 max-w-[44ch] text-[14.5px] leading-[1.55] text-text2">
-            Pick a route and hop reads your balances, checks award space, prices
-            the cash fare, and tells you the smarter way to book it.
+            Pick a route and hop reads your balances, the published saver chart,
+            and the cash fare. Points or cash, with the math.
           </p>
-          <div className="mt-6">
+          {/* mt-auto bottom-anchors the search pill so this card's composition
+              mirrors the teal panel beside it (whose CTA is bottom-anchored via
+              justify-between) — otherwise the grid row stretches both cells to
+              equal height and the shorter card shows dead space under the pill. */}
+          <div className="mt-auto pt-6">
             <HeroSearch initial={seed} align="start" />
           </div>
         </Card>
@@ -242,8 +253,8 @@ export default async function SignedInHome({
               Not sure where to go?
             </h2>
             <p className="mt-2.5 text-[14.5px] leading-[1.55] text-hero-body">
-              Describe the trip in plain words — beach, big city, cheap flight,
-              business class — and hop finds where points beat cash.
+              Describe the trip in plain words: beach, big city, cheap flight,
+              business class. hop finds where points beat cash.
             </p>
           </div>
           <Link
@@ -269,7 +280,7 @@ export default async function SignedInHome({
             <p className="mt-1 max-w-[48ch] text-[13.5px] leading-[1.5] text-text2">
               {programs > 0
                 ? `${programs} ${programs === 1 ? 'program' : 'programs'} connected. Add a loyalty account or refresh your balances anytime.`
-                : 'Link a loyalty account anytime — hop fills in your real balances and the trips they reach.'}
+                : 'Link a loyalty account anytime. hop fills in your real balances and the trips they reach.'}
             </p>
           </div>
         </div>

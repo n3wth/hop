@@ -55,21 +55,52 @@ export default function PointsPanel({ balances, pick, isExample = false }: Point
         className="overflow-hidden rounded-[22px] px-5 py-7 text-hero-cream sm:px-[30px]"
         style={{ background: 'var(--color-brand-ink)' }}
       >
-        <Eyebrow as="h2" onDark className="text-wallet-active">
-          Your points
-        </Eyebrow>
-        <p className="mt-2 max-w-[40ch] text-[14px] leading-[1.55] text-hero-body">
-          {hasPrograms
-            ? `You've added ${balances.length} ${balances.length === 1 ? 'program' : 'programs'} but no balances yet. Fill in real numbers so hop can tell you which redemptions they actually unlock.`
-            : 'Add your loyalty programs and hop will tell you which redemptions your points actually unlock — and whether to book with miles or cash.'}
-        </p>
-        <Link
-          href="/account"
-          className="mt-4 inline-flex items-center gap-2 rounded-[12px] bg-white px-5 py-3 text-[14px] font-semibold text-brand-ink transition-colors hover:bg-hero-cream"
-        >
-          {hasPrograms ? 'Add your balances' : 'Add your programs'}
-          <span aria-hidden className="text-[15px] leading-none">→</span>
-        </Link>
+        {/* Two columns: the invitation left, a ghost preview of what the wallet
+            becomes right — the band sells the feature instead of advertising
+            its own absence. The preview is abstract shapes (no fabricated
+            program names or balances), aria-hidden, desktop-only. */}
+        <div className="lg:grid lg:grid-cols-[minmax(0,44ch)_1fr] lg:items-center lg:gap-12">
+          <div>
+            <Eyebrow as="h2" onDark className="text-wallet-active">
+              Your points
+            </Eyebrow>
+            <p className="mt-2 max-w-[40ch] text-[14px] leading-[1.55] text-hero-body">
+              {hasPrograms
+                ? `You've added ${balances.length} ${balances.length === 1 ? 'program' : 'programs'} but no balances yet. Fill in real numbers so hop can tell you which redemptions they actually unlock.`
+                : 'Add your loyalty programs and hop will tell you which redemptions your points actually unlock — and whether to book with miles or cash.'}
+            </p>
+            <Link
+              href="/account"
+              className="mt-4 inline-flex items-center gap-2 rounded-[12px] bg-white px-5 py-3 text-[14px] font-semibold text-brand-ink transition-colors hover:bg-hero-cream"
+            >
+              {hasPrograms ? 'Add your balances' : 'Add your programs'}
+              <span aria-hidden className="text-[15px] leading-none">→</span>
+            </Link>
+          </div>
+          <div aria-hidden className="hidden opacity-35 lg:block">
+            {[76, 52, 34].map((w, i) => (
+              <div
+                key={w}
+                className={`grid items-center gap-5 py-[14px] [grid-template-columns:40px_minmax(0,180px)_1fr_72px] ${
+                  i > 0 ? 'border-t border-white/[0.07]' : ''
+                }`}
+              >
+                <span className="h-[40px] w-[40px] rounded-[12px] bg-white/15" />
+                <span className="space-y-[6px]">
+                  <span className="block h-[10px] w-[72%] rounded-full bg-white/25" />
+                  <span className="block h-[8px] w-[44%] rounded-full bg-white/10" />
+                </span>
+                <span className="h-[8px] overflow-hidden rounded-full bg-white/[0.08]">
+                  <span
+                    className="block h-full rounded-full bg-white/25"
+                    style={{ width: `${w}%` }}
+                  />
+                </span>
+                <span className="block h-[10px] w-full rounded-full bg-white/25" />
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
     )
   }

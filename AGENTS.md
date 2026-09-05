@@ -173,7 +173,8 @@ program/airline, ranks by cpp, applies the user's natural-language prefs
 summary (cheapest cash, best miles/cpp, $ saved).
 
 Upstream clients (each returns a discriminated `{ok}` result, never throws):
-`lib/duffel.ts` (cash), `lib/seatsaero.ts` (award space), `lib/awardwallet.ts` (balances),
+`lib/duffel.ts` (cash), `lib/awards.ts` (published award charts via `lib/award-charts.ts`;
+`lib/seatsaero.ts#searchAwards` is a hard stub), `lib/awardwallet.ts` (balances),
 plus `lib/transfers.ts` (transfer reachability) and `lib/booking.ts` (booking URLs).
 
 ## Balances: one resolver, two sources — `lib/accounts.ts#getUserBalances`
@@ -317,6 +318,9 @@ Each dataset has a regenerator under `scripts/`; re-run it and commit the output
   (Open-Meteo), USD FX snapshot (Frankfurter/ECB). `lib/place-info.ts` renders the essentials chips +
   the computed "how far your dollar goes" line. **Wikidata's raw language/currency-name fields are
   noisy** — they're curated in the script; the codes/timezone/FX stay sourced.
+- `lib/airport-coords.json` ← `scripts/gen-airport-coords.mjs` — OurAirports lat/lon (CC0) for
+  every IATA in `lib/airports-data.json`. `lib/award-charts.ts#greatCircleMiles` uses it so
+  published saver bands apply beyond a hardcoded hub list. Unknown IATA → no chart row.
 
 Same invariant as the engine: these are **real, looked-up, date-stamped values, never LLM-generated**.
 

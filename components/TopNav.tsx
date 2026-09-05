@@ -10,7 +10,6 @@ import OriginSelector from './OriginSelector'
 import { SearchForm, type SearchState, type Cabin } from './SearchBar'
 import { isoOffset } from '@/lib/dates'
 import { PRIMARY_NAV } from '@/lib/seo-routes'
-import { SITE_NAME } from '@/lib/seo'
 
 export interface TopNavProps {
   from?: string
@@ -43,23 +42,15 @@ export interface TopNavProps {
 const EASE = 'cubic-bezier(.2,0,0,1)'
 const DUR = '280ms'
 
-// Static logo lockup — memoized so scroll-state toggles never re-render the
-// (path-heavy) bunny SVG. Only the wrapper's transform animates.
-const LogoLockup = memo(function LogoLockup() {
-  // Lockup color matches the nav's bordered controls (the Sign in pill's
-  // border-text2/text-text2) so the masthead reads as one quiet system;
-  // hover restores the brand flip. Hover is a color flip only (house rule:
-  // no hover movement).
+// Desktop island logo — bunny mark only, no wordmark. Compact for the tighter
+// island nav. Hover is a color flip only (house rule: no hover movement).
+const LogoMark = memo(function LogoMark() {
   return (
-    <Link href="/" aria-label="hop — home" className="group flex items-center gap-[9px]">
+    <Link href="/" aria-label="hop — home" className="group flex items-center">
       <FlyingBunny
-        size={41}
-        carve="var(--color-bg)"
+        size={22}
         markClassName="text-text2 transition-colors group-hover:text-brand"
       />
-      <span className="wordmark text-[19px] leading-none text-text2 transition-colors group-hover:text-brand">
-        {SITE_NAME}
-      </span>
     </Link>
   )
 })
@@ -136,9 +127,9 @@ function useSheet(open: boolean, close: () => void) {
   return ref
 }
 
-// Scroll-aware top bar. The header SHRINKS in height on scroll (76→56px) and the
-// logo scales down, but the search stays full size and fully editable. Frosted
-// backdrop + hairline appear only once scrolled. Degrades to expanded with no JS.
+// Scroll-aware top bar. Desktop (md+) renders as a floating island/pill nav
+// aligned with n3wth family chrome. Mobile keeps the bottom tab bar as primary
+// nav. Frosted backdrop appears only once scrolled. Degrades to expanded with no JS.
 export default function TopNav({
   fromCode = 'SFO',
   toCode = 'LAX',
@@ -218,25 +209,40 @@ export default function TopNav({
           disappears entirely; on search pages it survives only as the slim
           search-pill strip (the pill is the page's primary control, not chrome). */}
       <header
-        className={`sticky top-0 z-50 ${hideSearch ? 'hidden md:block' : ''} ${c ? 'hop-glass-surface' : ''}`}
+        className={`sticky top-0 z-50 ${hideSearch ? 'hidden md:block' : ''}`}
         style={{
-          height: 72,
-          backdropFilter: c ? 'blur(14px) saturate(140%)' : 'none',
-          WebkitBackdropFilter: c ? 'blur(14px) saturate(140%)' : 'none',
-          borderBottom: c ? '1px solid var(--color-border)' : '1px solid transparent',
+          height: 56,
           transform: 'translateZ(0)',
           isolation: 'isolate',
-          willChange: c ? 'backdrop-filter' : 'auto',
-          transition: `background ${DUR} ${EASE}, border-color ${DUR} ${EASE}, backdrop-filter ${DUR} ${EASE}`,
         }}
       >
-        <div className="h-full px-5 sm:px-8 lg:px-12 xl:px-16">
-        <div className="mx-auto flex h-full max-w-[var(--container-shell)] items-center gap-4 sm:gap-5 lg:gap-7">
-          {/* logo — left. Stays the SAME size whether at top or scrolled; only its
-              vertical position shifts as the header height contracts (76→56px).
-              Hidden below md — the bottom tab bar's home bunny is the mark there. */}
-          <div className="hidden flex-shrink-0 items-center gap-[11px] md:flex">
-            <LogoLockup />
+        {/* Island container — floats as a pill on desktop, full-width on mobile.
+            Gaussian blur + saturate make labels readable over scrolling content.
+            -webkit- prefix required for Safari; inline styles guarantee both
+            land (Lightning CSS dedupes them when co-located in a compiled rule).
+            hop-glass-surface handles translucent fill + reduced-transparency fallback. */}
+        <div className="h-full px-5 sm:px-8 md:px-4 lg:px-6">
+        <div
+          className={`mx-auto flex h-full max-w-[var(--container-shell)] items-center gap-3 sm:gap-4 lg:gap-5 md:mt-4 md:h-11 md:max-w-fit md:rounded-full md:border md:px-4 lg:px-5 ${
+            c
+              ? 'hop-glass-surface md:border-border/60'
+              : 'md:border-border md:bg-surface'
+          }`}
+          style={{
+            transition: `background ${DUR} ${EASE}, border-color ${DUR} ${EASE}, backdrop-filter ${DUR} ${EASE}, -webkit-backdrop-filter ${DUR} ${EASE}`,
+            ...(c
+              ? {
+                  WebkitBackdropFilter: 'blur(16px) saturate(1.2)',
+                  backdropFilter: 'blur(16px) saturate(1.2)',
+                }
+              : {}),
+          }}
+        >
+          {/* logo — bunny mark only on desktop island, no wordmark. Hidden below md
+              where the bottom tab bar's home bunny serves as the mark. ml-1 matches
+              the right-side avatar's mr-1 for symmetric insets from the pill cap. */}
+          <div className="hidden flex-shrink-0 items-center md:ml-1 md:flex">
+            <LogoMark />
           </div>
 
           {/* Search lives in the header on results pages; pages that hide it
@@ -244,7 +250,10 @@ export default function TopNav({
               links to the other main pages instead of a blank gap. */}
           {hideSearch ? (
             <>
-              <nav aria-label="Main" className="hidden items-center gap-0.5 md:flex sm:ml-1 lg:ml-2">
+              {/* Nav links + origin selector sit in one flexbox with even gap-2
+                  so there's no large empty slot after Pricing. The origin
+                  selector is inline here, not in the far-right cluster. */}
+              <nav aria-label="Main" className="hidden items-center gap-2 md:flex">
                 {PRIMARY_NAV.map((l) => (
                   <Link
                     key={l.href}
@@ -252,13 +261,15 @@ export default function TopNav({
                     aria-current={isActive(l.href) ? 'page' : undefined}
                     className={
                       isActive(l.href)
-                        ? 'rounded-full bg-sunk px-3.5 py-2 text-[14px] font-semibold text-text2'
-                        : 'rounded-full px-3.5 py-2 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk'
+                        ? 'rounded-full bg-sunk px-3 py-1.5 text-[13px] font-semibold text-text2'
+                        : 'rounded-full px-3 py-1.5 text-[13px] font-semibold text-text2 transition-colors hover:bg-sunk'
                     }
                   >
                     {l.label}
                   </Link>
                 ))}
+                {/* Origin selector inline after nav links for even rhythm */}
+                <OriginSelector quiet />
               </nav>
             </>
           ) : (
@@ -295,53 +306,49 @@ export default function TopNav({
           )}
 
           {/* spacer pushes the right cluster to the far edge (desktop only).
-              Taste call (2026-07, full-width-shell gap fix): this row stays
-              at --container-shell width on purpose, matching the rest of
-              this bar and the "Chrome aligns with content" decision from the
-              full-width 2026 shell PR — this is persistent nav chrome, not a
-              content row, and generous open space between the logo/nav and
-              the account cluster at wide viewports is standard for
-              Airbnb/Linear-class full-bleed headers, not a layout bug.
-              (Contrast with RouteBar/PointsPanel below, which ARE content
-              rows and got capped back to --container-app because their two
-              clusters read as visually related and now sit stranded apart.) */}
-          <div className="hidden flex-1 md:block" />
+              On hideSearch pages the origin is inline with nav links so no
+              spacer is needed there. On search pages the spacer separates
+              the search form from the account cluster. */}
+          {!hideSearch && <div className="hidden flex-1 md:block" />}
 
-          {/* right cluster — origin + account sit together as one tidy group so
-              the gap between them is a single small step, not the wide header gap. */}
-          <div className="flex items-center gap-1.5 lg:gap-2">
+          {/* right cluster — origin (search pages only) + account. mr-1 matches
+              the left logo's ml-1 for symmetric insets from the pill caps. */}
+          <div className="flex items-center gap-2 md:mr-1">
           {/* persistent "where from" — hidden below md so the phone header stays
-              uncrowded (the menu sheet carries it there). */}
-          <div className="hidden flex-shrink-0 md:block">
-            <OriginSelector />
-          </div>
+              uncrowded (the menu sheet carries it there). On hideSearch pages
+              the origin is inline with nav links above, so skip it here. */}
+          {!hideSearch && (
+            <div className="hidden flex-shrink-0 md:block">
+              <OriginSelector />
+            </div>
+          )}
 
           {/* account — Auth0: avatar+logout when signed in, Sign in when out.
               No scroll scaling — the bar stays still as you scroll. Below md the
               bottom tab bar's Account tab covers this. */}
           <div className="hidden flex-shrink-0 items-center md:flex">
             {user ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {isOwner ? (
                   <Link
                     href="/admin"
                     title="Admin"
                     aria-label="Admin"
-                    className="hop-ink-border grid h-10 w-10 flex-shrink-0 place-items-center rounded-full border text-text2 transition-colors hover:bg-sunk"
+                    className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full text-text2 transition-colors hover:bg-sunk"
                   >
-                    <Icon name="shield" size={20} />
+                    <Icon name="shield" size={16} />
                   </Link>
                 ) : null}
                 {pointsTotal != null ? (
                   <Link
                     href="/account"
                     title="Your points"
-                    className="hop-ink-border hidden items-center gap-1.5 rounded-full border px-3.5 py-2 text-text2 transition-colors hover:bg-sunk lg:flex"
+                    className="hidden items-center gap-1 rounded-full px-2.5 py-1 text-text2 transition-colors hover:bg-sunk lg:flex"
                   >
-                    <span className="hop-num text-[14px] font-semibold text-text">
+                    <span className="hop-num text-[13px] font-semibold text-text">
                       {compactPoints(pointsTotal)}
                     </span>
-                    <span className="text-[12px] font-medium text-text3">pts</span>
+                    <span className="text-[11px] font-medium text-text3">pts</span>
                   </Link>
                 ) : null}
                 <AccountMenu user={user} />
@@ -349,7 +356,7 @@ export default function TopNav({
             ) : (
               <a
                 href={signInHref}
-                className="rounded-full border border-text2 px-5 py-2.5 text-[14px] font-semibold text-text2 transition-colors hover:bg-sunk hop-press"
+                className="rounded-full border border-text2/60 px-3.5 py-1.5 text-[13px] font-semibold text-text2 transition-colors hover:bg-sunk hop-press"
               >
                 Sign in
               </a>

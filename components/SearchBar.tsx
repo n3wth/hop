@@ -384,7 +384,7 @@ function CalendarPop({
     <div ref={ref} className="relative">
       {children(open, () => setOpen((o) => !o))}
       {open && (
-        <div className="absolute left-0 top-[calc(100%+18px)] z-[60] rounded-[var(--radius)] border border-border bg-surface p-4">
+        <div className="hop-popover-in absolute left-0 top-[calc(100%+18px)] z-[60] rounded-[var(--radius)] border border-border bg-surface p-4 origin-top-left">
           {/* trip-type + stops live here (Google-Flights style), not in the search row */}
           <div className="mb-3 flex flex-col items-center gap-2 border-b border-hair pb-3">
             <TripTypeToggle oneWay={oneWay} onChange={onOneWayChange} />
@@ -529,7 +529,7 @@ function WhoPop({
     <div ref={ref} className="relative">
       {children(open, () => setOpen((o) => !o))}
       {open && (
-        <div className="absolute right-0 top-[calc(100%+18px)] z-[60] w-[260px] rounded-[var(--radius)] border border-border bg-surface p-4">
+        <div className="hop-popover-in absolute right-0 top-[calc(100%+18px)] z-[60] w-[260px] rounded-[var(--radius)] border border-border bg-surface p-4 origin-top-right">
           <div className="flex flex-col gap-4">
             <StepperRow
               label="Adults"
@@ -642,7 +642,7 @@ function CabinPop({
           // arrow keys work; without the opt-out the global [tabindex] rule
           // draws a 2px brand rectangle around the whole popover. The active
           // row highlight is the keyboard indicator here.
-          className="no-inner-ring absolute right-0 top-[calc(100%+18px)] z-[60] w-[220px] overflow-hidden rounded-[var(--radius)] border border-border bg-surface py-1 outline-none"
+          className="hop-popover-in no-inner-ring absolute right-0 top-[calc(100%+18px)] z-[60] w-[220px] overflow-hidden rounded-[var(--radius)] border border-border bg-surface py-1 outline-none origin-top-right"
         >
           {CABIN_OPTIONS.map((o, i) => {
             const selected = o.value === cabin
@@ -1085,12 +1085,12 @@ export function SearchForm({
               type="button"
               onClick={toggle}
               aria-expanded={open}
-              className="flex flex-col justify-center text-left leading-[1.05]"
+              className="group flex flex-col justify-center text-left leading-[1.05] focus:outline-none"
             >
-              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2 transition-colors duration-200 group-hover:text-brand/80">
                 {s.oneWay ? 'Date' : 'Dates'}
               </span>
-              <span className="w-[120px] text-[15px] font-semibold text-text">
+              <span className="w-[120px] text-[15px] font-semibold text-text transition-colors duration-200 group-hover:text-brand">
                 {s.oneWay ? fmtDay(s.depart) : fmtRange(s.depart, s.ret)}
               </span>
             </button>
@@ -1112,12 +1112,12 @@ export function SearchForm({
               type="button"
               onClick={toggle}
               aria-expanded={open}
-              className="flex flex-col justify-center text-left leading-[1.05]"
+              className="group flex flex-col justify-center text-left leading-[1.05] focus:outline-none"
             >
-              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2 transition-colors duration-200 group-hover:text-brand/80">
                 Who
               </span>
-              <span className="w-[80px] text-[15px] font-semibold text-text">
+              <span className="w-[80px] text-[15px] font-semibold text-text transition-colors duration-200 group-hover:text-brand">
                 {whoLabel(s)}
               </span>
             </button>
@@ -1132,12 +1132,12 @@ export function SearchForm({
               type="button"
               onClick={toggle}
               aria-expanded={open}
-              className="flex flex-col justify-center text-left leading-[1.05]"
+              className="group flex flex-col justify-center text-left leading-[1.05] focus:outline-none"
             >
-              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[var(--track-eyebrow)] text-text2 transition-colors duration-200 group-hover:text-brand/80">
                 Cabin
               </span>
-              <span className="w-[88px] text-[15px] font-semibold text-text">
+              <span className="w-[88px] text-[15px] font-semibold text-text transition-colors duration-200 group-hover:text-brand">
                 {cabinLabel(s.cabin)}
               </span>
             </button>

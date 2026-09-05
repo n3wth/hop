@@ -9,7 +9,7 @@ import {
 import { captureServerEvent } from '@/lib/posthog-server'
 import { assembleSearch } from '@/lib/search'
 import { searchCash } from '@/lib/duffel'
-import { searchAwards } from '@/lib/seatsaero'
+import { searchAwards } from '@/lib/awards'
 
 // Write hygiene for the degradation seam (plan §6 "Degradation write
 // hygiene"): gated no-op when the flag is off; the route column only ever
@@ -53,7 +53,7 @@ vi.mock('@/lib/supabase-helpers', () => ({
 // Upstream clients mocked so assembleSearch's degraded[] path is exercised
 // live and keylessly.
 vi.mock('@/lib/duffel', () => ({ searchCash: vi.fn() }))
-vi.mock('@/lib/seatsaero', () => ({ searchAwards: vi.fn() }))
+vi.mock('@/lib/awards', () => ({ searchAwards: vi.fn() }))
 // PostHog capture mocked so the lib/search.ts emit is observable without a
 // network; the REAL module is exercised via vi.importActual further down.
 vi.mock('@/lib/posthog-server', () => ({ captureServerEvent: vi.fn() }))

@@ -14,7 +14,7 @@ const TIER_TEXT: Record<ReturnType<typeof tier>, string> = {
 
 function compactMiles(n: number): string {
   const k = n / 1000
-  return `${Number.isInteger(k) ? k : k.toFixed(1)}K`
+  return `${Number.isInteger(k) ? k : k.toFixed(1)}k`
 }
 
 // A single reach tile — verdict-first, same hierarchy as the hero showcase
@@ -73,7 +73,7 @@ function ReachTile({
           ) : null}
         </div>
         <p className="truncate text-[12.5px] text-text2">
-          from {compactMiles(d.typicalAwardMiles)} mi{d.cabin ? ` · ${d.cabin}` : ''} · {d.bestProgram}
+          from {compactMiles(d.typicalAwardMiles)} miles{d.cabin ? ` · ${d.cabin}` : ''} · {d.bestProgram}
         </p>
       </div>
     </Link>

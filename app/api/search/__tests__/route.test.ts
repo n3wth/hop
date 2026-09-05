@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SearchParams } from '@/lib/types'
 import { assembleSearch } from '@/lib/search'
 import * as duffel from '@/lib/duffel'
-import * as seatsaero from '@/lib/seatsaero'
+import * as awards from '@/lib/awards'
 import * as awardwallet from '@/lib/awardwallet'
 
 const PARAMS: SearchParams = {
@@ -127,7 +127,7 @@ describe('assembleSearch — live path degradation', () => {
 
   it('marks a failing source as degraded and still resolves', async () => {
     vi.spyOn(duffel, 'searchCash').mockResolvedValue({ ok: true, data: [] })
-    vi.spyOn(seatsaero, 'searchAwards').mockResolvedValue({
+    vi.spyOn(awards, 'searchAwards').mockResolvedValue({
       ok: false,
       reason: 'simulated awards failure',
     })
@@ -142,7 +142,7 @@ describe('assembleSearch — live path degradation', () => {
 
   it('handles all sources empty without crashing', async () => {
     vi.spyOn(duffel, 'searchCash').mockResolvedValue({ ok: true, data: [] })
-    vi.spyOn(seatsaero, 'searchAwards').mockResolvedValue({ ok: true, data: [] })
+    vi.spyOn(awards, 'searchAwards').mockResolvedValue({ ok: true, data: [] })
     vi.spyOn(awardwallet, 'getBalances').mockResolvedValue({ ok: true, data: [] })
 
     const result = await assembleSearch(PARAMS)
@@ -156,7 +156,7 @@ describe('assembleSearch — live path degradation', () => {
 
   it('collects failing cash + awards into degraded', async () => {
     vi.spyOn(duffel, 'searchCash').mockResolvedValue({ ok: false, reason: 'cash down' })
-    vi.spyOn(seatsaero, 'searchAwards').mockResolvedValue({ ok: false, reason: 'awards down' })
+    vi.spyOn(awards, 'searchAwards').mockResolvedValue({ ok: false, reason: 'awards down' })
     vi.spyOn(awardwallet, 'getBalances').mockResolvedValue({ ok: false, reason: 'balances down' })
 
     const result = await assembleSearch(PARAMS)
@@ -172,7 +172,7 @@ describe('assembleSearch — live path degradation', () => {
   // a balances-source failure must NOT read as "couldn't refresh your balances".
   it('does NOT degrade balances for a signed-out viewer (no per-user balances)', async () => {
     vi.spyOn(duffel, 'searchCash').mockResolvedValue({ ok: true, data: [] })
-    vi.spyOn(seatsaero, 'searchAwards').mockResolvedValue({ ok: true, data: [] })
+    vi.spyOn(awards, 'searchAwards').mockResolvedValue({ ok: true, data: [] })
     // Env-global AwardWallet fallback fails — but the viewer is signed out, so
     // empty balances are EXPECTED, not stale.
     vi.spyOn(awardwallet, 'getBalances').mockResolvedValue({ ok: false, reason: 'balances down' })
@@ -188,7 +188,7 @@ describe('assembleSearch — live path degradation', () => {
   // trusted and never hits the env-global fallback, so it never degrades balances.
   it('does NOT degrade balances when the caller supplies per-user balances', async () => {
     vi.spyOn(duffel, 'searchCash').mockResolvedValue({ ok: true, data: [] })
-    vi.spyOn(seatsaero, 'searchAwards').mockResolvedValue({ ok: true, data: [] })
+    vi.spyOn(awards, 'searchAwards').mockResolvedValue({ ok: true, data: [] })
     // getBalances() must NOT even be consulted when balances are supplied.
     const getBalancesSpy = vi
       .spyOn(awardwallet, 'getBalances')

@@ -17,7 +17,7 @@ import { transfersTo, effectiveBalanceFor } from '@/lib/transfers'
 import { cashBookingUrl, pointsBookingUrl } from '@/lib/booking'
 import { isCheckoutEnabled } from '@/lib/env'
 import { searchCash } from '@/lib/duffel'
-import { searchAwards } from '@/lib/seatsaero'
+import { searchAwards } from '@/lib/awards'
 import { getBalances } from '@/lib/awardwallet'
 import { mockCash, mockAwards, mockBalances } from '@/lib/mock'
 import { recordCppObservations } from '@/lib/valuation-telemetry'
@@ -88,7 +88,7 @@ export async function assembleSearch(
   const useMock = /^(1|true|yes)$/i.test(process.env.MOCK ?? '')
 
   // Duffel's cash total_amount already covers the WHOLE party (buildPassengers
-  // in lib/duffel.ts), while Seats.aero miles/taxes are always per-seat — so
+  // in lib/duffel.ts), while chart miles/taxes are always per-seat — so
   // award economics are scaled to the same party total below, making both legs
   // of every cpp comparison mean "cost to move everyone".
   const seats = seatsFor(params)
@@ -309,7 +309,13 @@ export async function assembleSearch(
   if (!useMock && recordTelemetry) {
     recordCppObservations(
       awards
-        .filter((o) => o.program && typeof o.cpp === 'number' && o.cpp > 0)
+        .filter(
+          (o) =>
+            o.availability === 'live' &&
+            o.program &&
+            typeof o.cpp === 'number' &&
+            o.cpp > 0,
+        )
         .map((o) => ({
           programId: canonicalizeProgram(o.program!)?.id ?? '',
           cpp: o.cpp!,
@@ -471,6 +477,7 @@ export interface VerdictSummary {
     cashPrice: number | undefined
     cpp: number | undefined
     youHave: number | undefined
+    availability: FlightOption['availability']
   } | null
   options: Array<{
     kind: FlightOption['kind']
@@ -482,6 +489,7 @@ export interface VerdictSummary {
     cashPrice: number | undefined
     cpp: number | undefined
     action: OptionAction | undefined
+    availability: FlightOption['availability']
   }>
   degraded: string[]
 }
@@ -509,6 +517,7 @@ export async function verdictSummary(
           cashPrice: result.pick.cashPrice,
           cpp: result.pick.cpp,
           youHave: result.pick.youHave,
+          availability: result.pick.availability,
         }
       : null,
     options: result.options.slice(0, 6).map((o) => ({
@@ -521,6 +530,7 @@ export async function verdictSummary(
       cashPrice: o.cashPrice,
       cpp: o.cpp,
       action: o.action,
+      availability: o.availability,
     })),
     degraded: result.degraded,
   }

@@ -71,19 +71,35 @@ export async function createCheckoutSession(args: {
   try {
     const { default: Stripe } = await import('stripe')
     const stripe = new Stripe(env.stripeSecretKey())
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
-      client_reference_id: args.userId,
-      // Stripe rejects customer + customer_email together — the persistent
-      // customer wins when we have one.
-      customer: args.customerId,
-      customer_email: args.customerId ? undefined : args.email || undefined,
-      metadata: { user_id: args.userId },
-      subscription_data: { metadata: { user_id: args.userId } },
-      success_url: args.successUrl,
-      cancel_url: args.cancelUrl,
-    })
+    const create = (customerId: string | undefined) =>
+      stripe.checkout.sessions.create({
+        mode: 'subscription',
+        line_items: [{ price: priceId, quantity: 1 }],
+        client_reference_id: args.userId,
+        // Stripe rejects customer + customer_email together — the persistent
+        // customer wins when we have one.
+        customer: customerId,
+        customer_email: customerId ? undefined : args.email || undefined,
+        metadata: { user_id: args.userId },
+        subscription_data: { metadata: { user_id: args.userId } },
+        success_url: args.successUrl,
+        cancel_url: args.cancelUrl,
+      })
+    let session
+    try {
+      session = await create(args.customerId)
+    } catch (err) {
+      // A stored customer id can be stale — most commonly a test-mode
+      // cus_ left in hop_customers from before live keys (Stripe: "No such
+      // customer"). The mapping self-heals from metadata.user_id via the
+      // webhook, so retry once customer-less rather than failing the sale.
+      const msg = err instanceof Error ? err.message : ''
+      if (args.customerId && /no such customer/i.test(msg)) {
+        session = await create(undefined)
+      } else {
+        throw err
+      }
+    }
     if (!session.url) return { ok: false, reason: 'stripe-error' }
     return { ok: true, url: session.url }
   } catch {

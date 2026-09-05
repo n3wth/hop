@@ -27,6 +27,7 @@ import {
   CurrencyDollar,
   EnvelopeSimple,
   GearSix,
+  GithubLogo,
   Globe,
   House,
   Info,
@@ -89,6 +90,7 @@ const ICONS = {
   envelope: EnvelopeSimple,
   stop: Stop,
   paper_plane: PaperPlaneRight,
+  github: GithubLogo,
   // Travel
   flight: Airplane,
   airplane: Airplane,

@@ -30,12 +30,12 @@ export default async function PrivacyPage() {
         eyebrow="Legal"
         title="Privacy Policy"
         intro="This policy explains what data hop collects, why, who we share it with, and the controls you have."
-        lastUpdated="July 5, 2026"
+        lastUpdated="August 31, 2026"
       >
         <h2>Who we are</h2>
         <p>
           hop is operated by <strong>hop Travel, Inc.</strong> For privacy questions, contact{' '}
-          <a href="mailto:privacy@hop.flights">privacy@hop.flights</a>.
+          <a href="mailto:hop@n3wth.com">hop@n3wth.com</a>.
         </p>
 
         <h2>What we collect</h2>
@@ -102,8 +102,9 @@ export default async function PrivacyPage() {
           </li>
           <li>
             <strong>Google (Gmail)</strong> — optional, explicit-consent connection so hop can learn
-            from your past trips. We request read-only access and read only your
-            travel-confirmation emails (a tight search). We store only the normalized trip facts
+            from your past trips. We request read-only access, scan mail from airline and hotel
+            senders (a tight search), and parse only messages whose sender we recognize as an
+            airline or hotel. We store only the normalized trip facts
             (destination, month, airline, cabin, whether points were used) — never the emails
             themselves — and you can disconnect and delete them at any time.
           </li>
@@ -122,7 +123,8 @@ export default async function PrivacyPage() {
             behalf.
           </li>
           <li>
-            <strong>seats.aero</strong> — award availability data.
+            <strong>Airline loyalty programs</strong> — published saver-chart figures
+            hop transcribes offline. hop does not currently query a live award-space API.
           </li>
           <li>
             <strong>Unsplash</strong> — destination imagery (image requests are made to Unsplash).
@@ -168,13 +170,13 @@ export default async function PrivacyPage() {
           <li>
             <strong>Delete your account.</strong> You can request account deletion from your{' '}
             <Link href="/account">account</Link> or by emailing{' '}
-            <a href="mailto:privacy@hop.flights">privacy@hop.flights</a>.
+            <a href="mailto:hop@n3wth.com">hop@n3wth.com</a>.
           </li>
         </ul>
         <p>
           Depending on where you live, you may have additional rights over your personal data. We
           honor applicable requests. To exercise a right, email{' '}
-          <a href="mailto:privacy@hop.flights">privacy@hop.flights</a> and we will respond
+          <a href="mailto:hop@n3wth.com">hop@n3wth.com</a> and we will respond
           within 30 days.
         </p>
 
@@ -213,7 +215,7 @@ export default async function PrivacyPage() {
 
         <h2>Contact</h2>
         <p>
-          Email <a href="mailto:privacy@hop.flights">privacy@hop.flights</a> with any privacy
+          Email <a href="mailto:hop@n3wth.com">hop@n3wth.com</a> with any privacy
           question or request.
         </p>
       </LegalShell>

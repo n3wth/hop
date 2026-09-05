@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { assembleSearch } from '@/lib/search'
 import { searchCash } from '@/lib/duffel'
-import { searchAwards } from '@/lib/seatsaero'
+import { searchAwards } from '@/lib/awards'
 import { recordCppObservations } from '@/lib/valuation-telemetry'
 
 // lib/search.ts's recordCppObservations() call site must respect useMock the
@@ -10,7 +10,7 @@ import { recordCppObservations } from '@/lib/valuation-telemetry'
 // never reach the live valuation worker's trust gate (ADR 0005).
 
 vi.mock('@/lib/duffel', () => ({ searchCash: vi.fn() }))
-vi.mock('@/lib/seatsaero', () => ({ searchAwards: vi.fn() }))
+vi.mock('@/lib/awards', () => ({ searchAwards: vi.fn() }))
 vi.mock('@/lib/valuation-telemetry', () => ({ recordCppObservations: vi.fn() }))
 
 const ORIGINAL_ENV = { ...process.env }
@@ -27,6 +27,7 @@ const LIVE_AWARD = {
   taxes: 0,
   tier: 'muted' as const,
   bookingUrl: '',
+  availability: 'live' as const,
 }
 
 const LIVE_CASH = {

@@ -196,21 +196,36 @@ export type MessageListResult =
   | { ok: true; ids: string[] }
   | { ok: false; authFailed: boolean }
 
-// List message ids matching the tight confirmation query (capped).
+// List message ids matching the tight confirmation query. Pages through with
+// pageToken (Gmail caps a page at ~100 ids) up to `max` total — the old single
+// 50-newest page silently dropped a frequent flyer's older history. Still
+// bounded so a huge mailbox can't run away.
 export async function listConfirmationMessageIds(
   accessToken: string,
-  max = 50,
+  max = 300,
 ): Promise<MessageListResult> {
   const q = encodeURIComponent(CONFIRMATION_QUERY)
-  const res = await gmailGet<{ messages?: Array<{ id?: string }> }>(
-    `/messages?q=${q}&maxResults=${Math.min(max, 100)}`,
-    accessToken,
-  )
-  if (!res.ok) return { ok: false, authFailed: res.authFailed }
-  return {
-    ok: true,
-    ids: (res.data.messages ?? []).map((m) => m.id).filter((id): id is string => Boolean(id)),
-  }
+  const cap = Math.min(max, 300)
+  const ids: string[] = []
+  let pageToken: string | undefined
+  do {
+    const pageSize = Math.min(cap - ids.length, 100)
+    const res = await gmailGet<{ messages?: Array<{ id?: string }>; nextPageToken?: string }>(
+      `/messages?q=${q}&maxResults=${pageSize}${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ''}`,
+      accessToken,
+    )
+    if (!res.ok) {
+      // Fail the whole listing only if the FIRST page failed; a mid-pagination
+      // blip degrades to the ids we already have.
+      if (ids.length === 0) return { ok: false, authFailed: res.authFailed }
+      break
+    }
+    ids.push(
+      ...(res.data.messages ?? []).map((m) => m.id).filter((id): id is string => Boolean(id)),
+    )
+    pageToken = res.data.nextPageToken
+  } while (pageToken && ids.length < cap)
+  return { ok: true, ids }
 }
 
 // base64url → utf8 string (Gmail encodes part bodies this way).

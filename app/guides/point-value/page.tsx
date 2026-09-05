@@ -248,11 +248,12 @@ export default function PointValuePage() {
           <p className="mt-3 max-w-[62ch] text-[15.5px] leading-relaxed text-text2">
             The table above is a starting point, not the answer. Most valuation charts stop there —
             one number per program, updated by hand every few months. hop uses that table as a
-            baseline, then computes the real cpp for the specific cash fare and award space in front
-            of you. Every search hop runs also feeds an anonymized cpp observation back into a
+            baseline, then computes the real cpp for the specific cash fare and published saver
+            chart in front of you. Chart miles are floors — space is not confirmed. Every search
+            hop runs also feeds an anonymized cpp observation back into a
             per-program running average; once a program has enough recent, trustworthy samples, hop
             can lean on that observed value instead of the static baseline. The number you see on a
-            search result is always the live one — this page is the methodology behind it, not a
+            search result is always the computed one — this page is the methodology behind it, not a
             substitute for it.
           </p>
         </section>
