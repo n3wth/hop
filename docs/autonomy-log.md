@@ -1,14 +1,16 @@
 # Autonomy run log
 
-- 2026-09-09 · Codex · N-392 passenger mix preservation · branch
-  `fix/n-392-passenger-watch` · Confirmed the urgent R0.1 correctness follow-up
+- 2026-09-09 · Codex · N-392 passenger mix preservation ·
+  [PR #444](https://github.com/n3wth/hop/pull/444) · Confirmed the urgent R0.1 correctness follow-up
   still drops children/infants on main f56f774; the active task prioritizes it
   before N-328. Fixed the request, action, and repeated validator boundaries.
   Observed 14 regression failures before the change, then 57 focused tests and
   `npm run check` passed (1,450 tests; 136 existing lint warnings, no errors).
   `npm run build` passed without DATABASE_URL, so no migrations ran; unconfigured
-  auth warnings remain in that credential-free build. The independent review and
-  PR carry delivery status. Lesson: test through persisted-row decoding and the
+  auth warnings remain in that credential-free build. Independent local
+  correctness/adversarial review and the specialized lenses returned no findings;
+  the external Claude pass timed out without an artifact. The PR carries delivery
+  status. Lesson: test through persisted-row decoding and the
   cron call, not only the request helper. See
   `docs/solutions/2026-09-09-watch-passenger-round-trip.md`.
 
