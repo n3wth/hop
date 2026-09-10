@@ -15,6 +15,8 @@ export interface WatchRequest {
   depart: string
   ret?: string
   adults: number
+  children?: number
+  infants?: number
   minCabin?: string
 }
 
@@ -25,6 +27,8 @@ export function watchRequestFromParams(params: SearchParams): WatchRequest {
     depart: params.depart,
     ret: params.return,
     adults: params.adults,
+    ...(params.children !== undefined ? { children: params.children } : {}),
+    ...(params.infants !== undefined ? { infants: params.infants } : {}),
     minCabin: params.cabin,
   }
 }
