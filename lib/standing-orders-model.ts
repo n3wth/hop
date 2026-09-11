@@ -26,7 +26,7 @@ export interface StandingOrder {
   params: SearchParams
   // The verdict threshold: notify only when the pick's cpp is at/above this.
   minCpp: number
-  // Minimum award seats required at that price (defaults to params.adults).
+  // Minimum award seats required at that price (at least adults + children).
   seats: number
   // Loyalty programs the user will accept the redemption in. Empty = any
   // program. Canonical program ids/names (matched loosely by the engine).
@@ -63,8 +63,11 @@ export const MIN_CPP_FLOOR = POINTS_THRESHOLD_CPP
 // A sane ceiling — nobody is waiting for 12 cpp; it would never fire. Clamp so a
 // fat-fingered or model-hallucinated value can't create a dead watch.
 export const MAX_CPP_CEIL = 10
-// Seats are bounded to what the engine/awards realistically return.
+// Bounds adults and an explicitly requested minimum-seat threshold. A larger
+// seated party still requires all its seats; validation never drops travelers.
 export const MAX_SEATS = 9
+// Match the optional passenger-count bounds in /api/search.
+const MAX_OPTIONAL_PASSENGERS = 8
 // Cap eligible programs so a runaway parse can't bloat the row.
 export const MAX_PROGRAMS = 12
 const MAX_PROGRAM_LEN = 80
@@ -96,6 +99,12 @@ export function clampSeats(raw: unknown): number {
   return Math.max(1, Math.min(MAX_SEATS, Math.trunc(n)))
 }
 
+function clampOptionalPassengers(raw: unknown): number {
+  const n = typeof raw === 'number' || typeof raw === 'string' ? Number(raw) : 0
+  if (!Number.isFinite(n)) return 0
+  return Math.max(0, Math.min(MAX_OPTIONAL_PASSENGERS, Math.trunc(n)))
+}
+
 // Clamp/validate a SearchParams candidate. Returns null when the route is
 // unusable (no valid origin/destination) — the caller refuses to persist a watch
 // it could never run. Dates default forward; the engine tolerates them.
@@ -111,6 +120,9 @@ export function validateParams(raw: unknown): SearchParams | null {
   const ret = isIsoDate(r.return) ? (r.return as string).trim() : undefined
   const adults = clampSeats(r.adults)
   const params: SearchParams = { from, to, depart, adults }
+  // Omitted fields stay omitted for legacy rows; explicit zero stays zero.
+  if (r.children !== undefined) params.children = clampOptionalPassengers(r.children)
+  if (r.infants !== undefined) params.infants = clampOptionalPassengers(r.infants)
   if (ret) params.return = ret
   return params
 }
@@ -149,7 +161,8 @@ export function validateDraft(raw: unknown): StandingOrderDraft | null {
   const r = raw as Record<string, unknown>
   const params = validateParams(r.params)
   if (!params) return null
-  const seats = clampSeats(r.seats ?? params.adults)
+  const partySeats = params.adults + (params.children ?? 0)
+  const seats = Math.max(partySeats, clampSeats(r.seats ?? partySeats))
   const draft: StandingOrderDraft = {
     params,
     minCpp: clampCpp(r.minCpp),

@@ -99,6 +99,18 @@ describe('clampPrograms', () => {
 })
 
 describe('validateParams', () => {
+  it.each([
+    [{ children: 1, infants: 1 }, { children: 1, infants: 1 }],
+    [{ children: 0, infants: 0 }, { children: 0, infants: 0 }],
+    [{ children: -1, infants: Number.NaN }, { children: 0, infants: 0 }],
+    [{ children: 2.9, infants: '1' }, { children: 2, infants: 1 }],
+    [{ children: 100, infants: 100 }, { children: 8, infants: 8 }],
+    [{ children: {}, infants: 'no' }, { children: 0, infants: 0 }],
+  ])('preserves and bounds optional passenger counts: %j', (mix, expected) => {
+    expect(validateParams({ from: 'SFO', to: 'NRT', depart: '2026-12-01', adults: 2, ...mix }))
+      .toMatchObject(expected)
+  })
+
   it('accepts a valid route + date', () => {
     expect(validateParams({ from: 'sfo', to: 'nrt', depart: '2026-03-25', adults: 2 })).toEqual({
       from: 'SFO',
@@ -121,6 +133,23 @@ describe('validateParams', () => {
 })
 
 describe('validateDraft', () => {
+  it.each([undefined, 1, 3])('requires seats for adults and children, excluding lap infants (seats=%s)', (seats) => {
+    const draft = validateDraft({
+      params: { from: 'SFO', to: 'NRT', depart: '2026-12-01', adults: 2, children: 1, infants: 1 },
+      seats,
+    })
+    expect(draft?.seats).toBe(3)
+    expect(validateDraft(draft)).toEqual(draft)
+  })
+
+  it('preserves a stricter seat threshold and a seated party above the threshold clamp', () => {
+    const params = { from: 'SFO', to: 'NRT', depart: '2026-12-01', adults: 2, children: 1 }
+    expect(validateDraft({ params, seats: 5 })?.seats).toBe(5)
+    const large = validateDraft({ params: { ...params, adults: 9, children: 8 } })
+    expect(large?.seats).toBe(17)
+    expect(validateDraft(large)).toEqual(large)
+  })
+
   it('clamps cpp up to the floor and defaults seats from adults', () => {
     const d = validateDraft({
       params: { from: 'SFO', to: 'NRT', depart: '2026-03-25', adults: 2 },

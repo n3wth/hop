@@ -106,6 +106,8 @@ export async function createWatchExplicit(input: {
   depart: string
   ret?: string
   adults?: number
+  children?: number
+  infants?: number
   minCpp?: number
   minCabin?: string
 }): Promise<Result> {
@@ -122,9 +124,12 @@ export async function createWatchExplicit(input: {
       depart: input.depart,
       return: input.ret || undefined,
       adults: input.adults ?? 1,
+      children: input.children,
+      infants: input.infants,
     },
     minCpp: input.minCpp,
-    seats: input.adults ?? 1,
+    // validateDraft derives seats from the validated adults + children.
+    // Lap infants remain in the search params but require no award seat.
     minCabin: input.minCabin,
     eligiblePrograms: [],
   })

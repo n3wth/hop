@@ -50,6 +50,15 @@ describe('watchRequestFromParams', () => {
     expect('minCpp' in req).toBe(false)
   })
 
+  it.each([
+    { children: 1 },
+    { children: 1, infants: 1 },
+    { children: 0, infants: 0 },
+  ])('preserves an explicit passenger mix: %j', (mix) => {
+    const params: SearchParams = { from: 'SFO', to: 'NRT', depart: '2026-12-01', adults: 2, ...mix }
+    expect(watchRequestFromParams(params)).toMatchObject(mix)
+  })
+
   it('produces exactly the fields createWatchExplicit accepts, nothing extra', () => {
     const params: SearchParams = {
       from: 'LAX',

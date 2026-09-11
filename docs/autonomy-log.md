@@ -1,5 +1,19 @@
 # Autonomy run log
 
+- 2026-09-09 · Codex · N-392 passenger mix preservation ·
+  [PR #444](https://github.com/n3wth/hop/pull/444) · Confirmed the urgent R0.1 correctness follow-up
+  still drops children/infants on main f56f774; the active task prioritizes it
+  before N-328. Fixed the request, action, and repeated validator boundaries.
+  Observed 14 regression failures before the change, then 57 focused tests and
+  `npm run check` passed (1,450 tests; 136 existing lint warnings, no errors).
+  `npm run build` passed without DATABASE_URL, so no migrations ran; unconfigured
+  auth warnings remain in that credential-free build. Independent local
+  correctness/adversarial review and the specialized lenses returned no findings;
+  the external Claude pass timed out without an artifact. The PR carries delivery
+  status. Lesson: test through persisted-row decoding and the
+  cron call, not only the request helper. See
+  `docs/solutions/2026-09-09-watch-passenger-round-trip.md`.
+
 - 2026-07-29 · Claude Code (growth desk, scheduled) · weekly funnel-log pull + merge-pipeline
   resolution confirmed · PR #372 (docs-only) ·
   **outcome**: pulled 7d PostHog traffic/funnel (7 visitors, `signed_up`/`first_program_added`
