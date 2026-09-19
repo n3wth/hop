@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { cardForProgram, cardOutclickPath } from '@/lib/card-affiliates'
+import { cardForProgram, cardById, cardOutclickPath } from '@/lib/card-affiliates'
 import { track } from '@/lib/posthog-client'
 import Eyebrow from './ui/Eyebrow'
 import Icon from './Icon'
@@ -9,20 +9,25 @@ import Icon from './Icon'
 export interface CardAffiliateCTAProps {
   /** Free-text program string for the winning award (the pick's `program`). */
   program?: string
+  /** Explicit card ID override (e.g. 'chase-ur' for cash flights). */
+  cardId?: string
   /** The miles/points unit word ("miles" | "points") for honest copy. */
   unit?: string
 }
 
 // "Earn the points for this trip" — the affiliate CTA that sits under a
-// points-winning verdict (roadmap WS2). Rendered ONLY on points verdicts by the
-// caller; here we only gate on whether a card maps to the program. Flat editorial
-// on the teal hero: a hairline-bordered row, white/mint text, no shadow/gradient.
+// flight verdict (roadmap WS2). Rendered on points or cash verdicts.
+// Flat editorial on the teal hero: a hairline-bordered row, white/mint text, no shadow/gradient.
 // Clearly marked "Sponsored". Locally dismissible; the fade is transform/opacity
 // only and frozen under prefers-reduced-motion via the .hop-fade-out helper.
-export default function CardAffiliateCTA({ program, unit = 'miles' }: CardAffiliateCTAProps) {
+export default function CardAffiliateCTA({ program, cardId, unit = 'miles' }: CardAffiliateCTAProps) {
   const [dismissed, setDismissed] = useState(false)
 
-  const card = program ? cardForProgram(program) : undefined
+  const card = cardId
+    ? cardById(cardId)
+    : program
+      ? cardForProgram(program)
+      : cardById('chase-ur')
   // Nothing maps (unknown program / hotel / no card) → render nothing.
   if (!card) return null
   if (dismissed) return null
