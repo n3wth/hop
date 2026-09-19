@@ -2,6 +2,7 @@
 
 import { memo } from 'react'
 import type { CppTier, FlightOption } from '@/lib/types'
+import { track } from '@/lib/posthog-client'
 import { TIER_CLASS } from './ui/TierChip'
 import Icon from './Icon'
 import Button from './ui/Button'
@@ -228,6 +229,11 @@ const ResultRow = memo(function ResultRow({
                 href={option.bookingUrl}
                 onClick={(e) => {
                   e.stopPropagation()
+                  track('outclick', {
+                    kind: option.kind === 'cash' ? 'booking' : 'award',
+                    target: option.program ?? option.airline,
+                    tier: option.tier,
+                  })
                 }}
               >
                 {actionLabel(option)}

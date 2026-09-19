@@ -401,10 +401,13 @@ export default function VerdictRail({
           </p>
         ) : null}
 
-        {/* Affiliate CTA — only on a points-winning verdict, never on cash. Maps
-            the winning award's program to the card that earns its currency; renders
-            nothing if no card maps. Clearly labelled "Sponsored". */}
-        {usingPoints ? <CardAffiliateCTA program={pick?.program} unit={unit} /> : null}
+        {/* Affiliate CTA — maps the winning award's program to the card that earns its currency,
+            or recommends Chase Sapphire Preferred on cash flights to build transferable points. */}
+        <CardAffiliateCTA
+          program={usingPoints ? pick?.program : undefined}
+          cardId={usingPoints ? undefined : 'chase-ur'}
+          unit={usingPoints ? unit : 'points'}
+        />
 
         {/* Watch this route — only on the pay-cash path ("Points don't pay off
             here"): the clearest, unambiguous use case for a standing order. hop
