@@ -17,6 +17,10 @@ import { isAuthorizedCron } from '@/lib/cron-auth'
 import { recordHeartbeat } from '@/lib/cron-heartbeat'
 
 export const dynamic = 'force-dynamic'
+// The sweep re-reads every subscription from Stripe and rewrites each through
+// the webhook lane; give it room past the platform default so a growing
+// account finishes instead of being killed mid-sweep (like balance-autosync).
+export const maxDuration = 60
 
 export async function GET(request: Request) {
   if (!isAuthorizedCron(request)) {
@@ -24,15 +28,20 @@ export async function GET(request: Request) {
   }
   if (!isBillingEnabled()) {
     // Liveness record (ADR 0007): being off is an owner choice, not an outage.
-    recordHeartbeat('sync-stripe', false, 'disabled')
+    await recordHeartbeat('sync-stripe', false, 'disabled')
     return NextResponse.json({ ok: false, reason: 'billing-disabled' }, { status: 503 })
   }
+
+  // Liveness record (ADR 0007) BEFORE the sweep, awaited so the row flushes
+  // even if the Stripe work below hangs or the function is killed at
+  // maxDuration. A completed run overwrites this same row (upsert on `job`).
+  await recordHeartbeat('sync-stripe', true, 'started')
 
   const listed = await listSubscriptionRecords()
   if (!listed.ok) {
     // Still a completed run — the cron itself worked; Stripe didn't (same
     // convention as valuation-sync's 'worker-unreachable').
-    recordHeartbeat('sync-stripe', true, `stripe-unreachable: ${listed.reason}`)
+    await recordHeartbeat('sync-stripe', true, `stripe-unreachable: ${listed.reason}`)
     return NextResponse.json({ ok: false, error: listed.reason }, { status: 500 })
   }
 
@@ -49,6 +58,6 @@ export async function GET(request: Request) {
     if (outcome === 'ok') synced++
   }
   // Liveness record (ADR 0007): after the work — ran to completion.
-  recordHeartbeat('sync-stripe', true, `synced:${synced} total:${listed.items.length}`)
+  await recordHeartbeat('sync-stripe', true, `synced:${synced} total:${listed.items.length}`)
   return NextResponse.json({ ok: true, synced, total: listed.items.length })
 }

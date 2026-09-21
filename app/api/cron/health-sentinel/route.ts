@@ -136,7 +136,7 @@ export async function GET(request: Request) {
     if (!isSelfImproveEnabled()) {
       // Being off is an owner choice, not an outage — the heartbeat says so
       // (the one deliberately ungated write; see ADR 0007's exception list).
-      recordHeartbeat('health-sentinel', false, 'disabled')
+      await recordHeartbeat('health-sentinel', false, 'disabled')
       return Response.json({ ok: false, error: 'disabled' }, { status: 503 })
     }
 
@@ -212,7 +212,7 @@ export async function GET(request: Request) {
 
     // Housekeeping + our own liveness, then the per-detector status body.
     const pruned = await pruneDegradationEvents(now)
-    recordHeartbeat(
+    await recordHeartbeat(
       'health-sentinel',
       true,
       `findings:${upserted} resolved:${resolved} filed:${filed.length}`,

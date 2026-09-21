@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 
   if (!isEnabled()) {
     // Liveness record (ADR 0007): being off is an owner choice, not an outage.
-    recordHeartbeat('revalidate-seo', false, 'disabled')
+    await recordHeartbeat('revalidate-seo', false, 'disabled')
     return Response.json({ status: 'disabled' }, { status: 503 })
   }
 
@@ -41,8 +41,8 @@ export async function GET(request: Request) {
   revalidatePath('/robots.txt')
 
   // Liveness record (ADR 0007): after the work — a fresh ok heartbeat means
-  // "ran to completion". Fire-and-forget.
-  recordHeartbeat('revalidate-seo', true, `revalidated:${revalidated.length + 2}`)
+  // "ran to completion".
+  await recordHeartbeat('revalidate-seo', true, `revalidated:${revalidated.length + 2}`)
 
   return Response.json({ status: 'ok', revalidated, at: new Date().toISOString() })
 }
