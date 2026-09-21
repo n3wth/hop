@@ -80,7 +80,7 @@ export async function GET(request: Request) {
     return Response.json({ ok: false, reason: 'unauthorized' }, { status: 401 })
   }
   if (!isNewsletterEnabled()) {
-    recordHeartbeat('newsletter-digest', false, 'disabled')
+    await recordHeartbeat('newsletter-digest', false, 'disabled')
     return Response.json({ ok: false, disabled: true, reason: 'newsletter is off' }, { status: 503 })
   }
 
@@ -89,7 +89,7 @@ export async function GET(request: Request) {
   // null = db unavailable/unknown — distinct from a genuinely empty due list,
   // so a degraded db can't silently read as "nobody due" in the heartbeat note.
   if (subscribers === null) {
-    recordHeartbeat('newsletter-digest', false, 'db-unavailable')
+    await recordHeartbeat('newsletter-digest', false, 'db-unavailable')
     return Response.json({ ok: false, reason: 'db-unavailable' })
   }
 
@@ -126,7 +126,7 @@ export async function GET(request: Request) {
     }
   }
 
-  recordHeartbeat(
+  await recordHeartbeat(
     'newsletter-digest',
     true,
     [

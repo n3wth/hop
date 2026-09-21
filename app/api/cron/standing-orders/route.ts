@@ -74,7 +74,7 @@ export async function GET(request: Request) {
   if (!isEnabled()) {
     // Liveness record (ADR 0007): being off is an owner choice, not an outage.
     // Only for authorized callers, so a public probe can't keep it fresh.
-    if (isAuthorizedCron(request)) recordHeartbeat('standing-orders', false, 'disabled')
+    if (isAuthorizedCron(request)) await recordHeartbeat('standing-orders', false, 'disabled')
     return Response.json(
       { ok: false, disabled: true, reason: 'STANDING_ORDERS_CRON_ENABLED is off' },
       { status: 503 },
@@ -256,7 +256,7 @@ export async function GET(request: Request) {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([reason, n]) => `${reason}:${n}`)
     .join(' ')
-  recordHeartbeat(
+  await recordHeartbeat(
     'standing-orders',
     true,
     [

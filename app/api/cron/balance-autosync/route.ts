@@ -22,7 +22,7 @@ export const maxDuration = 300
 export async function GET(request: Request) {
   if (!isCredentialAutosyncLive()) {
     // Liveness record (ADR 0007): off is an owner choice, not an outage.
-    if (isAuthorizedCron(request)) recordHeartbeat('balance-autosync', false, 'disabled')
+    if (isAuthorizedCron(request)) await recordHeartbeat('balance-autosync', false, 'disabled')
     return Response.json({ ok: false, error: 'disabled' }, { status: 503 })
   }
   if (!isAuthorizedCron(request)) {
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
   }
 
   const summary = await runCredentialAutosync()
-  recordHeartbeat(
+  await recordHeartbeat(
     'balance-autosync',
     true,
     `attempted:${summary.attempted} synced:${summary.synced} failed:${summary.failed}`,

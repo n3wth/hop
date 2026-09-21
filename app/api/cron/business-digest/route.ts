@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     if (!isEmailEnabled()) {
       // Liveness record (ADR 0007): being unconfigured is an owner choice,
       // not an outage.
-      recordHeartbeat('business-digest', false, 'disabled')
+      await recordHeartbeat('business-digest', false, 'disabled')
       return Response.json(
         { ok: false, sent: false, sections: [], reason: 'email-unconfigured' },
         { status: 503 },
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     if (!rendered) {
       // Every source degraded — there is nothing true to report, so we send
       // nothing. Still a successful run (200): the cron itself worked.
-      recordHeartbeat('business-digest', true, 'all-sources-degraded')
+      await recordHeartbeat('business-digest', true, 'all-sources-degraded')
       return Response.json({ ok: true, sent: false, sections: [], reason: 'all-sources-degraded' })
     }
 
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
     // Liveness record (ADR 0007): after the work — ran to completion. No
     // heartbeat on the catch path below, deliberately: a crashing route must
     // go stale so D1 can see it.
-    recordHeartbeat('business-digest', true, `sent:${result.ok} sections:${rendered.sections.length}`)
+    await recordHeartbeat('business-digest', true, `sent:${result.ok} sections:${rendered.sections.length}`)
     return Response.json({
       ok: true,
       sent: result.ok,
