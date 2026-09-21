@@ -36,7 +36,7 @@ export async function GET(request: Request) {
   if (!isEnabled()) {
     // Liveness record (ADR 0007): being off is an owner choice, not an outage.
     // Only for authorized callers, so a public probe can't keep it fresh.
-    if (isAuthorizedCron(request)) recordHeartbeat('awardwallet-sync', false, 'disabled')
+    if (isAuthorizedCron(request)) await recordHeartbeat('awardwallet-sync', false, 'disabled')
     return Response.json(
       { ok: false, disabled: true, reason: 'AWARDWALLET_SYNC_CRON_ENABLED is off' },
       { status: 503 },
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
     }
   }
 
-  recordHeartbeat(
+  await recordHeartbeat(
     'awardwallet-sync',
     true,
     [`refreshed:${refreshed}`, `failed:${failed}`, errors.length > 0 ? `errors:${errors.length}` : '']

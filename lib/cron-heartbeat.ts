@@ -13,10 +13,13 @@
 // is absent. READS are gated: flag off → null (unknown), which neither files
 // nor resolves.
 //
-// recordHeartbeat() is synchronous (void) and can NEVER throw or reject to
-// the caller — the same belt-and-suspenders contract as
-// lib/valuation-telemetry.ts#recordCppObservations. A heartbeat bug must
-// never fail a cron's real work.
+// recordHeartbeat() returns a promise that can NEVER reject to the caller —
+// the same belt-and-suspenders contract as
+// lib/valuation-telemetry.ts#recordCppObservations. Callers AWAIT it so the
+// Neon upsert flushes before the handler returns: a serverless invocation can
+// freeze the moment it returns, dropping an un-awaited write and making the
+// D1 detector read a live cron as dead (N-790). A heartbeat bug must never
+// fail a cron's real work.
 
 import { isSelfImproveEnabled } from '@/lib/env'
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -36,11 +39,12 @@ export interface CronHeartbeat {
 }
 
 // Record that a cron job ran (ok=true: to completion; ok=false: e.g.
-// 'disabled'). Fire-and-forget: kicks off the upsert without the caller
-// awaiting it, swallows everything.
-export function recordHeartbeat(job: CronJob, ok: boolean, note?: string): void {
+// 'disabled'). Awaited by callers so the upsert flushes before the handler
+// returns; the returned promise always resolves, never rejects, so awaiting
+// it can never fail the cron's real work.
+export async function recordHeartbeat(job: CronJob, ok: boolean, note?: string): Promise<void> {
   try {
-    void withDb(false, async (db) => {
+    await withDb(false, async (db) => {
       const { error } = await db.from(TABLE).upsert(
         {
           job,
@@ -53,8 +57,8 @@ export function recordHeartbeat(job: CronJob, ok: boolean, note?: string): void 
       return !error
     })
   } catch {
-    // Unreachable in practice (withDb never throws) — guarded anyway per the
-    // fire-and-forget contract.
+    // Unreachable in practice (withDb never throws) — guarded anyway so the
+    // returned promise can never reject onto a caller that awaits it.
   }
 }
 
