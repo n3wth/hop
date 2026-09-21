@@ -41,7 +41,7 @@ export async function GET(request: Request) {
   revalidatePath('/robots.txt')
 
   // Liveness record (ADR 0007): after the work — a fresh ok heartbeat means
-  // "ran to completion". Fire-and-forget.
+  // "ran to completion".
   await recordHeartbeat('revalidate-seo', true, `revalidated:${revalidated.length + 2}`)
 
   return Response.json({ status: 'ok', revalidated, at: new Date().toISOString() })

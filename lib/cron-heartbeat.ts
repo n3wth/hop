@@ -1,7 +1,7 @@
 // Cron liveness heartbeats (ADR 0007) — one row per vercel.json cron job
-// (hop_cron_heartbeats), upserted fire-and-forget at the end of each
-// AUTHORIZED run so the health sentinel's D1 detector (lib/health-checks.ts)
-// can tell a dead cron from a quiet one. An `ok` heartbeat means "ran to
+// (hop_cron_heartbeats), upserted (and awaited) on each AUTHORIZED run so the
+// health sentinel's D1 detector (lib/health-checks.ts) can tell a dead cron
+// from a quiet one. An `ok` heartbeat means "ran to
 // completion"; `ok:false, note:'disabled'` means the owner has the job
 // switched off — a choice, not an outage (D1 only looks at AGE, so a fresh
 // disabled heartbeat never reads as dead).
