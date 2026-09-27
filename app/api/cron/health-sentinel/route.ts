@@ -44,6 +44,11 @@ import { isAuthorizedCron } from '@/lib/cron-auth'
 
 // Reads live per-request data; never cache or statically render.
 export const dynamic = 'force-dynamic'
+// This route does the most DB work of any cron (heartbeat + degradation +
+// overrides + dead-watch reads, then finding upserts/resolves/filing). Give it
+// the same ceiling as the other heavy crons so it can't be cut off mid-run
+// before it records its own liveness (N-790).
+export const maxDuration = 300
 
 // D4 inputs. The regenerator scripts start emitting an explicit GENERATED_AT
 // stamp in the data-refresh PR; until a dataset carries one we degrade
@@ -136,7 +141,7 @@ export async function GET(request: Request) {
     if (!isSelfImproveEnabled()) {
       // Being off is an owner choice, not an outage — the heartbeat says so
       // (the one deliberately ungated write; see ADR 0007's exception list).
-      recordHeartbeat('health-sentinel', false, 'disabled')
+      await recordHeartbeat('health-sentinel', false, 'disabled')
       return Response.json({ ok: false, error: 'disabled' }, { status: 503 })
     }
 
@@ -212,7 +217,7 @@ export async function GET(request: Request) {
 
     // Housekeeping + our own liveness, then the per-detector status body.
     const pruned = await pruneDegradationEvents(now)
-    recordHeartbeat(
+    await recordHeartbeat(
       'health-sentinel',
       true,
       `findings:${upserted} resolved:${resolved} filed:${filed.length}`,

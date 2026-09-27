@@ -24,7 +24,7 @@ export async function GET(request: Request) {
   }
   if (!isBillingEnabled()) {
     // Liveness record (ADR 0007): being off is an owner choice, not an outage.
-    recordHeartbeat('sync-stripe', false, 'disabled')
+    await recordHeartbeat('sync-stripe', false, 'disabled')
     return NextResponse.json({ ok: false, reason: 'billing-disabled' }, { status: 503 })
   }
 
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
   if (!listed.ok) {
     // Still a completed run — the cron itself worked; Stripe didn't (same
     // convention as valuation-sync's 'worker-unreachable').
-    recordHeartbeat('sync-stripe', true, `stripe-unreachable: ${listed.reason}`)
+    await recordHeartbeat('sync-stripe', true, `stripe-unreachable: ${listed.reason}`)
     return NextResponse.json({ ok: false, error: listed.reason }, { status: 500 })
   }
 
@@ -49,6 +49,6 @@ export async function GET(request: Request) {
     if (outcome === 'ok') synced++
   }
   // Liveness record (ADR 0007): after the work — ran to completion.
-  recordHeartbeat('sync-stripe', true, `synced:${synced} total:${listed.items.length}`)
+  await recordHeartbeat('sync-stripe', true, `synced:${synced} total:${listed.items.length}`)
   return NextResponse.json({ ok: true, synced, total: listed.items.length })
 }

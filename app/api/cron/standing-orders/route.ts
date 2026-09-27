@@ -74,7 +74,7 @@ export async function GET(request: Request) {
   if (!isEnabled()) {
     // Liveness record (ADR 0007): being off is an owner choice, not an outage.
     // Only for authorized callers, so a public probe can't keep it fresh.
-    if (isAuthorizedCron(request)) recordHeartbeat('standing-orders', false, 'disabled')
+    if (isAuthorizedCron(request)) await recordHeartbeat('standing-orders', false, 'disabled')
     return Response.json(
       { ok: false, disabled: true, reason: 'STANDING_ORDERS_CRON_ENABLED is off' },
       { status: 503 },
@@ -251,12 +251,13 @@ export async function GET(request: Request) {
 
   // Liveness record (ADR 0007): after the work, so a fresh ok heartbeat means
   // "ran to completion". The note tallies the run's reason codes, sorted for
-  // a stable read. Fire-and-forget — can never fail the response.
+  // a stable read. Awaited so the write flushes before the response; it still
+  // can never fail the response (the promise always resolves).
   const reasonNote = Object.entries(reasonTally)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([reason, n]) => `${reason}:${n}`)
     .join(' ')
-  recordHeartbeat(
+  await recordHeartbeat(
     'standing-orders',
     true,
     [

@@ -36,7 +36,7 @@ function isEnabled(): boolean {
 export async function GET(request: Request) {
   if (!isEnabled()) {
     // Liveness record (ADR 0007): being off is an owner choice, not an outage.
-    if (isAuthorizedCron(request)) recordHeartbeat('sweet-spot-candidates', false, 'disabled')
+    if (isAuthorizedCron(request)) await recordHeartbeat('sweet-spot-candidates', false, 'disabled')
     return Response.json({ ok: false, error: 'disabled' }, { status: 503 })
   }
   if (!isAuthorizedCron(request)) {
@@ -48,6 +48,6 @@ export async function GET(request: Request) {
 
   if (created > 0) revalidatePath('/admin/content')
 
-  recordHeartbeat('sweet-spot-candidates', true, `created:${created} skipped:${skipped}`)
+  await recordHeartbeat('sweet-spot-candidates', true, `created:${created} skipped:${skipped}`)
   return Response.json({ ok: true, created, skipped })
 }
