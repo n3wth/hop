@@ -1,13 +1,43 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import Anthropic from '@anthropic-ai/sdk'
 import {
   computeFingerprint,
   isFingerprintOpen,
+  runAuditWithAnthropic,
   sanitizeFilePath,
   sanitizeMarkdownBody,
   sanitizeTitleText,
 } from '../../scripts/weekly-audit.mjs'
 
+vi.mock('@anthropic-ai/sdk', () => ({
+  default: vi.fn(class {
+    messages = { create: vi.fn().mockResolvedValue({ content: [{ type: 'text', text: '{"findings": []}' }] }) }
+  }),
+}))
+
 describe('weekly-audit helpers', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('fails rather than reporting a clean audit when every Claude request fails', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.mocked(Anthropic).mockImplementationOnce(class {
+      messages = { create: vi.fn().mockRejectedValue(new Error('Authentication failed')) }
+    } as unknown as typeof Anthropic)
+    await expect(runAuditWithAnthropic()).rejects.toThrow('No files could be audited')
+  })
+
+  it('lets the SDK resolve federation credentials when no API key is passed', async () => {
+    vi.mocked(Anthropic).mockClear()
+    await expect(runAuditWithAnthropic()).resolves.toEqual([])
+    expect(Anthropic).toHaveBeenCalledWith({})
+  })
+
+  it('preserves explicit API key authentication for local runs', async () => {
+    vi.mocked(Anthropic).mockClear()
+    await expect(runAuditWithAnthropic('test-key')).resolves.toEqual([])
+    expect(Anthropic).toHaveBeenCalledWith({ apiKey: 'test-key' })
+  })
+
   it('computes deterministic 10-char hex fingerprint', () => {
     const fp1 = computeFingerprint('lib/cpp.ts', 'engine', 42)
     const fp2 = computeFingerprint('lib/cpp.ts', 'engine', 42)

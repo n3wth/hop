@@ -21,7 +21,18 @@ permissions:
 
 jobs:
   audit:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    env:
+      ANTHROPIC_ORGANIZATION_ID: 5c493f3a-b94a-401f-b20f-975ea3f64a29
+      ANTHROPIC_WORKSPACE_ID: wrkspc_01UjMMmCpbpaDFGuFtfSuJBM
+      ANTHROPIC_SERVICE_ACCOUNT_ID: svac_01DkmutrsczvtA1RQEtByCSg
+      ANTHROPIC_FEDERATION_RULE_ID: fdrl_013ca8XCHT6wu969PP5G8hPW
+      ANTHROPIC_IDENTITY_TOKEN_FILE: ${{ runner.temp }}/anthropic-identity.jwt
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -35,16 +46,39 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Fetch GitHub identity token
+        run: |
+          node --input-type=module <<'JS'
+          import { writeFileSync } from 'node:fs'
+          const url = new URL(process.env.ACTIONS_ID_TOKEN_REQUEST_URL)
+          url.searchParams.set('audience', 'https://api.anthropic.com')
+          const response = await fetch(url, {
+            headers: { Authorization: `Bearer ${process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}` },
+            signal: AbortSignal.timeout(30_000),
+          })
+          if (!response.ok) throw new Error(`GitHub OIDC request failed: ${response.status}`)
+          const { value } = await response.json()
+          if (typeof value !== 'string' || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(value)) {
+            throw new Error('GitHub OIDC response did not contain a JWT')
+          }
+          console.log(`::add-mask::${value}`)
+          writeFileSync(process.env.ANTHROPIC_IDENTITY_TOKEN_FILE, value, { mode: 0o600 })
+          JS
+
       - name: Run weekly audit (Dry Run)
+        timeout-minutes: 5
         if: ${{ github.event.inputs.dry_run == 'true' || (github.event.inputs.dry_run == '' && github.event_name == 'workflow_dispatch') }}
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/weekly-audit.mjs --dry-run
 
       - name: Run weekly audit (File Issues)
+        timeout-minutes: 5
         if: ${{ github.event.inputs.dry_run == 'false' || github.event_name == 'schedule' }}
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/weekly-audit.mjs --no-dry-run --file-issues
+
+      - name: Remove identity token
+        if: always()
+        run: rm -f "$ANTHROPIC_IDENTITY_TOKEN_FILE"
