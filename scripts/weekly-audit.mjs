@@ -3,7 +3,7 @@
 //
 // Performs a read-only audit of hop against standing invariants (engine, degradation,
 // copy, nextjs16, security, memory).
-// Skips cleanly when ANTHROPIC_API_KEY is absent.
+// Skips cleanly when neither an API key nor federation is configured.
 // Deduplicates findings against existing GitHub issues using label "auto-audit"
 // and title convention "[hop:audit:<fingerprint>]".
 
@@ -122,8 +122,9 @@ function sanitizeLine(line) {
 }
 
 export async function runAuditWithAnthropic(apiKey) {
-  const client = new Anthropic({ apiKey })
+  const client = new Anthropic(apiKey ? { apiKey } : {})
   const findings = []
+  let auditedFiles = 0
 
   // Sample key files for audit
   const sampleFiles = [
@@ -165,6 +166,7 @@ Return ONLY valid JSON.`
         max_tokens: 1000,
         messages: [{ role: 'user', content: prompt }],
       })
+      auditedFiles += 1
       const text = res.content[0]?.type === 'text' ? res.content[0].text : ''
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
@@ -187,6 +189,7 @@ Return ONLY valid JSON.`
     }
   }
 
+  if (auditedFiles === 0) throw new Error('No files could be audited; check Claude authentication and API availability.')
   return findings
 }
 
@@ -194,8 +197,8 @@ async function main() {
   const args = parseArgs(process.argv.slice(2))
   const apiKey = process.env.ANTHROPIC_API_KEY
 
-  if (!apiKey) {
-    console.log('[weekly-audit] ANTHROPIC_API_KEY secret absent. Skipping weekly audit cleanly.')
+  if (!apiKey && !process.env.ANTHROPIC_FEDERATION_RULE_ID) {
+    console.log('[weekly-audit] Claude credentials absent. Skipping weekly audit cleanly.')
     process.exit(0)
   }
 
