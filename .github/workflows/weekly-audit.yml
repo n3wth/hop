@@ -32,7 +32,7 @@ jobs:
       ANTHROPIC_WORKSPACE_ID: wrkspc_01UjMMmCpbpaDFGuFtfSuJBM
       ANTHROPIC_SERVICE_ACCOUNT_ID: svac_01DkmutrsczvtA1RQEtByCSg
       ANTHROPIC_FEDERATION_RULE_ID: fdrl_013ca8XCHT6wu969PP5G8hPW
-      ANTHROPIC_IDENTITY_TOKEN_FILE: ${{ runner.temp }}/anthropic-identity.jwt
+      ANTHROPIC_IDENTITY_TOKEN_FILE: /tmp/anthropic-identity-${{ github.run_id }}-${{ github.run_attempt }}.jwt
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
