@@ -28,6 +28,7 @@ jobs:
       issues: write
       id-token: write
     env:
+      ANTHROPIC_MODEL: claude-sonnet-4-6
       ANTHROPIC_ORGANIZATION_ID: 5c493f3a-b94a-401f-b20f-975ea3f64a29
       ANTHROPIC_WORKSPACE_ID: wrkspc_01UjMMmCpbpaDFGuFtfSuJBM
       ANTHROPIC_SERVICE_ACCOUNT_ID: svac_01DkmutrsczvtA1RQEtByCSg
@@ -38,7 +39,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Node
-        uses: actions/setup-node@39376e3e73fc7a1d668824e5b6723a03284cd150 # v4.1.0
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
