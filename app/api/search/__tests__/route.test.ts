@@ -168,18 +168,20 @@ describe('assembleSearch — live path degradation', () => {
     expect(result.verdict).toBe('none')
   })
 
-  // A signed-out / no-program viewer never had a connected wallet to refresh, so
-  // a balances-source failure must NOT read as "couldn't refresh your balances".
-  it('does NOT degrade balances for a signed-out viewer (no per-user balances)', async () => {
+  // A signed-out / no-program viewer has no wallet: balances are empty, never
+  // degraded, and AwardWallet is never called live from the search path (live
+  // calls from Vercel's rotating egress IPs trip AwardWallet's IP lockout).
+  it('never calls AwardWallet for a signed-out viewer (no per-user balances)', async () => {
     vi.spyOn(duffel, 'searchCash').mockResolvedValue({ ok: true, data: [] })
     vi.spyOn(awards, 'searchAwards').mockResolvedValue({ ok: true, data: [] })
-    // Env-global AwardWallet fallback fails — but the viewer is signed out, so
-    // empty balances are EXPECTED, not stale.
-    vi.spyOn(awardwallet, 'getBalances').mockResolvedValue({ ok: false, reason: 'balances down' })
+    const getBalancesSpy = vi
+      .spyOn(awardwallet, 'getBalances')
+      .mockResolvedValue({ ok: false, reason: 'balances down' })
 
     // No userBalances argument → signed-out / stateless path.
     const result = await assembleSearch(PARAMS)
 
+    expect(getBalancesSpy).not.toHaveBeenCalled()
     expect(result.degraded).not.toContain('balances')
     expect(result.balances).toEqual([])
   })
