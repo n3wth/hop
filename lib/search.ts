@@ -18,7 +18,6 @@ import { cashBookingUrl, pointsBookingUrl } from '@/lib/booking'
 import { isCheckoutEnabled } from '@/lib/env'
 import { searchCash } from '@/lib/duffel'
 import { searchAwards } from '@/lib/awards'
-import { getBalances } from '@/lib/awardwallet'
 import { mockCash, mockAwards, mockBalances } from '@/lib/mock'
 import { recordCppObservations } from '@/lib/valuation-telemetry'
 import { iataRouteCode, recordDegradation, sanitizeReason } from '@/lib/degradation-telemetry'
@@ -56,9 +55,10 @@ function youHaveFor(option: FlightOption, balances: Balance[]): number | undefin
 }
 
 // Optionally accepts pre-resolved per-user balances (manual + AwardWallet merged
-// by lib/accounts.getUserBalances). When omitted, falls back to the AwardWallet
-// env global via getBalances() — preserving the original behavior for callers
-// without a session and for the test suite.
+// by lib/accounts.getUserBalances). When omitted (signed-out / stateless
+// callers), balances are simply empty: this function never calls AwardWallet
+// live. A live call here ran on every anonymous search from Vercel's shifting
+// AWS egress IPs, which AwardWallet rejects (allowlist) and then locks out.
 //
 // opts.recordTelemetry (default true) gates BOTH telemetry side effects below
 // (the cpp-observation POST and the degradation-incident record/capture) —
@@ -137,14 +137,10 @@ export async function assembleSearch(
     // Signed-in user's real balances ground the mock fixtures too; else mock.
     balances = userBalances && userBalances.length > 0 ? userBalances : mockBalances()
   } else {
-    // When the caller resolved per-user balances, use them and skip the
-    // AwardWallet env-global fetch entirely. Otherwise fall back to getBalances().
-    const wantBalances = userBalances === undefined
-    const [cashRes, awardsRes, balancesRes] = await Promise.all([
-      searchCash(params),
-      searchAwards(params),
-      wantBalances ? getBalances() : Promise.resolve(null),
-    ])
+    // Balances are never fetched live here: per-user balances arrive
+    // pre-resolved from the cache (lib/accounts.getUserBalances), and a caller
+    // that supplies none (signed out / stateless) gets an empty wallet.
+    const [cashRes, awardsRes] = await Promise.all([searchCash(params), searchAwards(params)])
 
     if (cashRes.ok) cashOptions = cashRes.data
     else {
@@ -158,19 +154,9 @@ export async function assembleSearch(
       degradedReasons.awards = awardsRes.reason
     }
 
-    if (balancesRes === null) {
-      // Caller supplied balances (possibly empty) — trust them, no degrade.
-      balances = userBalances ?? []
-    } else if (balancesRes.ok) {
-      balances = balancesRes.data
-    }
-    // else: the env-global AwardWallet fallback failed. This path only runs when
-    // NO per-user balances were supplied (signed-out / stateless caller), so the
-    // viewer has no connected wallet of their own to refresh — empty is the
-    // EXPECTED state, not a stale refresh. We deliberately do NOT push 'balances'
-    // here: that degradation ("Couldn't refresh your balances…") is only honest
-    // for a signed-in user whose own programs failed to refresh, and a signed-in
-    // user's balances always arrive pre-resolved above (balancesRes === null).
+    // Signed out / no programs → empty is the EXPECTED state, not a stale
+    // refresh, so it never pushes a 'balances' degradation.
+    balances = userBalances ?? []
   }
 
   // Cheapest cash price is the baseline for award cpp comparison.

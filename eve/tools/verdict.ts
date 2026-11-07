@@ -43,8 +43,8 @@ export default defineTool({
       .describe('Optional natural-language travel prefs (TravelPrefs) applied as a filter/tiebreaker.'),
   }),
   async execute({ from, to, depart, return: ret, adults, cabin, userId, prefs }) {
-    // Real balances when we know who's asking; otherwise stateless (engine falls
-    // back to the env-global AwardWallet fetch only when balances is undefined).
+    // Real balances when we know who's asking; otherwise stateless (no balances;
+    // the engine never calls AwardWallet live).
     const balances: Balance[] | undefined = userId ? await getUserBalances(userId) : undefined
 
     const result = await assembleSearch(
