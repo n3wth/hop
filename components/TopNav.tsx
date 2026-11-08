@@ -209,7 +209,7 @@ export default function TopNav({
           disappears entirely; on search pages it survives only as the slim
           search-pill strip (the pill is the page's primary control, not chrome). */}
       <header
-        className={`sticky top-0 z-50 ${hideSearch ? 'hidden md:block' : ''}`}
+        className={`sticky top-0 z-50 md:top-4 ${hideSearch ? 'hidden md:block' : ''}`}
         style={{
           height: 56,
           transform: 'translateZ(0)',
@@ -219,7 +219,7 @@ export default function TopNav({
         {/* Opaque surface keeps labels readable over scrolling imagery. */}
         <div className="h-full px-5 sm:px-8 md:px-4 lg:px-6">
         <div
-          className={`mx-auto flex h-full max-w-[var(--container-shell)] items-center gap-3 sm:gap-4 lg:gap-5 md:mt-4 md:h-11 md:max-w-fit md:rounded-full md:border md:px-4 lg:px-5 ${
+          className={`mx-auto flex h-full max-w-[var(--container-shell)] items-center gap-3 sm:gap-4 lg:gap-5 md:mt-4 md:h-11 md:max-w-fit md:rounded-full md:border md:pl-4 md:pr-2 lg:pl-5 lg:pr-3 ${
             c
               ? 'bg-surface md:border-border'
               : 'md:border-border md:bg-surface'
@@ -229,8 +229,7 @@ export default function TopNav({
           }}
         >
           {/* logo — bunny mark only on desktop island, no wordmark. Hidden below md
-              where the bottom tab bar's home bunny serves as the mark. ml-1 matches
-              the right-side avatar's mr-1 for symmetric insets from the pill cap. */}
+              where the bottom tab bar's home bunny serves as the mark. */}
           <div className="hidden flex-shrink-0 items-center md:ml-1 md:flex">
             <LogoMark />
           </div>
@@ -301,9 +300,8 @@ export default function TopNav({
               the search form from the account cluster. */}
           {!hideSearch && <div className="hidden flex-1 md:block" />}
 
-          {/* right cluster — origin (search pages only) + account. mr-1 matches
-              the left logo's ml-1 for symmetric insets from the pill caps. */}
-          <div className="flex items-center gap-2 md:mr-1">
+          {/* right cluster — origin (search pages only) + account. */}
+          <div className="flex items-center gap-2">
           {/* persistent "where from" — hidden below md so the phone header stays
               uncrowded (the menu sheet carries it there). On hideSearch pages
               the origin is inline with nav links above, so skip it here. */}
@@ -346,7 +344,7 @@ export default function TopNav({
             ) : (
               <a
                 href={signInHref}
-                className="rounded-full border border-text2/60 px-3.5 py-1.5 text-[13px] font-semibold text-text2 transition-colors hover:bg-sunk hop-press"
+                className="rounded-full px-3 py-1.5 text-[13px] font-semibold text-text2 transition-colors hover:bg-sunk hop-press"
               >
                 Sign in
               </a>
