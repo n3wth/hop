@@ -216,26 +216,16 @@ export default function TopNav({
           isolation: 'isolate',
         }}
       >
-        {/* Island container — floats as a pill on desktop, full-width on mobile.
-            Gaussian blur + saturate make labels readable over scrolling content.
-            -webkit- prefix required for Safari; inline styles guarantee both
-            land (Lightning CSS dedupes them when co-located in a compiled rule).
-            hop-glass-surface handles translucent fill + reduced-transparency fallback. */}
+        {/* Opaque surface keeps labels readable over scrolling imagery. */}
         <div className="h-full px-5 sm:px-8 md:px-4 lg:px-6">
         <div
           className={`mx-auto flex h-full max-w-[var(--container-shell)] items-center gap-3 sm:gap-4 lg:gap-5 md:mt-4 md:h-11 md:max-w-fit md:rounded-full md:border md:px-4 lg:px-5 ${
             c
-              ? 'hop-glass-surface md:border-border/60'
+              ? 'bg-surface md:border-border'
               : 'md:border-border md:bg-surface'
           }`}
           style={{
-            transition: `background ${DUR} ${EASE}, border-color ${DUR} ${EASE}, backdrop-filter ${DUR} ${EASE}, -webkit-backdrop-filter ${DUR} ${EASE}`,
-            ...(c
-              ? {
-                  WebkitBackdropFilter: 'blur(16px) saturate(1.2)',
-                  backdropFilter: 'blur(16px) saturate(1.2)',
-                }
-              : {}),
+            transition: `background ${DUR} ${EASE}`,
           }}
         >
           {/* logo — bunny mark only on desktop island, no wordmark. Hidden below md
