@@ -64,17 +64,17 @@ export const FOOTER_SECTIONS: FooterSection[] = [
       { href: '/deals', label: 'Deals' },
       { href: '/destinations', label: 'Destination guides' },
       { href: '/sweet-spots', label: 'Sweet spots' },
-      { href: '/guides', label: 'Program guides' },
       { href: '/ask', label: 'Ask hop' },
-      { href: '/mcp', label: 'Use hop from your AI agent' },
       { href: '/pricing', label: 'Pricing' },
     ],
   },
   {
     title: 'Learn',
     links: [
+      { href: '/guides', label: 'Program guides' },
       { href: '/guides/points-101', label: 'New to points? Start here' },
       { href: '/guides/point-value', label: 'How we value points' },
+      { href: '/mcp', label: 'Use hop from your AI agent' },
       { href: '/support', label: 'Support' },
     ],
   },
@@ -85,17 +85,6 @@ export const FOOTER_SECTIONS: FooterSection[] = [
       { href: '/terms', label: 'Terms' },
       { href: '/credits', label: 'Photo credits' },
       { href: 'mailto:hop@n3wth.com', label: 'Contact' },
-    ],
-  },
-  {
-    title: 'Family',
-    links: [
-      { href: 'https://r3.n3wth.com', label: 'r3' },
-      { href: 'https://kit.n3wth.com', label: 'kit' },
-      { href: 'https://skills.n3wth.com', label: 'skills' },
-      { href: 'https://ui.n3wth.com', label: 'ui' },
-      { href: 'https://n3wth.com', label: 'n3wth.com' },
-      { href: 'https://garden.n3wth.com', label: 'garden' },
     ],
   },
 ]

@@ -9,7 +9,7 @@ export default function FooterNav() {
   const pathname = usePathname()
 
   return (
-    <div className="grid grid-cols-2 gap-x-8 gap-y-5 sm:grid-cols-3 sm:gap-x-12 lg:gap-x-16">
+    <div className="grid grid-cols-3 gap-x-6 gap-y-5 lg:gap-x-10">
       {FOOTER_SECTIONS.map((section) => (
         <nav key={section.title} aria-labelledby={`footer-${section.title.toLowerCase()}`}>
           <Eyebrow
