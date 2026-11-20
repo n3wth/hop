@@ -11,6 +11,32 @@ const DUFFEL_BASE = 'https://api.duffel.com'
 const DUFFEL_VERSION = 'v2'
 const TIMEOUT_MS = 10_000
 
+// Duffel rate-limits per access token: after one 429, every call until the
+// window resets is another 429, and each one extends the burst. So a 429 pauses
+// ALL Duffel calls for the reset window (shared via Redis when configured) and
+// searches degrade cash immediately instead of piling on.
+const RATE_LIMIT_KEY = 'hop:duffel:rate-limited'
+const RATE_LIMIT_DEFAULT_SEC = 30
+const RATE_LIMIT_MAX_SEC = 120
+
+// Seconds to pause after a 429, clamped so a bad header can't stall cash for long.
+export function rateLimitCooldownSec(headers: Headers, now = Date.now()): number {
+  for (const name of ['retry-after', 'ratelimit-reset']) {
+    const raw = headers.get(name)?.trim()
+    if (!raw) continue
+    let sec: number
+    if (/^\d+$/.test(raw)) {
+      const n = Number(raw)
+      // Large values are an absolute epoch timestamp, small ones a delay.
+      sec = n > 1_000_000_000 ? n - now / 1000 : n
+    } else {
+      sec = (Date.parse(raw) - now) / 1000
+    }
+    if (Number.isFinite(sec)) return Math.min(RATE_LIMIT_MAX_SEC, Math.max(1, Math.ceil(sec)))
+  }
+  return RATE_LIMIT_DEFAULT_SEC
+}
+
 // --- Duffel response shapes (partial; only the fields we consume) -----------
 interface DuffelSegment {
   departing_at?: string
@@ -143,8 +169,14 @@ export async function searchCash(params: SearchParams): Promise<ApiResult<Flight
 
   const cacheKey = `hop:search:cash:${params.from.toUpperCase()}:${params.to.toUpperCase()}:${params.depart}:${params.return || 'one-way'}:${params.cabin || 'economy'}:${params.adults || 1}:${params.children || 0}:${params.infants || 0}`
 
-  const cached = await cacheGet<ApiResult<FlightOption[]>>(cacheKey)
+  const [cached, rateLimited] = await Promise.all([
+    cacheGet<ApiResult<FlightOption[]>>(cacheKey),
+    cacheGet<boolean>(RATE_LIMIT_KEY),
+  ])
   if (cached !== null && cached.ok) return cached
+  if (rateLimited !== null) {
+    return { ok: false, reason: 'Duffel 429 cooldown' }
+  }
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
@@ -179,6 +211,9 @@ export async function searchCash(params: SearchParams): Promise<ApiResult<Flight
     })
 
     if (!res.ok) {
+      if (res.status === 429) {
+        await cacheSet(RATE_LIMIT_KEY, true, rateLimitCooldownSec(res.headers))
+      }
       return { ok: false, reason: `Duffel responded ${res.status}` }
     }
 
