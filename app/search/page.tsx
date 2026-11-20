@@ -247,11 +247,8 @@ export default async function Search({
   const sp = await searchParams
   const cookieStore = await cookies()
   const cookieOrigin = cookieStore.get(ORIGIN_STORAGE_KEY)?.value?.trim().toUpperCase()
-  // Crawlers following the /search?from=…&to=… links on the static pages used
-  // to run a live Duffel search per link — bursts that tripped Duffel's rate
-  // limit for real visitors. They get the search form
-  // instead; generateMetadata (title, canonical, OG) never runs the engine, so
-  // link previews are unchanged.
+  // Crawlers get the form, not a live Duffel search (see lib/crawler.ts).
+  // generateMetadata never runs the engine, so link previews are unchanged.
   const crawler = isCrawler((await headers()).get('user-agent'))
 
   // No destination named — e.g. the header's "Search" nav link — used to

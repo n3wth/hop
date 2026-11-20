@@ -19,9 +19,7 @@ const RATE_LIMIT_KEY = 'hop:duffel:rate-limited'
 const RATE_LIMIT_DEFAULT_SEC = 30
 const RATE_LIMIT_MAX_SEC = 120
 
-// Seconds to pause after a 429: Retry-After (seconds or HTTP date), else
-// Duffel's ratelimit-reset (epoch seconds or HTTP date), else the default.
-// Clamped to [1, RATE_LIMIT_MAX_SEC] so a bad header can't stall cash for long.
+// Seconds to pause after a 429, clamped so a bad header can't stall cash for long.
 export function rateLimitCooldownSec(headers: Headers, now = Date.now()): number {
   for (const name of ['retry-after', 'ratelimit-reset']) {
     const raw = headers.get(name)?.trim()
@@ -171,10 +169,12 @@ export async function searchCash(params: SearchParams): Promise<ApiResult<Flight
 
   const cacheKey = `hop:search:cash:${params.from.toUpperCase()}:${params.to.toUpperCase()}:${params.depart}:${params.return || 'one-way'}:${params.cabin || 'economy'}:${params.adults || 1}:${params.children || 0}:${params.infants || 0}`
 
-  const cached = await cacheGet<ApiResult<FlightOption[]>>(cacheKey)
+  const [cached, rateLimited] = await Promise.all([
+    cacheGet<ApiResult<FlightOption[]>>(cacheKey),
+    cacheGet<boolean>(RATE_LIMIT_KEY),
+  ])
   if (cached !== null && cached.ok) return cached
-
-  if ((await cacheGet<boolean>(RATE_LIMIT_KEY)) !== null) {
+  if (rateLimited !== null) {
     return { ok: false, reason: 'Duffel 429 cooldown' }
   }
 
