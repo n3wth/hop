@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SearchParams } from '@/lib/types'
-import { normalizeDuffelOffer, searchCash } from '@/lib/duffel'
+import { normalizeDuffelOffer, rateLimitCooldownSec, searchCash } from '@/lib/duffel'
 import { normalizeSeatsAeroRecord, searchAwards } from '@/lib/seatsaero'
 import {
   deriveCode,
@@ -112,6 +112,43 @@ describe('duffel normalizer', () => {
     const result = await searchCash(PARAMS)
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.reason).toContain('500')
+  })
+
+  it('pauses Duffel calls after a 429 instead of piling on', async () => {
+    process.env.DUFFEL_API_KEY_LIVE = 'test-key'
+    const fetchSpy = vi.fn(() =>
+      Promise.resolve(new Response('slow down', { status: 429, headers: { 'retry-after': '20' } })),
+    )
+    vi.stubGlobal('fetch', fetchSpy)
+    const first = await searchCash(PARAMS)
+    expect(first.ok).toBe(false)
+    if (!first.ok) expect(first.reason).toBe('Duffel responded 429')
+    // A different route still skips the call during the cooldown.
+    const second = await searchCash({ ...PARAMS, to: 'JFK' })
+    expect(second.ok).toBe(false)
+    if (!second.ok) expect(second.reason).toBe('Duffel 429 cooldown')
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not pause Duffel calls after a non-429 error', async () => {
+    process.env.DUFFEL_API_KEY_LIVE = 'test-key'
+    const fetchSpy = vi.fn(() => Promise.resolve(new Response('bad', { status: 422 })))
+    vi.stubGlobal('fetch', fetchSpy)
+    await searchCash(PARAMS)
+    await searchCash({ ...PARAMS, to: 'JFK' })
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+  })
+
+  it('derives the 429 cooldown from the rate-limit headers, clamped', () => {
+    const now = Date.parse('2026-11-19T10:00:00Z')
+    expect(rateLimitCooldownSec(new Headers({ 'retry-after': '12' }), now)).toBe(12)
+    expect(
+      rateLimitCooldownSec(new Headers({ 'ratelimit-reset': 'Thu, 19 Nov 2026 10:00:45 GMT' }), now),
+    ).toBe(45)
+    expect(rateLimitCooldownSec(new Headers({ 'ratelimit-reset': String(now / 1000 + 8) }), now)).toBe(8)
+    expect(rateLimitCooldownSec(new Headers({ 'retry-after': '3600' }), now)).toBe(120)
+    expect(rateLimitCooldownSec(new Headers({ 'retry-after': 'soon' }), now)).toBe(30)
+    expect(rateLimitCooldownSec(new Headers(), now)).toBe(30)
   })
 
   it('returns {ok:false} when the API key is absent', async () => {

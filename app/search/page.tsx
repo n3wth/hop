@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { toNavUser } from '@/lib/nav-user'
 import type { SearchParams } from '@/lib/types'
 import { assembleSearch, seatsFor } from '@/lib/search'
@@ -10,6 +10,7 @@ import { cityForCode } from '@/lib/airports'
 import { destinationImage, photoForCode } from '@/lib/images'
 import { affordableWith, topValue } from '@/lib/destinations'
 import { auth0 } from '@/lib/auth0'
+import { isCrawler } from '@/lib/crawler'
 import { ORIGIN_STORAGE_KEY } from '@/lib/origin-constants'
 import { isShareReceiptsEnabled, isStandingOrdersCronLive } from '@/lib/env'
 import { DEFAULT_DEPART, parseTravelDateQuery } from '@/lib/travel-dates'
@@ -246,6 +247,12 @@ export default async function Search({
   const sp = await searchParams
   const cookieStore = await cookies()
   const cookieOrigin = cookieStore.get(ORIGIN_STORAGE_KEY)?.value?.trim().toUpperCase()
+  // Crawlers following the /search?from=…&to=… links on the static pages used
+  // to run a live Duffel search per link — bursts that tripped Duffel's rate
+  // limit for real visitors. They get the search form
+  // instead; generateMetadata (title, canonical, OG) never runs the engine, so
+  // link previews are unchanged.
+  const crawler = isCrawler((await headers()).get('user-agent'))
 
   // No destination named — e.g. the header's "Search" nav link — used to
   // silently run the DEFAULT_PARAMS SFO→LAX verdict and present it as if it
@@ -258,7 +265,7 @@ export default async function Search({
   // fast path used to avoid, so it stays cheap. pointsTotal is still omitted
   // from AppShell (TopNav renders fine without it) — that prop is for the
   // header chip, not needed here.
-  if (!hasDestination(sp)) {
+  if (!hasDestination(sp) || crawler) {
     const [prefs, userBalances] = await Promise.all([
       su?.sub ? getPrefs(su.sub) : Promise.resolve(undefined),
       su?.sub ? getUserBalances(su.sub) : Promise.resolve(undefined),
